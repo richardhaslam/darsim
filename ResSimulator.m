@@ -39,7 +39,7 @@ Converged = 0;
 switch (Grid_Strategy)
     case ('ADM')
         %ADM Settings
-        Pressure_Interpolator =  InterpolationOption; %Constant, Homogeneous, MS
+        Pressure_Interpolator =  'Constant'; %InterpolationOption; %Constant, Homogeneous, MS
         ADMSettings.maxLevel = 2; %levelMax;
         ADMSettings.tol = 0.2;%tolerance;
         Coarsening = [3, 3; 9, 9; 27, 27]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
