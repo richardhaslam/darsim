@@ -5,6 +5,9 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+InputFile = '../Input/SPE10T.txt';
+ReadInputFile;
+
 %%%%%%%%%%%%%PROPERTIES OF THE RESERVOIR%%%%%%%%%%%%%%%%
 Problem = 'Homogeneous';
 [Grid, Inj, Prod, Lx, Ly, K]=ReservoirProperties(Problem);
