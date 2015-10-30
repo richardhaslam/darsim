@@ -5,9 +5,9 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 x=linspace(Lx/(2*Grid.Nx), (2*Grid.Nx*Lx-Lx)/(2*Grid.Nx), Grid.Nx);
 y=linspace(Ly/(2*Grid.Ny), (2*Grid.Ny*Ly-Ly)/(2*Grid.Ny), Grid.Ny);
-
 
 % get the corners of the domain in which the data occurs.
 min_x = min(min(X));
