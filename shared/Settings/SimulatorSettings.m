@@ -1,6 +1,6 @@
 function [T, TimeStep, Options, Tol, Strategy, Sequential, FIM, PlotSolution] = SimulatorSettings()
 %SIMULATOR SETTINGS
-T = 1500*24*3600;          %Total time of the simulation [s]
+T = 200*24*3600;          %Total time of the simulation [s]
 TimeStep = 100000;
 Tol=10^(-3);
 

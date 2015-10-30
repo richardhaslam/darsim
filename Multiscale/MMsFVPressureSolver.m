@@ -2,7 +2,7 @@ function [P, U] = MMsFVPressureSolver(FineGrid, Inj, Prod, Kt, CoarseGrid, maxLe
 %MULTILEVEL MsFV method
 %% AsemblePressureMatrix
 [Tx, Ty] = ComputeTransmissibility(FineGrid, Kt);
-[Ap] = AssemblePressureMatrix(Tx, Ty);
+[Ap] = AssemblePressureMatrix(Tx, Ty, FineGrid.Nx, FineGrid.Ny);
 q = zeros(FineGrid.N,1);
 
 % Add Wells

@@ -9,7 +9,7 @@ N = Grid.N;
 [Tx, Ty] = ComputeTransmissibility(Grid, K);
 
 %Construct pressure matrix
-A = AssemblePressureMatrix(Tx, Ty);
+A = AssemblePressureMatrix(Tx, Ty, Nx, Ny);
 Ab = A;
 q=zeros(N,1);
 

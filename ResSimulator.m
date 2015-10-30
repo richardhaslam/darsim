@@ -16,7 +16,7 @@ Fluid = FluidProperties(fplot);
 %%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
 [T, TimeSteps, Options, Tol, Strategy, Sequential, FIM, PlotSolution] =...
     SimulatorSettings();
-Grid_Strategy = 'ADM';
+Grid_Strategy = 'BaseGrid';
 
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
@@ -51,7 +51,7 @@ switch (Grid_Strategy)
         TotalTime = toc(TotalStart);
     case ('BaseGrid')
         disp('Base Grid SIMULATION');
-        Directory = strcat('../ResultsAndImages/PressureConstrained/', Problem, '/FIM/'); % Output is saved in this directory
+        Directory = strcat('../Output/'); % Output is saved in this directory
         TotalStart = tic;
         BaseGrid;
         TotalTime = toc(TotalStart);
