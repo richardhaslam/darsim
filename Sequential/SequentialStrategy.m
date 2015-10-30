@@ -1,3 +1,10 @@
+%SEQUENTIAL STRATEGY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [P, S, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
 %SEQUENTIAL STRATEGY
 Grid.CFL=Sequential.CFL;

@@ -1,3 +1,10 @@
+%Assemble Pressure Matrix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [A] = AssemblePressureMatrix(Tx, Ty, Nx, Ny)
 N = Nx*Ny;
 %Construct pressure matrix

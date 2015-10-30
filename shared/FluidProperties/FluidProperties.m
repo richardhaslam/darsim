@@ -1,3 +1,10 @@
+%Fluid Properties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Fluid = FluidProperties(fplot)
 %Fluid Properties
 Fluid.muw=1*10^(-5);  

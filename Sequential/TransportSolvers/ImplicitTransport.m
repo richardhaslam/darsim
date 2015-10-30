@@ -1,3 +1,10 @@
+%Implicit transport solver
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Snew, ImplicitSolver, dt]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, ImplicitSolver, dt)
 %Implicit Transport Solver
 Nx=Grid.Nx;

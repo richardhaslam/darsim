@@ -1,5 +1,10 @@
 % ASSIGN FATHERS
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Fine Grid
 FineGrid.Father = zeros(FineGrid.N, maxLevel);
 FineGrid.Centers = zeros(FineGrid.N, maxLevel);

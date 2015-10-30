@@ -1,3 +1,10 @@
+%ADM - Prolong solution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Delta = Prolong(Delta_c, Pp, Ps, maxLevel)
 %Prolongs pressure Solution from DLGR grid to fine Grid
 Nc = length(Delta_c)/2;

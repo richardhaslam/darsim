@@ -1,3 +1,10 @@
+%ADM - Grid assembly
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [DLGRGrid, Tot] = AddActiveCells(DLGRGrid, Grid, Num, level)
 N = Grid.Nx*Grid.Ny;
 count = 0;

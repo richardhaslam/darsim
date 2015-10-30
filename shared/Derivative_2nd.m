@@ -1,3 +1,10 @@
+%Computes second derivative
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Ddf=Derivative_2nd(s, Fluid)
 %df^2/dS^2
 S = (s-Fluid.swc)/(1-Fluid.swc-Fluid.sor); % Rescale saturations

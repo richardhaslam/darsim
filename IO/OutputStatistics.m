@@ -1,4 +1,10 @@
 %OUTPUT Statistics on a file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (strcmp(Strategy, 'Sequential')==1)
     Statistics = [Sequential.ImplicitSolver.timestep; Sequential.ImplicitSolver.Chops; Sequential.ImplicitSolver.Newtons];
     fileID = fopen(strcat(Directory,'SeqStat.txt'),'w');

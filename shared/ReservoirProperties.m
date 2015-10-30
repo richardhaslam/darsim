@@ -1,5 +1,11 @@
-function [Grid, Inj, Prod, Lx, Ly, K] = ReservoirProperties(Problem)
 %Define Reservoir Properties, Grid and wells
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [Grid, Inj, Prod, Lx, Ly, K] = ReservoirProperties(Problem)
 %Dimensions
 Lx = 540;                              %Dimension in x−direction [m] 
 Ly = 540;                              %Dimension in y−direction [m]

@@ -1,10 +1,17 @@
+%SIMULATOR SETTINGS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [T, TimeStep, Options, Tol, Strategy, Sequential, FIM, PlotSolution] = SimulatorSettings()
 %SIMULATOR SETTINGS
 T = 200*24*3600;          %Total time of the simulation [s]
 TimeStep = 100000;
 Tol=10^(-3);
 
-Strategy = 'FIM'; %Sequential or FIM
+Strategy = 'Sequential'; %Sequential or FIM
 
 %%%%Sequential strategy settings
 Sequential.CFL=0.2;  %CFL number

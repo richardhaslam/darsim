@@ -1,3 +1,10 @@
+%Multilevel Multiscale Finite Volume method
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [P, U] = MMsFVPressureSolver(FineGrid, Inj, Prod, Kt, CoarseGrid, maxLevel)
 %MULTILEVEL MsFV method
 %% AsemblePressureMatrix

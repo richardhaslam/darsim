@@ -1,5 +1,10 @@
-%Injection and Production data
-
+%Plotting - Injection and Production data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure (6)
 subplot(2,1,1);
 plot(CumulativeTime(1:Ndt), Inj.water(1:Ndt));

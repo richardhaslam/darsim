@@ -1,3 +1,10 @@
+%FIM non-linear solver
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [P, S, U, dt, FIM, Timers, Converged, Inj, Prod] = ...
     FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Options, Ndt)
 

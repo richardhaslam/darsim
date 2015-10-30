@@ -1,3 +1,10 @@
+%Build FIM Jacobian matrix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo, U, dt, Inj, Prod, UpWind)
 %Build FIM Jacobian
 Nx=Grid.Nx; Ny=Grid.Ny; 

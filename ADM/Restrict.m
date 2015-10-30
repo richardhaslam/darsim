@@ -1,3 +1,10 @@
+%ADM - Restrict system
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [J_c, Residual_c] = Restrict(J, Residual, R, Pp, Ps, N, maxLevel)
 % Restrict system to DLGR Grid
 Jop = J(1:N, 1:N);

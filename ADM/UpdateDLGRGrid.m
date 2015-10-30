@@ -1,3 +1,10 @@
+%ADM - Update ADM grid
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function NewDLGRGrid = UpdateDLGRGrid(DLGRGrid, FineGrid, Nc, Nf, Nx)
 level = DLGRGrid.level(end);
 [r, c] = size(DLGRGrid.Father);

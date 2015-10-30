@@ -1,3 +1,10 @@
+%ADM - Define possible active cells for level l
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Active = DefinePossibleActive(CoarseGrid, FineGrid, level)
 % For a given level defines possible active cells
 Active = ones(CoarseGrid.Nx*CoarseGrid.Ny,1);

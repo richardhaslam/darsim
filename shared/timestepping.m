@@ -1,5 +1,11 @@
+%Time-step selection
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function dt = timestepping(Fluid, S, Grid, U, Wells)
-%Timestepping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Returns the timestep size based on the velocity field, the Grid and the
 %fluid present. CFL condition is used. 

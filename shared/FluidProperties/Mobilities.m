@@ -1,3 +1,10 @@
+%Phase mobilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid)
 %Phase Mobilities
 S = (s-Fluid.swc)/(1-Fluid.swc-Fluid.sor); % Rescale saturations

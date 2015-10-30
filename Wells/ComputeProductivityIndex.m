@@ -1,3 +1,10 @@
+%Compute Productivity Index of a well
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function PI = ComputeProductivityIndex(r_w, Kx, Ky, Dx, Dy, h)
 %Computes productivity index of a well
 %1. Compute equivalent well block radius

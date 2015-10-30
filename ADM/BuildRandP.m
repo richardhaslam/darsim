@@ -1,3 +1,10 @@
+%ADM - Build R and P for static coarse grids
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [R, Pp, Ps, NewDLGRGrid] = BuildRandP(FineGrid, CoarseGrid, DLGRGrid, level, Nc, Nf, Nx)
 % Construct R and P from level l+1 to level l
 

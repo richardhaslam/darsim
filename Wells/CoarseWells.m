@@ -1,3 +1,10 @@
+%Assign Wells to coarse cells
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [CoarseGrid] = CoarseWells(FineGrid, CoarseGrid, maxLevel, Inj, Prod)
 % Flag coarse Nodes with wells
 I = Inj.x + (Inj.y - 1)*FineGrid.Nx;

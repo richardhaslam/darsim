@@ -1,3 +1,10 @@
+%Permutation operator (coarse grid ordering)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: H. Hajibeygi
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Gc = PermutationOperatorCoarse(CoarseGrid, FineGrid)
 % Permutation operator based on coarse grid ordering
  

@@ -1,3 +1,10 @@
+%ADM - Average saturation on coarse blocks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [P_, S_] = Average(P, S, CoarseGrid, FineGrid)
 %Average Solution on Coarse Blocks
 Nc = CoarseGrid.Nx*CoarseGrid.Ny;

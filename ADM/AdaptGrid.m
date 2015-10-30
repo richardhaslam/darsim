@@ -1,3 +1,10 @@
+%ADM - Grid construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [DLGRGrid, ActiveFine, CoarseGrid, FineGrid] = AdaptGrid(FineGrid, CoarseGrid, S, Ro, Rw, maxLevel, tol)
 % Coarsen the grid where resolution is not necessary
 global NoWellsCoarseCells

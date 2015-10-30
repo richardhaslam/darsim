@@ -1,3 +1,10 @@
+%Construct a coarse grid
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [CoarseGrid] = BuildCoarseGrid(Grid, CoarseGrid)
 %Construct a coarse Grid given coarsening ration and fine Grid
 CoarseGrid.Nx = Grid.Nx/CoarseGrid.CoarseFactor(1);

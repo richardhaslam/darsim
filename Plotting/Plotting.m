@@ -1,4 +1,10 @@
-%Plots Pressure and Saturation
+%Plotting - Pressure and Saturation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Pressure_3D=Options.Pressure_3D;
 problem_1D=Options.problem_1D;
 if (problem_1D==1)

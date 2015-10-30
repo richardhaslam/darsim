@@ -1,3 +1,10 @@
+%ADM - Construct ADM R and P 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [R, Pp, Ps] = ConstructOperators(FineGrid, CoarseGrid, DLGRGrid)
 %Construct DLGR R and P
 R = struct('matrix', {});

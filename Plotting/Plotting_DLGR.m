@@ -1,4 +1,10 @@
-% Plot Solution
+%Plotting - ADM pressure and saturation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 x=linspace(0, Lx-10, Grid.Nx);
 y=linspace(0, Ly-10, Grid.Ny);
 [X, Y] = meshgrid(x,y);

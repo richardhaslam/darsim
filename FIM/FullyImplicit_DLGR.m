@@ -1,3 +1,10 @@
+%ADM FIM non-linear solver
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [P, S, U, dt, FIM, Timers, ActiveFine, CoarseGrid, FineGrid, Converged, Inj, Prod, Prolp] = ...
     FullyImplicit_DLGR(P0, S0, K, Trx, Try, FineGrid, CoarseGrid,...
     Fluid, Inj, Prod, FIM, dt, Options, Ndt, ADMSettings)

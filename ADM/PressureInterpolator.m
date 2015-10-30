@@ -1,3 +1,10 @@
+%ADM - Pressure Interpolator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function CoarseGrid = PressureInterpolator(FineGrid, Kt, CoarseGrid, maxLevel, Pressure_Interpolator)
 % Restriction and Prolongation for Pressure blocks
 switch (Pressure_Interpolator)

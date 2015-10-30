@@ -1,3 +1,10 @@
+%ADM - Select active blocks for a given level l
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [FineGrid, CoarseGrid] = SelectCoarseFine(FineGrid, CoarseGrid, level, RefinementCriterion, S, Rw, Ro, tol)
 %Given a Fine and a Coarse Grids chooses the cells that have to be active
 %1. Select Active Coarse Blocks
