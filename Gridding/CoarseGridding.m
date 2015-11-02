@@ -27,7 +27,7 @@ maxLevel = ADMSettings.maxLevel;
 CoarseGrid = struct('CoarseFactor', {}, 'Nx', {}, 'Ny', {}, ...
     'I', {}, 'J', {},'Father', {}, 'Active', {}, 'Wells', {}, 'Neighbours', {}, 'Centers', {});
 for i=1:maxLevel
-    CoarseGrid(i).CoarseFactor = Coarsening(i,:);
+    CoarseGrid(i).CoarseFactor = ADMSettings.Coarsening(i,:);
     CoarseGrid(i) = BuildCoarseGrid(FineGrid, CoarseGrid(i));
 end
 AssignFathers;

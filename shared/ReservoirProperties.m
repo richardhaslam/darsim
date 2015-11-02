@@ -5,38 +5,35 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Grid, Inj, Prod, Lx, Ly, K] = ReservoirProperties(Problem)
+function [Grid, K] = ReservoirProperties(size, grid, perm, inputMatrix)
 %Dimensions
-Lx = 540;                              %Dimension in x−direction [m] 
-Ly = 540;                              %Dimension in y−direction [m]
-h = 1;                                  %Reservoir thickness [m]
+Grid.Lx = str2double(inputMatrix(size +1));                              %Dimension in x−direction [m] 
+Grid.Ly = str2double(inputMatrix(size +2));                              %Dimension in y−direction [m]
+h = str2double(inputMatrix(size + 3));                                   %Reservoir thickness [m]
 
 %Gridding
-Grid.Nx = 54; 
-Grid.dx = Lx/Grid.Nx; 
-Grid.Ny = 54; 
-Grid.dy = Ly/Grid.Ny; 
+Grid.Nx = str2double(inputMatrix(grid +1)); 
+Grid.dx = Grid.Lx/Grid.Nx; 
+Grid.Ny = str2double(inputMatrix(grid +2)); 
+Grid.dy = Grid.Ly/Grid.Ny; 
 Grid.Ax = Grid.dy*h;                    %Cross section in x direction
 Grid.Ay = Grid.dx*h;                    %Cross section in y direction
 Grid.Volume = Grid.dx.*Grid.dy*h;       %Cell volume [m^3]
 Grid.por = 0.2;                         %Porosity
+Grid.N = Grid.Nx*Grid.Ny;  
 
 %Rock permeability in [m^2].
-K = ReadPerm(Grid, Problem);
-
-%%%%Wells%%%%
-%Injection wells
-Inj.r = 0.15; %Well radius in m
-Inj.p = 10^5; %[Pa]
-Inj.x = 1;
-Inj.y = Grid.Ny;
-Inj.PI = ComputeProductivityIndex(Inj.r, K(1, Inj.x, Inj.y), K(2, Inj.x, Inj.y), Grid.dx, Grid.dy, 1);
-%Production Wells
-Prod.r = 0.15; %Well radius in m
-Prod.p = 0; %[Pa]
-Prod.x = Grid.Nx;
-Prod.y = 1;
-Prod.PI = ComputeProductivityIndex(Prod.r, K(1, Prod.x, Prod.y), K(2, Prod.x, Prod.y), Grid.dx, Grid.dy, 1);
-%%Plot Permeability Field
-PlotPermeability(K, Grid, Lx, Ly);
+if strcmp(inputMatrix(perm - 1), 'INCLUDE')
+    file  = strcat('../Permeability/', char(inputMatrix(perm +1)));      % HERE YOU MENTION THE NAME OF THE FILE
+    field = load(file);     % HERE YOU LOAD IT
+    fieldX = field(2:2:length(field));      % HEAR YOU JUST READ THE KX ONES
+    fieldX = reshape(fieldX,[60 220])';     % HERE YOU MAKE IT 60x220
+    Kx = reshape(fieldX(1:Grid.Nx,1:Grid.Ny)*10^(-12), Grid.N, 1);  % HERE YOU TAKE THE SIZE YOU LIKE
+    Ky =  Kx;
+    K=reshape([Kx, Ky]', 2, Grid.Nx, Grid.Ny);
+else
+    Kx = ones(Grid.N,1)*10^(-12);
+    Ky = ones(Grid.N,1)*10^(-12);
+    K=reshape([Kx, Ky]', 2, Grid.Nx, Grid.Ny);
+end
 end

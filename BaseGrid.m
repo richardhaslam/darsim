@@ -111,7 +111,7 @@ while (t<T && Ndt <= TimeSteps)
     if (Grid.Nx == 1 || Grid.Ny == 1)
             Options.problem_1D=1;
     end
-    if (PlotSolution == 1)
+    if (Options.PlotSolution == 1)
         Plotting;
     end
     

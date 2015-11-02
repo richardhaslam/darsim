@@ -7,16 +7,69 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %ReadInputFile
+InputFile = '../Input/SPE10T.txt';
 fileID = fopen(InputFile, 'r');
 %// Read lines from input file
-C = textscan(fileID, '%s', 'Delimiter', '\n');
+inputMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
 fclose(fileID);
+temp = strfind(inputMatrix{1}, 'TITLE'); % Search a specific string and find all rows containing matches
+Problem = inputMatrix{1}(find(~cellfun('isempty', temp)) + 1);
 
-%Reservoir Properties
-%// Search a specific string and find all rows containing matches
-grid = strfind(C{1}, 'GRID');
-rows = find(~cellfun('isempty', C));
+%%%%%%%%%%%%%PROPERTIES OF THE RESERVOIR%%%%%%%%%%%%%%%%
+temp = strfind(inputMatrix{1}, 'DIMENS'); % Search a specific string and find all rows containing matches
+size = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'SPECGRID');
+grid = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'PERMX'); 
+perm = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'TOTALTIME');
+x = find(~cellfun('isempty', temp));
+T = str2double(inputMatrix{1}(x + 1))*24*3600;
+[Grid, K]=ReservoirProperties(size, grid, perm, inputMatrix{1});
+clear temp size grid perm x
 
-%Fluid Properties
+%%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
+fplot = 0;    %if 1 the fractional function curves are plotted
+temp = strfind(inputMatrix{1}, 'VISCOSITY'); % Search a specific string and find all rows containing matches
+viscosity = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'RELPERM');
+relperm = find(~cellfun('isempty', temp));
+Fluid = FluidProperties(viscosity, relperm, inputMatrix{1});
+clear temp viscosity relperm;
 
-%Simulator Settings
+%%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
+temp = strfind(inputMatrix{1}, 'INJ'); % Search a specific string and find all rows containing matches
+inj = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'PROD');
+prod = find(~cellfun('isempty', temp));
+[Inj, Prod] = WellsProperties(inj, prod, inputMatrix{1}, Grid,K);
+%%%%Properties of Injected fluid%%%%
+[Inj.Mw, Inj.Mo, Inj.dMw, Inj.dMo] = Mobilities(1,Fluid);
+clear temp inj prod inputMatrix;
+
+%%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
+InputFile = '../Input/SimulatorSettings.txt';
+fileID = fopen(InputFile, 'r');
+%// Read lines from input file
+inputMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
+fclose(fileID);
+temp = strfind(inputMatrix{1}, 'FIM'); % Search a specific string and find all rows containing matches
+settings = find(~cellfun('isempty', temp));
+if settings ~= 0
+    Strategy = 'FIM';
+    impsat = 0;
+else
+    Strategy = 'Sequential';
+    temp = strfind(inputMatrix{1}, 'SEQUENTIAL'); % Search a specific string and find all rows containing matches
+    settings = find(~cellfun('isempty', temp));
+    temp = strfind(inputMatrix{1}, 'IMPSAT');
+    impsat = find(~cellfun('isempty', temp));
+end
+temp = strfind(inputMatrix{1}, 'TIMESTEPS');
+x = find(~cellfun('isempty', temp));
+TimeSteps = str2double(inputMatrix{1}(x+1));
+temp = strfind(inputMatrix{1}, 'ADM');
+adm = find(~cellfun('isempty', temp));
+[Options, FIM, Sequential, ADMSettings] = ...
+    SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix);
+clear settings impsat adm inputMatrix x

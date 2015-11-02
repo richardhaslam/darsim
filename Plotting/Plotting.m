@@ -9,7 +9,7 @@ Pressure_3D=Options.Pressure_3D;
 problem_1D=Options.problem_1D;
 if (problem_1D==1)
     %Plot for 1D problems
-    x=linspace(Lx/(2*Grid.Nx), (2*Grid.Nx*Lx-Lx)/(2*Grid.Nx), Grid.Nx);
+    x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
     figure(4)
     subplot(2,1,1);
     plot(x, P);
@@ -19,7 +19,7 @@ if (problem_1D==1)
     hold on;
     subplot(2,1,2);
     plot(x, S);
-    axis([0 Lx 0 1]);
+    axis([0 Grid.Lx 0 1]);
     title('Saturation of water');
     xlabel('x [m]');
     ylabel('Saturation');
@@ -27,8 +27,8 @@ if (problem_1D==1)
     drawnow;
 else
     %Plot for 2D problems
-    x=linspace(Lx/(2*Grid.Nx), (2*Grid.Nx*Lx-Lx)/(2*Grid.Nx), Grid.Nx);
-    y=linspace(Ly/(2*Grid.Ny), (2*Grid.Ny*Ly-Ly)/(2*Grid.Ny), Grid.Ny);
+    x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
+    y=linspace(Grid.Ly/(2*Grid.Ny), (2*Grid.Ny*Grid.Ly-Grid.Ly)/(2*Grid.Ny), Grid.Ny);
     [X, Y] = meshgrid(x,y);
     %Contour Plot
     if (Options.ContourPlot==1)

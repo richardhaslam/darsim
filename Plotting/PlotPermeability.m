@@ -5,10 +5,10 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function PlotPermeability(Perm, Grid, Lx, Ly)
+function PlotPermeability(Perm, Grid)
 %Plot permeability
-x=linspace(0, Lx-10, Grid.Nx);
-y=linspace(0, Ly-10, Grid.Ny);
+x=linspace(0, Grid.Lx-10, Grid.Nx);
+y=linspace(0, Grid.Ly-10, Grid.Ny);
 [X, Y] = meshgrid(x,y);
 %Use log scale
 K(:,:) = Perm(1,:,:);

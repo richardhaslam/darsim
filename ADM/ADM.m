@@ -65,7 +65,7 @@ while (t<T && Ndt <= TimeSteps)
                 
                 %Pressure Interpolator
                 disp('Pressure interpolator - start computation');
-                CoarseGrid = PressureInterpolator(FineGrid, Kt, CoarseGrid, maxLevel, Pressure_Interpolator);
+                CoarseGrid = PressureInterpolator(FineGrid, Kt, CoarseGrid, maxLevel, ADMSettings.Pressure_Interpolator);
                 disp('Pressure interpolator - end')
                 disp(char(2));
                                
@@ -118,7 +118,7 @@ while (t<T && Ndt <= TimeSteps)
     end
     
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-    if (PlotSolution == 1)
+    if (Options.PlotSolution == 1)
         if (Grid.Nx == 1 || Grid.Ny == 1)
             Options.problem_1D=1;
         end
