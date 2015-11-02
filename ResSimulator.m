@@ -8,7 +8,7 @@
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
-InputFile = '../Input/SPE10T.txt';
+InputFile = '../Input/DARSim1.txt';
 ReadInputFile;
 
 %%Plot Permeability Field

@@ -24,11 +24,10 @@ Grid.N = Grid.Nx*Grid.Ny;
 
 %Rock permeability in [m^2].
 if strcmp(inputMatrix(perm - 1), 'INCLUDE')
-    file  = strcat('../Permeability/', char(inputMatrix(perm +1)));      % HERE YOU MENTION THE NAME OF THE FILE
-    field = load(file);     % HERE YOU LOAD IT
-    fieldX = field(2:2:length(field));      % HEAR YOU JUST READ THE KX ONES
-    fieldX = reshape(fieldX,[60 220])';     % HERE YOU MAKE IT 60x220
-    Kx = reshape(fieldX(1:Grid.Nx,1:Grid.Ny)*10^(-12), Grid.N, 1);  % HERE YOU TAKE THE SIZE YOU LIKE
+    file  = strcat('../Permeability/', char(inputMatrix(perm +1))); %File name
+    field = load(file);     %load the file in a vector
+    field = reshape(field(3:end),[field(1) field(2)]);     % reshape it to specified size
+    Kx = reshape(field(1:Grid.Nx,1:Grid.Ny)*10^(-12), Grid.N, 1);  % make it the size of the grid
     Ky =  Kx;
     K=reshape([Kx, Ky]', 2, Grid.Nx, Grid.Ny);
 else

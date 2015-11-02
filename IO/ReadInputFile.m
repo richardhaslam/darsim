@@ -7,7 +7,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %ReadInputFile
-InputFile = '../Input/SPE10T.txt';
 fileID = fopen(InputFile, 'r');
 %// Read lines from input file
 inputMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
