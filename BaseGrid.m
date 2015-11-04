@@ -67,7 +67,6 @@ while (t<T && Ndt <= TimeSteps)
                 
                 %Compute rock transmissibility
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
-                P0 = ones(Grid.Nx, Grid.Ny)*1.5;
                 [P, S, U, dT, FIM, Timers, Converged, Inj, Prod] = ...
                 FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Options, Ndt);
             else
@@ -99,6 +98,7 @@ while (t<T && Ndt <= TimeSteps)
     t=t+dT;    
     Ndt=Ndt+1;
     CumulativeTime(Ndt) = t/(3600*24);
+    
     %Print solution to a file at fixed intervals
     if (t == Tstops(index))
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
@@ -108,12 +108,16 @@ while (t<T && Ndt <= TimeSteps)
     end
       
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-    if (Grid.Nx == 1 || Grid.Ny == 1)
+    switch (Options.PlotSolution)
+        case('Matlab')
+            if (Grid.Nx == 1 || Grid.Ny == 1)
             Options.problem_1D=1;
-    end
-    if (Options.PlotSolution == 1)
+            end
         Plotting;
+        case('VTK')
+            Write2VTK(Directory, Problem, Ndt, Grid, K, P, S);
     end
+    
     
     %%%%%%%%%%%%%TImers of each timestep%%%%%%%%
     if (strcmp(Strategy, 'Sequential') == 1)
@@ -128,5 +132,5 @@ end
 %% Injection and Production data
 %PlotInjProdCurves
 
-%% %%%Output%%%%%%%%%%%%%%%%%
+%% Output
 OutputStatistics

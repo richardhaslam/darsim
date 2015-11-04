@@ -8,8 +8,13 @@
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
-InputFile = '../Input/SPE10T.txt';
+InputDirectory = '../Input/SPE10T';
+InputFile = strcat(InputDirectory, '/SPE10T.txt');
 ReadInputFile;
+if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
+  mkdir(InputDirectory,'Output/VTK');
+end
+Directory = strcat(InputDirectory,'/Output/');
 
 %%Plot Permeability Field
 PlotPermeability(K, Grid);
@@ -35,14 +40,12 @@ switch (ADMSettings.active)
     case (1)
         %ADM Settings
         FIM.ActiveCells = zeros(TimeSteps, ADMSettings.maxLevel + 1);
-        Directory = strcat('../Output/');
         disp('ADM SIMULATION');
         TotalStart = tic;
         ADM;
         TotalTime = toc(TotalStart);
     case (0)
         disp('Base Grid SIMULATION');
-        Directory = strcat('../Output/'); % Output is saved in this directory
         TotalStart = tic;
         BaseGrid;
         TotalTime = toc(TotalStart);

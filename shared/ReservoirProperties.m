@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Grid, K] = ReservoirProperties(size, grid, perm, inputMatrix)
+function [Grid, K] = ReservoirProperties(size, grid, perm, por, inputMatrix)
 %Dimensions
 Grid.Lx = str2double(inputMatrix(size +1));                              %Dimension in x−direction [m] 
 Grid.Ly = str2double(inputMatrix(size +2));                              %Dimension in y−direction [m]
@@ -19,7 +19,7 @@ Grid.dy = Grid.Ly/Grid.Ny;
 Grid.Ax = Grid.dy*h;                    %Cross section in x direction
 Grid.Ay = Grid.dx*h;                    %Cross section in y direction
 Grid.Volume = Grid.dx.*Grid.dy*h;       %Cell volume [m^3]
-Grid.por = 0.2;                         %Porosity
+Grid.por = str2double(inputMatrix(por + 1));   %Porosity
 Grid.N = Grid.Nx*Grid.Ny;  
 
 %Rock permeability in [m^2].
