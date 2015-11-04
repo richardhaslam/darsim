@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Options, FIM, Sequential, ADMSettings] = ...
+function [FIM, Sequential, ADMSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix)
 %SIMULATOR SETTINGS
 switch (Strategy)
@@ -56,11 +56,4 @@ if (str2double(inputMatrix{1}(adm + 1))~=0)
 else
     ADMSettings.active = 0;
 end
-
-%%%%Plotting options
-Options.PlotSolution = 0; % 0 or 1: if 0 no plot, 1 solution is plot during the simulation
-Options.Pressure_3D = 0; % 0 or 1, if 1 pressure plot in 3D
-Options.problem_1D = 0; % if 1, the plotting for a 1D problem is activated
-Options.ContourPlot = 0; % If 1 dynamic contour plot
-Options.PlotResiduals = 0; % If 1 Residuals are plotted
 end
