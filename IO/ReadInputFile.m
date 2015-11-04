@@ -80,5 +80,4 @@ temp = strfind(inputMatrix{1}, 'ADM');
 adm = find(~cellfun('isempty', temp));
 [FIM, Sequential, ADMSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix);
->>>>>>> f50065e1e3be5433a8ff4f0e404069d0f6293725
 clear settings impsat adm inputMatrix x
