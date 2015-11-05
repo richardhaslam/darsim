@@ -51,5 +51,4 @@ switch (ADMSettings.active)
         TotalTime = toc(TotalStart);
 end
 disp(char(10));
->>>>>>> f50065e1e3be5433a8ff4f0e404069d0f6293725
 disp(['The Total Simulation time is ' num2str(TotalTime) ' s']);
