@@ -125,7 +125,7 @@ while (t<T && Ndt <= TimeSteps)
             end
         Plotting_DLGR;
         case('VTK')
-            Write2VTK(Directory, Problem, Ndt, Grid, K, P, S);
+            Write2VTK(Directory, Problem, Ndt, FineGrid, K, P, S, CoarseGrid);
     end
     
     %%%%%%%%%%%%%Timers
