@@ -117,12 +117,15 @@ while (t<T && Ndt <= TimeSteps)
         index = index + 1;
     end
     
-    %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-    if (Options.PlotSolution == 1)
-        if (Grid.Nx == 1 || Grid.Ny == 1)
+     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
+    switch (Options.PlotSolution)
+        case('Matlab')
+            if (Grid.Nx == 1 || Grid.Ny == 1)
             Options.problem_1D=1;
-        end
+            end
         Plotting_DLGR;
+        case('VTK')
+            Write2VTK(Directory, Problem, Ndt, Grid, K, P, S);
     end
     
     %%%%%%%%%%%%%Timers

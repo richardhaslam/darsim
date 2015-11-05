@@ -36,5 +36,9 @@ fprintf(fileID, '\n');
 %Saturation
 PrintScalar2VTK(fileID, reshape(S, Grid.N, 1), ' SATURATION');
 fprintf(fileID, '\n');
+if (nargin > 7)
+    %ADD ADM coarse grids
+    
+end
 fclose(fileID);
 end

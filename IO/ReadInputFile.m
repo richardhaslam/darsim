@@ -48,13 +48,6 @@ prod = find(~cellfun('isempty', temp));
 [Inj.Mw, Inj.Mo, Inj.dMw, Inj.dMo] = Mobilities(1,Fluid);
 clear temp inj prod inputMatrix;
 
-%%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
-Options.PlotSolution = 'VTK'; %Matlab or VTK
-Options.Pressure_3D = 0; % 0 or 1, if 1 pressure plot in 3D
-Options.problem_1D = 0; % if 1, the plotting for a 1D problem is activated
-Options.ContourPlot = 0; % If 1 dynamic contour plot
-Options.PlotResiduals = 0; % If 1 Residuals are plotted
-
 %%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
 InputFile = strcat(InputDirectory, '/SimulatorSettings.txt');
 fileID = fopen(InputFile, 'r');
@@ -80,4 +73,13 @@ temp = strfind(inputMatrix{1}, 'ADM');
 adm = find(~cellfun('isempty', temp));
 [FIM, Sequential, ADMSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix);
+%%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
+temp = strfind(inputMatrix{1}, 'OUTPUT');
+x = find(~cellfun('isempty', temp));
+Options.PlotSolution = char(inputMatrix{1}(x+1)); %Matlab or VTK
+Options.Pressure_3D = 0; % 0 or 1, if 1 pressure plot in 3D
+Options.problem_1D = 0; % if 1, the plotting for a 1D problem is activated
+Options.ContourPlot = 0; % If 1 dynamic contour plot
+Options.PlotResiduals = 0; % If 1 Residuals are plotted
+
 clear settings impsat adm inputMatrix x

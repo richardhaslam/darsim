@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%cd('MatteoResSim/2D_code')
+cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
 InputDirectory = '../Input/SPE10T';
 InputFile = strcat(InputDirectory, '/SPE10T.txt');
 ReadInputFile;
