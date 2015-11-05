@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, CoarseGrid)
+function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, CoarseGrid, maxLevel)
 %Write a VTK file
 fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
 fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -39,28 +39,30 @@ fprintf(fileID, '\n');
 if (nargin > 7)
     %ADD ADM coarse grids
     PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
-    fclose(fileID);
-    fileID = fopen(strcat(Directory,'/VTK/',Problem,'Level1',num2str(timestep - 1),'.vtk'), 'w');
-    fprintf(fileID, '# vtk DataFile Version 2.0\n');
-    fprintf(fileID, strcat(Problem, ' results: Matteo Simulator\n'));
-    fprintf(fileID, 'ASCII\n');
-    fprintf(fileID, '\n');
-    fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
-    fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(1).Nx +1, CoarseGrid(1).Ny+1, 2);
-    fprintf(fileID, '\n');
-    fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(1).Nx+1) ' float\n']);
-    fprintf(fileID, '%f ', 0:3:Grid.Nx);
-    fprintf(fileID, '\n');
-    fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(1).Ny+1) ' float\n']);
-    fprintf(fileID, '%f ', 0:3:Grid.Ny);
-    fprintf(fileID, '\n');
-    fprintf(fileID, 'Z_COORDINATES 2 float\n');
-    fprintf(fileID, '%d ', [0 1]);
-    fprintf(fileID, '\n');
-    fprintf(fileID, '\n');
-    fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(1).Nx*CoarseGrid(1).Ny);
-    PrintScalar2VTK(fileID, CoarseGrid(1).Active, ' ActiveCoarse');
-    fprintf(fileID, '\n');
+    for i=1:maxLevel
+        fclose(fileID);
+        fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(i),'Level',num2str(timestep - 1),'.vtk'), 'w');
+        fprintf(fileID, '# vtk DataFile Version 2.0\n');
+        fprintf(fileID, strcat(Problem, ' results: Matteo Simulator\n'));
+        fprintf(fileID, 'ASCII\n');
+        fprintf(fileID, '\n');
+        fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
+        fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx +1, CoarseGrid(i).Ny+1, 2);
+        fprintf(fileID, '\n');
+        fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i).Nx+1) ' float\n']);
+        fprintf(fileID, '%f ', 0:3^i:Grid.Nx);
+        fprintf(fileID, '\n');
+        fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i).Ny+1) ' float\n']);
+        fprintf(fileID, '%f ', 0:3^i:Grid.Ny);
+        fprintf(fileID, '\n');
+        fprintf(fileID, 'Z_COORDINATES 2 float\n');
+        fprintf(fileID, '%d ', [0 1]);
+        fprintf(fileID, '\n');
+        fprintf(fileID, '\n');
+        fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).Nx*CoarseGrid(i).Ny);
+        PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+        fprintf(fileID, '\n');
+    end
 end
 fclose(fileID);
 end
