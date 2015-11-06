@@ -8,8 +8,8 @@
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
-InputDirectory = '../Input/SPE10T';
-InputFile = strcat(InputDirectory, '/SPE10T.txt');
+InputDirectory = '../Input/DARSIM';
+InputFile = strcat(InputDirectory, '/DARSim.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
   mkdir(InputDirectory,'Output/VTK');

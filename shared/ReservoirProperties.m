@@ -28,7 +28,7 @@ if strcmp(inputMatrix(perm - 1), 'INCLUDE')
     field = load(file);     %load the file in a vector
     field = reshape(field(3:end),[field(1) field(2)]);     % reshape it to specified size
     Kx = reshape(field(1:Grid.Nx,1:Grid.Ny)*10^(-12), Grid.N, 1);  % make it the size of the grid
-    Ky =  Kx;
+    Ky = Kx;
     K=reshape([Kx, Ky]', 2, Grid.Nx, Grid.Ny);
 else
     Kx = ones(Grid.N,1)*10^(-12);
