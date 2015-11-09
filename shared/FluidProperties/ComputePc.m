@@ -18,25 +18,30 @@ switch(Fluid.Pc)
         e=100;
         %Compute Pc and dPc analytically
         Pc = a + b*(1-S) + c*(1-S).^2 + d*(1-S).^3 +e*(1-S).^4;
-        dPc = - b - 2*(1-S) - d*3*(1-S).^2 + e*4*(1-S).^3;
+        dPc = - b - 2*c*(1-S) - d*3*(1-S).^2 - e*4*(1-S).^3;
     case('BrooksCorey')
         %Define parameters
         Pct = 700;
         lambda = 2.5;
         %Compute Pc and dPc analytically
         Pc = Pct.*((1-Fluid.swc)./(S-Fluid.swc)).^(1/lambda);
-        dPc = 1;
+        dPc = Pct*((1 - Fluid.swc)./(S - Fluid.swc)).^(1/lambda)./(lambda*(Fluid.swc - S));
     case('BentsenAnli')
         %Define parameters
         Pct = 700;
         Pcs = 350;
         %Compute Pc and dPc analytically
-        Pc = Pct - Pcs.*log(S-Fluid.swc/1-Fluid.swc);
-        dPc = 1;
+        Pc = Pct - Pcs.*log((S-Fluid.swc)/(1-Fluid.swc));
+        dPc = Pcs./(Fluid.swc - S);
 end
-% figure(125);
-% plot(S, Pc);
-% xlabel('water saturation');
-% ylabel('Pcow [Pa]');
+figure(125);
+subplot(1,2,1);
+plot(S, Pc);
+xlabel('water saturation');
+ylabel('Pcow [Pa]');
+subplot(1,2,2);
+plot(S, dPc);
+xlabel('water saturation');
+ylabel('dPc/dS');
 end
 
