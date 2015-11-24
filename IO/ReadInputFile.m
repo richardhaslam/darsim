@@ -80,7 +80,7 @@ temp = strfind(inputMatrix{1}, 'OUTPUT');
 x = find(~cellfun('isempty', temp));
 Options.PlotSolution = char(inputMatrix{1}(x+1)); %Matlab or VTK
 Options.Pressure_3D = 0; % 0 or 1, if 1 pressure plot in 3D
-Options.problem_1D = 1; % if 1, the plotting for a 1D problem is activated
+Options.problem_1D = 0; % if 1, the plotting for a 1D problem is activated
 Options.ContourPlot = 0; % If 1 dynamic contour plot
 Options.PlotResiduals = 0; % If 1 Residuals are plotted
 

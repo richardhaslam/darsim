@@ -21,7 +21,7 @@ Directory = strcat(InputDirectory,'/Output/');
 
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
-S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
+S = ones(Grid.Nx, Grid.Ny, 1)*Fluid.swc;
 Inj.water = zeros(TimeSteps+1,1);
 Prod.water = zeros(TimeSteps+1,1);
 Prod.oil = zeros(TimeSteps+1,1);

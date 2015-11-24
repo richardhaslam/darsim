@@ -65,7 +65,7 @@ while (Converged==0 && Iter <= MaxExtIter)
     %5. Compute DeltaS to check convergence
     Delta=(S-Sold);
     DeltaNorm = norm(reshape(Delta, N,1));
-    if (DeltaNorm < Tol)
+    if (DeltaNorm < Tol || MaxExtIter==1)
         Converged=1;
     end
     Iter=Iter+1;
