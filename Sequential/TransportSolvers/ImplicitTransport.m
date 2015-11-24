@@ -65,7 +65,7 @@ while (converged==0)   %If it does not converge the timestep is chopped
         s_old=snew;
         snew = s_old+dS;
         snew = min(snew,1);
-        snew = max(snew,0);
+        snew = max(snew,Fluid.swc);
         
         % FLUX CORRECTION - PATRICK
         if (ImplicitSolver.fluxfunction==2)

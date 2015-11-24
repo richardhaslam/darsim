@@ -77,8 +77,8 @@ while (Converged==0 && chops <= 20)
         
         % 4. Check convergence criteria
         Norm1 = max(norm(Ro, inf), norm(Rw, inf));
-        %Norm2 = norm(Delta(N+1:2*N), inf);
-        if (Norm1 < Tol) %&& Norm2 < Tol)
+        Norm2 = norm(Delta(N+1:2*N), inf);
+        if (Norm1 < Tol && Norm2 < Tol)
             Converged = 1;
         end
         itCount = itCount+1;
