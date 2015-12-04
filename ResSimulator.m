@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
+%cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
 InputDirectory = '../Input/DARSIM';
 InputFile = strcat(InputDirectory, '/DARSim.txt');
 ReadInputFile;
