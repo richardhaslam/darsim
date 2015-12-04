@@ -8,8 +8,8 @@
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
-InputDirectory = '../Input/DARSIM';
-InputFile = strcat(InputDirectory, '/DARSim.txt');
+InputDirectory = '../Input/Homo_GasOil';
+InputFile = strcat(InputDirectory, '/Homogeneous.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
   mkdir(InputDirectory,'Output/VTK');
@@ -17,11 +17,11 @@ end
 Directory = strcat(InputDirectory,'/Output/');
 
 %%Plot Permeability Field
-PlotPermeability(K, Grid);
+%PlotPermeability(K, Grid);
 
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
-S = ones(Grid.Nx, Grid.Ny, 1)*0.0;
+S = ones(Grid.Nx, Grid.Ny, 1)*Fluid.swc;
 Inj.water = zeros(TimeSteps+1,1);
 Prod.water = zeros(TimeSteps+1,1);
 Prod.oil = zeros(TimeSteps+1,1);

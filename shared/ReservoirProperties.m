@@ -12,7 +12,7 @@ Grid.Ly = str2double(inputMatrix(size +2));                              %Dimens
 h = str2double(inputMatrix(size + 3));                                   %Reservoir thickness [m]
 
 %Gridding
-Grid.Nx = str2double(inputMatrix(grid +1)); 
+Grid.Nx = str2double(inputMatrix(grid +1));
 Grid.dx = Grid.Lx/Grid.Nx; 
 Grid.Ny = str2double(inputMatrix(grid +2)); 
 Grid.dy = Grid.Ly/Grid.Ny; 

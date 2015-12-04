@@ -35,8 +35,10 @@ temp = strfind(inputMatrix{1}, 'VISCOSITY'); % Search a specific string and find
 viscosity = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'RELPERM');
 relperm = find(~cellfun('isempty', temp));
-Fluid = FluidProperties(viscosity, relperm, inputMatrix{1});
-clear temp viscosity relperm;
+temp = strfind(inputMatrix{1}, 'CAPILLARITY');
+capillarity = find(~cellfun('isempty', temp));
+Fluid = FluidProperties(viscosity, relperm, capillarity, inputMatrix{1});
+clear temp viscosity relperm capillarity;
 
 %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
 temp = strfind(inputMatrix{1}, 'INJ'); % Search a specific string and find all rows containing matches
