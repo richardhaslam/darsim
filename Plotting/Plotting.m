@@ -32,11 +32,12 @@ else
     [X, Y] = meshgrid(x,y);
     %Contour Plot
     if (Options.ContourPlot==1)
-        figure(4)
-        suptitle([num2str(round(t/(3600*24))) ' days']);
+        %figure(4)
+        %suptitle([num2str(round(t/(3600*24))) ' days']);
         
         %Pressure plot
-        subplot(2,1,1);
+        %subplot(2,1,1);
+        figure(300)
         if (Pressure_3D==1)
             surf(X,Y,P,P);
         else
@@ -49,11 +50,16 @@ else
         xlabel('x [m]');
         ylabel('y [m]');
         c=colorbar;
+        pressuremax =max(max(P));
+        caxis ([0.99*pressuremax,pressuremax]);
+        axis ([0 100 0 100 0.99*pressuremax pressuremax]);
         ylabel(c,'p [Pa]');
+        view(75, 35);
         
         %Saturation plot
-        subplot(2,1,2);
-        contourf(x,y,S');
+        %subplot(2,1,2);
+        figure(400)
+        surf(X,Y,S,S);
         if (Grid.Nx==Grid.Ny)
             axis square;
         end
@@ -62,6 +68,7 @@ else
         title('Saturation of water');
         xlabel('x [m]');
         ylabel('y [m]');
+        view(75, 35);
         drawnow
     else
     % Grid plot
@@ -81,7 +88,8 @@ else
         ylabel('y [m]');
         colormap(jet);
         colorbar;
-        caxis ([Prod.p,Inj.p]);
+        pressuremax =max(max(P));
+        caxis ([0.99*pressuremax,pressuremax]);
         axis('image');
         set(gca,'fontsize',24);
         

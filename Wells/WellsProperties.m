@@ -14,10 +14,12 @@ Inj.p = str2double(inputMatrix(inj + 3)); %[Pa]
 Inj.x = str2double(inputMatrix(inj + 1));
 Inj.y = str2double(inputMatrix(inj + 2));
 Inj.PI = ComputeProductivityIndex(Inj.r, K(1, Inj.x, Inj.y), K(2, Inj.x, Inj.y), Grid.dx, Grid.dy, 1);
+Inj.PI = 10000;
 %Production Wells
 Prod.r = str2double(inputMatrix(prod + 4)); %Well radius in m
 Prod.p = str2double(inputMatrix(prod + 3)); %[Pa]
 Prod.x = str2double(inputMatrix(prod + 1));
 Prod.y = str2double(inputMatrix(prod + 2));
 Prod.PI = ComputeProductivityIndex(Prod.r, K(1, Prod.x, Prod.y), K(2, Prod.x, Prod.y), Grid.dx, Grid.dy, 1);
+Prod.PI = 10000;
 end

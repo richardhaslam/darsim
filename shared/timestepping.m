@@ -16,6 +16,16 @@ por=Grid.por;
 pv=por*Grid.Volume;   %Void Volume in each cell
 CFL=Grid.CFL;
 
+%%%%%%%%%%%%%% Foam? Compute based on worst-case scenario
+
+if (strcmp(Fluid.RelPerm,'Foam') == 1) 
+	A = linspace(Fluid.swc,1-Fluid.sor,Ny);
+	S = repmat(A,Nx,1);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 %Compute wave speed
 Sx=zeros(Nx+1,Ny);
 Sy=zeros(Nx,Ny+1);

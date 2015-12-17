@@ -7,12 +7,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-cd('/media/matteo/LinuxData/MatteoResSim/2D_code')
-InputDirectory = '../Input/Homo_GasOil';
+%cd('../Code')
+InputDirectory = '../Input/Homogeneous';
 InputFile = strcat(InputDirectory, '/Homogeneous.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
-  mkdir(InputDirectory,'Output/VTK');
+  mkdir(InputDirectory,'/Output/VTK');
 end
 Directory = strcat(InputDirectory,'/Output/');
 
@@ -22,6 +22,8 @@ Directory = strcat(InputDirectory,'/Output/');
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
 S = ones(Grid.Nx, Grid.Ny, 1)*Fluid.swc;
+%saturations = load('../Input/Homogeneous/InitSaturation.txt');
+%S = reshape(saturations(:,1), Grid.Nx, Grid.Ny);
 Inj.water = zeros(TimeSteps+1,1);
 Prod.water = zeros(TimeSteps+1,1);
 Prod.oil = zeros(TimeSteps+1,1);

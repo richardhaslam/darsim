@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, U, Wells, A, Ab, q]=PressureSolver(Grid, K, Inj, Prod)
+function [P, U, Wells, A, Ab, q]=PressureSolver(Grid, K, Inj, Prod, Mt)
 %PRESSURE Solver
 
 %1.Compute transmissibilities using harmonic average.
@@ -14,6 +14,8 @@ N = Grid.N;
 
 %Transmissibility
 [Tx, Ty] = ComputeTransmissibility(Grid, K);
+% Tx (2:Nx+1,:) = Tx(2:Nx+1,:).*Mt;
+% Ty (:,2:Ny+1) = Ty(:,2:Ny+1).*Mt;
 
 %Construct pressure matrix
 A = AssemblePressureMatrix(Tx, Ty, Nx, Ny);

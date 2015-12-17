@@ -30,7 +30,7 @@ while (Converged==0 && Iter <= MaxExtIter)
     Kt=zeros(2, Grid.Nx, Grid.Ny);
     Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [P, U, Wells]=PressureSolver(Grid, Kt, Inj, Prod);
+    [P, U, Wells]=PressureSolver(Grid, Kt, Inj, Prod, Mt);
     ptimer(Iter)=toc(tstart1);
     
     %2. Check mass balance

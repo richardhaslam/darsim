@@ -66,11 +66,20 @@ while (t<T && Ndt <= TimeSteps)
                 dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
                 
                 %Compute rock transmissibility
+                P0 = zeros(Grid.Nx, Grid.Ny);
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 [P, S, U, dT, FIM, Timers, Converged, Inj, Prod] = ...
                 FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Options, Ndt);
             else
                 dT = min(dT_CFL, maxdT(index));
+                % Use IMPES as intial guess for pressure for the 1st timestep
+                % Effective permeability
+                [Mw, Mo]=Mobilities(S, Fluid);
+                Mt=Mw+Mo;   %total mobility
+                Kt=zeros(2, Grid.Nx, Grid.Ny);
+                Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
+                Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
+                [P0]=PressureSolver(Grid, Kt, Inj, Prod);
                 [P, S, U, dT, FIM, Timers, Converged, Inj, Prod] = ...
                     FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Options, Ndt);
             end
@@ -100,7 +109,7 @@ while (t<T && Ndt <= TimeSteps)
     CumulativeTime(Ndt) = t/(3600*24);
     
     %Print solution to a file at fixed intervals
-    if (t == Tstops(index))
+    if (t == Tstops(index) || Ndt == 2)
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
         Saturations(:,index) = reshape(S, Grid.N, 1);
         Pressures(:,index) = reshape(P, Grid.N, 1);

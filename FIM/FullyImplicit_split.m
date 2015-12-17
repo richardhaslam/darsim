@@ -1,4 +1,4 @@
-%FIM non-linear solver
+%FIM non-linear solver/ split pressure and saturation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
@@ -6,7 +6,7 @@
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [P, S, U, dt, FIM, Timers, Converged, Inj, Prod] = ...
-    FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Options, Ndt)
+    FullyImplicit_split(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Options, Ndt)
 
 %FULLY IMPLICIT STRATEGY
 Nx = Grid.Nx;
@@ -21,9 +21,6 @@ Converged=0;
 % saturations = load('../Input/Homogeneous/FoamResults/SeqSaturation.txt');
 p0 = reshape(P0,N,1);
 s0 = reshape(S0, N, 1);
-% p0 = pressures(:,1);
-% P0 = reshape(p0, Grid.Nx, Grid.Ny);
-% s0 = saturations(:,1);
 chops=0;
 while (Converged==0 && chops <= 20)
     s=s0; % I start from solution at previous timestep.
@@ -32,11 +29,10 @@ while (Converged==0 && chops <= 20)
     [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid);
     
     %Compute initial residuals
-    [A, q, U] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
+    [A, q, U] = DivergenceMatrix(Grid, P, Kt, Trx, Try, Inj, Prod);
     UpWind = UpwindOperator(Grid, U);
-    Ro = -A*Mo + pv/dt*((1-s)-(1-s0));
+    Rp = ;
     Rw = -max(q,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
-    Rp = Ro+Rw;
     Residual = [Rp; Rw];
     
     %Plot Residuals at beginning of timestep
@@ -52,14 +48,9 @@ while (Converged==0 && chops <= 20)
     while ((Converged==0) && (itCount < FIM.MaxIter))
         tic
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
-        J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo,...
+        J = BuildJacobian_split(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo,...
             U, dt, Inj, Prod, UpWind);
-        %CheckEllipticSystem(J(1:Grid.N, 1:Grid.N), Grid.Nx);
-        
         TimerConstruct(itCount) = toc;
-%         %Rescale for precision purposes
-%         J = 1e6 * J;
-%         Residual = 1e6 * Residual;
         
         tic
         % 2.a Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
@@ -71,17 +62,16 @@ while (Converged==0 && chops <= 20)
         p = p + Delta(1:N);
         s = s + Delta(N+1:2*N);
         s = min(s,1-Fluid.swc);
-        s = max(s,Fluid.swc);        
+        s = max(s,Fluid.swc);
         P = reshape(p,Nx,Ny);
         
         % 3. Compute residuals at nu
         [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid);
         [A, q, U] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
         UpWind = UpwindOperator(Grid, U);
-        Ro = -A*Mo + pv/dt*((1-s)-(1-s0));
-        Rw = -max(q,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
-        Rp = Ro + Rw;
-        Residual = [Rp; Rw];
+        Rp = ;
+        Rs = -max(q,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
+        Residual = [Rp; Rs];
         
         % 4. Check convergence criteria
         Norm1 = max(norm(Rp, inf), norm(Rw, inf));
