@@ -27,7 +27,7 @@ Fluid.no=str2double(inputMatrix(corey + 8));
 Fluid.epdry=str2double(inputMatrix(foam + 2));
 Fluid.fmdry=str2double(inputMatrix(foam + 4));
 Fluid.fmmob=str2double(inputMatrix(foam + 6));
-fplot = 1; %hard-coded for now
+fplot = 0; %hard-coded for now
 if (fplot==1)
     FractionalFlowPlot(Fluid);
 end

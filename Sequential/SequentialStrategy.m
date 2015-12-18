@@ -30,12 +30,12 @@ while (Converged==0 && Iter <= MaxExtIter)
     Kt=zeros(2, Grid.Nx, Grid.Ny);
     Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [P, U, Wells]=PressureSolver(Grid, Kt, Inj, Prod, Mt);
+    [P, U, Wells] = PressureSolver(Grid, Kt, Inj, Prod, Mt);
     ptimer(Iter)=toc(tstart1);
     
     %2. Check mass balance
     tstart2=tic;
-    Balance = check2D(U, Grid, Wells);
+    [Balance, U] = check2D(U, Grid, Wells);
     btimer(Iter)=toc(tstart2);
     
     %3. Compute timestep-size based on CFL
@@ -70,7 +70,13 @@ while (Converged==0 && Iter <= MaxExtIter)
     end
     Iter=Iter+1;
 end
-ImplicitSolver=Sequential.ImplicitSolver;
+ if (Sequential.ImpSat==1)
+    ImplicitSolver=Sequential.ImplicitSolver;
+ else
+     ImplicitSolver.timestep = 0;
+     ImplicitSolver.Chops = 0;
+     ImplicitSolver.Newtons = 0;
+ end
 Timers.ptimer=ptimer;
 Timers.btimer=btimer;
 Timers.stimer=stimer;

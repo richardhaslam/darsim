@@ -109,7 +109,7 @@ while (t<T && Ndt <= TimeSteps)
     CumulativeTime(Ndt) = t/(3600*24);
     
     %Print solution to a file at fixed intervals
-    if (t == Tstops(index) || Ndt == 2)
+    if (t == Tstops(index) || Ndt == 17)
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
         Saturations(:,index) = reshape(S, Grid.N, 1);
         Pressures(:,index) = reshape(P, Grid.N, 1);

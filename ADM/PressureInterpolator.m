@@ -19,7 +19,8 @@ switch (Pressure_Interpolator)
         K = zeros(2,FineGrid.Nx, FineGrid.Ny);
         K(1,:,:) = ones(FineGrid.Nx, FineGrid.Ny)*mean(mean(Kt(1,:,:)));
         K(2,:,:) = ones(FineGrid.Nx, FineGrid.Ny)*mean(mean(Kt(2,:,:)));
-        Ap = AssemblePressureMatrix(FineGrid, K);
+        [Tx, Ty] = ComputeTransmissibility(FineGrid, K);
+        Ap = AssemblePressureMatrix(Tx, Ty, FineGrid.Nx, FineGrid.Ny);
         [CoarseGrid(1).MsR, CoarseGrid(1).MsP, CoarseGrid(1).C] = MSFVOperators(FineGrid, CoarseGrid(1), Ap, 1);
         CoarseGrid(1).A_c = CoarseGrid(1).MsR*Ap*CoarseGrid(1).MsP;
         for x = 2:maxLevel
@@ -29,7 +30,8 @@ switch (Pressure_Interpolator)
         end
     case ('MS')
         CoarseGrid(1).constant = 0;
-        Ap = AssemblePressureMatrix(FineGrid, Kt);
+         [Tx, Ty] = ComputeTransmissibility(FineGrid, K);
+        Ap = AssemblePressureMatrix(Tx, Ty, FineGrid.Nx, FineGrid.Ny);
         [CoarseGrid(1).MsR, CoarseGrid(1).MsP, CoarseGrid(1).C] = MSFVOperators(FineGrid, CoarseGrid(1), Ap, 1);
         CoarseGrid(1).A_c = CoarseGrid(1).MsP'*Ap*CoarseGrid(1).MsP;
         for x = 2:maxLevel
