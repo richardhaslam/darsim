@@ -37,8 +37,12 @@ temp = strfind(inputMatrix{1}, 'RELPERM');
 relperm = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'CAPILLARITY');
 capillarity = find(~cellfun('isempty', temp));
-Fluid = FluidProperties(viscosity, relperm, capillarity, inputMatrix{1});
-clear temp viscosity relperm capillarity;
+temp = strfind(inputMatrix{1}, 'FOAM');
+foam = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'COREY');
+corey = find(~cellfun('isempty', temp));
+Fluid = FluidProperties(viscosity, relperm, capillarity, foam, corey, inputMatrix{1});
+clear temp viscosity relperm capillarity foam corey;
 
 %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
 temp = strfind(inputMatrix{1}, 'INJ'); % Search a specific string and find all rows containing matches

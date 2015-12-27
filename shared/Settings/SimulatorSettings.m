@@ -14,6 +14,7 @@ switch (Strategy)
         Sequential.MaxExtIter = str2double(inputMatrix{1}(settings + 1));
         Sequential.Tol = str2double(inputMatrix{1}(settings +2));
         Sequential.CFL = str2double(inputMatrix{1}(settings +3));  %CFL number
+        Sequential.ImpSat = 0;
         if (impsat~=0)
             %Implicit Solver: it's used if implicit saturation is required
             Sequential.ImpSat=1; %If 1 implicit transport is used

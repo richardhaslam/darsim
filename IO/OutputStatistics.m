@@ -9,6 +9,8 @@ if (strcmp(Strategy, 'Sequential')==1)
     Statistics = [Sequential.ImplicitSolver.timestep; Sequential.ImplicitSolver.Chops; Sequential.ImplicitSolver.Newtons];
     fileID = fopen(strcat(Directory,'SeqStat.txt'),'w');
     fileID2 = fopen(strcat(Directory,'SeqTimings.txt'),'w');
+    fileID4 = fopen(strcat(Directory,'SeqSaturation.txt'),'w');
+    fileID5 = fopen(strcat(Directory,'SeqPressure.txt'),'w');
     fprintf(fileID,'%6s %12s %12s\n','Timestep','# Chops', '# Newtons');
     fprintf(fileID,'%6.0f %12.0f %12.0f\n', Statistics);
     fclose(fileID);
@@ -17,6 +19,10 @@ if (strcmp(Strategy, 'Sequential')==1)
     fprintf(fileID2,'%6s %12s %12s %12s  %12s\n','Timestep', 'Total Time','Pressure-Solver', 'Balance-check', 'Transport-Solver');
     fprintf(fileID2,'%6.0f %12.3f %12.3f %12.3f %12.3f\n', Timers);
     fclose(fileID2);
+    fprintf(fileID4,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Saturations');
+    fclose(fileID4);
+    fprintf(fileID5,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Pressures');
+    fclose(fileID5);
 else
     Statistics = [FIM.timestep(1:Ndt-1), FIM.Chops(1:Ndt-1), FIM.Iter(1:Ndt-1)];
     fileID = fopen(strcat(Directory,'FIMStat.txt'),'w');

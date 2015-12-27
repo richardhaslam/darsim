@@ -32,7 +32,6 @@ while (converged==0)   %If it does not converge the timestep is chopped
     df=Derivative(snew,Fluid);
     Ddf=Derivative_2nd(snew, Fluid);
     A=SaturationMatrix(Grid,U,q);      % system matrix
-    Rafael = 0;
     Residual=max(q,0)+A*fw-pv/dt*(snew-s0);
     
     % Initialise objects
@@ -50,12 +49,12 @@ while (converged==0)   %If it does not converge the timestep is chopped
         % FLUX CORRECTION - MATTEO
         if (ImplicitSolver.fluxfunction==1)
             dS_old = dS;
-            dS=B\Residual;
+            dS = B\Residual;
             if (min(dS_crit .* dS) < 0)
                 dS_crit = dS_old .* ((dS_crit .* dS) < 0)...
                     - dS_old .* ((dS_crit .* dS) > 0);
                 C = B-A*spdiags(Ddf.*dS_crit,0,N,N);
-                dS=C\Residual;
+                dS = C\Residual;
             end
         else
             dS=B\Residual;

@@ -5,8 +5,9 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-x=linspace(0, Lx-10, Grid.Nx);
-y=linspace(0, Ly-10, Grid.Ny);
+%Plot for 2D problems
+x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
+y=linspace(Grid.Ly/(2*Grid.Ny), (2*Grid.Ny*Grid.Ly-Grid.Ly)/(2*Grid.Ny), Grid.Ny);
 [X, Y] = meshgrid(x,y);
 
 %Pressure plot
