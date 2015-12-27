@@ -33,6 +33,8 @@ switch(Fluid.Pc)
         %Compute Pc and dPc analytically
         Pc = Pct - Pcs.*log((S-Fluid.swc)/(1-Fluid.swc));
         dPc = Pcs./(Fluid.swc - S);
+    case('Table')
+        %here you read the table
 end
 figure(125);
 subplot(1,2,1);

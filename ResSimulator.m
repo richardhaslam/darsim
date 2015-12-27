@@ -17,7 +17,7 @@ end
 Directory = strcat(InputDirectory,'/Output/');
 
 %%Plot Permeability Field
-%PlotPermeability(K, Grid);
+PlotPermeability(K, Grid);
 
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);

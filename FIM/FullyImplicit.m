@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, U, dt, FIM, Timers, Converged, Inj, Prod] = ...
+function [P, S, Uo, dt, FIM, Timers, Converged, Inj, Prod] = ...
     FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Options, Ndt)
 
 %FULLY IMPLICIT STRATEGY
@@ -25,16 +25,23 @@ while (Converged==0 && chops <= 20)
     P = P0;
     p = p0;
     [Mw, Mo, dMw, dMo] = Mobilities(s, Fluid);
-    [A, q, U] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
-    Ro = -A*Mo + pv/dt*((1-s)-(1-s0));
-    Rw = -max(q,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
+    %Oil
+    [A, qo, Uo] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
+    Ro = -max(qo,0)*Inj.Mo -A*Mo + pv/dt*((1-s)-(1-s0));
+    UpWindO = UpwindOperator(Grid, Uo);
+    %Water
+    Pc = ComputePc(S); %Compute capillary pressure for all cells
+    Pw = P - Pc;
+    [A, qw, Uw] = DivergenceMatrix(Grid, Pw, K, Trx, Try, Inj, Prod);
+    Rw = -max(qw,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
     Residual = [Ro; Rw];
+    UpWindW = UpwindOperator(Grid, Uw);
     
     %Plot Residuals at beginning of timestep
     if (Options.PlotResiduals==1) 
         PlotResiduals(Ro, Rw, Grid);
     end
-    UpWind = UpwindOperator(Grid, U);
+    
     
     %Timers
     TimerConstruct = zeros(FIM.MaxIter,1);
@@ -45,7 +52,7 @@ while (Converged==0 && chops <= 20)
         tic
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo,...
-            U, dt, Inj, Prod, UpWind);
+            Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW);
         TimerConstruct(itCount) = toc;
         %Rescale for precision purposes
         J = 1e6 * J;
@@ -70,9 +77,14 @@ while (Converged==0 && chops <= 20)
         
         % 3. Compute residuals at nu
         [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid);
-        [A, q, U] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
-        Ro = -A*Mo + pv/dt*((1-s)-(1-s0));
-        Rw = -max(q,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
+        %Oil
+        [Ao, qo, Uo] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
+        Ro = -max(qo,0)*Inj.Mo - Ao*Mo + pv/dt*((1-s)-(1-s0));
+        %Water
+        Pc = ComputePc(S); %Compute capillary pressure for all cells
+        Pw = P - Pc;
+        [Aw, qw, Uw] = DivergenceMatrix(Grid, Pw, K, Trx, Try, Inj, Prod);
+        Rw = -max(qw,0)*Inj.Mw - Aw*Mw + pv/dt*(s-s0); %I am injecting water only
         Residual = [Ro; Rw];
         
         % 4. Check convergence criteria
@@ -98,9 +110,9 @@ S = reshape(s,Nx,Ny);
 
 %Update production and injection data in wells
 Inj.water(Ndt+1) = Inj.water(Ndt) + dt*Inj.PI*(K(1,Inj.x,Inj.y)...
-    *K(2, Inj.x, Inj.y))^0.5*(Inj.p-P(Inj.x,Inj.y))*Inj.Mw;
+    *K(2, Inj.x, Inj.y))^0.5*(Inj.p-Pw(Inj.x,Inj.y))*Inj.Mw;
 Prod.water(Ndt+1) = Prod.water(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
-    *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mw((Prod.y-1)*Nx+Prod.x);
+    *K(2, Prod.x, Prod.y))^0.5*(Prod.p-Pw(Prod.x,Prod.y))*Mw((Prod.y-1)*Nx+Prod.x);
 Prod.oil(Ndt+1) =  Prod.oil(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
     *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mo((Prod.y-1)*Nx+Prod.x);
 end

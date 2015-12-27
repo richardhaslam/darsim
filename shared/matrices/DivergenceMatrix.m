@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [A, q, U, Tx, Ty] = DivergenceMatrix(Grid, P, K, Tx, Ty, Inj, Prod)
+function [A, q, U] = DivergenceMatrix(Grid, P, K, Tx, Ty, Inj, Prod)
 %Builds Upwind Flux matrix
 Nx = Grid.Nx;
 Ny = Grid.Ny;
