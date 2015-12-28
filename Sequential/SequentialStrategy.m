@@ -21,7 +21,6 @@ Iter=1; %External iterations counter
 Converged=0;
 S=S0;
 while (Converged==0 && Iter <= MaxExtIter)
-    
     tstart1=tic;
     %1. Solve flow equation for pressure and compute fluxes
     % Effective permeability

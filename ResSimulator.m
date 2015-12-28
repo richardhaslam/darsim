@@ -22,6 +22,7 @@ PlotPermeability(K, Grid);
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
 S = ones(Grid.Nx, Grid.Ny, 1)*Fluid.swc;
+S(Inj.x, Inj.y) = 1;
 %saturations = load('../Input/Homogeneous/InitSaturation.txt');
 %S = reshape(saturations(:,1), Grid.Nx, Grid.Ny);
 Inj.water = zeros(TimeSteps+1,1);

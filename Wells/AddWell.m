@@ -1,9 +1,10 @@
 function [A, q] = AddWell(A, q, Well, K, Nx)
 a=Well.x+(Well.y-1)*Nx;
-Well.rateconstrained = 0; 
-if (Well.rateconstrained == 1)
+if (Well.Dirichlet == 1)
     for i=1:length(a)
-        q(a) = Well.rate(a);
+        A(a(i),:) = 0;
+        A(a(i), a(i)) = 1; 
+        q(a(i)) = Well.p;
     end
 else
     for i=1:length(a)
