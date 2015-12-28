@@ -8,8 +8,8 @@
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cd('../Code')
-InputDirectory = '../Input/Homogeneous';
-InputFile = strcat(InputDirectory, '/Homogeneous.txt');
+InputDirectory = '../Input/SPE10T';
+InputFile = strcat(InputDirectory, '/SPE10T.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
   mkdir(InputDirectory,'/Output/VTK');
@@ -21,7 +21,7 @@ PlotPermeability(K, Grid);
 
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
-S = ones(Grid.Nx, Grid.Ny, 1)*Fluid.swc;
+S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
 S(Inj.x, Inj.y) = 1;
 %saturations = load('../Input/Homogeneous/InitSaturation.txt');
 %S = reshape(saturations(:,1), Grid.Nx, Grid.Ny);

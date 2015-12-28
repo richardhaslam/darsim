@@ -53,8 +53,12 @@ while (Converged==0 && Iter <= MaxExtIter)
             Converged = 1;
         else
             Sequential.ImplicitSolver.timestep=[Sequential.ImplicitSolver.timestep, Ndt];
-            [S, Sequential.ImplicitSolver, dT]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT);
+            [S, Sequential.ImplicitSolver, dT]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Inj, Sequential.ImplicitSolver, dT);
         end
+          if Inj.Dirichlet == 1
+                %For Horizontal injection!!
+                S(Inj.x,Inj.y) = 1;
+          end
     else
         disp('Mass balance not respected!!');
         break

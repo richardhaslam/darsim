@@ -41,10 +41,6 @@ while (t<T && Ndt <= TimeSteps)
             end
             [P, S, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
-            if Inj.Dirichlet == 1
-                %For Horizontal injection!!
-                S(Inj.x,Inj.y) = 1;
-            end
         case ('FIM')
             if (Ndt==1)
                 disp('******************');
