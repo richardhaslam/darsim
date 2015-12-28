@@ -25,7 +25,6 @@ q=zeros(N,1);
 %Add Wells
 [A, q] = AddWell(A, q, Inj, K, Nx);
 [A, q] = AddWell(A, q, Prod, K, Nx);
-sum(A,2)
 
 %Solve for pressure
 p = A\q;

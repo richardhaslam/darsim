@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo, Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW, Pc, dPc)
+function J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo, Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW)
 %Build FIM Jacobian
 Nx=Grid.Nx; Ny=Grid.Ny; 
 N=Nx*Ny;
@@ -42,8 +42,8 @@ Jop(b,b)=Jop(b,b)+Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*Mo(b);
 %Transmissibility with upwind water mobility
 Fx=zeros(Nx+1, Ny);
 Fy=zeros(Nx, Ny+1);
-Mupxw = UpWind.x*Mw;
-Mupyw = UpWind.y*Mw;
+Mupxw = UpWindW.x*Mw;
+Mupyw = UpWindW.y*Mw;
 Mupxw = reshape(Mupxw, Nx, Ny);
 Mupyw = reshape(Mupyw, Nx, Ny);
 Fx(2:Nx,:)= Trx(2:Nx,:).*Mupxw(1:Nx-1,:);
@@ -61,8 +61,8 @@ Jwp(a,a)=Jwp(a,a)+Inj.PI*(K(1,Inj.x,Inj.y)*K(2, Inj.x, Inj.y))^0.5*Inj.Mw;
 Jwp(b,b)=Jwp(b,b)+Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*Mw(b);
 
 %3. Ro Saturation Block
-dMupxo = UpWind.x*dMo;
-dMupyo = UpWind.y*dMo;
+dMupxo = UpWindO.x*dMo;
+dMupyo = UpWindO.y*dMo;
 %Construct Jos block
 x1=min(reshape(Uo.x(1:Nx,:),N,1),0).*dMupxo;
 x2=max(reshape(Uo.x(2:Nx+1,:),N,1),0).*dMupxo;
@@ -90,7 +90,7 @@ DiagIndx = [-Nx,-1,0,1,Nx];
 Jws = spdiags(DiagVecs,DiagIndx,N,N);
 %Wells: Inj and Prod
 %Jws(a,a)=Jws(a,a)-Inj.PI*(K(1,Inj.x,Inj.y)*K(2, Inj.x, Inj.y))^0.5*(Inj.p-P(Inj.x,Inj.y))*Inj.dMw; 
-Jws(b,b)=Jws(b,b)-Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y)+Pc(Prod.x,Prod.y))*dMw(b);
+Jws(b,b)=Jws(b,b)-Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*dMw(b);
 
 % Full Jacobian: put the 4 blocks together
 J = [Jop, Jos; Jwp, Jws];
