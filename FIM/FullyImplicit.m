@@ -48,15 +48,14 @@ while (Converged==0 && chops <= 20)
     
     itCount = 1;
     while ((Converged==0) && (itCount < FIM.MaxIter))
+        
         tic
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
-        J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo,...
+        J = BuildJacobian(Grid, K, Trx, Try, p, Mw, Mo, dMw, dMo,...
             Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW);
-        TimerConstruct(itCount) = toc;
         %Rescale for precision purposes
         J = 1e6 * J;
         Residual = 1e6 * Residual;
-        %CheckEllipticSystem(J(1:Grid.N, 1:Grid.N), Grid.Nx);
         TimerConstruct(itCount) = toc;
        
         tic
@@ -107,10 +106,10 @@ Timers.Solve = TimerSolve;
 S = reshape(s,Nx,Ny);
 
 %Update production and injection data in wells
-Inj.water(Ndt+1) = Inj.water(Ndt) + dt*Inj.PI*(K(1,Inj.x,Inj.y)...
-    *K(2, Inj.x, Inj.y))^0.5*(Inj.p-Pw(Inj.x,Inj.y))*Inj.Mw;
-Prod.water(Ndt+1) = Prod.water(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
-    *K(2, Prod.x, Prod.y))^0.5*(Prod.p-Pw(Prod.x,Prod.y))*Mw((Prod.y-1)*Nx+Prod.x);
-Prod.oil(Ndt+1) =  Prod.oil(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
-    *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mo((Prod.y-1)*Nx+Prod.x);
+% Inj.water(Ndt+1) = Inj.water(Ndt) + dt*Inj.PI*(K(1,Inj.x,Inj.y)...
+%     *K(2, Inj.x, Inj.y))^0.5*(Inj.p-Pw(Inj.x,Inj.y))*Inj.Mw;
+% Prod.water(Ndt+1) = Prod.water(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
+%     *K(2, Prod.x, Prod.y))^0.5*(Prod.p-Pw(Prod.x,Prod.y))*Mw((Prod.y-1)*Nx+Prod.x);
+% Prod.oil(Ndt+1) =  Prod.oil(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
+%     *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mo((Prod.y-1)*Nx+Prod.x);
 end

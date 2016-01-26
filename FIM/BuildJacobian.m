@@ -5,14 +5,12 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo, Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW)
+function J = BuildJacobian(Grid, K, Trx, Try, p, Mw, Mo, dMw, dMo, Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW)
 %Build FIM Jacobian
 Nx=Grid.Nx; Ny=Grid.Ny; 
 N=Nx*Ny;
 pv=Grid.Volume*Grid.por;
-%Wells' indexes in vectors
-a=Inj.x+(Inj.y-1)*Nx;
-b=(Prod.y-1)*Nx+Prod.x;
+Kvector = reshape(K(1, :, :), Grid.N, 1);
 
 % BUILD FIM JACOBIAN BLOCK BY BLOCK
 
@@ -34,9 +32,6 @@ y2=reshape(Ty(:,2:Ny+1),N,1);
 DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
 DiagIndx = [-Nx,-1,0,1,Nx];
 Jop = spdiags(DiagVecs,DiagIndx,N,N);
-%Wells: producer only
-Jop(a,a)=Jop(a,a)+Inj.PI*(K(1,Inj.x,Inj.y)*K(2, Inj.x, Inj.y))^0.5*Inj.Mo;
-Jop(b,b)=Jop(b,b)+Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*Mo(b);
 
 %2. Rw Pressure Block
 %Transmissibility with upwind water mobility
@@ -56,9 +51,6 @@ y2=reshape(Fy(:,2:Ny+1),N,1);
 DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
 DiagIndx = [-Nx,-1,0,1,Nx];
 Jwp = spdiags(DiagVecs,DiagIndx,N,N);
-%Wells: Inj and prod
-Jwp(a,a)=Jwp(a,a)+Inj.PI*(K(1,Inj.x,Inj.y)*K(2, Inj.x, Inj.y))^0.5*Inj.Mw;
-Jwp(b,b)=Jwp(b,b)+Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*Mw(b);
 
 %3. Ro Saturation Block
 dMupxo = UpWindO.x*dMo;
@@ -72,9 +64,6 @@ v=ones(N,1)*pv/dt;
 DiagVecs = [-y2,-x2,y2+x2-y1-x1-v,x1,y1];
 DiagIndx = [-Nx,-1,0,1,Nx];
 Jos = spdiags(DiagVecs,DiagIndx,N,N);
-%Wells: Producer only
-%Jos(a,a)=Jos(a,a)-Inj.PI*(K(1,Inj.x,Inj.y)*K(2, Inj.x, Inj.y))^0.5*(Inj.p-P(Inj.x,Inj.y))*Inj.dMo;
-Jos(b,b)=Jos(b,b)-Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*dMo(b);
 
 %4. Rw Saturation Block
 dMupxw = UpWindW.x*dMw;
@@ -88,9 +77,9 @@ v=ones(N,1)*pv/dt;
 DiagVecs = [-y2,-x2,y2+x2-y1-x1+v,x1,y1];
 DiagIndx = [-Nx,-1,0,1,Nx];
 Jws = spdiags(DiagVecs,DiagIndx,N,N);
-%Wells: Inj and Prod
-%Jws(a,a)=Jws(a,a)-Inj.PI*(K(1,Inj.x,Inj.y)*K(2, Inj.x, Inj.y))^0.5*(Inj.p-P(Inj.x,Inj.y))*Inj.dMw; 
-Jws(b,b)=Jws(b,b)-Prod.PI*(K(1,Prod.x,Prod.y)*K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*dMw(b);
+
+% Add wells
+[Jop, Jwp, Jos, Jws] = AddWellsToJacobian(Jop, Jwp, Jos, Jws, Inj, Prod, Kvector, p, Mw, Mo, dMw, dMo);
 
 % Full Jacobian: put the 4 blocks together
 J = [Jop, Jos; Jwp, Jws];
