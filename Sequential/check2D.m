@@ -18,8 +18,6 @@ for i=1:Nx
         Accum=U.x(i,j)-U.x(i+1,j)+U.y(i,j)-U.y(i,j+1)+Wells.Fluxes(i,j);
         if (Accum/maxU > 10^(-3))
             Balance = 0;
-            i
-            j
         end
     end
 end

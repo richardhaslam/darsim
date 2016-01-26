@@ -6,26 +6,23 @@
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Inj, Prod] = WellsProperties(inj, prod, inputMatrix, Grid, K)
-%Wells
+%Create objects 
+Inj = struct('cells', {}, 'p', {}, 'r', {}, 'PI', {});
+Prod = struct('cells', {}, 'p', {}, 'r', {}, 'PI', {});
 %Injection wells
-Inj = addwellcoordinates(str2double(inputMatrix(inj + 1)), str2double(inputMatrix(inj + 2)), str2double(inputMatrix(inj + 3)), str2double(inputMatrix(inj + 4)));
-Inj.p = str2double(inputMatrix(inj + 5)); %[Pa]
-Inj.r = str2double(inputMatrix(inj + 6)); %Well radius in m
-if length(Inj.x)>1
-    Inj.PI = 1000;
-    Inj.Dirichlet = 1;
-else
-    Inj.PI = ComputeProductivityIndex(Inj.r, K(1, Inj.x, Inj.y), K(2, Inj.x, Inj.y), Grid.dx, Grid.dy, 1);
-    Inj.Dirichlet = 0;
+for i=1:length(inj)
+    Inj(i).cells = addwellcells(Grid.Nx, char(inputMatrix(inj(i) + 1)), str2double(inputMatrix(inj(i) + 2)), str2double(inputMatrix(inj(i) + 3)), str2double(inputMatrix(inj(i) + 4)));
+    Inj(i).p = str2double(inputMatrix(inj(i) + 5)); %[Pa]
+    Inj(i).r = str2double(inputMatrix(inj(i) + 6)); %Well radius in m
+    Inj(i).PI = 1000;
+    %Inj(i).PI = ComputeProductivityIndex(Inj.r, K(1, Inj(i).x, Inj(i).y), K(2, Inj(i).x, Inj(i).y), Grid.dx, Grid.dy, 1);
 end
 %Production Wells
-Prod = addwellcoordinates(str2double(inputMatrix(prod + 1)), str2double(inputMatrix(prod + 2)), str2double(inputMatrix(prod + 3)), str2double(inputMatrix(prod + 4)));
-Prod.p = str2double(inputMatrix(prod + 5)); %[Pa]
-Prod.r = str2double(inputMatrix(prod + 6)); %Well radius in m
-Prod.Dirichlet = 0;
-if length(Prod.x) > 1
-    Prod.PI = 1000;
-else
-    Prod.PI = ComputeProductivityIndex(Prod.r,K(1, Prod.x, Prod.y), K(2, Prod.x, Prod.y), Grid.dx, Grid.dy, 1);
+for i=1:length(prod)
+    Prod(i).cells = addwellcells(Grid.Nx, char(inputMatrix(prod(i) + 1)), str2double(inputMatrix(prod(i) + 2)), str2double(inputMatrix(prod(i) + 3)), str2double(inputMatrix(prod(i) + 4)));
+    Prod(i).p = str2double(inputMatrix(prod(i) + 5)); %[Pa]
+    Prod(i).r = str2double(inputMatrix(prod(i) + 6)); %Well radius in m
+    Prod(i).PI = 1000;
+    %Prod(i).PI = ComputeProductivityIndex(Prod.r,K(1, Prod.x, Prod.y), K(2, Prod.x, Prod.y), Grid.dx, Grid.dy, 1);
 end
 end

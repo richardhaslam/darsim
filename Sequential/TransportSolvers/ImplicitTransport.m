@@ -17,8 +17,6 @@ MaxIter = ImplicitSolver.maxNewton;
 %%Create saturation vectors
 sold = reshape(Sold, N, 1); %last converged saturation  
 s0 = reshape(S0, N, 1);    %saturation at previous timestep
-%Position of Inj for horizontal injection
-a = Inj.x+(Inj.y-1)*Nx;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 converged=0;
@@ -60,11 +58,6 @@ while (converged==0)   %If it does not converge the timestep is chopped
             end
         else
             dS = B\Residual;
-        end
-        
-        %Set injector to zero if Dirichlet B.C.
-        if Inj.Dirichlet == 1
-            dS(a) = 0;
         end
         
         %Update Saturation and remove unphysical values

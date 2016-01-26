@@ -45,14 +45,12 @@ Fluid = FluidProperties(viscosity, relperm, capillarity, foam, corey, inputMatri
 clear temp viscosity relperm capillarity foam corey;
 
 %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
-temp = strfind(inputMatrix{1}, 'INJ'); % Search a specific string and find all rows containing matches
+temp = regexp(inputMatrix{1}, 'INJ\d', 'match'); 
 inj = find(~cellfun('isempty', temp));
-temp = strfind(inputMatrix{1}, 'PROD');
+temp = regexp(inputMatrix{1}, 'PROD\d', 'match');
 prod = find(~cellfun('isempty', temp));
 [Inj, Prod] = WellsProperties(inj, prod, inputMatrix{1}, Grid,K);
-%%%%Properties of Injected fluid%%%%
-[Inj.Mw, Inj.Mo, Inj.dMw, Inj.dMo] = Mobilities(1,Fluid);
-clear temp inj prod inputMatrix;
+clear temp inputMatrix;
 
 %%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
 InputFile = strcat(InputDirectory, '/SimulatorSettings.txt');
@@ -79,6 +77,17 @@ temp = strfind(inputMatrix{1}, 'ADM');
 adm = find(~cellfun('isempty', temp));
 [FIM, Sequential, ADMSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix);
+
+%%%%Properties of Injected fluid%%%%
+for i=1:length(inj)
+    [Inj(i).Mw, Inj(i).Mo, Inj(i).dMw, Inj(i).dMo] = Mobilities(1,Fluid);
+    Inj(i).water = zeros(TimeSteps+1,1);
+end
+for i=1:length(prod)
+    Prod(i).water = zeros(TimeSteps+1,1);
+    Prod(i).oil = zeros(TimeSteps+1,1);
+end
+
 %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
 temp = strfind(inputMatrix{1}, 'OUTPUT');
 x = find(~cellfun('isempty', temp));
