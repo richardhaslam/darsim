@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Grid, K] = ReservoirProperties(size, grid, perm, por, inputMatrix)
+function [Grid, K] = ReservoirProperties(size, grid, perm, pert, por, inputMatrix)
 %Dimensions
 Grid.Lx = str2double(inputMatrix(size +1));                              %Dimension in x−direction [m] 
 Grid.Ly = str2double(inputMatrix(size +2));                              %Dimension in y−direction [m]
@@ -30,6 +30,19 @@ if strcmp(inputMatrix(perm - 1), 'INCLUDE')
     Kx = reshape(field(1:Grid.Nx,1:Grid.Ny)*10^(-12), Grid.N, 1);  % make it the size of the grid
     Ky = Kx;
     K=reshape([Kx, Ky]', 2, Grid.Nx, Grid.Ny);
+elseif (~isempty(pert))
+    %Perturbation parameters
+    Grid.Vdp = str2double(inputMatrix(pert +2));
+    Grid.Lcx = str2double(inputMatrix(pert +4));
+    Grid.Lcy = str2double(inputMatrix(pert +6));
+    Grid.Kav = str2double(inputMatrix(pert +8));
+    
+    [K] = Randomfield(Grid);
+    Kx = K;
+    Ky = K; 
+    Kx = reshape(Kx,Grid.N,1);
+    Ky = reshape(Ky,Grid.N,1);
+    K  = reshape([Kx, Ky]', 2, Grid.Nx, Grid.Ny);    
 else
     Kx = ones(Grid.N,1)*10^(-12);
     Ky = ones(Grid.N,1)*10^(-12);

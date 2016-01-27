@@ -12,7 +12,8 @@ y=linspace(0, Grid.Ly-10, Grid.Ny);
 [X, Y] = meshgrid(x,y);
 %Use log scale
 K(:,:) = Perm(1,:,:);
-K = log(K);
+%K = log(K); %ln
+K = log10(K); %Log
 
 figure(100)
 h = pcolor(X,Y,K');

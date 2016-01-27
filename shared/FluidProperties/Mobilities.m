@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid)
+function [Mw, Mo, dMw, dMo, app]=Mobilities(s, Fluid)
 %Phase Mobilities
 S = (s-Fluid.swc)/(1-Fluid.swc-Fluid.sor); % Rescale saturations
 if (strcmp(Fluid.RelPerm,'Quadratic')==1)
@@ -20,7 +20,7 @@ elseif (strcmp(Fluid.RelPerm, 'Foam')==1)
     % o = heavy phase
 
 
-    swc     = Fluid.swc;
+     swc     = Fluid.swc;
     sor     = Fluid.sor;   
     krwe    = Fluid.krwe;
     kroe    = Fluid.kroe;
@@ -40,6 +40,10 @@ elseif (strcmp(Fluid.RelPerm, 'Foam')==1)
     FI     = ((1+(fmmob.*FW)).^(-1));
     
     Mw     = Mx .* FI;
+    
+    app             = Fluid.muw ./ FI;
+    app((round(app,2)==0.5)) = 0;
+    
     
     d1     =    (1-swc-sor)^(-1) * krwe * nw .*   ((S).^(nw-1)) ./ muw;
     d2     =    (fmmob.*epdry) ./ (pi.*(epdry^2 .* (fmdry+s-1).^2 + 1) .* ((-1/pi) .* fmmob .* atan(epdry*(fmdry+s-1))+0.5.*fmmob+1).^2);

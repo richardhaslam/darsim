@@ -71,7 +71,7 @@ else
         view(75, 35);
         drawnow
     else
-    % Grid plot
+        % Grid plot
         %Pressure
         figure(300)
         %suptitle([num2str(round(t/(3600*24))) ' days']);
@@ -112,5 +112,28 @@ else
         axis('image');
         set(gca,'fontsize',24);
         drawnow
+        
+        %Apparent viscosity
+        if (strcmp(Fluid.RelPerm, 'Foam')==1)
+            figure(500)
+            %subplot(2,1,2)
+            [~, ~, ~, ~, app]=Mobilities(S, Fluid);
+            h = pcolor(X,Y,app');
+            set(h, 'EdgeColor', 'none');
+            %view([45 45]);
+            if Grid.Nx==Grid.Ny
+                axis square;
+            end
+            title('Apparent Viscosity');
+            xlabel('x [m]');
+            ylabel('y [m]');
+            colormap(jet);
+            colorbar;
+            caxis ([0,0.09]);
+            %caxis ([0,1]);
+            axis('image');
+            set(gca,'fontsize',24);
+            drawnow
+        end
     end
 end

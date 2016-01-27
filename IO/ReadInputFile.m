@@ -21,12 +21,14 @@ temp = strfind(inputMatrix{1}, 'SPECGRID');
 grid = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'PERMX'); 
 perm = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'PERTURB'); 
+pert = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'POR'); 
 por = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'TOTALTIME');
 x = find(~cellfun('isempty', temp));
 T = str2double(inputMatrix{1}(x + 1))*24*3600;
-[Grid, K]=ReservoirProperties(size, grid, perm, por, inputMatrix{1});
+[Grid, K]=ReservoirProperties(size, grid, perm, pert, por, inputMatrix{1});
 clear temp size grid perm por x
 
 %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%

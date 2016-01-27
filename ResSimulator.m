@@ -8,8 +8,8 @@
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cd('../Code')
-InputDirectory = '../Input/Homogeneous';
-InputFile = strcat(InputDirectory, '/Homogeneous.txt');
+InputDirectory = '../Input/Foam_Homo';
+InputFile = strcat(InputDirectory, '/Foam_Homo.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
   mkdir(InputDirectory,'/Output/VTK');
