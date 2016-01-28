@@ -103,7 +103,11 @@ else
         if Grid.Nx==Grid.Ny
             axis square;
         end
-        title('Water Saturation');
+        if (strcmp(Fluid.RelPerm, 'Foam')==1)
+            title('Gas Saturation');
+        else
+            title('Water Saturation');
+        end
         xlabel('x [m]');
         ylabel('y [m]');
         colormap(jet);

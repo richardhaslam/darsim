@@ -84,7 +84,7 @@ while (t<T && Ndt <= TimeSteps)
                     FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Options, Ndt);
             end
     end
-    
+
     %Check for convergence at the end of the timestep
     if (Converged==0) 
         switch(Strategy) 
@@ -98,7 +98,8 @@ while (t<T && Ndt <= TimeSteps)
         end
     end
     
-    TimerTimestep(Ndt)=toc(tstart); 
+    
+    TimerTimestep(Ndt)=toc(tstart);
     
     %%%%%Increase time and timestep counter
     disp(['Timestep ' num2str(Ndt)]);
@@ -120,7 +121,7 @@ while (t<T && Ndt <= TimeSteps)
     switch (Options.PlotSolution)
         case('Matlab')
             if (Grid.Nx == 1 || Grid.Ny == 1)
-            Options.problem_1D=1;
+            Options.problem_1D = 1;
             end
         Plotting;
         case('VTK')
@@ -130,12 +131,12 @@ while (t<T && Ndt <= TimeSteps)
     
     %%%%%%%%%%%%%TImers of each timestep%%%%%%%%
     if (strcmp(Strategy, 'Sequential') == 1)
-        TimerPressure(Ndt-1)=sum(Timers.ptimer);
-        TimerBalance(Ndt-1)=sum(Timers.btimer);
-        TimerSaturation(Ndt-1)=sum(Timers.stimer);
+        TimerPressure(Ndt-1) = sum(Timers.ptimer);
+        TimerBalance(Ndt-1) = sum(Timers.btimer);
+        TimerSaturation(Ndt-1) = sum(Timers.stimer);
     else
-        TimerConstruct(Ndt-1)=sum(Timers.Construct);
-        TimerSolve(Ndt-1)=sum(Timers.Solve);
+        TimerConstruct(Ndt-1) = sum(Timers.Construct);
+        TimerSolve(Ndt-1) = sum(Timers.Solve);
     end
 end
 %% Injection and Production data
