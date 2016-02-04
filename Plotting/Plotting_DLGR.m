@@ -8,6 +8,8 @@
 %Plot for 2D problems
 x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
 y=linspace(Grid.Ly/(2*Grid.Ny), (2*Grid.Ny*Grid.Ly-Grid.Ly)/(2*Grid.Ny), Grid.Ny);
+x=linspace(0, Grid.Lx-10, Grid.Nx);
+y=linspace(0, Grid.Ly-10, Grid.Ny);
 [X, Y] = meshgrid(x,y);
 
 %Pressure plot
@@ -21,6 +23,7 @@ xlabel('x [m]');
 ylabel('y [m]');
 colorbar;
 caxis ([0,1e5]);
+colormap(jet);
 axis('image')
 set(gca,'fontsize',24);
 

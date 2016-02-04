@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, U, dt, FIM, Timers, ActiveFine, CoarseGrid, FineGrid, Converged, Inj, Prod, Prolp] = ...
+function [P, S, Uo, dt, FIM, Timers, ActiveFine, CoarseGrid, FineGrid, Converged, Inj, Prod, Prolp] = ...
     FullyImplicit_DLGR(P0, S0, K, Trx, Try, FineGrid, CoarseGrid,...
     Fluid, Inj, Prod, FIM, dt, Options, Ndt, ADMSettings)
 %% DLGR: FULLY IMPLICIT STRATEGY
@@ -25,11 +25,17 @@ while (Converged==0 && chops<=20)
     P = P0;
     p = p0;
     [Mw, Mo, dMw, dMo] = Mobilities(s, Fluid);
-    [A, q, U] = DivergenceMatrix(FineGrid, P, K, Trx, Try, Inj, Prod);
-    Ro = -A*Mo + pv/dt*((1-s)-(1-s0));
-    Rw = -max(q,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
+    %Oil
+    [A, qo, Uo] = DivergenceMatrix(FineGrid, P, K, Trx, Try, Inj, Prod);
+    Ro = -max(qo,0)*Inj(1).Mo -A*Mo + pv/dt*((1-s)-(1-s0));
+    UpWindO = UpwindOperator(FineGrid, Uo);
+    %Water
+    %Pc = ComputePc(S); %Compute capillary pressure for all cells
+    Pw = P; %- Pc;
+    [A, qw, Uw] = DivergenceMatrix(FineGrid, Pw, K, Trx, Try, Inj, Prod);
+    Rw = -max(qw,0)*Inj(1).Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
     Residual = [Ro; Rw];
-    UpWind = UpwindOperator(FineGrid, U);
+    UpWindW = UpwindOperator(FineGrid, Uw);
 
     if (chops == 0)
         tic
@@ -52,17 +58,18 @@ while (Converged==0 && chops<=20)
     % NEWTON LOOP
     itCount = 1;
     while ((Converged==0) && (itCount < FIM.MaxIter))
-        tic
+        start1 = tic;
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         J = BuildJacobian(FineGrid, K, Trx, Try, P, Mw, Mo, dMw, dMo, ...
-            U, dt, Inj, Prod, UpWind);
-        TimerConstruct(itCount) = toc;
+            Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW);
+        TimerConstruct(itCount) = toc(start1);
         
-        tic
+       
         % 2.a Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         [J_c, Residual_c] = Restrict(J, Residual, Rest, Prolp, Prols, N, DLGRGrid.level(end));
+        start2 = tic;
         Delta_c = -J_c\Residual_c;
-        TimerSolve(itCount) = toc;
+        TimerSolve(itCount) = toc(start2);
         
         % 2.b Prolong Solution
         Delta = Prolong(Delta_c, Prolp, Prols, DLGRGrid.level(end));
@@ -76,11 +83,16 @@ while (Converged==0 && chops<=20)
         
         % 3. Compute residuals at nu
         [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid);
-        [A, q, U] = DivergenceMatrix(FineGrid, P, K, Trx, Try, Inj, Prod);
-        Ro = -A*Mo + pv/dt*((1-s)-(1-s0));
-        Rw = -max(q,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
+        %Oil
+        [A, qo, Uo] = DivergenceMatrix(FineGrid, P, K, Trx, Try, Inj, Prod);
+        Ro = -max(qo,0)*Inj(1).Mo -A*Mo + pv/dt*((1-s)-(1-s0));
+        %Water
+        %Pc = ComputePc(S); %Compute capillary pressure for all cells
+        Pw = P; %- Pc;
+        [A, qw, Uw] = DivergenceMatrix(FineGrid, Pw, K, Trx, Try, Inj, Prod);
+        Rw = -max(qw,0)*Inj(1).Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
         Residual = [Ro; Rw];
-        
+
         % 4. Check convergence criteria
         Norm1 = norm(Residual_c, inf);
         %Norm2 = norm(Delta_c(DLGRGrid.N:2*DLGRGrid.N), inf);
@@ -90,20 +102,20 @@ while (Converged==0 && chops<=20)
         itCount = itCount+1;
     end
     if (Converged == 0)
-        dt = round(dt/2);
+        dt = dt/2;
         chops = chops + 1;
     end
 end
 
 % Reshape S before quitting
 S = reshape(s,Nx,Ny);
-% Update production and injection data in wells
-Inj.water(Ndt+1) = Inj.water(Ndt) + dt*Inj.PI*(K(1,Inj.x,Inj.y)...
-    *K(2, Inj.x, Inj.y))^0.5*(Inj.p-P(Inj.x,Inj.y))*Inj.Mw;
-Prod.water(Ndt+1) = Prod.water(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
-    *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mw((Prod.y-1)*Nx+Prod.x);
-Prod.oil(Ndt+1) =  Prod.oil(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
-    *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mo((Prod.y-1)*Nx+Prod.x);
+% % Update production and injection data in wells
+% Inj.water(Ndt+1) = Inj.water(Ndt) + dt*Inj.PI*(K(1,Inj.x,Inj.y)...
+%     *K(2, Inj.x, Inj.y))^0.5*(Inj.p-P(Inj.x,Inj.y))*Inj.Mw;
+% Prod.water(Ndt+1) = Prod.water(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
+%     *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mw((Prod.y-1)*Nx+Prod.x);
+% Prod.oil(Ndt+1) =  Prod.oil(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
+%     *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mo((Prod.y-1)*Nx+Prod.x);
 %% Stats
 FIM.Iter(Ndt) = itCount-1;
 FIM.Chops(Ndt) = chops;

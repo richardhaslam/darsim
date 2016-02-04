@@ -20,7 +20,8 @@ Tstops = linspace(T/10, T, 10);
 index = 1;
 Saturations = zeros(FineGrid.N, 10);
 Pressures = zeros(FineGrid.N, 10);
-while (t<T && Ndt <= TimeSteps)
+VTKcount = 1;
+while (t<T && Ndt <= TimeSteps && S(FineGrid.Nx,FineGrid.Ny) <= 1e-3)
     tstart = tic;
     S0 = S;
     P0 = P;
@@ -125,7 +126,10 @@ while (t<T && Ndt <= TimeSteps)
             end
         Plotting_DLGR;
         case('VTK')
-            Write2VTK(Directory, Problem, Ndt, FineGrid, K, P, S, CoarseGrid, ADMSettings.maxLevel);
+            if mod(Ndt,100) == 0
+                Write2VTK(Directory, Problem, VTKcount, FineGrid, K, P, S, CoarseGrid, ADMSettings.maxLevel);
+                VTKcount = VTKcount + 1;
+            end
     end
     
     %%%%%%%%%%%%%Timers

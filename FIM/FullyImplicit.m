@@ -27,13 +27,13 @@ while (Converged==0 && chops <= 20)
     [Mw, Mo, dMw, dMo] = Mobilities(s, Fluid);
     %Oil
     [A, qo, Uo] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
-    Ro = -max(qo,0)*Inj.Mo -A*Mo + pv/dt*((1-s)-(1-s0));
+    Ro = -max(qo,0)*Inj(1).Mo -A*Mo + pv/dt*((1-s)-(1-s0));
     UpWindO = UpwindOperator(Grid, Uo);
     %Water
     %Pc = ComputePc(S); %Compute capillary pressure for all cells
     Pw = P; %- Pc;
     [A, qw, Uw] = DivergenceMatrix(Grid, Pw, K, Trx, Try, Inj, Prod);
-    Rw = -max(qw,0)*Inj.Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
+    Rw = -max(qw,0)*Inj(1).Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
     Residual = [Ro; Rw];
     UpWindW = UpwindOperator(Grid, Uw);
     
@@ -75,18 +75,18 @@ while (Converged==0 && chops <= 20)
         [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid);
         %Oil
         [Ao, qo, Uo] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
-        Ro = -max(qo,0)*Inj.Mo - Ao*Mo + pv/dt*((1-s)-(1-s0));
+        Ro = -max(qo,0)*Inj(1).Mo - Ao*Mo + pv/dt*((1-s)-(1-s0));
         %Water
         %Pc = ComputePc(S); %Compute capillary pressure for all cells
         Pw = P; %- Pc;
         [Aw, qw, Uw] = DivergenceMatrix(Grid, Pw, K, Trx, Try, Inj, Prod);
-        Rw = -max(qw,0)*Inj.Mw - Aw*Mw + pv/dt*(s-s0); %I am injecting water only
+        Rw = -max(qw,0)*Inj(1).Mw - Aw*Mw + pv/dt*(s-s0); %I am injecting water only
         Residual = [Ro; Rw];
         
         % 4. Check convergence criteria
         Norm1 = max(norm(Ro, inf), norm(Rw, inf));
         Norm2 = norm(Delta(N+1:2*N), inf);
-        Norm3 = norm(Delta(1:N)/Inj.p,inf);
+        Norm3 = norm(Delta(1:N)/Inj(1).p,inf);
         if (Norm1 < Tol && Norm2 < Tol && Norm3 < Tol)
             Converged = 1;
         end

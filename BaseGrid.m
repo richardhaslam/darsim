@@ -22,7 +22,7 @@ Tstops = linspace(T/10, T, 10);
 index = 1;
 Saturations = zeros(Grid.N, 10);
 Pressures = zeros(Grid.N, 10);
-while (t<T && Ndt <= TimeSteps)
+while (t<T && Ndt <= TimeSteps && S(Grid.Nx, Grid.Ny)<=1e-3)
     tstart = tic;
     S0 = S;
     P0 = P;
