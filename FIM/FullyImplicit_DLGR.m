@@ -102,7 +102,7 @@ while (Converged==0 && chops<=20)
         itCount = itCount+1;
     end
     if (Converged == 0)
-        dt = dt/2;
+        dt = round(dt/2);
         chops = chops + 1;
     end
 end

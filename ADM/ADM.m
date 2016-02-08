@@ -21,7 +21,7 @@ index = 1;
 Saturations = zeros(FineGrid.N, 10);
 Pressures = zeros(FineGrid.N, 10);
 VTKcount = 1;
-while (t<T && Ndt <= TimeSteps && S(FineGrid.Nx,FineGrid.Ny) <= 1e-3)
+while (t<T && Ndt <= TimeSteps)
     tstart = tic;
     S0 = S;
     P0 = P;

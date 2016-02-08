@@ -15,7 +15,7 @@ K(:,:) = Perm(1,:,:);
 %K = log(K); %ln
 K = log10(K); %Log
 
-figure(100)
+figure(200)
 h = pcolor(X,Y,K');
 set(h, 'EdgeColor', 'none');
 title('X and Y Permeability in log scale');

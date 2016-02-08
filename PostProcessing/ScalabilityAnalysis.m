@@ -16,6 +16,17 @@ Large_fine = 432 * 108;
 HomoSmall_Nodes = mean(sum(HomoSmall.Stats(:,4:6),2));
 HomoMedium_Nodes = mean(sum(HomoMedium.Stats(:,4:6),2));
 HomoLarge_Nodes = mean(sum(HomoLarge.Stats(:,4:6),2));
+HomoSmall_NodesL0 = mean(HomoSmall.Stats(:,4))
+HomoMedium_NodesL0 = mean(HomoMedium.Stats(:,4))
+HomoLarge_NodesL0 = mean(HomoLarge.Stats(:,4))
+HomoSmall_NodesL1 = mean(HomoSmall.Stats(:,5))
+HomoMedium_NodesL1 = mean(HomoMedium.Stats(:,5))
+HomoLarge_NodesL1 = mean(HomoLarge.Stats(:,5))
+HomoSmall_NodesL2 = mean(HomoSmall.Stats(:,6))
+HomoMedium_NodesL2 = mean(HomoMedium.Stats(:,6))
+HomoLarge_NodesL2 = mean(HomoLarge.Stats(:,6))
+
+
 HomoSmall_AvNodes = mean(sum(HomoSmall.Stats(:,4:6),2)./Small_fine*100);
 HomoMedium_AvNodes = mean(sum(HomoMedium.Stats(:,4:6),2)./Medium_fine*100);
 HomoLarge_AvNodes = mean(sum(HomoLarge.Stats(:,4:6),2)./Large_fine*100);
@@ -57,19 +68,47 @@ file = strcat('../ResultsAndImages/Scalability/',Problem,'/HomoLarge/FIMTimings.
 HomoLargeFine.Timings = load(file);
 
 %Linear Solver
-HomoSmall_LS = mean(HomoSmall.Timings(:,5))/mean(HomoSmall.Timings(:,5));
-HomoMedium_LS = mean(HomoMedium.Timings(:,5))/mean(HomoSmall.Timings(:,5));
-HomoLarge_LS = mean(HomoLarge.Timings(:,5))/mean(HomoSmall.Timings(:,5));
 HomoSmall_fineLS = mean(HomoSmallFine.Timings(:,4))/mean(HomoSmallFine.Timings(:,4));
 HomoMedium_fineLS = mean(HomoMediumFine.Timings(:,4))/mean(HomoSmallFine.Timings(:,4));
 HomoLarge_fineLS = mean(HomoLargeFine.Timings(:,4))/mean(HomoSmallFine.Timings(:,4));
 
-HomoSmall_tot = mean(HomoSmall.Timings(:,2))/mean(HomoSmall.Timings(:,2))
-HomoMedium_tot = mean(HomoMedium.Timings(:,2))/mean(HomoSmall.Timings(:,2))
-HomoLarge_tot = mean(HomoLarge.Timings(:,2))/mean(HomoSmall.Timings(:,2))
-HomoSmall_finetot = mean(HomoSmallFine.Timings(:,2))/mean(HomoSmall.Timings(:,2))
-HomoMedium_finetot = mean(HomoMediumFine.Timings(:,2))/mean(HomoSmall.Timings(:,2))
-HomoLarge_finetot = mean(HomoLargeFine.Timings(:,2))/mean(HomoSmall.Timings(:,2))
+%CPU time split
+%Total
+HomoSmall_tot = mean(HomoSmall.Timings(:,2));
+HomoMedium_tot = mean(HomoMedium.Timings(:,2));
+HomoLarge_tot = mean(HomoLarge.Timings(:,2));
+
+%R and P construction
+HomoSmall_RP = mean(HomoSmall.Timings(:,3))/HomoSmall_tot;
+HomoMedium_RP = mean(HomoMedium.Timings(:,3))/HomoMedium_tot;
+HomoLarge_RP = mean(HomoLarge.Timings(:,3))/HomoLarge_tot;
+
+%Build Jacobian
+HomoSmall_J = mean(HomoSmall.Timings(:,4))/HomoSmall_tot;
+HomoMedium_J = mean(HomoMedium.Timings(:,4))/HomoMedium_tot;
+HomoLarge_J = mean(HomoLarge.Timings(:,4))/HomoLarge_tot;
+
+%LS
+HomoSmall_LS = mean(HomoSmall.Timings(:,5))/HomoSmall_tot;
+HomoMedium_LS = mean(HomoMedium.Timings(:,5))/HomoMedium_tot;
+HomoLarge_LS = mean(HomoLarge.Timings(:,5))/HomoLarge_tot;
+
+%Others
+HomoSmall_others = 1 - HomoSmall_RP - HomoSmall_J - HomoSmall_LS;
+HomoMedium_others =1 - HomoMedium_RP - HomoMedium_J - HomoMedium_LS;
+HomoLarge_others =1 - HomoLarge_RP - HomoLarge_J - HomoLarge_LS;
+
+fileID1 = fopen('../ResultsAndImages/Scalability/CPUtimeSPlit.txt','w');
+fprintf(fileID1,'%3.3f %3.3f %3.3f %3.3f\n',[HomoSmall_RP, HomoSmall_J, HomoSmall_LS, HomoSmall_others]);
+fprintf(fileID1,'%3.3f %3.3f %3.3f %3.3f\n',[HomoMedium_RP, HomoMedium_J, HomoMedium_LS, HomoMedium_others]);
+fprintf(fileID1,'%3.3f %3.3f %3.3f %3.3f\n',[HomoLarge_RP, HomoLarge_J, HomoSmall_LS, HomoLarge_others]);
+fclose(fileID1);
+
+
+%%%%RElative
+HomoSmall_finetot = mean(HomoSmallFine.Timings(:,2))/mean(HomoSmall.Timings(:,2));
+HomoMedium_finetot = mean(HomoMediumFine.Timings(:,2))/mean(HomoSmall.Timings(:,2));
+HomoLarge_finetot = mean(HomoLargeFine.Timings(:,2))/mean(HomoSmall.Timings(:,2));
 
 %
 HomoSmall_RPconstruct = mean(HomoSmall.Timings(:,3))/mean(HomoSmall.Timings(:,3));

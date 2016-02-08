@@ -8,8 +8,8 @@
 
 %%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cd('../Code')
-InputDirectory = '../Input/HomoSmall';
-InputFile = strcat(InputDirectory, '/HomoSmall.txt');
+%InputDirectory = '../Input/SPE10BRuns/MS/DS01';
+%InputFile = strcat(InputDirectory, '/SPE10B.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
   mkdir(InputDirectory,'/Output/VTK');
@@ -17,7 +17,7 @@ end
 Directory = strcat(InputDirectory,'/Output/');
 
 %%Plot Permeability Field
-%PlotPermeability(K, Grid);
+PlotPermeability(K, Grid);
 
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
