@@ -27,9 +27,11 @@ while (Converged==0 && Iter <= MaxExtIter)
     [Mw, Mo]=Mobilities(S, Fluid);
     Mt=Mw+Mo;   %total mobility
     Kt=zeros(2, Grid.Nx, Grid.Ny);
+    Kw(1,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
+    Kw(2,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
     Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [P, U, Wells] = PressureSolver(Grid, Kt, Inj, Prod, Mt);
+    [P, U, Wells] = PressureSolver(Grid, Kt, Kw, Inj, Prod, Fluid, S);
     ptimer(Iter) = toc(tstart1);
     
     %2. Check mass balance
@@ -54,8 +56,8 @@ while (Converged==0 && Iter <= MaxExtIter)
             [S]=ExplicitTransport(Fluid, Grid, S0, U, q, dT);
             Converged = 1;
         else
-            Sequential.ImplicitSolver.timestep=[Sequential.ImplicitSolver.timestep, Ndt];
-            [S, Sequential.ImplicitSolver, dT, Tconverged]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Inj, Sequential.ImplicitSolver, dT);
+            Sequential.ImplicitSolver.timestep = [Sequential.ImplicitSolver.timestep, Ndt];
+            [S, Sequential.ImplicitSolver, dT, Tconverged] = ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT);
             if Tconverged == 0
                 disp('Transport solver did not converge')
                 break

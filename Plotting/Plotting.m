@@ -90,7 +90,7 @@ else
         colorbar;
         pressuremax =max(max(P));
         pressuremin = min(min(P));
-        caxis ([pressuremin,pressuremax]);
+        caxis ([0,1e5]);
         axis('image');
         set(gca,'fontsize',24);
         

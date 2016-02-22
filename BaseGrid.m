@@ -22,7 +22,7 @@ Tstops = linspace(T/10, T, 10);
 index = 1;
 Saturations = zeros(Grid.N, 10);
 Pressures = zeros(Grid.N, 10);
-while (t<T && Ndt <= TimeSteps && S(Grid.Nx, Grid.Ny)<=1e-3)
+while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
     tstart = tic;
     S0 = S;
     P0 = P;
@@ -110,7 +110,7 @@ while (t<T && Ndt <= TimeSteps && S(Grid.Nx, Grid.Ny)<=1e-3)
     CumulativeTime(Ndt) = t/(3600*24);
     
     %Print solution to a file at fixed intervals
-    if (t == Tstops(index) || Ndt == 17)
+    if (t == Tstops(index))
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
         Saturations(:,index) = reshape(S, Grid.N, 1);
         Pressures(:,index) = reshape(P, Grid.N, 1);

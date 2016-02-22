@@ -5,16 +5,16 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, U, Wells, A, Ab, q]=PressureSolver(Grid, K, Inj, Prod, Mt)
+function [P, U, Wells, A, Ab, q]=PressureSolver(Grid, Kt, Kw, Inj, Prod, Fluid, S)
 %PRESSURE Solver
 
 %1.Compute transmissibilities using harmonic average.
 Nx = Grid.Nx; Ny = Grid.Ny; 
 N = Grid.N;
-Kvector = reshape(K(1,:,:), N, 1);
+Kvector = reshape(Kt(1,:,:), N, 1);
 
 %Transmissibility
-[Tx, Ty] = ComputeTransmissibility(Grid, K);
+[Tx, Ty] = ComputeTransmissibility(Grid, Kt);
 
 %Construct pressure matrix
 A = AssemblePressureMatrix(Tx, Ty, Nx, Ny);
@@ -28,6 +28,10 @@ end
 for i=1:length(Prod)
     [A, q] = AddWell(A, q, Prod(i), Kvector);
 end
+
+%Add capillary term to the right-hand side
+[q, Pc] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
+
 %Solve for pressure
 p = A\q;
 

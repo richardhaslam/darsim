@@ -31,4 +31,5 @@ fplot = 0; %hard-coded for now
 if (fplot==1)
     FractionalFlowPlot(Fluid);
 end
+PcPlot(Fluid);
 end

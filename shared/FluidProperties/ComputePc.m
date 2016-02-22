@@ -36,14 +36,5 @@ switch(Fluid.Pc)
     case('Table')
         %here you read the table
 end
-figure(125);
-subplot(1,2,1);
-plot(S, Pc);
-xlabel('water saturation');
-ylabel('Pcow [Pa]');
-subplot(1,2,2);
-plot(S, dPc);
-xlabel('water saturation');
-ylabel('dPc/dS');
 end
 

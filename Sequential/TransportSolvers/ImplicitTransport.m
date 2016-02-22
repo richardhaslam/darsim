@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Snew, ImplicitSolver, dt, converged]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Inj, ImplicitSolver, dt)
+function [Snew, ImplicitSolver, dt, converged]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, ImplicitSolver, dt)
 %Implicit Transport Solver
 Nx = Grid.Nx;
 Ny = Grid.Ny;

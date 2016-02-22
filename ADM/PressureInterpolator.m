@@ -33,7 +33,7 @@ switch (Pressure_Interpolator)
         Ktvector = reshape(Kt(1,:, :),FineGrid.N, 1);
         lambdaMax = max(Ktvector);
         PlotPermeability(Kt, FineGrid);
-        Ktvector(Ktvector./lambdaMax < 10^-4) = 10^-4*lambdaMax;
+        Ktvector(Ktvector./lambdaMax < 10^-2) = 10^-2*lambdaMax;
         Kt(1, :, :) = reshape(Ktvector, FineGrid.Nx, FineGrid.Ny);
         Kt(2, :, :) = reshape(Ktvector, FineGrid.Nx, FineGrid.Ny);
         PlotPermeability(Kt, FineGrid);

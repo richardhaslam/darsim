@@ -126,10 +126,10 @@ while (t<T && Ndt <= TimeSteps)
             end
         Plotting_DLGR;
         case('VTK')
-            if mod(Ndt,100) == 0
+            %if mod(Ndt,20) == 0
                 Write2VTK(Directory, Problem, VTKcount, FineGrid, K, P, S, CoarseGrid, ADMSettings.maxLevel);
                 VTKcount = VTKcount + 1;
-            end
+            %end
     end
     
     %%%%%%%%%%%%%Timers

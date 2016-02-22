@@ -87,13 +87,13 @@ while (Converged==0 && chops <= 20)
         Norm1 = max(norm(Ro, inf), norm(Rw, inf));
         Norm2 = norm(Delta(N+1:2*N), inf);
         Norm3 = norm(Delta(1:N)/Inj(1).p,inf);
-        if (Norm1 < Tol) %&& Norm2 < Tol && Norm3 < Tol)
+        if (Norm1 < Tol && Norm2 < Tol && Norm3 < Tol)
             Converged = 1;
         end
         itCount = itCount+1;
     end
     if (Converged == 0)
-        dt = dt/10;
+        dt = dt/2;
         chops = chops + 1;
     end
 end
