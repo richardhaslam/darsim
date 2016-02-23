@@ -5,15 +5,21 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, U, Wells, A, Ab, q]=PressureSolver(Grid, Kt, Kw, Inj, Prod, Fluid, S)
+function [P, U, Wells, A, Ab, q]=PressureSolver(Grid, Inj, Prod, Fluid, S, K)
 %PRESSURE Solver
 
 %1.Compute transmissibilities using harmonic average.
 Nx = Grid.Nx; Ny = Grid.Ny; 
 N = Grid.N;
-Kvector = reshape(Kt(1,:,:), N, 1);
 
 %Transmissibility
+% Effective permeability
+[Mw, Mo]=Mobilities(S, Fluid);
+Mt=Mw+Mo;   %total mobility
+Kt=zeros(2, Grid.Nx, Grid.Ny);
+Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
+Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
+Kvector = reshape(Kt(1,:,:), N, 1);
 [Tx, Ty] = ComputeTransmissibility(Grid, Kt);
 
 %Construct pressure matrix
@@ -30,8 +36,11 @@ for i=1:length(Prod)
 end
 
 %Add capillary term to the right-hand side
-[q, Pc] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
-
+if ~isempty(Fluid.Pc)
+    Kw(1,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
+    Kw(2,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
+    [q, Pc] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
+end
 %Solve for pressure
 p = A\q;
 

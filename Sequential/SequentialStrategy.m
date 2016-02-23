@@ -23,15 +23,7 @@ S=S0;
 while (Converged==0 && Iter <= MaxExtIter)
     tstart1 = tic;
     %1. Solve flow equation for pressure and compute fluxes
-    % Effective permeability
-    [Mw, Mo]=Mobilities(S, Fluid);
-    Mt=Mw+Mo;   %total mobility
-    Kt=zeros(2, Grid.Nx, Grid.Ny);
-    Kw(1,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
-    Kw(2,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
-    Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [P, U, Wells] = PressureSolver(Grid, Kt, Kw, Inj, Prod, Fluid, S);
+    [P, U, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
     ptimer(Iter) = toc(tstart1);
     
     %2. Check mass balance

@@ -3,11 +3,13 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Year: 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [q, Pc] = AddPcToPressureSystem(q, Fluid, Grid)
+function [q, Pc] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid)
 N = Grid.Nx*Grid.Ny;
-Q = reshape(q, Grid.Nx, Grid.Ny);
+Nx = Grid.Nx;
+Ny = Grid.Ny;
+Q = reshape(q, Nx, Ny);
 [Tx, Ty] = ComputeTransmissibility(Grid, Kw);
 
 %Compute Pc for the Saturation distribution given
@@ -20,7 +22,7 @@ U.y = zeros(Nx,Ny+1,1);
 U.x(2:Nx,:) = (Pc(1:Nx-1,:)-Pc(2:Nx,:)).*Tx(2:Nx,:);
 U.y(:,2:Ny)  = (Pc(:,1:Ny-1)-Pc(:,2:Ny)).*Ty(:,2:Ny);
 %Right-hand side
-Q (:,:) = U.x(1:Nx, :) - U.x() + U.y - U.y();
+Q (:,:) = Q(:,:) + U.x(1:Nx, :) - U.x(2:Nx+1,:) + U.y(:,1:Ny) - U.y(:,2:Ny+1);
 %reshape
-q = reshape(Q, Grid.N, 1);
+q = reshape(Q, N, 1);
 end

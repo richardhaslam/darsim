@@ -25,12 +25,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
     %Initial guess for Newton loop
     snew = sold;
     %Residual at first iteration
-    [Mw, Mo] = Mobilities(snew, Fluid);
-    Mt = Mw+Mo;   %total mobility
-    %Flux function and derivatives
-    fw = Mw./Mt;
-    df = Derivative(snew,Fluid);
-    Ddf = Derivative_2nd(snew, Fluid);
+    [fw, df, Ddf] = ComputeFractionalFlow(snew, Fluid);
     A = SaturationMatrix(Grid,U,q);      % system matrix
     Residual = max(q,0) + A*fw - pv/dt*(snew-s0);
     
@@ -78,11 +73,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         Norm = norm(dS, inf);
         
         %Compute Residual at nu
-        [Mw, Mo] = Mobilities(snew, Fluid);   % mobilities at iteration nu
-        Mt = Mw+Mo;   %total mobility
-        fw = Mw./Mt;
-        df = Derivative(snew,Fluid);
-        Ddf = Derivative_2nd(snew, Fluid);
+        [fw, df, Ddf] = ComputeFractionalFlow(snew, Fluid);
         Residual = max(q,0)+A*fw-pv/dt*(snew-s0);
         
         %Increase iteration counter
