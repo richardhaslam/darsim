@@ -26,7 +26,8 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
     snew = sold;
     %Residual at first iteration
     [fw, df] = ComputeFractionalFlow(snew, Fluid, Grid, U);
-    Residual = Residual(snew, s0, q, Grid, U, fw);
+    A = SaturationMatrix(Grid,U,q);      % system matrix
+    Residual = TransportResidual(snew, s0, A, q, fw, pv, dt);
     
     % Initialise objects
     Norm = 1;
@@ -40,8 +41,8 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         dS = B\Residual;
         
         %Update Saturation and remove unphysical values
-        s_old = snew;
-        snew = s_old+dS;
+        sold = snew;
+        snew = sold+dS;
         snew = min(snew,1);
         snew = max(snew,Fluid.swc);
         
@@ -52,7 +53,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         
         %Compute Residual at nu
         [fw, df] = ComputeFractionalFlow(snew, Fluid, Grid, U);
-        Residual = Residual(snew, s0, q, Grid, U, fw);
+        Residual = TransportResidual(snew, s0, A, q, fw, pv, dt);
         
         %Increase iteration counter
         Newton=Newton+1;

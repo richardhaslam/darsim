@@ -17,17 +17,17 @@ pv=por*Grid.Volume;   %Void Volume in each cell
 CFL=Grid.CFL;
 
 %I take the worst possible scenario
-% s = Fluid.swc:0.01:1-Fluid.sor;
-% df = Derivative (s, Fluid);
-% dfmax = max(df);
-% Uxmax = max(max(U.x));
-% Uymax = max(max(U.y));
-% Lambdax = dfmax * Uxmax;
-% Lambday = dfmax * Uymax;
-% %Compute timestep size
-% dtx=CFL*pv/Lambdax;
-% dty=CFL*pv/Lambday;
-% dt=min(dtx,dty);
+s = Fluid.swc:0.01:1-Fluid.sor;
+df = Derivative (s, Fluid);
+dfmax = max(df);
+Uxmax = max(max(U.x));
+Uymax = max(max(U.y));
+Lambdax = dfmax * Uxmax;
+Lambday = dfmax * Uymax;
+%Compute timestep size
+dtx=CFL*pv/Lambdax;
+dty=CFL*pv/Lambday;
+dt=min(dtx,dty);
 
 % %%%%%%%%%%%%%% Foam? Compute based on worst-case scenario
 % 
@@ -38,32 +38,32 @@ CFL=Grid.CFL;
 % 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%Compute wave speed
-Sx = zeros(Nx+1,Ny);
-Sy = zeros(Nx,Ny+1);
-dfx = zeros(Nx+1,Ny);
-dfy = zeros(Nx,Ny+1);
-Sx(1,1) = (S(1,1) + 1)/2;
-Sy(1,1) = (S(1,1) + 1)/2;
-Sx(2:Nx,:) = (S(1:Nx-1,:)+S(2:Nx,:))/2;
-Sy(:,2:Ny) = (S(:,1:Ny-1)+S(:,2:Ny))/2;
-
-tstart = tic;
-for i=1:Nx
-    for j=1:Ny
-        dfx(i,j) = Derivative(Sx(i,j),Fluid);
-        dfy(i,j) = Derivative(Sy(i,j),Fluid);
-    end
-end
-timesteptimer = toc(tstart)
-Lambdax=dfx.*U.x;
-Lambday=dfy.*U.y;
-Lambdax(1,1) = dfx(1,1)*max(max(Wells.Fluxes))/2;
-Lambday(1,1) = dfy(1,1)*max(max(Wells.Fluxes))/2;
-%Compute timestep size
-dtx=CFL*pv/max(abs(Lambdax(:)));
-dty=CFL*pv/max(abs(Lambday(:)));
-dt=min(dtx,dty);
+% %Compute wave speed
+% Sx = zeros(Nx+1,Ny);
+% Sy = zeros(Nx,Ny+1);
+% dfx = zeros(Nx+1,Ny);
+% dfy = zeros(Nx,Ny+1);
+% Sx(1,1) = (S(1,1) + 1)/2;
+% Sy(1,1) = (S(1,1) + 1)/2;
+% Sx(2:Nx,:) = (S(1:Nx-1,:)+S(2:Nx,:))/2;
+% Sy(:,2:Ny) = (S(:,1:Ny-1)+S(:,2:Ny))/2;
+% 
+% tstart = tic;
+% for i=1:Nx
+%     for j=1:Ny
+%         dfx(i,j) = Derivative(Sx(i,j),Fluid);
+%         dfy(i,j) = Derivative(Sy(i,j),Fluid);
+%     end
+% end
+% timesteptimer = toc(tstart)
+% Lambdax=dfx.*U.x;
+% Lambday=dfy.*U.y;
+% Lambdax(1,1) = dfx(1,1)*max(max(Wells.Fluxes))/2;
+% Lambday(1,1) = dfy(1,1)*max(max(Wells.Fluxes))/2;
+% %Compute timestep size
+% dtx=CFL*pv/max(abs(Lambdax(:)));
+% dty=CFL*pv/max(abs(Lambday(:)));
+% dt=min(dtx,dty);
 
 % tstart = tic;
 % %Other way of computing the timestep size.
