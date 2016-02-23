@@ -25,35 +25,19 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
     %Initial guess for Newton loop
     snew = sold;
     %Residual at first iteration
-    [fw, df, Ddf] = ComputeFractionalFlow(snew, Fluid);
-    A = SaturationMatrix(Grid,U,q);      % system matrix
-    Residual = max(q,0) + A*fw - pv/dt*(snew-s0);
+    [fw, df] = ComputeFractionalFlow(snew, Fluid, Grid, U);
+    Residual = Residual(snew, s0, q, Grid, U, fw);
     
     % Initialise objects
     Norm = 1;
-    dS = zeros(N,1);
+    Newton=1; %Newton's iterations counter
     
     % Newton-Raphson loop
-    Newton=1; %Newton's iterations counter
-    dS_crit = zeros(N,1);
     while ((Norm > tol && Newton <= MaxIter) || (Newton==1))
         %Compute dS at nu+1
         D = spdiags(pv/dt*ones(N,1),0,N,N);
         B = D-A*spdiags(df,0,N,N);
-        
-        % FLUX CORRECTION - MATTEO
-        if (ImplicitSolver.fluxfunction==1)
-            dS_old = dS;
-            dS = B\Residual;
-            if (min(dS_crit .* dS) < 0)
-                dS_crit = dS_old .* ((dS_crit .* dS) < 0)...
-                    - dS_old .* ((dS_crit .* dS) > 0);
-                C = B-A*spdiags(Ddf.*dS_crit,0,N,N);
-                dS = C\Residual;
-            end
-        else
-            dS = B\Residual;
-        end
+        dS = B\Residual;
         
         %Update Saturation and remove unphysical values
         s_old = snew;
@@ -61,20 +45,14 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         snew = min(snew,1);
         snew = max(snew,Fluid.swc);
         
-        % FLUX CORRECTION - PATRICK
-        if (ImplicitSolver.fluxfunction==2)
-            Ddf = Derivative_2nd(snew, Fluid);
-            Ddf_old = Derivative_2nd(s_old, Fluid);
-            snew = snew.*(Ddf.*Ddf_old>=0)+0.5*(snew+sold).*(Ddf.*Ddf_old<0);
-            dS = snew-s_old;
-        end
+        [snew, dS] = FluxCorrection(snew, sold, Fluid);
         
         %Compute norm of dS
         Norm = norm(dS, inf);
         
         %Compute Residual at nu
-        [fw, df, Ddf] = ComputeFractionalFlow(snew, Fluid);
-        Residual = max(q,0)+A*fw-pv/dt*(snew-s0);
+        [fw, df] = ComputeFractionalFlow(snew, Fluid, Grid, U);
+        Residual = Residual(snew, s0, q, Grid, U, fw);
         
         %Increase iteration counter
         Newton=Newton+1;

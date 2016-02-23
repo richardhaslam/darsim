@@ -35,6 +35,11 @@ switch(Fluid.Pc)
         dPc = Pcs./(Fluid.swc - S);
     case('Table')
         %here you read the table
+        disp('ERROR: The option <Table> for capillary pressure has not been implemented yet')
+        return
+    otherwise
+        disp('ERROR: The capillary pressure curve specified does not exist!!')
+        return
 end
 end
 

@@ -5,13 +5,25 @@
 %TU Delft
 %Year: 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Fw, dFw, DdFw] = ComputeFractionalFlow(s, Fluid)
+function [Fw, dFw] = ComputeFractionalFlow(s, Fluid, Grid, Utot)
 %Compute Mobilities
 [Mw, Mo] = Mobilities(s, Fluid);
-Mt = Mw+Mo;   %total mobility
+Mt = Mw + Mo;
 %Flux function and derivatives
 fw = Mw./Mt;
-df = Derivative(s,Fluid);
-Ddf = Derivative_2nd(s, Fluid);
-
+dfw = Derivative(s,Fluid);
+if (isempty(Fluid.Pc))
+    % Without capillarity
+    Fw = fw;
+    dFw = dfw;
+else
+    % With capillarity
+    Utot.x;
+    Utot.y;
+    fw = reshape(fw, Grid.Nx, Grid.Ny);    
+    CapFx(2:Nx+1,:) = (C(:,:) - C(:,:))./Grid.dx;
+    CapFy(:,2:Ny+1) = (C(:,:) - C(:,:))./Grid.dy;
+    Fw(:,:) = fw(:,:) + CapFx + CapFy;
+    Fw = reshape(Fw, Grid.N, 1);
+end
 end
