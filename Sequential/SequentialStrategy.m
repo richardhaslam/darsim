@@ -49,7 +49,7 @@ while (Converged==0 && Iter <= MaxExtIter)
             Converged = 1;
         else
             Sequential.ImplicitSolver.timestep = [Sequential.ImplicitSolver.timestep, Ndt];
-            [S, Sequential.ImplicitSolver, dT, Tconverged] = ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT);
+            [S, Sequential.ImplicitSolver, dT, Tconverged] = ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT, K);
             if Tconverged == 0
                 disp('Transport solver did not converge')
                 break

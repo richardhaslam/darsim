@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Snew, ImplicitSolver, dt, converged]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, ImplicitSolver, dt)
+function [Snew, ImplicitSolver, dt, converged]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, ImplicitSolver, dt, K)
 %Implicit Transport Solver
 Nx = Grid.Nx;
 Ny = Grid.Ny;
@@ -19,41 +19,42 @@ sold = reshape(Sold, N, 1); %last converged saturation
 s0 = reshape(S0, N, 1);    %saturation at previous timestep
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-converged=0;
-chops=0;
+converged = 0;
+chops = 0;
 while (converged==0 && chops<=10)   %If it does not converge the timestep is chopped
     %Initial guess for Newton loop
     snew = sold;
+    
     %Residual at first iteration
-    [fw, df] = ComputeFractionalFlow(snew, Fluid, Grid, U);
-    A = SaturationMatrix(Grid,U,q);      % system matrix
-    Residual = TransportResidual(snew, s0, A, q, fw, pv, dt);
+    help =  K(1, :, :);
+    K = zeros(Nx, Ny);
+    K(:,:) = help(1, :,:);
+    Residual = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
     
     % Initialise objects
     Norm = 1;
-    Newton=1; %Newton's iterations counter
+    Newton = 1; %Newton's iterations counter
     
     % Newton-Raphson loop
     while ((Norm > tol && Newton <= MaxIter) || (Newton==1))
         %Compute dS at nu+1
         D = spdiags(pv/dt*ones(N,1),0,N,N);
-        B = D-A*spdiags(df,0,N,N);
-        dS = B\Residual;
+        B = D - A * spdiags(df,0,N,N);
+        dS = B \ Residual;
         
         %Update Saturation and remove unphysical values
         sold = snew;
-        snew = sold+dS;
+        snew = sold + dS;
         snew = min(snew,1);
         snew = max(snew,Fluid.swc);
         
-        [snew, dS] = FluxCorrection(snew, sold, Fluid);
+        [snew, dS] = FluxCorrection(snew, sold, Fluid, ImplicitSolver.fluxfunction);
         
         %Compute norm of dS
         Norm = norm(dS, inf);
         
         %Compute Residual at nu
-        [fw, df] = ComputeFractionalFlow(snew, Fluid, Grid, U);
-        Residual = TransportResidual(snew, s0, A, q, fw, pv, dt);
+        TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid)
         
         %Increase iteration counter
         Newton=Newton+1;
