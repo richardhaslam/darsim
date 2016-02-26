@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
+function [P, S, Pc, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
 %SEQUENTIAL STRATEGY
 Grid.CFL=Sequential.CFL;
 MaxExtIter=Sequential.MaxExtIter;
@@ -23,7 +23,7 @@ S=S0;
 while (Converged==0 && Iter <= MaxExtIter)
     tstart1 = tic;
     %1. Solve flow equation for pressure and compute fluxes
-    [P, U, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+    [P, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
     ptimer(Iter) = toc(tstart1);
     
     %2. Check mass balance

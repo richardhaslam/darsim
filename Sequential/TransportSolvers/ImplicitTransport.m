@@ -14,6 +14,9 @@ por = Grid.por;
 pv = por*Grid.Volume;   %Void Volume in each cell
 tol = ImplicitSolver.tol;
 MaxIter = ImplicitSolver.maxNewton;
+help =  K(1, :, :);
+K = zeros(Nx, Ny);
+K(:,:) = help(1, :,:);
 %%Create saturation vectors
 sold = reshape(Sold, N, 1); %last converged saturation  
 s0 = reshape(S0, N, 1);    %saturation at previous timestep
@@ -26,10 +29,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
     snew = sold;
     
     %Residual at first iteration
-    help =  K(1, :, :);
-    K = zeros(Nx, Ny);
-    K(:,:) = help(1, :,:);
-    Residual = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
+    [Residual, V, CapJac, df] = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
     
     % Initialise objects
     Norm = 1;
@@ -39,8 +39,8 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
     while ((Norm > tol && Newton <= MaxIter) || (Newton==1))
         %Compute dS at nu+1
         D = spdiags(pv/dt*ones(N,1),0,N,N);
-        B = D - A * spdiags(df,0,N,N);
-        dS = B \ Residual;
+        B = D - V * spdiags(df,0,N,N) + CapJac;
+        dS = - B \ Residual;
         
         %Update Saturation and remove unphysical values
         sold = snew;
@@ -54,7 +54,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         Norm = norm(dS, inf);
         
         %Compute Residual at nu
-        TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid)
+        [Residual, V, CapJac, df] = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
         
         %Increase iteration counter
         Newton=Newton+1;

@@ -19,6 +19,10 @@ Directory = strcat(InputDirectory,'/Output/');
 %%Plot Permeability Field
 PlotPermeability(K, Grid);
 
+%Cances function if capillarity is used
+if (~isempty(Fluid.Pc))
+    Fluid = ComputeCancesFunction(Fluid);
+end
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
 S = ones(Grid.Nx, Grid.Ny, 1)*0.1;

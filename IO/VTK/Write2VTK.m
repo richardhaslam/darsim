@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, CoarseGrid, maxLevel)
+function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, CoarseGrid, maxLevel)
 %Write a VTK file
 fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
 fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -36,7 +36,9 @@ fprintf(fileID, '\n');
 %Saturation
 PrintScalar2VTK(fileID, reshape(S, Grid.N, 1), ' SATURATION');
 fprintf(fileID, '\n');
-if (nargin > 7)
+PrintScalar2VTK(fileID, reshape(Pc, Grid.N, 1), ' CapPRESSURE');
+fprintf(fileID, '\n');
+if (nargin > 8)
     %ADD ADM coarse grids
     PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
     for i=1:maxLevel

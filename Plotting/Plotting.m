@@ -90,7 +90,7 @@ else
         colorbar;
         pressuremax =max(max(P));
         pressuremin = min(min(P));
-        caxis ([0,1e5]);
+        caxis ([Prod(1).p,Inj(1).p]);
         axis('image');
         set(gca,'fontsize',24);
         
@@ -116,6 +116,25 @@ else
         axis('image');
         set(gca,'fontsize',24);
         drawnow
+        
+        %Capillary pressure
+        figure(500)
+        h = pcolor(X,Y,Pc');
+        set(h, 'EdgeColor', 'none');
+        %view([45 45]);
+        if Grid.Nx==Grid.Ny
+            axis square;
+        end
+        title('Pc [Pa]');
+        xlabel('x [m]');
+        ylabel('y [m]');
+        colormap(jet);
+        colorbar;
+        pressuremax =max(max(Pc));
+        pressuremin = min(min(Pc));
+        caxis ([pressuremin, pressuremax]);
+        axis('image');
+        set(gca,'fontsize',24);
         
         %Apparent viscosity
         if (strcmp(Fluid.RelPerm, 'Foam')==1)

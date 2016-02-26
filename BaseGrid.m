@@ -39,7 +39,7 @@ while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
                     Sequential.MaxExtIter = 1;
                 end
             end
-            [P, S, dT, Converged, Timers, Sequential.ImplicitSolver] =...
+            [P, S, Pc, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             if (Ndt==1)
@@ -125,7 +125,7 @@ while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
             end
         Plotting;
         case('VTK')
-            Write2VTK(Directory, Problem, Ndt, Grid, K, P, S);
+            Write2VTK(Directory, Problem, Ndt, Grid, K, P, S, Pc);
     end
     
     

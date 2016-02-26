@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, U, Wells, A, Ab, q]=PressureSolver(Grid, Inj, Prod, Fluid, S, K)
+function [P, U, Pc, Wells, A, Ab, q]=PressureSolver(Grid, Inj, Prod, Fluid, S, K)
 %PRESSURE Solver
 
 %1.Compute transmissibilities using harmonic average.
@@ -36,6 +36,7 @@ for i=1:length(Prod)
 end
 
 %Add capillary term to the right-hand side
+Pc = zeros(Nx, Ny);
 if ~isempty(Fluid.Pc)
     Kw(1,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kw(2,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
