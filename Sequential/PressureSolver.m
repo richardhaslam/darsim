@@ -37,10 +37,12 @@ end
 
 %Add capillary term to the right-hand side
 Pc = zeros(Nx, Ny);
+Ucap.x = zeros(Nx+1,Ny);
+Ucap.y = zeros(Nx, Ny+1);
 if ~isempty(Fluid.Pc)
     Kw(1,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kw(2,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [q, Pc] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
+    [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
 end
 %Solve for pressure
 p = A\q;
@@ -49,8 +51,8 @@ p = A\q;
 P = reshape(p, Nx, Ny,1);
 U.x = zeros(Nx+1,Ny,1);
 U.y = zeros(Nx,Ny+1,1);
-U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)).*Tx(2:Nx,:);
-U.y(:,2:Ny)  = (P(:,1:Ny-1)-P(:,2:Ny)).*Ty(:,2:Ny);
+U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)).*Tx(2:Nx,:) - Ucap.x(2:Nx,:);
+U.y(:,2:Ny) = (P(:,1:Ny-1)-P(:,2:Ny)).*Ty(:,2:Ny) - Ucap.y(:,2:Ny);
 
 %Wells: fluxes [m^3/s]
 Fluxes = zeros(N,1);

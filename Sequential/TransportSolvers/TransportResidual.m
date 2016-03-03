@@ -28,13 +28,7 @@ Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
 %Builds a matrix that sums capillary fluxes
-CapFlux.x = zeros(Nx+1, Ny);
-CapFlux.y = zeros(Ny, Ny +1);
-s = reshape(S, N, 1);
-C = Fluid.Cances(s);
-C = reshape(C, Nx, Ny);
-CapFlux.x(2:Nx, :) = Grid.Ax*(K(1:Nx-1,:).*C(1:Nx-1, :) - K(2:Nx, :).*C(2:Nx, :))/Grid.dx;
-CapFlux.y(:,2:Ny) = Grid.Ay*(K(:,1:Ny-1).*C(:,1:Ny-1) - K(:, 2:Ny).*C(:, 2:Ny))/Grid.dy;
+CapFlux = ComputeCapFluxCances(S, Fluid, K);
 %
 x1 = reshape(CapFlux.x(1:Nx,:),N,1);  
 y1 = reshape(CapFlux.y(:,1:Ny),N,1);
@@ -45,6 +39,16 @@ y2 = reshape(CapFlux.y(:,2:Ny+1),N,1);
 DiagVecs = -x1 - y1 + x2 + y2; % diagonal vectors
 DiagIndx = 0; % diagonal index
 B = spdiags(DiagVecs,DiagIndx,N,N);
+end
+
+function CapFlux = ComputeCapFluxCances(S, Fluid, K)
+CapFlux.x = zeros(Nx+1, Ny);
+CapFlux.y = zeros(Ny, Ny +1);
+s = reshape(S, N, 1);
+C = Fluid.Cances(s);
+C = reshape(C, Nx, Ny);
+CapFlux.x(2:Nx, :) = Grid.Ax*(K(1:Nx-1,:).*C(1:Nx-1, :) - K(2:Nx, :).*C(2:Nx, :))/Grid.dx;
+CapFlux.y(:,2:Ny) = Grid.Ay*(K(:,1:Ny-1).*C(:,1:Ny-1) - K(:, 2:Ny).*C(:, 2:Ny))/Grid.dy;
 end
 
 function CapJac = CapJacobian(Fluid, K, s, Grid)
@@ -125,3 +129,4 @@ CapJac(N, N) = -f(Nx, Ny) - g(Nx, Ny);
 %Let's make it sparse
 CapJac = sparse(CapJac);
 end
+
