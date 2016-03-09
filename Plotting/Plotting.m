@@ -12,18 +12,24 @@ if (problem_1D==1)
     x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
     figure(4)
     subplot(2,1,1);
-    plot(x, P);
-    title('Pressure [Pa]');
+    plot(x, P, 'red', 'LineWidth',5);
+    hold on
+    plot(x, P-Pc, 'blue', 'LineWidth',5);
+    %title('Pressure [Pa]');
     xlabel('x [m]');
     ylabel('Pressure [Pa]');
-    hold on;
+    axis([0 Grid.Lx min(P-Pc)-100 max(P)+100])
+    legend('oil','water', 'Location', 'east');
+     set(gca,'fontsize',24);
+    hold on
     subplot(2,1,2);
-    plot(x, S);
+    plot(x, S, 'blue');
     axis([0 Grid.Lx 0 1]);
     title('Saturation of water');
     xlabel('x [m]');
     ylabel('Saturation');
     hold on;
+    set(gca,'fontsize',24);
     drawnow;
 else
     %Plot for 2D problems

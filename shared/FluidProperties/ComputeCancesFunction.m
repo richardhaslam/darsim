@@ -28,7 +28,7 @@ switch (Fluid.Pc)
         plot(Cfitted, 'blue');
         Fluid.Cances = Cfitted;
     case('JLeverett')
-        C = ;
+        C = 1;
         
 end
 end

@@ -22,6 +22,19 @@ Tstops = linspace(T/10, T, 10);
 index = 1;
 Saturations = zeros(Grid.N, 10);
 Pressures = zeros(Grid.N, 10);
+%%%%%%%%%%%%%%PLOT INITIAL STATE%%%%%%%%%%%%%
+switch (Options.PlotSolution)
+        case('Matlab')
+            if (Grid.Nx == 1 || Grid.Ny == 1)
+                Options.problem_1D = 1;
+            end
+            Plotting;
+        case('VTK')
+            vtkcount = 1;
+            Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc);
+            vtkcount = vtkcount + 1;
+end
+
 while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
     tstart = tic;
     S0 = S;
@@ -51,12 +64,7 @@ while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
                 % Effective permeability
-                [Mw, Mo]=Mobilities(S, Fluid);
-                Mt=Mw+Mo;   %total mobility
-                Kt=zeros(2, Grid.Nx, Grid.Ny);
-                Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
-                Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-                [P0, U, Wells]=PressureSolver(Grid, Kt, Inj, Prod);
+                [P0, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
                 
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
@@ -66,20 +74,12 @@ while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
                 dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
                 
                 %Compute rock transmissibility
-                P0 = zeros(Grid.Nx, Grid.Ny);
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 [P, S, U, dT, FIM, Timers, Converged, Inj, Prod] = ...
                 FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Options, Ndt);
             else
                 dT = min(dT_CFL, maxdT(index));
                 % Use IMPES as intial guess for pressure for the 1st timestep
-                % Effective permeability
-                [Mw, Mo]=Mobilities(S, Fluid);
-                Mt=Mw+Mo;   %total mobility
-                Kt=zeros(2, Grid.Nx, Grid.Ny);
-                Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
-                Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-                [P0]=PressureSolver(Grid, Kt, Inj, Prod);
                 [P, S, U, dT, FIM, Timers, Converged, Inj, Prod] = ...
                     FullyImplicit(P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Options, Ndt);
             end
@@ -125,7 +125,10 @@ while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
             end
         Plotting;
         case('VTK')
-            Write2VTK(Directory, Problem, Ndt, Grid, K, P, S, Pc);
+            if (mod(Ndt,100)==0)
+            Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc);
+            vtkcount = vtkcount + 1;
+            end
     end
     
     

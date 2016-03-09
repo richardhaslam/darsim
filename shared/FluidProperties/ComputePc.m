@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Pc, dPc] = ComputePc(S, Fluid, K, por)
+function [Pc, dPc, dJ] = ComputePc(S, Fluid, K, por)
 %Compute capillary pressure
 %   Given the wetting phase saturation it returns Pc and dPc
 switch(Fluid.Pc)
@@ -26,6 +26,7 @@ switch(Fluid.Pc)
         %Compute Pc and dPc analytically
         Pc = Pct.*((1-Fluid.swc)./(S-Fluid.swc)).^(1/lambda);
         dPc = Pct*((1 - Fluid.swc)./(S - Fluid.swc)).^(1/lambda)./(lambda*(Fluid.swc - S));
+        dJ = dPc;
     case('Table')
         %here you read the table
         disp('ERROR: The option <Table> for capillary pressure has not been implemented yet')

@@ -40,8 +40,9 @@ Pc = zeros(Nx, Ny);
 Ucap.x = zeros(Nx+1,Ny);
 Ucap.y = zeros(Nx, Ny+1);
 if ~isempty(Fluid.Pc)
-    Kw(1,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
-    Kw(2,:,:)=reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
+    Kw=zeros(2, Grid.Nx, Grid.Ny);
+    Kw(1,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
+    Kw(2,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
     [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
 end
 %Solve for pressure

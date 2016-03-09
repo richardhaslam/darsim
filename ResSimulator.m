@@ -17,6 +17,7 @@ end
 Directory = strcat(InputDirectory,'/Output/');
 
 %%Plot Permeability Field
+%K(1:end/2) = K(1:end/2) *1e1;
 PlotPermeability(K, Grid);
 
 %Cances function if capillarity is used
@@ -26,6 +27,8 @@ end
 %%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
 S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
+S(1:50) = 0.2;
+S(51:end) = 0.8;
 CumulativeTime = zeros(TimeSteps, 1); 
 
 %%%%%%%%%%%%%%%%%%%%%%MAIN LOOP%%%%%%%%%%%%%%%%%%%%%%%
