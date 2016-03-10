@@ -21,11 +21,14 @@ switch (Fluid.Pc)
         Cfitted = fit(s(2:end)',C,'poly5');
         figure(177)
         C = [0;C];
-        plot(s(1:end), C, 'red');
+        plot(s(1:end), C, 'red', 'LineWidth', 5);
         xlabel('water saturation');
         ylabel('Cances function');
         hold on
-        plot(Cfitted, 'blue');
+        C2 = Cfitted(s);
+        plot(s, C2, 'blue', 'LineWidth', 3);
+        legend('Cances','fitted');
+        set(gca,'fontsize',24);
         Fluid.Cances = Cfitted;
     case('JLeverett')
         C = 1;

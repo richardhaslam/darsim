@@ -30,16 +30,15 @@ while (Converged==0 && Iter <= MaxExtIter)
     %2. Check mass balance
     tstart2 = tic;
     [Balance, U] = check2D(U, Grid, Wells);
-    Balance =1;
     btimer(Iter) = toc(tstart2);
     
     %3. Compute timestep-size based on CFL
     tstart3 = tic;
-%     if (Iter==1)
-%         dT=timestepping(Fluid, S, Grid, U, Wells);
-%         dT=min(dT, maxdT);
-%     end
-    dT = 30;
+    if (Iter==1)
+        dT=timestepping(Fluid, S, Grid, U, Wells);
+        dT=min(dT, maxdT);
+    end
+    %dT = 30;
     timestpetimer = toc(tstart3);
     
     %4. Solve transport equation given the total velocity field

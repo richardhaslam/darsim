@@ -27,24 +27,28 @@ A = AssemblePressureMatrix(Tx, Ty, Nx, Ny);
 Ab = A;
 q=zeros(N,1);
 
-%Add Wells
-for i=1:length(Inj)
-    [A, q] = AddWell(A, q, Inj(i), Kvector);
-end
-for i=1:length(Prod)
-    [A, q] = AddWell(A, q, Prod(i), Kvector);
-end
-
 %Add capillary term to the right-hand side
 Pc = zeros(Nx, Ny);
 Ucap.x = zeros(Nx+1,Ny);
 Ucap.y = zeros(Nx, Ny+1);
+Kwvector = zeros(Grid.N, 1);
 if ~isempty(Fluid.Pc)
     Kw=zeros(2, Grid.Nx, Grid.Ny);
     Kw(1,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kw(2,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
     [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
+    Kwvector = reshape(Kw(1,:,:), N, 1);
 end
+
+%Add Wells
+pc = reshape(Pc, Grid.N, 1);
+for i=1:length(Inj)
+    [A, q] = AddWell(A, q, Inj(i), Kvector, pc, Kvector);
+end
+for i=1:length(Prod)
+    [A, q] = AddWell(A, q, Prod(i), Kvector, pc, Kwvector);
+end
+
 %Solve for pressure
 p = A\q;
 
@@ -57,7 +61,7 @@ U.y(:,2:Ny) = (P(:,1:Ny-1)-P(:,2:Ny)).*Ty(:,2:Ny) - Ucap.y(:,2:Ny);
 
 %Wells: fluxes [m^3/s]
 Fluxes = zeros(N,1);
-Fluxes = ComputeWellFluxes(Fluxes, Inj, p, Kvector); 
-Fluxes = ComputeWellFluxes(Fluxes, Prod, p, Kvector);
+Fluxes = ComputeWellFluxes(Fluxes, Inj, p, Kvector, pc, Kvector);
+Fluxes = ComputeWellFluxes(Fluxes, Prod, p, Kvector, pc, Kwvector);
 Wells.Fluxes = reshape(Fluxes, Nx, Ny);
 end

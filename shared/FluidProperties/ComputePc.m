@@ -32,8 +32,7 @@ switch(Fluid.Pc)
         disp('ERROR: The option <Table> for capillary pressure has not been implemented yet')
         return
     otherwise
-        disp('ERROR: The capillary pressure curve specified does not exist!!')
-        return
+        Pc = 0.*S;
 end
 end
 

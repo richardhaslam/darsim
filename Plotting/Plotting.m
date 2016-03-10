@@ -23,7 +23,7 @@ if (problem_1D==1)
      set(gca,'fontsize',24);
     hold on
     subplot(2,1,2);
-    plot(x, S, 'blue');
+    plot(x, S, 'red', 'LineWidth', 3);
     axis([0 Grid.Lx 0 1]);
     title('Saturation of water');
     xlabel('x [m]');
