@@ -1,6 +1,4 @@
-function PcPlot(Fluid)
-S=0:0.01:1;
-[Pc, dPc] = ComputePc(S, Fluid);
+function PcPlot(Pc, dPc, S)
 figure(125);
 %subplot(1,2,1);
 plot(S, Pc, 'LineWidth',5);

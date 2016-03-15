@@ -22,20 +22,7 @@ Tstops = linspace(T/10, T, 10);
 index = 1;
 Saturations = zeros(Grid.N, 10);
 Pressures = zeros(Grid.N, 10);
-%%%%%%%%%%%%%%PLOT INITIAL STATE%%%%%%%%%%%%%
-% switch (Options.PlotSolution)
-%         case('Matlab')
-%             if (Grid.Nx == 1 || Grid.Ny == 1)
-%                 Options.problem_1D = 1;
-%             end
-%             Pc = ComputePc(S, Fluid, K, Grid.por);
-%             Plotting;
-%         case('VTK')
-%             vtkcount = 1;
-%             Pc = ComputePc(S, Fluid, K, Grid.por);
-%             Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc);
-%             vtkcount = vtkcount + 1;
-% end
+vtkcount = 1;
 
 while (t<T && Ndt <= TimeSteps) %&& S(Grid.Nx, Grid.Ny)<=1e-3)
     tstart = tic;

@@ -1,3 +1,10 @@
+%Add well
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Matteo Cusini
+%TU Delft
+%Year: 2015
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [A, q] = AddWell(A, q, Well, K, pc, Kw)
 a = Well.cells.cells;
 for i=1:length(a)

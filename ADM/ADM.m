@@ -43,16 +43,9 @@ while (t<T && Ndt <= TimeSteps)
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1) % I only need to do this at the 1st timestep
                 % Use IMPES as intial guess for pressure for the 1st timestep
-                % Effective permeability
-                [Mw, Mo]=Mobilities(S, Fluid);
-                Mt=Mw+Mo;   %total mobility
-                Kt=zeros(2, FineGrid.Nx, FineGrid.Ny);
-                Kt(1,:,:)=reshape(Mt, 1, FineGrid.Nx, FineGrid.Ny).*K(1,:,:);   % x-direction
-                Kt(2,:,:)=reshape(Mt, 1, FineGrid.Nx, FineGrid.Ny).*K(2,:,:);   % y-direction
                 % PressureSolver as initial guess
-                [P0, U, Wells, Ap, Ab, q] = PressureSolver(FineGrid, Kt, Inj, Prod);
+                [P0, U, Wells, Ap, Ab, q] = PressureSolver(FineGrid, K, Inj, Prod, Fluid, S, K);
                 %[P0, U_mmsfv] = MMsFVPressureSolver(FineGrid, Inj, Prod, Kt, CoarseGrid, maxLevel);
-                
                 
                 %Keep first timestep to be small
                 FineGrid.CFL = 0.25/8;
@@ -66,12 +59,11 @@ while (t<T && Ndt <= TimeSteps)
                 
                 %Pressure Interpolator
                 disp('Pressure interpolator - start computation');
-                CoarseGrid = PressureInterpolator(FineGrid, Kt, CoarseGrid, maxLevel, ADMSettings.Pressure_Interpolator);
+                CoarseGrid = PressureInterpolator(FineGrid, K, CoarseGrid, maxLevel, ADMSettings.Pressure_Interpolator);
                 disp('Pressure interpolator - end')
                 disp(char(2));
                                
                 %Solve first timestep
-                %P0 = zeros(FineGrid.Nx, FineGrid.Ny);
                 [P, S, U, dT, FIM, Timers, ActiveFine, CoarseGrid, FineGrid, Converged, Inj, Prod] = ...
                 FullyImplicit_DLGR(P0, S0, K, Trx, Try, FineGrid, ...
                 CoarseGrid, Fluid, Inj, Prod, FIM, dT, Options, Ndt, ADMSettings);
