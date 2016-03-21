@@ -6,20 +6,16 @@
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 global NoWellsCoarseCells
+Grid.CoarseFactor = [1, 1];
 
-% I copy the base grid to a new object
-FineGrid = Grid;
-%clear Grid;
-FineGrid.CoarseFactor = [1, 1];
-
-% Add I, J coordinates to FineGrid
-FineGrid.I = ones(FineGrid.N, 1);
-FineGrid.J = ones(FineGrid.N, 1);
-Jindexes = 1:1:FineGrid.Ny;
-for i=1:FineGrid.Ny
-    a = FineGrid.Nx*(i-1)+1;
-    FineGrid.I(a:a+FineGrid.Nx-1) = 1:1:FineGrid.Nx;
-    FineGrid.J(a:a+FineGrid.Nx-1) = Jindexes(i)*ones(FineGrid.Nx,1);
+% Add I, J coordinates to Grid
+Grid.I = ones(Grid.N, 1);
+Grid.J = ones(Grid.N, 1);
+Jindexes = 1:1:Grid.Ny;
+for i=1:Grid.Ny
+    a = Grid.Nx*(i-1)+1;
+    Grid.I(a:a+Grid.Nx-1) = 1:1:Grid.Nx;
+    Grid.J(a:a+Grid.Nx-1) = Jindexes(i)*ones(Grid.Nx,1);
 end
 
 %Build Coarse Grids
@@ -28,12 +24,12 @@ CoarseGrid = struct('CoarseFactor', {}, 'Nx', {}, 'Ny', {}, ...
     'I', {}, 'J', {},'Father', {}, 'Active', {}, 'Wells', {}, 'Neighbours', {}, 'Centers', {});
 for i=1:maxLevel
     CoarseGrid(i).CoarseFactor = ADMSettings.Coarsening(i,:);
-    CoarseGrid(i) = BuildCoarseGrid(FineGrid, CoarseGrid(i));
+    CoarseGrid(i) = BuildCoarseGrid(Grid, CoarseGrid(i));
 end
 AssignFathers;
 
 %Flag coarse blocks with wells
-[CoarseGrid] = CoarseWells(FineGrid, CoarseGrid, maxLevel, Inj, Prod);
+[CoarseGrid] = CoarseWells(Grid, CoarseGrid, maxLevel, Inj, Prod);
 NoWellsCoarseCells = ones(CoarseGrid(1).Nx*CoarseGrid(1).Ny,1);
 Nc1 = CoarseGrid(1).Nx * CoarseGrid(1).Ny;
 if maxLevel > 1

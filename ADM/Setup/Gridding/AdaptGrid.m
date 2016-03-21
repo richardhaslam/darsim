@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [DLGRGrid, ActiveFine, CoarseGrid, FineGrid] = AdaptGrid(FineGrid, CoarseGrid, S, Ro, Rw, maxLevel, tol)
+function [DLGRGrid, CoarseGrid, FineGrid] = AdaptGrid(FineGrid, CoarseGrid, S, Ro, Rw, maxLevel, tol)
 % Coarsen the grid where resolution is not necessary
 global NoWellsCoarseCells
 
@@ -29,7 +29,6 @@ for x = 1:maxLevel
     NumberOfActive(x+1) = sum(CoarseGrid(x).Active);
     TotalActive = TotalActive + sum(CoarseGrid(x).Active);
 end
-ActiveFine = reshape(FineGrid.Active, FineGrid.Nx, FineGrid.Ny);
 
 %4. Add cells to DLGR grid
 Field1 = 'N';  Value1 = NumberOfActive;

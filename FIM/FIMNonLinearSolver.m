@@ -1,18 +1,19 @@
-%ADM FIM non-linear solver
+%FIM non-linear solver
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 21 March 2016
+%Last modified: 21 March 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, Uo, dt, FIM, Timers, ActiveFine, CoarseGrid, FineGrid, Converged, Inj, Prod, Prolp] = ...
-    FullyImplicit_DLGR(P0, S0, K, Trx, Try, FineGrid, CoarseGrid,...
-    Fluid, Inj, Prod, FIM, dt, Options, Ndt, ADMSettings)
-%% DLGR: FULLY IMPLICIT STRATEGY
-Nx = FineGrid.Nx;
-Ny = FineGrid.Ny;
-N = FineGrid.N;
-pv = FineGrid.por*FineGrid.Volume;
+function [P, S, Uo, dt, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+                    FIMNonLinearSolver...
+                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings)
+Nx = Grid.Nx;
+Ny = Grid.Ny;
+N = Grid.N;
+pv = Grid.por*Grid.Volume;
+ADM.active = 0;
 Tol = FIM.Tol;
 
 % Initialise objects
@@ -26,54 +27,46 @@ while (Converged==0 && chops<=20)
     p = p0;
     [Mw, Mo, dMw, dMo] = Mobilities(s, Fluid);
     %Oil
-    [A, qo, Uo] = DivergenceMatrix(FineGrid, P, K, Trx, Try, Inj, Prod);
+    [A, qo, Uo] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
     Ro = -max(qo,0)*Inj(1).Mo -A*Mo + pv/dt*((1-s)-(1-s0));
-    UpWindO = UpwindOperator(FineGrid, Uo);
+    UpWindO = UpwindOperator(Grid, Uo);
     %Water
     %Pc = ComputePc(S); %Compute capillary pressure for all cells
     Pw = P; %- Pc;
-    [A, qw, Uw] = DivergenceMatrix(FineGrid, Pw, K, Trx, Try, Inj, Prod);
+    [A, qw, Uw] = DivergenceMatrix(Grid, Pw, K, Trx, Try, Inj, Prod);
     Rw = -max(qw,0)*Inj(1).Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
     Residual = [Ro; Rw];
-    UpWindW = UpwindOperator(FineGrid, Uw);
+    UpWindW = UpwindOperator(Grid, Uw);
 
-    if (chops == 0)
+    if (ADMSettings.active == 1 && chops == 0)
         tic
         % Choose where to coarsen and build DLGR grid
-        [DLGRGrid, ActiveFine, CoarseGrid, FineGrid] = AdaptGrid(FineGrid, CoarseGrid, S0, Ro, Rw, ADMSettings.maxLevel, ADMSettings.tol);
+        [DLGRGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, S0, Ro, Rw, ADMSettings.maxLevel, ADMSettings.tol);
         % Construct R & P based on DLGR grid
-        [Rest, Prolp, Prols] = ConstructOperators(FineGrid, CoarseGrid, DLGRGrid);       
+        [ADM.Rest, ADM.Prolp, ADM.Prols] = ConstructOperators(Grid, CoarseGrid, DLGRGrid);
+        ADM.level = DLGRGrid.level(end);
+        ADM.active = 1;
         Timers.RP = toc;        
-                
-        % Plot Residuals at beginning of timestep
-        if (Options.PlotResiduals == 1)
-            PlotResiduals(Ro, Rw, FineGrid);
-        end
     end
     
-    % Timers
+    % NEWTON LOOP
+    % Initialise Timers
     TimerConstruct = zeros(FIM.MaxIter,1);
     TimerSolve = zeros(FIM.MaxIter, 1);
-    
-    % NEWTON LOOP
     itCount = 1;
     while ((Converged==0) && (itCount < FIM.MaxIter))
         start1 = tic;
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
-        J = BuildJacobian(FineGrid, K, Trx, Try, P, Mw, Mo, dMw, dMo, ...
+        J = BuildJacobian(Grid, K, Trx, Try, P, Mw, Mo, dMw, dMo, ...
             Uo, Uw, dt, Inj, Prod, UpWindO, UpWindW);
         TimerConstruct(itCount) = toc(start1);
         
        
-        % 2.a Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
-        [J_c, Residual_c] = Restrict(J, Residual, Rest, Prolp, Prols, N, DLGRGrid.level(end));
+        % 2 Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
-        Delta_c = -J_c\Residual_c;
+        Delta = LinearSolver(J, Residual, N, ADM);
         TimerSolve(itCount) = toc(start2);
-        
-        % 2.b Prolong Solution
-        Delta = Prolong(Delta_c, Prolp, Prols, DLGRGrid.level(end));
-        
+      
         % 2.c Update solution
         p = p + Delta(1:N);
         s = s + Delta(N+1:2*N);
@@ -84,21 +77,18 @@ while (Converged==0 && chops<=20)
         % 3. Compute residuals at nu
         [Mw, Mo, dMw, dMo]=Mobilities(s, Fluid);
         %Oil
-        [A, qo, Uo] = DivergenceMatrix(FineGrid, P, K, Trx, Try, Inj, Prod);
+        [A, qo, Uo] = DivergenceMatrix(Grid, P, K, Trx, Try, Inj, Prod);
         Ro = -max(qo,0)*Inj(1).Mo -A*Mo + pv/dt*((1-s)-(1-s0));
         %Water
         %Pc = ComputePc(S); %Compute capillary pressure for all cells
         Pw = P; %- Pc;
-        [A, qw, Uw] = DivergenceMatrix(FineGrid, Pw, K, Trx, Try, Inj, Prod);
+        [A, qw, Uw] = DivergenceMatrix(Grid, Pw, K, Trx, Try, Inj, Prod);
         Rw = -max(qw,0)*Inj(1).Mw - A*Mw + pv/dt*(s-s0); %I am injecting water only
         Residual = [Ro; Rw];
 
         % 4. Check convergence criteria
-        Norm1 = norm(Residual_c, inf);
-        %Norm2 = norm(Delta_c(DLGRGrid.N:2*DLGRGrid.N), inf);
-        if (Norm1 < Tol) %&& Norm2 < Tol)
-            Converged = 1;
-        end
+        Converged = NewtonConvergence(Residual, Delta, Tol, N, ADM);
+        
         itCount = itCount+1;
     end
     if (Converged == 0)
@@ -119,7 +109,9 @@ S = reshape(s,Nx,Ny);
 %% Stats
 FIM.Iter(Ndt) = itCount-1;
 FIM.Chops(Ndt) = chops;
-FIM.ActiveCells(Ndt, :) = DLGRGrid.N';
+if ADMSettings.active == 1
+    FIM.ActiveCells(Ndt, :) = DLGRGrid.N';
+end
 Timers.Construct = TimerConstruct;
 Timers.Solve = TimerSolve;
 end

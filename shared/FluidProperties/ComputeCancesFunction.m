@@ -6,11 +6,11 @@
 %Year: 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Fluid] = ComputeCancesFunction(Fluid, K, por)
-s = 0.1:0.001:1;
+s = 0.01:0.001:1;
 %Numerical 
 [Mw, Mo] = Mobilities(s, Fluid);
 Mt = Mw + Mo;
-[~, dPc, dJ] = ComputePc(s, Fluid, K, por);
+[Pc, dPc, dJ] = ComputePc(s, Fluid, K, por);
 PcPlot(Pc, dPc, s);
 switch (Fluid.Pc)
     case('BrooksCorey')

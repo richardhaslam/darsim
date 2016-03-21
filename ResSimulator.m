@@ -3,12 +3,17 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 2015
+%Last modified: 21 March 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%READ DATA from INPUT file%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Remove some warnings 
+warning('off', 'MATLAB:singularMatrix');
+warning('off', 'MATLAB:nearlySingularMatrix');
+
+%%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cd('../Code')
-InputDirectory = '../Input/Homo_Cap/';
+InputDirectory = '../Input/Homogeneous/';
 InputFile = strcat(InputDirectory, '/Homogeneous.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
@@ -17,41 +22,36 @@ end
 Directory = strcat(InputDirectory,'/Output/');
 
 %%Plot Permeability Field
-K(1:end/2) = K(1:end/2) *1e1;
 PlotPermeability(K, Grid);
 
 %Cances function if capillarity is used
 if (~isempty(Fluid.Pc))
     Fluid = ComputeCancesFunction(Fluid, reshape(K(1,:,:), Grid.Nx, Grid.Ny), Grid.por);
 end
-%%%%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
 S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
+CumulativeTime = zeros(TimeSteps, 1);
 
-CumulativeTime = zeros(TimeSteps, 1); 
+%%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
+if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
+    ADMSetup;
+else
+    CoarseGrid = 0;
+end
 
-%%%%%%%%%%%%%%%%%%%%%%MAIN LOOP%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%% TIME LOOP %%%%%%%%%%%%%%%%%%%%%%%
+TotalStart = tic;
 t = 0;    %Simulation time
 Ndt = 1;  %keeps track of the number of timesteps
 Converged = 0;
-%Remove some warnings 
-warning('off', 'MATLAB:singularMatrix');
-warning('off', 'MATLAB:nearlySingularMatrix');
+TimeDriver;
+TotalTime = toc(TotalStart);
 
-%%%%%%Choose whether to use ADM or not
-switch (ADMSettings.active)
-    case (1)
-        %ADM Settings
-        FIM.ActiveCells = zeros(TimeSteps, ADMSettings.maxLevel + 1);
-        disp('ADM SIMULATION');
-        TotalStart = tic;
-        ADM;
-        TotalTime = toc(TotalStart);
-    case (0)
-        disp('Base Grid SIMULATION');
-        TotalStart = tic;
-        BaseGrid;
-        TotalTime = toc(TotalStart);
-end
+%%%%%%%%%%%%%%%%%%% OUTPUT STATS %%%%%%%%%%%%%%%%%%%%%%
+OutputStatistics;
+
+%%%%%%%%%%%%%%%%%% END of SIMULATION %%%%%%%%%%%%%%%%%
 disp(char(10));
 disp(['The Total Simulation time is ' num2str(TotalTime) ' s']);

@@ -3,11 +3,12 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 2015
+%Last modified: 21 March 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Fine Grid
-FineGrid.Father = zeros(FineGrid.N, maxLevel);
-FineGrid.Centers = zeros(FineGrid.N, maxLevel);
+Grid.Father = zeros(Grid.N, maxLevel);
+Grid.Centers = zeros(Grid.N, maxLevel);
 for i=1:maxLevel
 Nc = CoarseGrid(i).Nx*CoarseGrid(i).Ny;
 for c = 1:Nc
@@ -15,13 +16,13 @@ for c = 1:Nc
     Imax = CoarseGrid(i).I(c) + ceil((CoarseGrid(i).CoarseFactor(1) - 1)/2);
     Jmin = CoarseGrid(i).J(c) - floor((CoarseGrid(i).CoarseFactor(2) - 1)/2);
     Jmax = CoarseGrid(i).J(c) + ceil((CoarseGrid(i).CoarseFactor(2) - 1)/2);
-    fc = CoarseGrid(i).I(c) + (CoarseGrid(i).J(c) - 1)*FineGrid.Nx;
-    FineGrid.Centers(fc,i) = 1;
+    fc = CoarseGrid(i).I(c) + (CoarseGrid(i).J(c) - 1)*Grid.Nx;
+    Grid.Centers(fc,i) = 1;
     %Scan fine cells inside c
     for I = Imin:Imax
         for J = Jmin:Jmax
-            f = I + (J-1)*FineGrid.Nx;
-            FineGrid.Father(f,i) = c;
+            f = I + (J-1)*Grid.Nx;
+            Grid.Father(f,i) = c;
         end
     end
 end

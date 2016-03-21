@@ -21,8 +21,8 @@ U.y(:,2:Ny)  = (P(:,1:Ny-1)-P(:,2:Ny)).*Ty(:,2:Ny);
 %Wells: fluxes [m^3/s]
 Fluxes = zeros(N,1);
 p = reshape(P, N, 1);
-Fluxes = ComputeWellFluxes(Fluxes, Inj, p, Kvector); 
-Fluxes = ComputeWellFluxes(Fluxes, Prod, p, Kvector);
+Fluxes = ComputeWellFluxes(Fluxes, Inj, p, Kvector, p*0, Kvector); 
+Fluxes = ComputeWellFluxes(Fluxes, Prod, p, Kvector, p*0, Kvector);
 Wells.Fluxes = reshape(Fluxes, Nx, Ny);
 
 A = SaturationMatrix(Grid, U, Fluxes);
