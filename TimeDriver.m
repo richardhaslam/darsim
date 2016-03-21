@@ -119,7 +119,11 @@ while (t<T && Ndt <= TimeSteps)
             if (Grid.Nx == 1 || Grid.Ny == 1)
             Options.problem_1D = 1;
             end
-        Plotting;
+            if ADMSettings.active == 1
+                Plottings_ADM
+            else
+                Plotting;
+            end
         case('VTK')
             if (mod(Ndt,100)==0)
             Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel);
