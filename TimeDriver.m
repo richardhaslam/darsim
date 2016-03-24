@@ -125,7 +125,7 @@ while (t<T && Ndt <= TimeSteps)
                 Plotting;
             end
         case('VTK')
-            if (mod(Ndt,100)==0)
+            if (mod(Ndt,2)==0)
             Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel);
             vtkcount = vtkcount + 1;
             end
