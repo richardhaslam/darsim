@@ -13,8 +13,8 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cd('../Code')
-InputDirectory = '../Input/Homogeneous/';
-InputFile = strcat(InputDirectory, '/Homogeneous.txt');
+InputDirectory = '../Input/SPE10T/';
+InputFile = strcat(InputDirectory, '/SPE10T.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
   mkdir(InputDirectory,'/Output/VTK');
