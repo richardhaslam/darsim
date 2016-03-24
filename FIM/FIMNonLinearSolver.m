@@ -99,14 +99,15 @@ end
 
 % Reshape S before quitting
 S = reshape(s,Nx,Ny);
-% % Update production and injection data in wells
-% Inj.water(Ndt+1) = Inj.water(Ndt) + dt*Inj.PI*(K(1,Inj.x,Inj.y)...
-%     *K(2, Inj.x, Inj.y))^0.5*(Inj.p-P(Inj.x,Inj.y))*Inj.Mw;
-% Prod.water(Ndt+1) = Prod.water(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
-%     *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mw((Prod.y-1)*Nx+Prod.x);
-% Prod.oil(Ndt+1) =  Prod.oil(Ndt) - dt*Prod.PI*(K(1,Prod.x,Prod.y)...
-%     *K(2, Prod.x, Prod.y))^0.5*(Prod.p-P(Prod.x,Prod.y))*Mo((Prod.y-1)*Nx+Prod.x);
-%% Stats
+
+%Average saturation in Coarse Blocks
+if (ADM.active == 1)
+    for x = 1:ADM.level
+        S = Average(S, CoarseGrid(x), Grid);
+    end
+end
+
+%% Stats and timers 
 FIM.Iter(Ndt) = itCount-1;
 FIM.Chops(Ndt) = chops;
 if ADMSettings.active == 1

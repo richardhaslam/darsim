@@ -52,10 +52,10 @@ if (ADMActive == 1)
         fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx +1, CoarseGrid(i).Ny+1, 2);
         fprintf(fileID, '\n');
         fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i).Nx+1) ' float\n']);
-        fprintf(fileID, '%f ', 0:3^i:Grid.Nx);
+        fprintf(fileID, '%f ', 0:Grid.dx*3^i:Grid.Lx);
         fprintf(fileID, '\n');
         fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i).Ny+1) ' float\n']);
-        fprintf(fileID, '%f ', 0:3^i:Grid.Ny);
+        fprintf(fileID, '%f ', 0:Grid.dy*3^i:Grid.Ly);
         fprintf(fileID, '\n');
         fprintf(fileID, 'Z_COORDINATES 2 float\n');
         fprintf(fileID, '%d ', [0 1]);
