@@ -13,8 +13,8 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cd('../Code')
-InputDirectory = '../Input/SPE10T/';
-InputFile = strcat(InputDirectory, '/SPE10T.txt');
+InputDirectory = '../Input/Homo_Cap/';
+InputFile = strcat(InputDirectory, '/Homogeneous.txt');
 ReadInputFile;
 if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
   mkdir(InputDirectory,'/Output/VTK');
@@ -39,6 +39,7 @@ if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
     ADMSetup;
 else
     CoarseGrid = 0;
+    maxLevel = 0;
 end
 
 %%%%%%%%%%%%%%%%%%%%%% TIME LOOP %%%%%%%%%%%%%%%%%%%%%%%

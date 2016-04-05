@@ -33,6 +33,7 @@ switch(Fluid.Pc)
         return
     otherwise
         Pc = 0.*S;
+        dPc = Pc;
 end
 end
 

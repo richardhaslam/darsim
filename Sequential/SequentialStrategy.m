@@ -33,13 +33,10 @@ while (Converged==0 && Iter <= MaxExtIter)
     btimer(Iter) = toc(tstart2);
     
     %3. Compute timestep-size based on CFL
-    tstart3 = tic;
     if (Iter==1)
         dT=timestepping(Fluid, S, Grid, U, Wells);
         dT=min(dT, maxdT);
     end
-    %dT = 30;
-    timestpetimer = toc(tstart3);
     
     %4. Solve transport equation given the total velocity field
     tstart4 = tic;

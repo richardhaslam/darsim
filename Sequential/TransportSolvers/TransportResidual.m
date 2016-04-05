@@ -14,7 +14,7 @@ A = SaturationMatrix(Grid,U,q);      % Total fluxes matrix
 % capillary fluxes
 if isempty(Fluid.Pc)
     B = 0*speye(Grid.N);
-    CapJac=0*speye(Grid.N);
+    CapJac = 0*speye(Grid.N);
 else
     B = CapFluxMatrix(Grid, reshape(snew, Grid.Nx, Grid.Ny), Fluid, K);
     CapJac = CapJacobian(Fluid, K, reshape(snew, Grid.Nx, Grid.Ny), Grid);
@@ -47,16 +47,16 @@ CapFlux.y = zeros(Grid.Nx, Grid.Ny +1);
 s = reshape(S, Grid.N, 1);
 C = Fluid.Cances(s);
 C = reshape(C, Grid.Nx, Grid.Ny);
-Kx=zeros(Grid.Nx+1, Grid.Ny);
-Ky=zeros(Grid.Nx, Grid.Ny+1);
-Kx(2:Grid.Nx,:)=2*K(1:Grid.Nx-1,:).*K(2:Grid.Nx,:)./(K(1:Grid.Nx-1,:)+K(2:Grid.Nx,:));
-Ky(:,2:Grid.Ny)=2*K(:,1:Grid.Ny-1).*K(:,2:Grid.Ny)./(K(:,1:Grid.Ny-1)+K(:,2:Grid.Ny));
+Kx = zeros(Grid.Nx+1, Grid.Ny);
+Ky = zeros(Grid.Nx, Grid.Ny+1);
+Kx(2:Grid.Nx,:) = 2*K(1:Grid.Nx-1,:).*K(2:Grid.Nx,:)./(K(1:Grid.Nx-1,:)+K(2:Grid.Nx,:));
+Ky(:,2:Grid.Ny) = 2*K(:,1:Grid.Ny-1).*K(:,2:Grid.Ny)./(K(:,1:Grid.Ny-1)+K(:,2:Grid.Ny));
 CapFlux.x(2:Grid.Nx, :) = Grid.Ax*Kx(2:Grid.Nx,:).*(C(1:Grid.Nx-1,:) - C(2:Grid.Nx, :))/Grid.dx;
 CapFlux.y(:,2:Grid.Ny) = Grid.Ay*Ky(:,2:Grid.Ny).*(C(:,1:Grid.Ny-1) - C(:, 2:Grid.Ny))/Grid.dy;
 end
 
 function CapJac = CapJacobian(Fluid, K, s, Grid)
-%constructs capillary pressure Jacobian matrix
+%Constructs capillary pressure Jacobian matrix
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
@@ -101,23 +101,23 @@ for j=2:Ny-1
 end
 
 if Grid.Ny ~=1
-%top and bottom rows
-bottom = 1;
-top = Ny;
-for i=2:Nx-1
-   t = i + Nx*(top-1);
-   b = i + Nx*(bottom-1);
-   %
-   CapJac(b, b-1) = f(i-1, bottom);
-   CapJac(b, b+1) = f(i+1, bottom);
-   CapJac(b, b+Nx) = g(i, bottom + 1);
-   CapJac(b,b) = -2*f(i, bottom) - g(i, bottom);
-   %
-   CapJac(t, t-1) = f(i+1, top);
-   CapJac(t, t+1) = f(i-1, top);
-   CapJac(t, t-Nx) = g(i, top-1);
-   CapJac(t, t) = -2*f(i, top) - g(i, top); 
-end
+    %top and bottom rows
+    bottom = 1;
+    top = Ny;
+    for i=2:Nx-1
+        t = i + Nx*(top-1);
+        b = i + Nx*(bottom-1);
+        %
+        CapJac(b, b-1) = f(i-1, bottom);
+        CapJac(b, b+1) = f(i+1, bottom);
+        CapJac(b, b+Nx) = g(i, bottom + 1);
+        CapJac(b,b) = -2*f(i, bottom) - g(i, bottom);
+        %
+        CapJac(t, t-1) = f(i+1, top);
+        CapJac(t, t+1) = f(i-1, top);
+        CapJac(t, t-Nx) = g(i, top-1);
+        CapJac(t, t) = -2*f(i, top) - g(i, top);
+    end
 end
 %corners
 % b-l
@@ -128,16 +128,16 @@ CapJac(1, 1) = -f(1, 1) - g(1, 1);
 CapJac(Nx, Nx-1) = f(Nx-1, 1);
 CapJac(Nx, Nx) = -f(Nx, 1) - g(Nx, 1);
 if Ny ~=1
-CapJac(Nx, 2*Nx) = g(Nx, 2);
-CapJac(1, Nx+1) = g(1, 2);
-% t-l
-CapJac(N-Nx+1, N-Nx+2) = f(2, Ny);
-CapJac(N-Nx+1, N-2*Nx+1) = g(1, Ny-1);
-CapJac(N-Nx+1, N-Nx+1) = -f(1,Ny) - g(1,Ny);
-% t-r
-CapJac(N, N-Nx) = f(Nx, Ny-1);
-CapJac(N, N-1) = g(Nx-1, Ny);
-CapJac(N, N) = -f(Nx, Ny) - g(Nx, Ny);
+    CapJac(Nx, 2*Nx) = g(Nx, 2);
+    CapJac(1, Nx+1) = g(1, 2);
+    % t-l
+    CapJac(N-Nx+1, N-Nx+2) = f(2, Ny);
+    CapJac(N-Nx+1, N-2*Nx+1) = g(1, Ny-1);
+    CapJac(N-Nx+1, N-Nx+1) = -f(1,Ny) - g(1,Ny);
+    % t-r
+    CapJac(N, N-Nx) = f(Nx, Ny-1);
+    CapJac(N, N-1) = g(Nx-1, Ny);
+    CapJac(N, N) = -f(Nx, Ny) - g(Nx, Ny);
 end
 %Let's make it sparse
 CapJac = sparse(CapJac);

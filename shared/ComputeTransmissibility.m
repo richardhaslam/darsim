@@ -3,12 +3,13 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 2015
+%Last modified: 5 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Tx, Ty] = ComputeTransmissibility(Grid, K)
 %Transmissibilities
 %%%%%%%%%%%%%%%%%%%%%%%
-%Give a Grid Harmonic average of the permeability is computed and
+%Given a Grid Harmonic average of the permeability is computed and
 %assigned to the interfaces. Then transmissibilities are computed.
 %%%%%%%%%%%%%%%%%%%%%%%
 

@@ -20,14 +20,14 @@ CFL=Grid.CFL;
 s = Fluid.swc:0.01:1-Fluid.sor;
 df = Derivative (s, Fluid);
 dfmax = max(df);
-Uxmax = max(max(U.x));
-Uymax = max(max(U.y));
+Uxmax = max(max(abs(U.x)));
+Uymax = max(max(abs(U.y)));
 Lambdax = dfmax * Uxmax;
 Lambday = dfmax * Uymax;
 %Compute timestep size
-dtx=CFL*pv/Lambdax;
-dty=CFL*pv/Lambday;
-dt=min(dtx,dty);
+dtx = CFL*pv/Lambdax;
+dty = CFL*pv/Lambday;
+dt = min(dtx,dty);
 
 % %%%%%%%%%%%%%% Foam? Compute based on worst-case scenario
 % 
