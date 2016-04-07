@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 2015
-%Last Mnwdified: 5 April 2016
+%Last Modified: 5 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW)
 %Build FIM Jacobian
@@ -16,11 +16,9 @@ Kvector = reshape(K(1, :, :), Grid.N, 1);
 % BUILD FIM JACOBIAN BLOCK BY BLOCK
 
 %1. Rnw Pressure Block
-%Transmissibilitywith upwind non-wetting phase Mnwbility
 Jnwp = TMatrixNw;
 
 %2. Rw Pressure Block
-%Transmissibility with upwind wetting phase Mnwbility
 Jwp = TMatrixW;
 
 %3. Ro Saturation Block
@@ -48,6 +46,13 @@ v = ones(N,1)*pv/dt;
 DiagVecs = [-y2,-x2,y2+x2-y1-x1+v,x1,y1];
 DiagIndx = [-Nx,-1,0,1,Nx];
 JwS = spdiags(DiagVecs,DiagIndx,N,N);
+CapJwS = full(JwS);
+
+%Add capillarity
+for i = 1:N
+     CapJwS(i,:) = CapJwS(i,:).* dPc';
+end
+JwS = JwS - sparse(CapJwS);
 
 % Add wells
 [Jnwp, Jwp, JnwS, JwS] = AddWellsToJacobian(Jnwp, Jwp, JnwS, JwS, Inj, Prod, Kvector, p, Mw, Mnw, dMw, dMnw);

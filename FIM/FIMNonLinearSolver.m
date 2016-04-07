@@ -26,22 +26,24 @@ while (Converged==0 && chops<=20)
     P = P0;
     p = p0;
     
-    %Compute pRnwperties and updwind operators
+    %Update fluid prowperties 
     [Mw, Mnw, dMw, dMnw] = Mobilities(s, Fluid);
-    [Pc, dPc] = ComputePc(s, Fluid); %Compute capillary pressure for all cells
+    [Pc, dPc] = ComputePc(s, Fluid);
+    %Define updwind operators
     [UpWindNw, Unw] = UpwindOperator(Grid, P, Trx, Try);
     [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
     
-    % Build residual
+    % Compute residual
     [Residual, TMatrixNw, TMatrixW] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
 
+    % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
         tic
-        % Choose where to coarsen and build DLGR grid
-        [DLGRGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, S0, Rnw, Rw, ADMSettings.maxLevel, ADMSettings.tol);
-        % Construct R & P based on DLGR grid
-        [ADM.Rest, ADM.PRnwlp, ADM.PRnwls] = ConstructOperators(Grid, CoarseGrid, DLGRGrid);
-        ADM.level = DLGRGrid.level(end);
+        % Choose where to coarsen and build ADM grid
+        [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, S0, Rnw, Rw, ADMSettings.maxLevel, ADMSettings.tol);
+        % Construct R & P based on ADM grid
+        [ADM.Rest, ADM.PRnwlp, ADM.PRnwls] = ConstructOperators(Grid, CoarseGrid, ADMGrid);
+        ADM.level = ADMGrid.level(end);
         ADM.active = 1;
         Timers.RP = toc;        
     end
@@ -52,15 +54,13 @@ while (Converged==0 && chops<=20)
     TimerSolve = zeros(FIM.MaxIter, 1);
     itCount = 1;
     while ((Converged==0) && (itCount < FIM.MaxIter))
-        
-      
+              
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
         J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
         TimerConstruct(itCount) = toc(start1);
-        
        
-        % 2 Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
+        % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
         Delta = LinearSolver(J, Residual, N, ADM);
         TimerSolve(itCount) = toc(start2);
@@ -72,13 +72,14 @@ while (Converged==0 && chops<=20)
         s = max(s,0);
         P = reshape(p, Nx, Ny);
         
-        % 3. Update pRnwperties and upwind
+        % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(s, Fluid);
-        [Pc, dPc] = ComputePc(s, Fluid); %Compute capillary pressure for all cells
+        [Pc, dPc] = ComputePc(s, Fluid); 
+        % Define updwind
         [UpWindNw, Unw] = UpwindOperator(Grid, P, Trx, Try);
         [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
         
-        % 4. Build residual 
+        % 4. Compute residual 
         Residual = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
 
         % 5. Check convergence criteria
@@ -96,7 +97,7 @@ end
 S = reshape(s,Nx,Ny);
 
 %Average saturation in Coarse Blocks
-if (ADM.active == 1)
+if ADM.active
     for x = 1:ADM.level
         S = Average(S, CoarseGrid(x), Grid);
     end
@@ -105,8 +106,8 @@ end
 %% Stats and timers 
 FIM.Iter(Ndt) = itCount-1;
 FIM.Chops(Ndt) = chops;
-if ADMSettings.active == 1
-    FIM.ActiveCells(Ndt, :) = DLGRGrid.N';
+if ADMSettings.active
+    FIM.ActiveCells(Ndt, :) = ADMGrid.N';
 end
 Timers.Construct = TimerConstruct;
 Timers.Solve = TimerSolve;

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 2015
-%Last modified: 21 March 2016
+%Last modified: 6 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Remove some warnings 
@@ -32,7 +32,6 @@ end
 %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
 P = zeros(Grid.Nx, Grid.Ny, 1);
 S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
-CumulativeTime = zeros(TimeSteps, 1);
 
 %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
 if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)

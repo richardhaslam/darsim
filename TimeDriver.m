@@ -4,15 +4,16 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 21 March 2016
-%Last modified: 21 March 2016 
+%Last modified: 6 April 2016 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%Timers
-TimerTimestep=zeros(TimeSteps,1);
+%%Timers and variables for statistics
+TimerTimestep = zeros(TimeSteps,1);
+CumulativeTime = zeros(TimeSteps, 1);
 if (strcmp(Strategy, 'Sequential')==1)
-    TimerPressure=zeros(TimeSteps,1);
-    TimerBalance=zeros(TimeSteps,1);
-    TimerSaturation=zeros(TimeSteps,1);
+    TimerPressure = zeros(TimeSteps,1);
+    TimerBalance = zeros(TimeSteps,1);
+    TimerSaturation = zeros(TimeSteps,1);
 else
     TimerConstruct = zeros(TimeSteps,1);
     TimerSolve = zeros(TimeSteps,1);
@@ -40,7 +41,7 @@ while (t<T && Ndt <= TimeSteps)
         case ('Sequential')
             if (Ndt==1)
                 disp('******************');
-                if (Sequential.ImpSat == 1)
+                if Sequential.ImpSat
                     disp('Sequential implicit strategy');
                 else
                     disp('IMPES Simulation');
@@ -58,7 +59,7 @@ while (t<T && Ndt <= TimeSteps)
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
-                [P0, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+                [~, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
                 
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
@@ -70,6 +71,7 @@ while (t<T && Ndt <= TimeSteps)
                 %Compute rock transmissibility
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 %Non-linear solver
+                P0 = ones(Grid.Nx, Grid.Ny)*Prod.p;
                 [P, S, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
@@ -116,18 +118,15 @@ while (t<T && Ndt <= TimeSteps)
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
     switch (Options.PlotSolution)
         case('Matlab')
-            if (Grid.Nx == 1 || Grid.Ny == 1)
-            Options.problem_1D = 1;
-            end
-            if ADMSettings.active == 1
+            if ADMSettings.active
                 Plottings_ADM
             else
                 Plotting;
             end
         case('VTK')
             if (mod(Ndt,5)==0)
-            Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel);
-            vtkcount = vtkcount + 1;
+                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel);
+                vtkcount = vtkcount + 1;
             end
     end
     

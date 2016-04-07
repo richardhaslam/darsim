@@ -1,4 +1,4 @@
-%Build FIM Residual for one phase
+%Build FIM Residual 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
@@ -19,8 +19,8 @@ Tw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindW, Mw);
 
 %Source terms
 q = zeros(N,1);
-q = ComputeWellFluxes(q, Inj, p, K, p*0, K); 
-q = ComputeWellFluxes(q, Prod, p, K, p*0, K);
+q = ComputeWellFluxes(q, Inj, p, K, pc, K); 
+q = ComputeWellFluxes(q, Prod, p, K, pc*0, K);
 qnw = Inj(1).Mo * max(q,0) + Mnw.*min(q, 0);
 qw = Inj(1).Mw * max(q,0) + Mw.*min(q, 0);
 
@@ -31,7 +31,6 @@ Rnw = Ap*(p-p_old) - AS*(s-s_old) + Tnw*p - qnw;
 Rw = Ap*(p-p_old) + AS*(s-s_old) + Tw*p - Tw*pc - qw;
 %Stick them together
 Residual = [Rnw; Rw];
-
 end
 
 

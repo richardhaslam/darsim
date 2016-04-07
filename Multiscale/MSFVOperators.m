@@ -161,7 +161,7 @@ MsR = sparse(MsR);
 end
 
 %% MS Prolongation Operator
-function [MsP, C] = MsProlongation(Ni, Ne, Nn, Ap, G, FineGrid)
+function [MsP, C] = MsProlongation(Ni, Ne, Nn, Ap, G)
 % 1. Reorder finescale system
 %A_tpfa = MakeTPFA(Ap, FineGrid);
 tildeA   = G*Ap*G';
@@ -191,17 +191,3 @@ C = [Mii_inv        -Mii_inv*Mie*Mee_inv      sparse(Ni,Nn);        ...
      sparse(Ne,Ni)               Mee_inv      sparse(Ne,Nn);        ...
      sparse(Nn,Ni)         sparse(Nn,Ne)      sparse(Nn,Nn)];       
 end
-
-% function B = MakeTPFA(A, FineGrid)
-% Nx = FineGrid.Nx;
-% N = FineGrid.Nx*FineGrid.Ny;
-% B=zeros(N);
-% for i=1:N
-%     for j=1:N
-%         if (j==i || j==i-1 || j==i+1 || j==i-Nx || j==i+Nx)
-%             B(i,j) = A(i,j);
-%         end
-%     end  
-% end
-% B = sparse(B);
-% end
