@@ -15,7 +15,7 @@ Nc = CoarseGrid.Nx*CoarseGrid.Ny;
 
 %Restriction and Prolongation for Fine Grid ordering
 MsR = MsRestriction(FineGrid, CoarseGrid, Nf, Nc, level);
-[MsP, C] = MsProlongation(Ni, Ne, Nn, Ap, G, FineGrid);
+[MsP, C] = MsProlongation(Ni, Ne, Nn, Ap, G);
 MsP = G'*MsP;
 C = G'*C*G;
 end

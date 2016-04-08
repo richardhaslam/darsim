@@ -14,11 +14,11 @@ N = Grid.N;
 
 %Transmissibility
 % Effective permeability
-[Mw, Mo]=Mobilities(S, Fluid);
-Mt=Mw+Mo;   %total mobility
-Kt=zeros(2, Grid.Nx, Grid.Ny);
-Kt(1,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
-Kt(2,:,:)=reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
+[Mw, Mo] = Mobilities(S, Fluid);
+Mt = Mw+Mo;   %total mobility
+Kt = zeros(2, Grid.Nx, Grid.Ny);
+Kt(1,:,:) = reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
+Kt(2,:,:) = reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
 Kvector = reshape(Kt(1,:,:), N, 1);
 [Tx, Ty] = ComputeTransmissibility(Grid, Kt);
 

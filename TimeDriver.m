@@ -60,6 +60,7 @@ while (t<T && Ndt <= TimeSteps)
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
                 [~, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+                [Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
                 
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
@@ -119,7 +120,7 @@ while (t<T && Ndt <= TimeSteps)
     switch (Options.PlotSolution)
         case('Matlab')
             if ADMSettings.active
-                Plottings_ADM
+                Plotting_ADM
             else
                 Plotting;
             end

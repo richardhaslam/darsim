@@ -40,9 +40,9 @@ while (Converged==0 && chops<=20)
     if (ADMSettings.active == 1 && chops == 0)
         tic
         % Choose where to coarsen and build ADM grid
-        [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, S0, Rnw, Rw, ADMSettings.maxLevel, ADMSettings.tol);
+        [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, S0, Residual(1:N), Residual(N+1:end), ADMSettings.maxLevel, ADMSettings.tol);
         % Construct R & P based on ADM grid
-        [ADM.Rest, ADM.PRnwlp, ADM.PRnwls] = ConstructOperators(Grid, CoarseGrid, ADMGrid);
+        [ADM.Rest, ADM.Prolp, ADM.Prols] = ConstructOperators(Grid, CoarseGrid, ADMGrid);
         ADM.level = ADMGrid.level(end);
         ADM.active = 1;
         Timers.RP = toc;        
