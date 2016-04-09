@@ -6,10 +6,16 @@
 %Year: 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Well] = Addwellcells(Nx, Direction, I, Y, final)
-if strcmp(Direction, 'vertical')
-    Well.cells = I + (Y-1)*Nx;
-else
-    Yindexes = Y:1:final;
-    Well.cells = ones(1, length(Yindexes))*I + (Yindexes - 1)*Nx;
+global Errors
+switch Direction
+    case ('vertical')
+        Well.cells = I + (Y-1)*Nx;
+    case ('horizontal')
+        Yindexes = Y:1:final;
+        Well.cells = ones(1, length(Yindexes))*I + (Yindexes - 1)*Nx;
+    otherwise
+        disp('ERROR: unknown well direction!! Please select either vertical or horizontal');
+        Errors = 1;
+        Well = 'error';
 end
 end

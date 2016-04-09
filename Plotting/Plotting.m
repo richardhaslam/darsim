@@ -6,6 +6,7 @@
 %Created: 2015
 %Last modified: 7 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+problem_1D = 0;
 if (Grid.Nx == 1 || Grid.Ny == 1)
             problem_1D = 1;
 end
@@ -82,7 +83,6 @@ else
     caxis ([0,1]);
     axis('image');
     set(gca,'fontsize',24);
-    drawnow
     
     %Capillary pressure
     figure(500)
@@ -103,6 +103,7 @@ else
     axis('image');
     set(gca,'fontsize',24);
     
+    drawnow
     %Apparent viscosity
     if (strcmp(Fluid.RelPerm, 'Foam')==1)
         figure(500)

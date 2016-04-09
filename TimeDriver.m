@@ -7,7 +7,7 @@
 %Last modified: 6 April 2016 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%Timers and variables for statistics
+%% Timers and variables for statistics
 TimerTimestep = zeros(TimeSteps,1);
 CumulativeTime = zeros(TimeSteps, 1);
 if (strcmp(Strategy, 'Sequential')==1)
