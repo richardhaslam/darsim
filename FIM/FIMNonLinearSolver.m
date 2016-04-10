@@ -22,6 +22,11 @@ p0 = reshape(P0, N, 1);
 s0 = reshape(S0, N, 1);
 chops=0;
 while (Converged==0 && chops<=20)
+    if (chops > 0)
+        disp('Maximum number of iterations was reached: time-step was chopped');
+        disp('FIM Residual norm');
+    end
+    
     s = s0; % I start fRnwm solution at previous timestep.
     P = P0;
     p = p0;
@@ -53,7 +58,7 @@ while (Converged==0 && chops<=20)
     TimerConstruct = zeros(FIM.MaxIter,1);
     TimerSolve = zeros(FIM.MaxIter, 1);
     itCount = 1;
-    while ((Converged==0) && (itCount < FIM.MaxIter))
+    while ((Converged==0) && (itCount <= FIM.MaxIter))
               
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
@@ -83,7 +88,7 @@ while (Converged==0 && chops<=20)
         Residual = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
 
         % 5. Check convergence criteria
-        Converged = NewtonConvergence(Residual, Delta(N+1:end), Tol, N, ADM);
+        Converged = NewtonConvergence(itCount, Residual, Delta(N+1:end), Tol, N, ADM);
         
         itCount = itCount+1;
     end

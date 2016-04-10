@@ -65,3 +65,19 @@ Fluxes = ComputeWellFluxes(Fluxes, Inj, p, Kvector, pc, Kvector);
 Fluxes = ComputeWellFluxes(Fluxes, Prod, p, Kvector, pc, Kwvector);
 Wells.Fluxes = reshape(Fluxes, Nx, Ny);
 end
+
+%% Add wells to pressure matrix
+function [A, q] = AddWell(A, q, Well, K, pc, Kw)
+a = Well.cells;
+for i=1:length(a)
+    A(a(i),a(i)) = A(a(i),a(i))+ Well.PI*K(a(i));
+    q(a(i)) = Well.PI*(K(a(i)).*Well.p + Kw(a(i)).*pc(a(i)));
+end
+end
+%% Fluxes of the wells
+function Fluxes = ComputeWellFluxes(Fluxes, Well, p, K, pc, Kw)
+for i=1:length(Well)
+    a = Well(i).cells;
+    Fluxes(a) = Fluxes(a) + Well(i).PI.* (K(a).*(Well(i).p-p(a)) + Kw(a).*pc(a));
+end
+end

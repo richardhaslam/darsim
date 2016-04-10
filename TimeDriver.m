@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 21 March 2016
-%Last modified: 6 April 2016 
+%Last modified: 9 April 2016 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Timers and variables for statistics
@@ -29,6 +29,7 @@ vtkcount = 1;
 
 while (t<T && Ndt <= TimeSteps)
     %% Initialise time-step
+    disp(['Time-step ' num2str(Ndt) ': Initial time: ' num2str(t/(3600*24),4) ' days']);
     tstart = tic;
     S0 = S;
     P0 = P;
@@ -39,28 +40,19 @@ while (t<T && Ndt <= TimeSteps)
     %% Non-linear Solver
     switch (Strategy)
         case ('Sequential')
-            if (Ndt==1)
-                disp('******************');
-                if Sequential.ImpSat
-                    disp('Sequential implicit strategy');
-                else
-                    disp('IMPES Simulation');
-                    Sequential.MaxExtIter = 1;
-                end
+            disp('--------------Sequential non-linear solver--------------');
+            if ~Sequential.ImpSat
+                Sequential.MaxExtIter = 1;
             end
             [P, S, Pc, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
-            if (Ndt==1)
-                disp('******************');
-                disp('FIM strategy');
-                disp(char(10));
-            end
+            disp('------------FIM Non-linear solver------------')
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
                 [~, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
-                [Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
+                %[Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
                 
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
@@ -92,22 +84,23 @@ while (t<T && Ndt <= TimeSteps)
                 disp(['The solution has not converged at timestep ' num2str(Ndt)]);
                 break
             case('FIM')
-                disp(['The solution has not converged at timestep '...
-                    num2str(Ndt) ' even with 20 timestep chops']);
+                disp(['The solution has not converged at time-step '...
+                    num2str(Ndt) ' even with several time-step chops']);
                 break
         end
     end
-    %% end of Non-linear Solver
+    %%end of Non-linear Solver
     
-    %%%%%Increase time and timestep counter
-    disp(['Timestep ' num2str(Ndt)]);
-    disp(['Initial time: ' num2str(t/(3600*24),4) ' days -- Final time: ' num2str((t+dT)/(3600*24),4) ' days, dT= ' num2str(dT) ' s']);
+    %% %%%Increase time and timestep counter
+    disp('-----------------------------------------------')
+    disp(['Final time: ' num2str((t+dT)/(3600*24),4) ' days, dT= ' num2str(dT) ' s']);
+    disp(['end of time-step ' num2str(Ndt)]);
     disp(char(5));
     t = t+dT;    
     Ndt = Ndt+1;
     CumulativeTime(Ndt) = t/(3600*24);
     
-    %%%%%%%%%%% POST PROCESSING and output %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% %%%%%%%%% POST PROCESSING and output %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Print solution to a file at fixed intervals
     if (t == Tstops(index))
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])

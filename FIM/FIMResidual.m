@@ -16,24 +16,21 @@ Tnw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindNw, Mnw);
 Tw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindW, Mw);
 
 %Gravity
+G = ComputeGravityTerm(N);
 
 %Source terms
-q = zeros(N,1);
-q = ComputeWellFluxes(q, Inj, p, K, pc, K); 
-q = ComputeWellFluxes(q, Prod, p, K, pc*0, K);
-qnw = Inj(1).Mo * max(q,0) + Mnw.*min(q, 0);
-qw = Inj(1).Mw * max(q,0) + Mw.*min(q, 0);
+[qnw, qw] = ComputeWells(N, Inj, Prod, K, p, pc, Mnw, Mw);
 
 %% RESIDUAL
 %Non-wetting phase
-Rnw = Ap*(p-p_old) - AS*(s-s_old) + Tnw*p - qnw;
+Rnw = Ap*(p-p_old) - AS*(s-s_old) + Tnw*p + G*s - qnw;
 %Wetting phase (This one has capillarity)
-Rw = Ap*(p-p_old) + AS*(s-s_old) + Tw*p - Tw*pc - qw;
+Rw = Ap*(p-p_old) + AS*(s-s_old) + Tw*p - Tw*pc + G*s - qw;
 %Stick them together
 Residual = [Rnw; Rw];
 end
 
-
+%% Transmissibility
 function T  = TransmissibilityMatrix(Trx, Try, N, Nx, Ny, UpWind, M)
 %%%Transmissibility matrix construction
 Tx = zeros(Nx+1, Ny);
@@ -53,4 +50,27 @@ y2 = reshape(Ty(:,2:Ny+1),N,1);
 DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
 DiagIndx = [-Nx,-1,0,1,Nx];
 T = spdiags(DiagVecs,DiagIndx,N,N);
+end
+
+%% Gravity
+function G = ComputeGravityTerm(N)
+G = speye(N)*0;
+end
+%% Wells
+function [qnw, qw] = ComputeWells(N, Inj, Prod, K, p, pc, Mnw, Mw)
+qnw = zeros(N,1);
+qw = zeros(N,1);
+%Injectors
+for i=1:size(Inj)
+    c = Inj.cells;
+    qnw(c) = Inj(i).Mo * Inj(i).PI * K(c).* (Inj(i).p - p(c));
+    qw(c) = Inj(i).Mw * Inj(i).PI * K(c) .* (Inj(i).p - p(c));
+end
+%Producers
+for i=1:size(Prod)
+    c = Prod(i).cells;
+    qnw(c) =  Mnw(c).* Prod(i).PI * K(c).* (Prod(i).p - p(c));
+    qw(c) =   Mw(c).* Prod(i).PI * K(c) .* (Prod(i).p - p(c));
+end
+qt = qnw + qw;
 end

@@ -6,7 +6,7 @@
 %Created: 21 March 2016
 %Last modified: 21 March 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Converged = NewtonConvergence(Residual, Delta, Tol, N, ADM)
+function Converged = NewtonConvergence(iter, Residual, Delta, Tol, N, ADM)
 Converged = 0;
 %Evaluate norms
 if ADM.active == 1
@@ -17,7 +17,7 @@ else
     Norm1 =  norm(Residual, inf);
     Norm2 = norm(Delta, inf);
 end
-
+disp(['Iter ' num2str(iter) '    ' num2str(Norm1)]);
 %Check convergence
 if (Norm1 < Tol && Norm2 < Tol)
    Converged = 1;

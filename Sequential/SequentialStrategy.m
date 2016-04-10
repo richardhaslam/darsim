@@ -21,8 +21,10 @@ Iter=1; %External iterations counter
 Converged=0;
 S=S0;
 while (Converged==0 && Iter <= MaxExtIter)
+    disp(['Outer-loop iteration: ' num2str(Iter)]);
     tstart1 = tic;
     %1. Solve flow equation for pressure and compute fluxes
+    disp('Pressure solver')
     [P, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
     %% 
     ptimer(Iter) = toc(tstart1);
@@ -47,12 +49,14 @@ while (Converged==0 && Iter <= MaxExtIter)
             [S]=ExplicitTransport(Fluid, Grid, S0, U, q, dT);
             Converged = 1;
         else
+            disp('Transport solver');
             Sequential.ImplicitSolver.timestep = [Sequential.ImplicitSolver.timestep, Ndt];
             [S, Sequential.ImplicitSolver, dT, Tconverged] = ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT, K);
             if Tconverged == 0
                 disp('Transport solver did not converge')
                 break
             end
+            disp('----------------------------------')
         end
     else
         disp('Mass balance not respected!!');

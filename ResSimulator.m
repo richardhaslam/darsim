@@ -4,9 +4,12 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 2015
-%Last modified: 6 April 2016
+%Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+disp('******************************************************************');
+disp('********************MATTEO RESERVOIR SIMULATOR********************');
+disp('******************************************************************');
+disp(char(5));
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
@@ -14,18 +17,19 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 global Errors
 Errors = 0;
-InputDirectory = '../Input/SPE10T/';
-InputFile = strcat(InputDirectory, '/SPE10T.txt');
-disp('***************************************')
+InputDirectory = '../Input/Homo_Cap/';
+InputFile = strcat(InputDirectory, '/Homo_Cap.txt');
+disp('--------------------------------------------')
 disp('Reading input file')
 ReadInputFile;
 switch (Errors)
     case(1)
-        disp('***************************************')
+        disp('--------------------------------------------')
         disp('Run failed: the input file contains errors')
     case(0)
         disp('Input file read without any error');
-        disp('***************************************')
+        disp('--------------------------------------------')
+        disp(char(5));
         if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
             mkdir(InputDirectory,'/Output/VTK');
         end

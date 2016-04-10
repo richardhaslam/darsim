@@ -52,16 +52,18 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         
         %Compute norm of dS
         Norm = norm(dS, inf);
-        
+        disp(['iter ', num2str(Newton), '  ', num2str(Norm)]);
         %Compute Residual at nu
         [Residual, V, CapJac, df] = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
         
         %Increase iteration counter
-        Newton=Newton+1;
+        Newton = Newton+1;
     end
     if (Norm <= tol) 
         converged = 1;
     else
+        disp('Maximum number of iterations was reached: time-step was chopped');
+        disp('FIM Residual norm');
         chops = chops + 1;
         dt = dt/10;
     end
