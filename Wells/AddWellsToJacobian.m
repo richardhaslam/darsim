@@ -6,7 +6,7 @@
 %Created: 2016
 %Last modified: 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Jop, Jwp, Jos, Jws] = AddWellsToJacobian(Jop, Jwp, Jos, Jws, Inj, Prod, K, p, Mw, Mo, dMw, dMo)
+function [Jop, Jwp, Jos, Jws] = AddWellsToJacobian(Jop, Jwp, Jos, Jws, Inj, Prod, K, p, pc, Mw, Mo, dMw, dMo)
 %Injectors
 for i=1:length(Inj)
     a = Inj(i).cells;
@@ -22,7 +22,7 @@ for i=1:length(Prod)
         Jop(b(j),b(j)) = Jop(b(j),b(j)) + Prod(i).PI*K(b(j)).*Mo(b(j));
         Jwp(b(j),b(j)) = Jwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*Mw(b(j));
         Jos(b(j),b(j)) = Jos(b(j),b(j)) - Prod(i).PI*K(b(j)).*(Prod(i).p-p(b(j))).*dMo(b(j));
-        Jws(b(j),b(j)) = Jws(b(j),b(j)) - Prod(i).PI*K(b(j)).*(Prod(i).p-p(b(j))).*dMw(b(j));
+        Jws(b(j),b(j)) = Jws(b(j),b(j)) - Prod(i).PI*K(b(j)).*(Prod(i).p - p(b(j))).*dMw(b(j));
     end
 end
 

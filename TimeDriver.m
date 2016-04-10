@@ -47,7 +47,8 @@ while (t<T && Ndt <= TimeSteps)
             [P, S, Pc, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
-            disp('------------FIM Non-linear solver------------')
+            disp('------------FIM Non-linear solver------------');
+            disp('        ||Residual||   Sat. delta');
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep

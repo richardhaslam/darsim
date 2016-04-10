@@ -63,7 +63,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         converged = 1;
     else
         disp('Maximum number of iterations was reached: time-step was chopped');
-        disp('FIM Residual norm');
+        disp('Restart Newton loop');
         chops = chops + 1;
         dt = dt/10;
     end

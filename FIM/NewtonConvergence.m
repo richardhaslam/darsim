@@ -17,9 +17,9 @@ else
     Norm1 =  norm(Residual, inf);
     Norm2 = norm(Delta, inf);
 end
-disp(['Iter ' num2str(iter) '    ' num2str(Norm1)]);
+disp(['Iter ' num2str(iter) '    ' num2str(Norm1), '    ', num2str(Norm2)]);
 %Check convergence
-if (Norm1 < Tol && Norm2 < Tol)
+if (Norm1 < Tol && Norm2 < Tol*100)
    Converged = 1;
 end
 end

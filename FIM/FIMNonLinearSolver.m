@@ -21,10 +21,11 @@ Converged=0;
 p0 = reshape(P0, N, 1);
 s0 = reshape(S0, N, 1);
 chops=0;
-while (Converged==0 && chops<=20)
+while (Converged==0 && chops<=3)
     if (chops > 0)
         disp('Maximum number of iterations was reached: time-step was chopped');
-        disp('FIM Residual norm');
+        disp('Restart Newton loop');
+        disp('         ||Residual||  Sat. delta');
     end
     
     s = s0; % I start fRnwm solution at previous timestep.
@@ -62,7 +63,7 @@ while (Converged==0 && chops<=20)
               
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
-        J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
+        J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, Pc, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
         TimerConstruct(itCount) = toc(start1);
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
@@ -93,7 +94,7 @@ while (Converged==0 && chops<=20)
         itCount = itCount+1;
     end
     if (Converged == 0)
-        dt = dt/2;
+        dt = dt/10;
         chops = chops + 1;
     end
 end

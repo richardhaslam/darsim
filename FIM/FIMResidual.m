@@ -64,7 +64,7 @@ qw = zeros(N,1);
 for i=1:size(Inj)
     c = Inj.cells;
     qnw(c) = Inj(i).Mo * Inj(i).PI * K(c).* (Inj(i).p - p(c));
-    qw(c) = Inj(i).Mw * Inj(i).PI * K(c) .* (Inj(i).p - p(c));
+    qw(c) = Inj(i).Mw * Inj(i).PI * K(c) .* (Inj(i).p - p(c) + pc(c));
 end
 %Producers
 for i=1:size(Prod)
@@ -73,4 +73,10 @@ for i=1:size(Prod)
     qw(c) =   Mw(c).* Prod(i).PI * K(c) .* (Prod(i).p - p(c));
 end
 qt = qnw + qw;
+qnw(1)
+qnw(end)
+qw(1)
+qw(end)
+qt(1)
+qt(end)
 end
