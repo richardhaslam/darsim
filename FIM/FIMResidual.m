@@ -63,20 +63,20 @@ qw = zeros(N,1);
 %Injectors
 for i=1:size(Inj)
     c = Inj.cells;
-    qnw(c) = Inj(i).Mo * Inj(i).PI * K(c).* (Inj(i).p - p(c));
-    qw(c) = Inj(i).Mw * Inj(i).PI * K(c) .* (Inj(i).p - p(c) + pc(c));
+    qnw(c) = Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c));
+    qw(c) = Inj(i).Mw * Inj(i).PI .* K(c) .* (Inj(i).p - p(c));
 end
 %Producers
 for i=1:size(Prod)
     c = Prod(i).cells;
-    qnw(c) =  Mnw(c).* Prod(i).PI * K(c).* (Prod(i).p - p(c));
-    qw(c) =   Mw(c).* Prod(i).PI * K(c) .* (Prod(i).p - p(c));
+    qnw(c) =  Mnw(c).* Prod(i).PI .* K(c).* (Prod(i).p - p(c));
+    qw(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c));
 end
 qt = qnw + qw;
-qnw(1)
-qnw(end)
-qw(1)
-qw(end)
-qt(1)
-qt(end)
+qnw(1);
+qnw(end);
+qw(1);
+qw(end);
+qt(1);
+qt(end);
 end

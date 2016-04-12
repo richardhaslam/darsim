@@ -21,7 +21,7 @@ Converged=0;
 p0 = reshape(P0, N, 1);
 s0 = reshape(S0, N, 1);
 chops=0;
-while (Converged==0 && chops<=3)
+while (Converged==0 && chops<=0)
     if (chops > 0)
         disp('Maximum number of iterations was reached: time-step was chopped');
         disp('Restart Newton loop');
@@ -68,6 +68,7 @@ while (Converged==0 && chops<=3)
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
+        %[J, Residual] = ForceFixedValuesAtBoundary(J, Residual, N);
         Delta = LinearSolver(J, Residual, N, ADM);
         TimerSolve(itCount) = toc(start2);
       
@@ -87,6 +88,7 @@ while (Converged==0 && chops<=3)
         
         % 4. Compute residual 
         Residual = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
+        %[J, Residual] = ForceFixedValuesAtBoundary(J, Residual, N);
 
         % 5. Check convergence criteria
         Converged = NewtonConvergence(itCount, Residual, Delta(N+1:end), Tol, N, ADM);

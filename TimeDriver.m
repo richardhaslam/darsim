@@ -40,14 +40,14 @@ while (t<T && Ndt <= TimeSteps)
     %% Non-linear Solver
     switch (Strategy)
         case ('Sequential')
-            disp('--------------Sequential non-linear solver--------------');
+            disp('--------------Sequential non-linear solver-----');
             if ~Sequential.ImpSat
                 Sequential.MaxExtIter = 1;
             end
             [P, S, Pc, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
-            disp('------------FIM Non-linear solver------------');
+            disp('------------FIM Non-linear solver--------------');
             disp('        ||Residual||   Sat. delta');
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
@@ -58,14 +58,18 @@ while (t<T && Ndt <= TimeSteps)
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
                 dT = timestepping(Fluid, S, Grid, U, Wells);
+                %dT = 1e10;
                 %Compute timestep size based on CFL
                 Grid.CFL = FIM.CFL;
                 dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
+                %dT_CFL = 1e10;
                 
                 %Compute rock transmissibility
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 %Non-linear solver
                 P0 = ones(Grid.Nx, Grid.Ny)*Prod.p;
+                P0(1) = Inj.p;
+                S0(1) = 1;
                 [P, S, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);

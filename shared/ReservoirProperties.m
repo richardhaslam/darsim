@@ -9,16 +9,16 @@ function [Grid, K] = ReservoirProperties(size, grid, perm, pert, por, inputMatri
 %Dimensions
 Grid.Lx = str2double(inputMatrix(size +1));                              %Dimension in x−direction [m] 
 Grid.Ly = str2double(inputMatrix(size +2));                              %Dimension in y−direction [m]
-h = str2double(inputMatrix(size + 3));                                   %Reservoir thickness [m]
+Grid.h = str2double(inputMatrix(size + 3));                                   %Reservoir thickness [m]
 
 %Gridding
 Grid.Nx = str2double(inputMatrix(grid +1));
 Grid.dx = Grid.Lx/Grid.Nx; 
 Grid.Ny = str2double(inputMatrix(grid +2)); 
 Grid.dy = Grid.Ly/Grid.Ny; 
-Grid.Ax = Grid.dy*h;                    %Cross section in x direction
-Grid.Ay = Grid.dx*h;                    %Cross section in y direction
-Grid.Volume = Grid.dx.*Grid.dy*h;       %Cell volume [m^3]
+Grid.Ax = Grid.dy*Grid.h;                    %Cross section in x direction
+Grid.Ay = Grid.dx*Grid.h;                    %Cross section in y direction
+Grid.Volume = Grid.dx.*Grid.dy*Grid.h;       %Cell volume [m^3]
 Grid.por = str2double(inputMatrix(por + 1));   %Porosity
 Grid.N = Grid.Nx*Grid.Ny;  
 

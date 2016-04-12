@@ -7,19 +7,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [P, S, Pc, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
 %SEQUENTIAL STRATEGY
-Grid.CFL=Sequential.CFL;
-MaxExtIter=Sequential.MaxExtIter;
-N=Grid.Nx*Grid.Ny;
-Tol=Sequential.Tol;
+Grid.CFL = Sequential.CFL;
+MaxExtIter = Sequential.MaxExtIter;
+N = Grid.Nx*Grid.Ny;
+Tol = Sequential.Tol;
 
 %Timers inside timesteps
-ptimer=zeros(MaxExtIter,1);
-btimer=zeros(MaxExtIter,1);
-stimer=zeros(MaxExtIter,1);
+ptimer = zeros(MaxExtIter,1);
+btimer = zeros(MaxExtIter,1);
+stimer = zeros(MaxExtIter,1);
 %External Newton loop
-Iter=1; %External iterations counter
-Converged=0;
-S=S0;
+Iter = 1; %External iterations counter
+Converged = 0;
+S = S0;
 while (Converged==0 && Iter <= MaxExtIter)
     disp(['Outer-loop iteration: ' num2str(Iter)]);
     tstart1 = tic;
@@ -28,7 +28,8 @@ while (Converged==0 && Iter <= MaxExtIter)
     [P, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
     %% 
     ptimer(Iter) = toc(tstart1);
-    
+    max(Wells.Fluxes)
+    min(Wells.Fluxes)
     %2. Check mass balance
     tstart2 = tic;
     [Balance, U] = check2D(U, Grid, Wells);
@@ -38,6 +39,7 @@ while (Converged==0 && Iter <= MaxExtIter)
     if (Iter==1)
         dT=timestepping(Fluid, S, Grid, U, Wells);
         dT=min(dT, maxdT);
+        dT = 50*24*3600;
     end
     
     %4. Solve transport equation given the total velocity field

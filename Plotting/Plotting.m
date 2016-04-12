@@ -15,7 +15,7 @@ if problem_1D
     x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
     figure(4)
     subplot(2,1,1);
-    plot(x, P, 'red', 'LineWidth',1);
+    plot(x, P, 'blue', 'LineWidth',1);
     hold on
     plot(x, P-Pc, 'blue', 'LineWidth',1);
     %title('Pressure [Pa]');
@@ -26,7 +26,7 @@ if problem_1D
      set(gca,'fontsize',24);
     hold on
     subplot(2,1,2);
-    plot(x, S, 'red', 'LineWidth', 1);
+    plot(x, S, 'blue', 'LineWidth', 1);
     axis([0 Grid.Lx 0 1]);
     title('Saturation of water');
     xlabel('x [m]');

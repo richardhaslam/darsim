@@ -6,10 +6,7 @@
 %Created: 2015
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('******************************************************************');
-disp('********************MATTEO RESERVOIR SIMULATOR********************');
-disp('******************************************************************');
-disp(char(5));
+clc;
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
@@ -17,18 +14,31 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 global Errors
 Errors = 0;
-InputDirectory = '../Input/Homo_Cap/';
+InputDirectory = '../Input/Homo_Cap';
 InputFile = strcat(InputDirectory, '/Homo_Cap.txt');
+delete(strcat(InputDirectory, '/Output/RunDiary.txt')); 
+diary on
+diary(strcat(InputDirectory, '/Output/RunDiary.txt'));
+disp('******************************************************************');
+disp('********************DARSIM 2 RESERVOIR SIMULATOR********************');
+disp('******************************************************************');
+disp(char(5));
 disp('--------------------------------------------')
 disp('Reading input file')
 ReadInputFile;
 switch (Errors)
     case(1)
-        disp('--------------------------------------------')
+        disp('-----------------------------------------------')
         disp('Run failed: the input file contains errors')
     case(0)
         disp('Input file read without any error');
-        disp('--------------------------------------------')
+        disp('-----------------------------------------------')
+        disp(char(5));
+        disp(['******************', num2str(Problem),'******************']);
+        disp(['Lx ', num2str(Grid.Lx), ' m']);
+        disp(['Ly ', num2str(Grid.Ly), ' m']);
+        disp(['h  ', num2str(Grid.h), ' m']);
+        disp(['Grid: ', num2str(Grid.Nx), ' x ',  num2str(Grid.Ny), ' x 1']);
         disp(char(5));
         if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
             mkdir(InputDirectory,'/Output/VTK');
@@ -46,6 +56,8 @@ switch (Errors)
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
         P = zeros(Grid.Nx, Grid.Ny, 1);
         S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
+        %S(1: end/2) = 0.2;
+        %S(end/2+1:end) = 0.8;
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
@@ -70,3 +82,4 @@ switch (Errors)
         disp(char(10));
         disp(['The Total Simulation time is ' num2str(TotalTime) ' s']);
 end
+diary off

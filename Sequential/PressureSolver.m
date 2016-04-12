@@ -19,7 +19,8 @@ Mt = Mw+Mo;   %total mobility
 Kt = zeros(2, Grid.Nx, Grid.Ny);
 Kt(1,:,:) = reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
 Kt(2,:,:) = reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-Kvector = reshape(Kt(1,:,:), N, 1);
+Ktvector = reshape(Kt(1,:,:), N, 1);
+Kvector = reshape(K(1,:,:), N, 1);
 [Tx, Ty] = ComputeTransmissibility(Grid, Kt);
 
 %Construct pressure matrix
@@ -33,20 +34,30 @@ Ucap.x = zeros(Nx+1,Ny);
 Ucap.y = zeros(Nx, Ny+1);
 Kwvector = zeros(Grid.N, 1);
 if ~isempty(Fluid.Pc)
-    Kw=zeros(2, Grid.Nx, Grid.Ny);
+    Kw = zeros(2, Grid.Nx, Grid.Ny);
     Kw(1,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kw(2,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
     [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
     Kwvector = reshape(Kw(1,:,:), N, 1);
 end
 
-%Add Wells
+%% Add Wells
 pc = reshape(Pc, Grid.N, 1);
+%Injectors
 for i=1:length(Inj)
-    [A, q] = AddWell(A, q, Inj(i), Kvector, pc, Kvector);
+    a = Inj(i).cells;
+    for ii=1:length(a)
+        A(a(ii),a(ii)) = A(a(ii),a(ii)) + Inj(i).PI*Kvector(a(ii)).*Inj(i).Mw;
+        q(a(ii)) = Inj(i).PI.*Kvector(a(ii)).*Inj(i).Mw.*Inj(i).p + Inj(i).PI.*Kvector(a(ii)).*Inj(i).Mw.*pc(a(ii));
+    end
 end
+%Producers
 for i=1:length(Prod)
-    [A, q] = AddWell(A, q, Prod(i), Kvector, pc, Kwvector);
+    a = Prod(i).cells;
+    for ii=1:length(a)
+        A(a(ii),a(ii)) = A(a(ii),a(ii)) + Prod(i).PI*Ktvector(a(ii));
+        q(a(ii)) = Prod(i).PI*(Ktvector(a(ii)).*Prod(i).p + Kwvector(a(ii)).*pc(a(ii)));
+    end
 end
 
 %Solve for pressure
@@ -59,25 +70,18 @@ U.y = zeros(Nx,Ny+1,1);
 U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)).*Tx(2:Nx,:) - Ucap.x(2:Nx,:);
 U.y(:,2:Ny) = (P(:,1:Ny-1)-P(:,2:Ny)).*Ty(:,2:Ny) - Ucap.y(:,2:Ny);
 
-%Wells: fluxes [m^3/s]
+%% Wells: fluxes [m^3/s]
 Fluxes = zeros(N,1);
-Fluxes = ComputeWellFluxes(Fluxes, Inj, p, Kvector, pc, Kvector);
-Fluxes = ComputeWellFluxes(Fluxes, Prod, p, Kvector, pc, Kwvector);
+%Injectors
+for i=1:length(Inj)
+    a = Inj(i).cells;
+    Fluxes(a) = Fluxes(a) + Inj(i).PI.* (Kvector(a).*Inj(i).Mw.*(Inj(i).p-p(a)) + Kvector(a).*Inj(i).Mw.*pc(a));
+end
+%Producers
+for i=1:length(Prod)
+    a = Prod(i).cells;
+    Fluxes(a) = Fluxes(a) + Prod(i).PI.* (Ktvector(a).*(Prod(i).p-p(a)) + Kwvector(a).*pc(a));
+end
 Wells.Fluxes = reshape(Fluxes, Nx, Ny);
 end
 
-%% Add wells to pressure matrix
-function [A, q] = AddWell(A, q, Well, K, pc, Kw)
-a = Well.cells;
-for i=1:length(a)
-    A(a(i),a(i)) = A(a(i),a(i))+ Well.PI*K(a(i));
-    q(a(i)) = Well.PI*(K(a(i)).*Well.p + Kw(a(i)).*pc(a(i)));
-end
-end
-%% Fluxes of the wells
-function Fluxes = ComputeWellFluxes(Fluxes, Well, p, K, pc, Kw)
-for i=1:length(Well)
-    a = Well(i).cells;
-    Fluxes(a) = Fluxes(a) + Well(i).PI.* (K(a).*(Well(i).p-p(a)) + Kw(a).*pc(a));
-end
-end

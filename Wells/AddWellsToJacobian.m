@@ -21,7 +21,7 @@ for i=1:length(Prod)
     for j=1:length(b)
         Jop(b(j),b(j)) = Jop(b(j),b(j)) + Prod(i).PI*K(b(j)).*Mo(b(j));
         Jwp(b(j),b(j)) = Jwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*Mw(b(j));
-        Jos(b(j),b(j)) = Jos(b(j),b(j)) - Prod(i).PI*K(b(j)).*(Prod(i).p-p(b(j))).*dMo(b(j));
+        Jos(b(j),b(j)) = Jos(b(j),b(j)) - Prod(i).PI*K(b(j)).*(Prod(i).p - p(b(j))).*dMo(b(j));
         Jws(b(j),b(j)) = Jws(b(j),b(j)) - Prod(i).PI*K(b(j)).*(Prod(i).p - p(b(j))).*dMw(b(j));
     end
 end
