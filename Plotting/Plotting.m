@@ -15,10 +15,10 @@ if problem_1D
     x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
     figure(4)
     subplot(2,1,1);
-    plot(x, P, 'blue', 'LineWidth',1);
+    plot(x, P, 'red', 'LineWidth',1);
     hold on
     plot(x, P-Pc, 'blue', 'LineWidth',1);
-    %title('Pressure [Pa]');
+    title('Pressure [Pa]');
     xlabel('x [m]');
     ylabel('Pressure [Pa]');
     axis([0 Grid.Lx min(P-Pc)-100 max(P)+100])

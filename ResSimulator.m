@@ -7,6 +7,7 @@
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clc;
+cd('/media/matteo/LinuxData/MatteoResSim/src');
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
@@ -56,8 +57,7 @@ switch (Errors)
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
         P = zeros(Grid.Nx, Grid.Ny, 1);
         S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
-        %S(1: end/2) = 0.2;
-        %S(end/2+1:end) = 0.8;
+        
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)

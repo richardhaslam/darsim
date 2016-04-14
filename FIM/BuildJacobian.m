@@ -46,7 +46,7 @@ v = ones(N,1)*pv/dt;
 DiagVecs = [-y2,-x2,y2+x2-y1-x1+v,x1,y1];
 DiagIndx = [-Nx,-1,0,1,Nx];
 JwS = spdiags(DiagVecs,DiagIndx,N,N);
-CapJwS = full(JwS);
+CapJwS = full(Jwp);
 
 %Add capillarity
 for i = 1:N
@@ -55,7 +55,7 @@ end
 JwS = JwS - sparse(CapJwS);
 
 % Add wells
-[Jnwp, Jwp, JnwS, JwS] = AddWellsToJacobian(Jnwp, Jwp, JnwS, JwS, Inj, Prod, Kvector, p, pc, Mw, Mnw, dMw, dMnw);
+[Jnwp, Jwp, JnwS, JwS] = AddWellsToJacobian(Jnwp, Jwp, JnwS, JwS, Inj, Prod, Kvector, p, Mw, Mnw, dMw, dMnw);
 
 % Full Jacobian: put the 4 blocks together
 J = [Jnwp, JnwS; Jwp, JwS];

@@ -6,7 +6,7 @@
 %Created: 2016
 %Last modified: 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Jop, Jwp, Jos, Jws] = AddWellsToJacobian(Jop, Jwp, Jos, Jws, Inj, Prod, K, p, pc, Mw, Mo, dMw, dMo)
+function [Jop, Jwp, Jos, Jws] = AddWellsToJacobian(Jop, Jwp, Jos, Jws, Inj, Prod, K, p, Mw, Mo, dMw, dMo)
 %Injectors
 for i=1:length(Inj)
     a = Inj(i).cells;

@@ -19,7 +19,7 @@ Tw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindW, Mw);
 G = ComputeGravityTerm(N);
 
 %Source terms
-[qnw, qw] = ComputeWells(N, Inj, Prod, K, p, pc, Mnw, Mw);
+[qnw, qw] = ComputeWells(N, Inj, Prod, K, p, Mnw, Mw);
 
 %% RESIDUAL
 %Non-wetting phase
@@ -57,7 +57,7 @@ function G = ComputeGravityTerm(N)
 G = speye(N)*0;
 end
 %% Wells
-function [qnw, qw] = ComputeWells(N, Inj, Prod, K, p, pc, Mnw, Mw)
+function [qnw, qw] = ComputeWells(N, Inj, Prod, K, p, Mnw, Mw)
 qnw = zeros(N,1);
 qw = zeros(N,1);
 %Injectors

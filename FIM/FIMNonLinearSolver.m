@@ -6,7 +6,7 @@
 %Created: 21 March 2016
 %Last Modified: 6 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, Unw, dt, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+function [P, S, Pc, Unw, dt, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings)
 Nx = Grid.Nx;
@@ -21,7 +21,7 @@ Converged=0;
 p0 = reshape(P0, N, 1);
 s0 = reshape(S0, N, 1);
 chops=0;
-while (Converged==0 && chops<=0)
+while (Converged==0 && chops<=10)
     if (chops > 0)
         disp('Maximum number of iterations was reached: time-step was chopped');
         disp('Restart Newton loop');
@@ -103,6 +103,7 @@ end
 
 % Reshape S before quitting
 S = reshape(s,Nx,Ny);
+Pc = reshape(Pc,Nx,Ny);
 
 %Average saturation in Coarse Blocks
 if ADM.active

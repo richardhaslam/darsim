@@ -9,6 +9,12 @@ function [Pc, dPc, dJ] = ComputePc(S, Fluid, K, por)
 %Compute capillary pressure
 %   Given the wetting phase saturation it returns Pc and dPc
 switch(Fluid.Pc)
+    case ('Linear')
+        S = (S - Fluid.swc)./(1 - Fluid.swc);
+        PcScale = 1e5; %in Pa
+        Pc = PcScale.*(1-S);
+        dPc = -PcScale;
+        dJ = dPc;
     case('JLeverett')
         %J-leverett curve
         S = (S - Fluid.swc)./(1 - Fluid.swc);

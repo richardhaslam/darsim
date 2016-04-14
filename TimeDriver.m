@@ -58,25 +58,22 @@ while (t<T && Ndt <= TimeSteps)
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
                 dT = timestepping(Fluid, S, Grid, U, Wells);
-                %dT = 1e10;
+               
                 %Compute timestep size based on CFL
                 Grid.CFL = FIM.CFL;
                 dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
-                %dT_CFL = 1e10;
-                
+               
                 %Compute rock transmissibility
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
+                
                 %Non-linear solver
-                P0 = ones(Grid.Nx, Grid.Ny)*Prod.p;
-                P0(1) = Inj.p;
-                S0(1) = 1;
-                [P, S, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+                [P, S, Pc, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             else
                 dT = min(dT_CFL, maxdT(index));
                 % Newton-loop
-                [P, S, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+                [P, S, Pc, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             end

@@ -48,7 +48,7 @@ for i=1:length(Inj)
     a = Inj(i).cells;
     for ii=1:length(a)
         A(a(ii),a(ii)) = A(a(ii),a(ii)) + Inj(i).PI*Kvector(a(ii)).*Inj(i).Mw;
-        q(a(ii)) = Inj(i).PI.*Kvector(a(ii)).*Inj(i).Mw.*Inj(i).p + Inj(i).PI.*Kvector(a(ii)).*Inj(i).Mw.*pc(a(ii));
+        q(a(ii)) = q(a(ii)) + Inj(i).PI.*Kvector(a(ii)).*Inj(i).Mw.*Inj(i).p; 
     end
 end
 %Producers
@@ -56,7 +56,7 @@ for i=1:length(Prod)
     a = Prod(i).cells;
     for ii=1:length(a)
         A(a(ii),a(ii)) = A(a(ii),a(ii)) + Prod(i).PI*Ktvector(a(ii));
-        q(a(ii)) = Prod(i).PI*(Ktvector(a(ii)).*Prod(i).p + Kwvector(a(ii)).*pc(a(ii)));
+        q(a(ii)) = q(a(ii)) + Prod(i).PI*Ktvector(a(ii)).*Prod(i).p;
     end
 end
 
@@ -75,12 +75,12 @@ Fluxes = zeros(N,1);
 %Injectors
 for i=1:length(Inj)
     a = Inj(i).cells;
-    Fluxes(a) = Fluxes(a) + Inj(i).PI.* (Kvector(a).*Inj(i).Mw.*(Inj(i).p-p(a)) + Kvector(a).*Inj(i).Mw.*pc(a));
+    Fluxes(a) = Fluxes(a) + Inj(i).PI.* Kvector(a).*Inj.Mw.*(Inj(i).p-p(a));
 end
 %Producers
 for i=1:length(Prod)
     a = Prod(i).cells;
-    Fluxes(a) = Fluxes(a) + Prod(i).PI.* (Ktvector(a).*(Prod(i).p-p(a)) + Kwvector(a).*pc(a));
+    Fluxes(a) = Fluxes(a) + Prod(i).PI.* Ktvector(a).*(Prod(i).p-p(a));
 end
 Wells.Fluxes = reshape(Fluxes, Nx, Ny);
 end
