@@ -38,6 +38,7 @@ while (Converged==0 && Iter <= MaxExtIter)
     if (Iter==1)
         dT = timestepping(Fluid, S, Grid, U, Wells);
         dT = min(dT, maxdT);
+        dT = 1500/30*24*3600;
     end
     
     %4. Solve transport equation given the total velocity field

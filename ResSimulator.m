@@ -8,6 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clc;
 cd('/media/matteo/LinuxData/MatteoResSim/src');
+%addpath(genpath('../src'));
+
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
@@ -50,7 +52,7 @@ switch (Errors)
         PlotPermeability(K, Grid);
         
         %Cances function if capillarity is used
-        if (~isempty(Fluid.Pc))
+        if (~isempty(Fluid.Pc) && ~strcmp(Fluid.Pc,'JLeverett'))
             Fluid = ComputeCancesFunction(Fluid, reshape(K(1,:,:), Grid.Nx, Grid.Ny), Grid.por);
         end
         

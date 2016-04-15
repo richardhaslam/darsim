@@ -32,17 +32,14 @@ q=zeros(N,1);
 Pc = zeros(Nx, Ny);
 Ucap.x = zeros(Nx+1,Ny);
 Ucap.y = zeros(Nx, Ny+1);
-Kwvector = zeros(Grid.N, 1);
 if ~isempty(Fluid.Pc)
     Kw = zeros(2, Grid.Nx, Grid.Ny);
     Kw(1,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kw(2,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid);
-    Kwvector = reshape(Kw(1,:,:), N, 1);
+    [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, K(1,:,:)', Grid);
 end
 
 %% Add Wells
-pc = reshape(Pc, Grid.N, 1);
 %Injectors
 for i=1:length(Inj)
     a = Inj(i).cells;

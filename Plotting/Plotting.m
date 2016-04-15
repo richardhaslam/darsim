@@ -27,7 +27,7 @@ if problem_1D
     hold on
     subplot(2,1,2);
     plot(x, S, 'blue', 'LineWidth', 1);
-    axis([0 Grid.Lx 0 1]);
+    axis([0 Grid.Lx 0 1.1]);
     title('Saturation of water');
     xlabel('x [m]');
     ylabel('Saturation');

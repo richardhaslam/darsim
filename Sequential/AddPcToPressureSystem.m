@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [q, Pc, U] = AddPcToPressureSystem(q, S, Fluid, Kw, Grid)
+function [q, Pc, U] = AddPcToPressureSystem(q, S, Fluid, Kw, K, Grid)
 N = Grid.Nx*Grid.Ny;
 Nx = Grid.Nx;
 Ny = Grid.Ny;
@@ -13,7 +13,7 @@ Q = reshape(q, Nx, Ny);
 [Tx, Ty] = ComputeTransmissibility(Grid, Kw);
 
 %Compute Pc for the Saturation distribution given
-[Pc, ~] = ComputePc(S, Fluid);
+[Pc, ~] = ComputePc(S, Fluid, K, Grid.por);
 
 %Add Pc to the right-hand side
 %"Capillary fluxes"
