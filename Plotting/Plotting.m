@@ -21,7 +21,7 @@ if problem_1D
     title('Pressure [Pa]');
     xlabel('x [m]');
     ylabel('Pressure [Pa]');
-    axis([0 Grid.Lx min(P-Pc)-100 max(P)+100])
+    axis([0 Grid.Lx min(P-Pc)-1000 max(P)+100])
     legend('oil','water', 'Location', 'east');
      set(gca,'fontsize',24);
     hold on

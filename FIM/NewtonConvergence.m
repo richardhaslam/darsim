@@ -19,7 +19,7 @@ else
 end
 disp(['Iter ' num2str(iter) '    ' num2str(Norm1), '    ', num2str(Norm2)]);
 %Check convergence
-if (Norm1 < Tol && Norm2 < Tol*100)
+if (Norm1 < Tol && Norm2 < Tol*1e3)
    Converged = 1;
 end
 end

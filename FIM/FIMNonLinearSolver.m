@@ -15,6 +15,7 @@ N = Grid.N;
 pv = Grid.por*Grid.Volume;
 ADM.active = 0;
 Tol = FIM.Tol;
+Kvector = reshape(K(1,:,:), N, 1);
 
 % Initialise objects
 Converged=0;
@@ -34,13 +35,13 @@ while (Converged==0 && chops<=10)
     
     %Update fluid prowperties 
     [Mw, Mnw, dMw, dMnw] = Mobilities(s, Fluid);
-    [Pc, dPc] = ComputePc(s, Fluid);
+    [Pc, dPc] = ComputePc(s, Fluid, Kvector, Grid.por);
     %Define updwind operators
     [UpWindNw, Unw] = UpwindOperator(Grid, P, Trx, Try);
     [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
     
     % Compute residual
-    [Residual, TMatrixNw, TMatrixW] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
+    [Residual, TMatrixNw, TMatrixW] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
 
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
@@ -63,7 +64,7 @@ while (Converged==0 && chops<=10)
               
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
-        J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, Pc, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
+        J = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
         TimerConstruct(itCount) = toc(start1);
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
@@ -81,7 +82,7 @@ while (Converged==0 && chops<=10)
         
         % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(s, Fluid);
-        [Pc, dPc] = ComputePc(s, Fluid); 
+        [Pc, dPc] = ComputePc(s, Fluid, Kvector, Grid.por); 
         % Define updwind
         [UpWindNw, Unw] = UpwindOperator(Grid, P, Trx, Try);
         [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);

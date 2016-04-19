@@ -15,6 +15,7 @@ if (Grid.Nx == 1 || Grid.Ny==1)
     %axis([0 Grid.Lx 0 1]);
     xlabel('x [m]');
     ylabel('K [m^2]');
+    %axis('image');
 else
     %Plot permeability
     x=linspace(0, Grid.Lx-Grid.dx, Grid.Nx);

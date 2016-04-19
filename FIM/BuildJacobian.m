@@ -6,12 +6,12 @@
 %Created: 2015
 %Last Modified: 5 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, pc, dPc, dt, Inj, Prod, UpWindNw, UpWindW)
+function J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW)
 %Build FIM Jacobian
-Nx = Grid.Nx; Ny=Grid.Ny; 
+Nx = Grid.Nx; 
+Ny = Grid.Ny; 
 N = Grid.N;
 pv = Grid.Volume*Grid.por;
-Kvector = reshape(K(1, :, :), Grid.N, 1);
 
 % BUILD FIM JACOBIAN BLOCK BY BLOCK
 
@@ -55,7 +55,7 @@ end
 JwS = JwS - sparse(CapJwS);
 
 % Add wells
-[Jnwp, Jwp, JnwS, JwS] = AddWellsToJacobian(Jnwp, Jwp, JnwS, JwS, Inj, Prod, Kvector, p, Mw, Mnw, dMw, dMnw);
+[Jnwp, Jwp, JnwS, JwS] = AddWellsToJacobian(Jnwp, Jwp, JnwS, JwS, Inj, Prod, K, p, Mw, Mnw, dMw, dMnw);
 
 % Full Jacobian: put the 4 blocks together
 J = [Jnwp, JnwS; Jwp, JwS];

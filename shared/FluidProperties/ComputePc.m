@@ -21,7 +21,7 @@ switch(Fluid.Pc)
         J = 0.1.*(S).^(-0.5);
         dJ = - 0.1*0.5*(S).^(-1.5);
         %Define parameters
-        alpha = 4.361e-5;
+        alpha = 4.361e-3;
         %Compute Pc and dPc analytically
         Pc = alpha .* (por./K).^(0.5).*J;
         dPc = alpha .* (por./K).^(0.5).* dJ;

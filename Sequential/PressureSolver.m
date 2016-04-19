@@ -26,7 +26,7 @@ Kvector = reshape(K(1,:,:), N, 1);
 %Construct pressure matrix
 A = AssemblePressureMatrix(Tx, Ty, Nx, Ny);
 Ab = A;
-q=zeros(N,1);
+q = zeros(N,1);
 
 %Add capillary term to the right-hand side
 Pc = zeros(Nx, Ny);

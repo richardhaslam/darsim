@@ -7,8 +7,8 @@
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clc;
-cd('/media/matteo/LinuxData/MatteoResSim/src');
-%addpath(genpath('../src'));
+cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
+addpath(genpath('../src'));
 
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
@@ -49,6 +49,7 @@ switch (Errors)
         Directory = strcat(InputDirectory,'/Output/');
         
         %%Plot Permeability Field
+        K(:,1:end/2, 1) = K(:, 1:end/2, :)*1e-1;
         PlotPermeability(K, Grid);
         
         %Cances function if capillarity is used
@@ -59,7 +60,7 @@ switch (Errors)
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
         P = zeros(Grid.Nx, Grid.Ny, 1);
         S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
-        
+
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
