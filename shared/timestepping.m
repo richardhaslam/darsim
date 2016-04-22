@@ -10,15 +10,15 @@ function dt = timestepping(Fluid, S, Grid, U, Wells)
 %Returns the timestep size based on the velocity field, the Grid and the
 %fluid present. CFL condition is used. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Nx=Grid.Nx;
-Ny=Grid.Ny;
-por=Grid.por;
-pv=por*Grid.Volume;   %Void Volume in each cell
-CFL=Grid.CFL;
+Nx = Grid.Nx;
+Ny = Grid.Ny;
+por = Grid.por;
+pv = por*Grid.Volume;   %Void Volume in each cell
+CFL = Grid.CFL;
 
 %I take the worst possible scenario
 s = Fluid.swc:0.01:1-Fluid.sor;
-df = Derivative (s, Fluid);
+df =  ComputeFractionalFlow(s, Fluid);
 dfmax = max(df);
 Uxmax = max(max(abs(U.x)));
 Uymax = max(max(abs(U.y)));

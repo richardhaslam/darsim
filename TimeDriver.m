@@ -60,12 +60,12 @@ while (t<T && Ndt <= TimeSteps)
                 
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
-                dT = timestepping(Fluid, S, Grid, U, Wells);
+                %dT = timestepping(Fluid, S, Grid, U, Wells);
                 dT = 100*3600*24;
                
                 %Compute timestep size based on CFL
                 Grid.CFL = FIM.CFL;
-                dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
+                %dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
                 dT_CFL = 100*3600*24;
 
                 %Compute rock transmissibility
@@ -119,7 +119,7 @@ while (t<T && Ndt <= TimeSteps)
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
     switch (Options.PlotSolution)
         case('Matlab')
-            if (mod(Ndt,10)==0)
+            if (mod(Ndt,1)==0)
                 if ADMSettings.active
                     Plotting_ADM
                 else

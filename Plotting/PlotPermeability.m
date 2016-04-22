@@ -37,6 +37,7 @@ else
     ylabel('y [m]');
     axis('image');
     colorbar;
+    caxis([min(min(K)), max(max(K))])
     colormap(jet);
     set(gca,'fontsize',22);
     hold on

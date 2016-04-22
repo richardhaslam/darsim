@@ -17,8 +17,8 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 global Errors
 Errors = 0;
-InputDirectory = '../Input/Homo_Cap';
-InputFile = strcat(InputDirectory, '/Homo_Cap.txt');
+InputDirectory = '../Input/FiveLayers';
+InputFile = strcat(InputDirectory, '/FiveLayers.txt');
 delete(strcat(InputDirectory, '/Output/RunDiary.txt')); 
 diary on
 diary(strcat(InputDirectory, '/Output/RunDiary.txt'));
@@ -58,7 +58,7 @@ switch (Errors)
         
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
         P = zeros(Grid.Nx, Grid.Ny, 1);
-        S = ones(Grid.Nx, Grid.Ny, 1)*0.5;
+        S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
