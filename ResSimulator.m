@@ -49,7 +49,6 @@ switch (Errors)
         Directory = strcat(InputDirectory,'/Output/');
         
         %%Plot Permeability Field
-        K(:,1:end/2, 1) = K(:, 1:end/2, :)*1e-1;
         PlotPermeability(K, Grid);
         
         %Cances function if capillarity is used
@@ -59,8 +58,7 @@ switch (Errors)
         
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
         P = zeros(Grid.Nx, Grid.Ny, 1);
-        S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
-
+        S = ones(Grid.Nx, Grid.Ny, 1)*0.5;
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)

@@ -36,7 +36,7 @@ if ~isempty(Fluid.Pc)
     Kw = zeros(2, Grid.Nx, Grid.Ny);
     Kw(1,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kw(2,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, K(1,:,:)', Grid);
+    [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, K(1,:,:), Grid);
 end
 
 %% Add Wells

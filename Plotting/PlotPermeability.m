@@ -3,23 +3,26 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 2015
+%Last modified: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function PlotPermeability(Perm, Grid)
 if (Grid.Nx == 1 || Grid.Ny==1)
-    figure(200)
+    figure(4)
     x = linspace(0, Grid.Lx-Grid.dx, Grid.Nx);
+    subplot(3,1,1);
     plot(x, log10(Perm));
-    title('Permeability');
+    %title('Permeability');
     axis([0 Grid.Lx min(min(log10(Perm)))-1 max(max(log10(Perm)))+1]);
     %axis([0 Grid.Lx 0 1]);
     xlabel('x [m]');
-    ylabel('K [m^2]');
+    ylabel('Log(K) [m^2]');
+    set(gca,'fontsize',24);
     %axis('image');
 else
     %Plot permeability
-    x=linspace(0, Grid.Lx-Grid.dx, Grid.Nx);
-    y=linspace(0, Grid.Ly-Grid.dy, Grid.Ny);
+    x = linspace(0, Grid.Lx-Grid.dx, Grid.Nx);
+    y = linspace(0, Grid.Ly-Grid.dy, Grid.Ny);
     [X, Y] = meshgrid(x,y);
     %Use log scale
     K(:,:) = Perm(1,:,:);

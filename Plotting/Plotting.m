@@ -6,29 +6,30 @@
 %Created: 2015
 %Last modified: 7 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Plotting(Grid, P, Pc, S, Fluid, color1, color2, Prod, Inj)
 problem_1D = 0;
 if (Grid.Nx == 1 || Grid.Ny == 1)
             problem_1D = 1;
 end
 if problem_1D
     %Plot for 1D problems
-    x=linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
+    x = linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
     figure(4)
-    subplot(2,1,1);
-    plot(x, P, 'red', 'LineWidth',1);
+    subplot(3,1,2);
+    plot(x, P, color1, 'LineWidth',1);
     hold on
-    plot(x, P-Pc, 'blue', 'LineWidth',1);
-    title('Pressure [Pa]');
+    plot(x, P-Pc, color2, 'LineWidth',1);
+    %title('Pressure [Pa]');
     xlabel('x [m]');
     ylabel('Pressure [Pa]');
-    axis([0 Grid.Lx min(P-Pc)-1000 max(P)+100])
-    legend('oil','water', 'Location', 'east');
+    axis([0 Grid.Lx min(P-Pc)-100 max(P)+100])
+    %legend('oil','water', 'Location', 'east');
      set(gca,'fontsize',24);
     hold on
-    subplot(2,1,2);
-    plot(x, S, 'blue', 'LineWidth', 1);
+    subplot(3,1,3);
+    plot(x, S, color2, 'LineWidth', 1);
     axis([0 Grid.Lx 0 1.1]);
-    title('Saturation of water');
+    %title('Saturation of water');
     xlabel('x [m]');
     ylabel('Saturation');
     hold on;
@@ -56,8 +57,6 @@ else
     ylabel('y [m]');
     colormap(jet);
     colorbar;
-    pressuremax =max(max(P));
-    pressuremin = min(min(P));
     caxis ([Prod(1).p,Inj(1).p]);
     axis('image');
     set(gca,'fontsize',24);
@@ -126,4 +125,5 @@ else
         set(gca,'fontsize',24);
         drawnow
     end
+end
 end

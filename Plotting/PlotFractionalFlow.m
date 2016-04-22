@@ -3,9 +3,10 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 2015
+%Last modified: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function FractionalFlowPlot(Fluid)
+function PlotFractionalFlow(Fluid)
 %Plot fractional flow function and its derivatives
 X = linspace(Fluid.swc,1 - Fluid.sor,100);
 [Mw, Mo, dMw, dMo]=Mobilities(X, Fluid);

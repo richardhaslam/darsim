@@ -1,4 +1,4 @@
-%        Time loop driver             %
+%        Time loop driver             
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
@@ -52,18 +52,21 @@ while (t<T && Ndt <= TimeSteps)
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
-                [~, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+                [P, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
                 %[Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
+                
+                %Plot initial conditions
+                Plotting(Grid, P, Pc, S, Fluid, 'yellow', 'green', Prod, Inj);
                 
                 %Keep first timestep to be small
                 Grid.CFL = 0.25/8;
                 dT = timestepping(Fluid, S, Grid, U, Wells);
-                dT = 10000*3600*24;
+                dT = 100*3600*24;
                
                 %Compute timestep size based on CFL
                 Grid.CFL = FIM.CFL;
                 dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
-                dT_CFL = 10000*3600*24;
+                dT_CFL = 100*3600*24;
 
                 %Compute rock transmissibility
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
@@ -116,11 +119,11 @@ while (t<T && Ndt <= TimeSteps)
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
     switch (Options.PlotSolution)
         case('Matlab')
-            if (mod(Ndt,1000)==0)
+            if (mod(Ndt,10)==0)
                 if ADMSettings.active
                     Plotting_ADM
                 else
-                    Plotting;
+                    Plotting(Grid, P, Pc, S, Fluid, 'red', 'blue', Prod, Inj);
                 end
             end
         case('VTK')

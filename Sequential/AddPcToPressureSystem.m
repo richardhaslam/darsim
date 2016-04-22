@@ -13,7 +13,9 @@ Q = reshape(q, Nx, Ny);
 [Tx, Ty] = ComputeTransmissibility(Grid, Kw);
 
 %Compute Pc for the Saturation distribution given
-[Pc, ~] = ComputePc(S, Fluid, K, Grid.por);
+Perm =zeros(Nx, Ny);
+Perm(:,:) = K(1, :, :);
+[Pc, ~] = ComputePc(S, Fluid, Perm, Grid.por);
 
 %Add Pc to the right-hand side
 %"Capillary fluxes"

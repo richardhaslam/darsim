@@ -1,5 +1,12 @@
-function [K] = Randomfield(Grid)
 % 2D random permeability field generator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Matteo Cusini's Research Code
+%Author: Tom Postma
+%TU Delft
+%Year: January 2016
+%Last modified: January 2016
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [K] = Randomfield(Grid)
 % Gaussian distribution function and autocovariance functions
     
     Nx      = Grid.Nx;

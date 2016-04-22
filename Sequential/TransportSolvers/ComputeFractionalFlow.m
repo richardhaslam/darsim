@@ -7,9 +7,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [fw, dfw] = ComputeFractionalFlow(s, Fluid)
 %Compute Mobilities
-[Mw, Mo] = Mobilities(s, Fluid);
-Mt = Mw + Mo;
+[Mw, Mnw, dMw, dMnw] = Mobilities(s, Fluid);
+Mt = Mw + Mnw;
 %Flux function and derivatives
 fw = Mw./Mt;
-dfw = Derivative(s,Fluid);
+dfw = (dMw .* (Mw+Mnw) - (dMw+dMnw).* Mw)./(Mw+Mnw).^2;
 end

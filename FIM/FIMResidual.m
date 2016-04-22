@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 April 2016
-%Last modified: 5 April 2016
+%Last modified: 22 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Residual, Tnw, Tw] = FIMResidual(p_old, s_old, p, s, pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, K, N, Nx, Ny)
 %Accumulation Term
@@ -72,11 +72,4 @@ for i=1:size(Prod)
     qnw(c) =  Mnw(c).* Prod(i).PI .* K(c).* (Prod(i).p - p(c));
     qw(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c));
 end
-qt = qnw + qw;
-qnw(1);
-qnw(end);
-qw(1);
-qw(end);
-qt(1);
-qt(end);
 end
