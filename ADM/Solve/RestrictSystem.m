@@ -4,9 +4,9 @@
 %Author: Matteo Cusini
 %TU Delft
 %Year: 2015
-%Last modified: 21 March 2016
+%Last modified: 2 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [J_c, Residual_c] = RestrictSystem(J, R, Pp, Ps, N, maxLevel)
+function [J_c] = RestrictSystem(J, R, Pp, Ps, N, maxLevel)
 % Restrict system to DLGR Grid
 Jop = J(1:N, 1:N);
 Jos = J(1:N, N+1:2*N);
