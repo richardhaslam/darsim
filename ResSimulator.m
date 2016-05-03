@@ -17,7 +17,7 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 global Errors
 Errors = 0;
-InputDirectory = '../Input/GeoStat_ADM';
+InputDirectory = '../Input/GeoStat';
 InputFile = strcat(InputDirectory, '/GeoStat.txt');
 delete(strcat(InputDirectory, '/Output/RunDiary.txt')); 
 diary(strcat(InputDirectory, '/Output/RunDiary.txt'));
