@@ -6,8 +6,9 @@
 %Created: 2015
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function ResSimulator(InputDirectory, InputFile)
 clc;
-cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
+%cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
 addpath(genpath('../src'));
 
 %Remove some warnings 
@@ -17,8 +18,8 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 global Errors
 Errors = 0;
-InputDirectory = '../Input/GeoStat';
-InputFile = strcat(InputDirectory, '/GeoStat.txt');
+%InputDirectory = '../Input/GeoStat_ADM';
+%InputFile = strcat(InputDirectory, '/GeoStat.txt');
 delete(strcat(InputDirectory, '/Output/RunDiary.txt')); 
 diary(strcat(InputDirectory, '/Output/RunDiary.txt'));
 disp('******************************************************************');
