@@ -1,15 +1,26 @@
 %%%%Multiple Runs%%%%
 disp('Start multiple runs');
-disp('Fine scale');
-InputDirectory = '../Input/GeoStat';
-InputFile = strcat(InputDirectory, '/GeoStat.txt');
-ResSimulator;
+% disp('Fine scale');
+% InputDirectory = '../Input/GeoStat';
+% InputFile = strcat(InputDirectory, '/GeoStat.txt');
+% ResSimulator;
+% 
+% clear all
+% disp('ADM simulation');
+% InputDirectory = '../Input/GeoStat_ADM';
+% InputFile = strcat(InputDirectory, '/GeoStat.txt');
 
-clear all
-disp('ADM simulation');
-InputDirectory = '../Input/GeoStat_ADM';
-InputFile = strcat(InputDirectory, '/GeoStat.txt');
-ResSimulator;
+Directories{1} = '../Input/GeoStat';
+Files{1} = '../Input/GeoStat/GeoStat.txt';
+Directories{2} = '../Input/GeoStat_ADM';
+Files{2} =  '../Input/GeoStat/GeoStat.txt';
+
+parfor i=1:2
+    InputDirectory = Directories{i};
+    InputFile = Files{i};
+    ResSimulator;
+end
+
 % disp('Start Bilinear interpolation')
 % InputDirectory = '../Input/SPE10BRuns/Bilinear/DS03';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
