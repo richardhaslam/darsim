@@ -7,7 +7,7 @@
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clc;
-cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
+%cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
 addpath(genpath('../src'));
 
 %Remove some warnings 
