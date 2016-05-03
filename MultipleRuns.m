@@ -6,6 +6,7 @@ InputFile = strcat(InputDirectory, '/GeoStat.txt');
 ResSimulator;
 
 clear all
+disp('ADM simulation');
 InputDirectory = '../Input/GeoStat_ADM';
 InputFile = strcat(InputDirectory, '/GeoStat.txt');
 ResSimulator;

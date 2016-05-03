@@ -6,7 +6,7 @@
 %Created: 21 March 2016
 %Last Modified: 6 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, Pc, Unw, dt, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+function [P, S, Pc, Unw, dt, dtnext, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings)
 Nx = Grid.Nx;
@@ -69,7 +69,6 @@ while (Converged==0 && chops<=10)
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
-        %[J, Residual] = ForceFixedValuesAtBoundary(J, Residual, N);
         Delta = LinearSolver(J, Residual, N, ADM);
         TimerSolve(itCount) = toc(start2);
       
@@ -89,7 +88,6 @@ while (Converged==0 && chops<=10)
         
         % 4. Compute residual 
         Residual = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
-        %[J, Residual] = ForceFixedValuesAtBoundary(J, Residual, N);
 
         % 5. Check convergence criteria
         Converged = NewtonConvergence(itCount, Residual, Delta(N+1:end), Tol, N, ADM);
@@ -100,6 +98,15 @@ while (Converged==0 && chops<=10)
         dt = dt/10;
         chops = chops + 1;
     end
+end
+
+%Choose next time-step size
+if itCount < 5 
+    dtnext = 2*dt;
+elseif itCount > 8
+    dtnext = dt/2;
+else
+    dtnext = dt;
 end
 
 % Reshape S before quitting

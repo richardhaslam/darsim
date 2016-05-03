@@ -20,7 +20,6 @@ Errors = 0;
 InputDirectory = '../Input/GeoStat_ADM';
 InputFile = strcat(InputDirectory, '/GeoStat.txt');
 delete(strcat(InputDirectory, '/Output/RunDiary.txt')); 
-diary on
 diary(strcat(InputDirectory, '/Output/RunDiary.txt'));
 disp('******************************************************************');
 disp('********************DARSIM 2 RESERVOIR SIMULATOR********************');
