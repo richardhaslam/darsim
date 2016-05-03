@@ -84,3 +84,4 @@ switch (Errors)
         disp(['The Total Simulation time is ' num2str(TotalTime) ' s']);
 end
 diary off
+end
