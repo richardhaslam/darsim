@@ -30,13 +30,13 @@ switch (Pressure_Interpolator)
         end
     case ('MS')
         CoarseGrid(1).constant = 0;
-        %Ktvector = reshape(Kt(1,:, :),FineGrid.N, 1);
-        %lambdaMax = max(Ktvector);
-        %PlotPermeability(Kt, FineGrid);
-        %Ktvector(Ktvector./lambdaMax < 10^-2) = 10^-2*lambdaMax;
-        %Kt(1, :, :) = reshape(Ktvector, FineGrid.Nx, FineGrid.Ny);
-        %Kt(2, :, :) = reshape(Ktvector, FineGrid.Nx, FineGrid.Ny);
-        %PlotPermeability(Kt, FineGrid);
+        Ktvector = reshape(Kt(1,:, :),FineGrid.N, 1);
+        lambdaMax = max(Ktvector);
+        PlotPermeability(Kt, FineGrid);
+        Ktvector(Ktvector./lambdaMax < 10^-2) = 10^-2*lambdaMax;
+        Kt(1, :, :) = reshape(Ktvector, FineGrid.Nx, FineGrid.Ny);
+        Kt(2, :, :) = reshape(Ktvector, FineGrid.Nx, FineGrid.Ny);
+        PlotPermeability(Kt, FineGrid);
         [Tx, Ty] = ComputeTransmissibility(FineGrid, Kt);
         Ap = AssemblePressureMatrix(Tx, Ty, FineGrid.Nx, FineGrid.Ny);
         [CoarseGrid(1).MsR, CoarseGrid(1).MsP, CoarseGrid(1).C] = MSFVOperators(FineGrid, CoarseGrid(1), Ap, 1);

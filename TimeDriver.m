@@ -21,7 +21,7 @@ else
 end
 
 %%%%% START THE TIME LOOP %%%%%
-Tstops = linspace(T/10, T, 10);
+Tstops = linspace(T/20, T, 20);
 index = 1;
 Saturations = zeros(Grid.N, 10);
 Pressures = zeros(Grid.N, 10);
@@ -55,7 +55,7 @@ while (t<T && Ndt <= TimeSteps)
                 [P0, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
                 %[Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
                 
-                %%%%%%%%%%%%%%PLOT INITIAL CONDITION%%%%%%%%%%%%%
+                %Plot initial conditions
                 switch (Options.PlotSolution)
                     case('Matlab')
                         if ADMSettings.active
@@ -64,31 +64,25 @@ while (t<T && Ndt <= TimeSteps)
                             Plotting(Grid, P0, Pc, S, Fluid, 'red', 'blue', Prod, Inj);
                         end
                     case('VTK')
-                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P0, S, Pc, ADMSettings.active, CoarseGrid, maxLevel);
+                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel);
                         vtkcount = vtkcount + 1;
                 end
                 
                 %Keep first timestep to be small
-                Grid.CFL = 0.25/8;
-                %dT = timestepping(Fluid, S, Grid, U, Wells);
-                dT = 1000*3600*24;
-               
-                %Compute timestep size based on CFL
-                Grid.CFL = FIM.CFL;
-                %dT_CFL = timestepping(Fluid, S, Grid, U, Wells);
-                dT_CFL = 1000*3600*24;
+                Grid.CFL = 1e-1;
+                dT = timestepping(Fluid, S, Grid, U, Wells);
 
                 %Compute rock transmissibility
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 
                 %Non-linear solver
-                [P, S, Pc, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+                [P, S, Pc, U, dT, dTnext, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             else
-                dT = min(dT_CFL, maxdT(index));
+                dT = min(dTnext, maxdT(index));
                 % Newton-loop
-                [P, S, Pc, U, dT, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+                [P, S, Pc, U, dT, dTnext, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             end
@@ -123,7 +117,6 @@ while (t<T && Ndt <= TimeSteps)
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
         Saturations(:,index) = reshape(S, Grid.N, 1);
         Pressures(:,index) = reshape(P, Grid.N, 1);
-        index = index + 1;
     end
       
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
@@ -137,9 +130,10 @@ while (t<T && Ndt <= TimeSteps)
                 end
             end
         case('VTK')
-            if (mod(Ndt,20)==0)
+            if (t == Tstops(index))
                 Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel);
                 vtkcount = vtkcount + 1;
+                index = index +1;
             end
     end
     

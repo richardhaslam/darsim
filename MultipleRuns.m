@@ -1,11 +1,15 @@
 %%%%Multiple Runs%%%%
 disp('Start multiple runs');
-% disp('Fine scale');
-% InputDirectory = '../Input/SPE10BRuns/FineScale/';
-% InputFile = strcat(InputDirectory, '/SPE10B.txt');
-% ResSimulator;
+disp('Fine scale');
+InputDirectory = '../Input/GeoStat';
+InputFile = strcat(InputDirectory, '/GeoStat.txt');
+ResSimulator;
 
-% clear all
+clear all
+disp('ADM simulation');
+InputDirectory = '../Input/GeoStat_ADM';
+InputFile = strcat(InputDirectory, '/GeoStat.txt');
+ResSimulator;
 % disp('Start Bilinear interpolation')
 % InputDirectory = '../Input/SPE10BRuns/Bilinear/DS03';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
@@ -33,7 +37,7 @@ disp('Start multiple runs');
 % disp('');
 % disp('end of Bilinear interpolation');
 
-disp('Start MS interpolation')
+%disp('Start MS interpolation')
 % InputDirectory = '../Input/SPE10BRuns/MS/DS03';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
 % ResSimulator;
@@ -56,9 +60,9 @@ disp('Start MS interpolation')
 % InputDirectory = '../Input/SPE10BRuns/MS/DS001';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
 % ResSimulator;
-disp('end of MS interpolation');
+%disp('end of MS interpolation');
 
-disp('Start Constant interpolation');
+%disp('Start Constant interpolation');
 % InputDirectory = '../Input/SPE10BRuns/Constant/DS03';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
 % ResSimulator;
@@ -72,15 +76,15 @@ disp('Start Constant interpolation');
 % InputDirectory = '../Input/SPE10BRuns/Constant/DS007';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
 % ResSimulator;
-InputDirectory = '../Input/SPE10BRuns/Constant/DS02';
-InputFile = strcat(InputDirectory, '/SPE10B.txt');
-ResSimulator;
+%InputDirectory = '../Input/SPE10BRuns/Constant/DS02';
+%InputFile = strcat(InputDirectory, '/SPE10B.txt');
+%ResSimulator;
 % InputDirectory = '../Input/SPE10BRuns/Constant/DS003';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
 % ResSimulator;
 % InputDirectory = '../Input/SPE10BRuns/Constant/DS001';
 % InputFile = strcat(InputDirectory, '/SPE10B.txt');
 % ResSimulator;
-disp('end of Constant interpolation');
+%disp('end of Constant interpolation');
 
 disp('End multiple runs');

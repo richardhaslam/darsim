@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 21 March 2016
-%Last modified: 21 March 2016
+%Last modified: 3 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Converged = NewtonConvergence(iter, Residual, Delta, Tol, N, ADM)
 Converged = 0;
@@ -12,7 +12,7 @@ Converged = 0;
 if ADM.active == 1
    Residual_c = RestrictResidual(Residual, ADM.Rest, N, ADM.level);
    Norm1 =  norm(Residual_c, inf);
-   Norm2 = 0;
+   Norm2 = norm(Delta, inf);
 else
     Norm1 =  norm(Residual, inf);
     Norm2 = norm(Delta, inf);
