@@ -55,8 +55,8 @@ x2 = max(reshape(Unw.x(2:Nx+1,:),N,1),0).*dMupxNw;
 y1 = min(reshape(Unw.y(:,1:Ny),N,1),0).*dMupyNw;
 y2 = max(reshape(Unw.y(:,2:Ny+1),N,1),0).*dMupyNw;
 v = ones(N,1)*pv/dt;
-DiagVecs = [-y2,-x2,y2+x2-y1-x1-v,x1,y1];
-DiagIndx = [-Nx,-1,0,1,Nx];
+DiagVecs = [-y2, -x2, y2+x2-y1-x1-v, x1, y1];
+DiagIndx = [-Nx, -1, 0, 1, Nx];
 JnwS = spdiags(DiagVecs,DiagIndx,N,N);
 
 %4. Rw Saturation Block
@@ -68,8 +68,8 @@ x2 = max(reshape(Uw.x(2:Nx+1,:),N,1),0).*dMupxw;
 y1 = min(reshape(Uw.y(:,1:Ny),N,1),0).*dMupyw;
 y2 = max(reshape(Uw.y(:,2:Ny+1),N,1),0).*dMupyw;
 v = ones(N,1)*pv/dt;
-DiagVecs = [-y2,-x2,y2+x2-y1-x1+v,x1,y1];
-DiagIndx = [-Nx,-1,0,1,Nx];
+DiagVecs = [-y2, -x2, y2+x2-y1-x1+v, x1, y1];
+DiagIndx = [-Nx, -1, 0, 1, Nx];
 JwS = spdiags(DiagVecs,DiagIndx,N,N);
 CapJwS = full(Jwp);
 

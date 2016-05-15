@@ -43,9 +43,16 @@ end
 %Injectors
 for i=1:length(Inj)
     a = Inj(i).cells;
-    for ii=1:length(a)
-        A(a(ii),a(ii)) = A(a(ii),a(ii)) + Inj(i).PI*Kvector(a(ii)).*Inj(i).Mw;
-        q(a(ii)) = q(a(ii)) + Inj(i).PI.*Kvector(a(ii)).*Inj(i).Mw.*Inj(i).p; 
+    switch (Inj(i).type)
+        case('PressureConstrained')
+            for ii=1:length(a)
+                A(a(ii),a(ii)) = A(a(ii),a(ii)) + Inj(i).PI*Kvector(a(ii)).*Inj(i).Mw;
+                q(a(ii)) = q(a(ii)) + Inj(i).PI.*Kvector(a(ii)).*Inj(i).Mw.*Inj(i).p;
+            end
+        case('RateConstrained')
+            for ii=1:length(a)
+                q(a(ii)) = q(a(ii)) + Inj(i).q;
+            end
     end
 end
 %Producers
@@ -72,7 +79,12 @@ Fluxes = zeros(N,1);
 %Injectors
 for i=1:length(Inj)
     a = Inj(i).cells;
-    Fluxes(a) = Fluxes(a) + Inj(i).PI.* Kvector(a).*Inj.Mw.*(Inj(i).p-p(a));
+    switch(Inj(i).type)
+        case('PressureConstrained')
+            Fluxes(a) = Fluxes(a) + Inj(i).PI.* Kvector(a).*Inj.Mw.*(Inj(i).p-p(a));
+        case('RateConstrained')
+            Fluxes(a) = Fluxes(a) + Inj(i).q;
+    end
 end
 %Producers
 for i=1:length(Prod)

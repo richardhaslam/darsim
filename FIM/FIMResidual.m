@@ -91,9 +91,14 @@ qnw = zeros(N,1);
 qw = zeros(N,1);
 %Injectors
 for i=1:size(Inj)
-    c = Inj.cells;
-    qnw(c) = Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c));
-    qw(c) = Inj(i).Mw * Inj(i).PI .* K(c) .* (Inj(i).p - p(c));
+    c = Inj(i).cells;
+    switch (Inj(i).type)
+        case('RateConstrained')
+            qw(c) = Inj(i).q;
+        case('PressureConstrained')
+            qnw(c) = Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c));
+            qw(c) = Inj(i).Mw * Inj(i).PI .* K(c) .* (Inj(i).p - p(c));
+    end    
 end
 %Producers
 for i=1:size(Prod)

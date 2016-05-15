@@ -38,7 +38,6 @@
 %   CoarseGrid: for ADM knows which coarse cells are active 
 %   Grid: for ADM knows which fine cells are active
 
-%% 
 function [P, S, Pc, dt, dtnext, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings)

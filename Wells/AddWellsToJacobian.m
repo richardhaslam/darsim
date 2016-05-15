@@ -10,9 +10,11 @@ function [Jop, Jwp, Jos, Jws] = AddWellsToJacobian(Jop, Jwp, Jos, Jws, Inj, Prod
 %Injectors
 for i=1:length(Inj)
     a = Inj(i).cells;
-    for j=1:length(a)
-        Jop(a(j),a(j)) = Jop(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mo;
-        Jwp(a(j),a(j)) = Jwp(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mw;
+    if strcmp(Inj.type, 'PressureConstrained')
+        for j=1:length(a)
+            Jop(a(j),a(j)) = Jop(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mo;
+            Jwp(a(j),a(j)) = Jwp(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mw;
+        end
     end
 end
 %Producers
