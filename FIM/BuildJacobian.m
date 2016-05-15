@@ -6,6 +6,31 @@
 %Created: 2015
 %Last Modified: 5 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BUILD Jacobian
+% Builds Jacobian matrix
+
+%Input variables:
+%   Grid: grid
+%   K: permeability 
+%   TMatrixNw: nonwetting phase transmissibility matrix
+%   TMatrixW: wetting phase transmissibility matrix
+%   p: pressure soltuion at previous iteration
+%   Mw: wetting phase mobility 
+%   Mnw: nonwetting phase mobility 
+%   dMw: derivative of wetting phase mobility 
+%   dMnw: derivative of nonwetting phase mobility  
+%   Unw: non-wetting phase rock flux 
+%   Uw: wetting phase rock flux
+%   dPc: derivative of capillary pressure 
+%   dt: timestep size
+%   Inj: injection wells 
+%   Prod: production wells
+%   UpWindNw: upwind operator of nonwetting phase
+%   UpWindW: upwind operator of wetting phase
+
+%Output variables:
+%   J:  FIM Jacobian
+
 function J = BuildJacobian(Grid, K, TMatrixNw, TMatrixW, p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW)
 %Build FIM Jacobian
 Nx = Grid.Nx; 
@@ -21,10 +46,10 @@ Jnwp = TMatrixNw;
 %2. Rw Pressure Block
 Jwp = TMatrixW;
 
-%3. Ro Saturation Block
+%3. Rnw Saturation Block
 dMupxNw = UpWindNw.x*dMnw;
 dMupyNw = UpWindNw.y*dMnw;
-%Construct Jos block
+%Construct Jnws block
 x1 = min(reshape(Unw.x(1:Nx,:),N,1),0).*dMupxNw;
 x2 = max(reshape(Unw.x(2:Nx+1,:),N,1),0).*dMupxNw;
 y1 = min(reshape(Unw.y(:,1:Ny),N,1),0).*dMupyNw;

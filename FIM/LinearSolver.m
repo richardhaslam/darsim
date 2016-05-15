@@ -6,13 +6,25 @@
 %Created: 21 March 2016
 %Last modified: 21 March 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Delta] = LinearSolver (J, Residual, N, ADM)
+%% Linear Solver
+%Given a linear system A x = b it solves it either with ADM or without
+
+%Input variables:
+%   A: matrix
+%   RHS: right-hand side 
+%   N: number of fine-scale gridblocks
+%   ADM: contains ADM objects
+
+%Output variables:
+%   x: solution
+
+function [x] = LinearSolver (A, RHS, N, ADM)
 if ADM.active == 1
-    Residual_c = RestrictResidual(Residual, ADM.Rest, N, ADM.level);
-    [J_c] = RestrictSystem(J, ADM.Rest, ADM.Prolp, ADM.Prols, N, ADM.level);
-    Delta_c = -J_c\Residual_c;
-    Delta = Prolong(Delta_c, ADM.Prolp, ADM.Prols, ADM.level);
+    RHS_c = RestrictResidual(RHS, ADM.Rest, N, ADM.level);
+    [A_c] = RestrictSystem(A, ADM.Rest, ADM.Prolp, ADM.Prols, N, ADM.level);
+    x_c = -A_c\RHS_c;
+    x = Prolong(x_c, ADM.Prolp, ADM.Prols, ADM.level);
 else
-    Delta = -J\Residual;
+    x = -A\RHS;
 end
 end

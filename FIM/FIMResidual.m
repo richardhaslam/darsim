@@ -6,6 +6,35 @@
 %Created: 4 April 2016
 %Last modified: 22 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BUILD Residual
+% Builds Residual vector
+
+%Input variables:
+%   p_old: previous timestep pressure solution
+%   s_old: previous timestep saturation solution
+%   p: new pressure
+%   s: new saturaton
+%   pc: capillary pressure
+%   pv: pore volume
+%   dt: timestep
+%   Trx: rock transmissibility in x direction
+%   Try: rock transmissibility in y direction
+%   Mnw: nonwetting phase saturation
+%   Mw: wetting phase saturation
+%   UpWindNw: nonwettin phase upwind operator
+%   UpWindW: wetting phase upwind operator
+%   Inj: injection wells
+%   Prod: production wells
+%   K: permeability
+%   N: number of grid cells
+%   Nx: number of grid cells in x direction
+%   Ny: number of grid cells in y direction
+
+%Output variables:
+%   Residual:  residual
+%   Tnw: nonwetting phase transmissibility matrix
+%   Tw: wetting phase transmissibility matrix
+
 function [Residual, Tnw, Tw] = FIMResidual(p_old, s_old, p, s, pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, K, N, Nx, Ny)
 %Accumulation Term
 Ap = speye(N)*0; %It's still incompressible
