@@ -4,9 +4,41 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 21 March 2016
-%Last Modified: 6 April 2016
+%Last Modified: 15 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, Pc, Unw, dt, dtnext, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+%% FIM non-linear solver
+% solves the non-linear equations at timestep n with a fully implicit
+% discretization.
+
+%Input Variables:
+%   P0: pressure at previous timestep
+%   S0: saturation at previous time-step
+%   K: permeability
+%   Trx: rock transmissibility in x direction
+%   Try: rock transmissibility in y direction
+%   Grid: fine-scale grid information
+%   Fluid: Fluid information
+%   Inj: injection wells info
+%   Prod: production wells info
+%   FIM: FIM non-linear solver settings
+%   dt: timestep size
+%   Ndt: timestep number
+%   CoarseGrid: ADM Coarse Grids
+%   ADMSettings: settings for ADM
+
+%Output variables
+%   P: pressure at current timestep
+%   S: saturation at current timestep
+%   Pc: capillary pressure at current timestep
+%   dt: timestep size (it can be modified for convergence issues)
+%   dtnext: timestep size for next timestep
+%   FIM: stats of FIM solver
+%   Timers: timers of contruction and solve
+%   Converged: 1 if non-linear convergence is achieved 0 otherwise
+%   CoarseGrid: for ADM knows which coarse cells are active 
+%   Grid: for ADM knows which fine cells are active
+
+function [P, S, Pc, dt, dtnext, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings)
 Nx = Grid.Nx;

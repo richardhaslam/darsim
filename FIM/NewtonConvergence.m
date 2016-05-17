@@ -6,6 +6,20 @@
 %Created: 21 March 2016
 %Last modified: 3 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Newton convergence check
+% Checks if the non-linear convergence has been obtained
+
+%Input variables:
+%   iter: iteration number
+%   Residual:   residual 
+%   Delta: correction to the solution
+%   Tol: tolerance
+%   N: number of fine-scale gridblocks
+%   ADM: contains ADM objects
+
+%Output variables:
+%   Converged:  1 if it's a converged solution, 0 otherwise
+
 function Converged = NewtonConvergence(iter, Residual, Delta, Tol, N, ADM)
 Converged = 0;
 %Evaluate norms

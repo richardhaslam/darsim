@@ -6,6 +6,19 @@
 %Created: 2015
 %Last modified: 5 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Upwind operator
+% constructs upwind operator for a given phase pressure
+
+%Input variables:
+%   Grid: grid information
+%   P: pressure 
+%   Tx: rock transmissibility in x direction
+%   Ty: rock transmissibility in y direction 
+
+%Output variables:
+%   A: upwind operator
+%   U: velocity
+
 function [A, U] = UpwindOperator (Grid, P, Tx, Ty)
 Nx = Grid.Nx;
 Ny = Grid.Ny;

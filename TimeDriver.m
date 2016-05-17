@@ -4,8 +4,48 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 21 March 2016
-%Last modified: 9 April 2016 
+%Last modified: 15 May 2016 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Time loop driver     
+%The time-dependent problem is solved in this script.
+%Two solution strategies exist:
+%                       1. Sequential
+%                           a.IMPES
+%                           b.IMPSAT
+%                       2. FIM
+%Variables:
+%   T: total simulation time
+%   TimeSteps: maximum number of timesteps allowed
+%   Grid: contains all fine-scale grid information
+%   CoarseGrid: contains ADM coarse grids information
+%   Fluid: fluids properties
+%   FIM: settings of FIM non-linear solver
+%   Sequential: settings of Sequential non-linear solver
+%   ADMSettings: settings of ADM solver
+%   Inj: injection wells
+%   Prod: production wells
+
+%   P: pressure at current timestep
+%   S: saturation at current timestep 
+%   P0: pressure at previous timestep
+%   S0: saturation at previous timestep
+%   Pc: capillary pressure
+
+%   dT: timestep size
+%   Ndt: timestep number
+%   t: current simulation time
+
+%TIMERS:
+%   TimerTimestep: total time of each timestep
+%   For Sequential non-linear solver
+%       TimerPressure: pressure solver timer
+%       TimerBalance: balance check timer
+%       TimerSaturation: saturation solver timer
+%   For FIM non-linear solver
+%       TimerConstruct: Jacobian construction timer
+%       TimerSolve: Linear system solve timer
+%   For ADM solver
+%       TimerRP: construction of R and P operators
 
 %% Timers and variables for statistics
 TimerTimestep = zeros(TimeSteps,1);
@@ -21,9 +61,9 @@ else
 end
 
 %%%%% START THE TIME LOOP %%%%%
-%Initialise objects
-t = 0;    %Simulation time
-Ndt = 1;  %keeps track of the number of timesteps
+
+t = 0;
+Ndt = 1; 
 Converged = 0;
 index = 1;
 Saturations = zeros(Grid.N, 10);
@@ -50,7 +90,7 @@ while (t<T && Ndt <= TimeSteps)
             if ~Sequential.ImpSat
                 Sequential.MaxExtIter = 1;
             end
-            [P, S, Pc, dT, Converged, Timers, Sequential.ImplicitSolver] =...
+            [P, S, Pc, Inj, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             disp('------------FIM Non-linear solver--------------');
@@ -58,7 +98,7 @@ while (t<T && Ndt <= TimeSteps)
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
-                [P0, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+                [P0, U, Pc, Wells, Inj, Prod] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
                 %[Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
                 
                 %Plot initial conditions
@@ -82,13 +122,13 @@ while (t<T && Ndt <= TimeSteps)
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 
                 %Non-linear solver
-                [P, S, Pc, U, dT, dTnext, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+                [P, S, Pc, dT, dTnext, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             else
                 dT = min(dTnext, maxdT(index));
                 % Newton-loop
-                [P, S, Pc, U, dT, dTnext, FIM, Timers, Converged, Inj, Prod, CoarseGrid, Grid] = ...
+                [P, S, Pc, dT, dTnext, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             end
@@ -128,12 +168,13 @@ while (t<T && Ndt <= TimeSteps)
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
     switch (Options.PlotSolution)
         case('Matlab')
-            if (mod(Ndt,1)==0)
+            if (t == Tstops(index))
                 if ADMSettings.active
                     Plotting_ADM
                 else
                     Plotting(Grid, P, Pc, S, Fluid, 'red', 'blue', Prod, Inj);
                 end
+                index = index +1;
             end
         case('VTK')
             if (t == Tstops(index))

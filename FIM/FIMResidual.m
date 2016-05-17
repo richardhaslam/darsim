@@ -6,6 +6,35 @@
 %Created: 4 April 2016
 %Last modified: 22 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BUILD Residual
+% Builds Residual vector
+
+%Input variables:
+%   p_old: previous timestep pressure solution
+%   s_old: previous timestep saturation solution
+%   p: new pressure
+%   s: new saturaton
+%   pc: capillary pressure
+%   pv: pore volume
+%   dt: timestep
+%   Trx: rock transmissibility in x direction
+%   Try: rock transmissibility in y direction
+%   Mnw: nonwetting phase saturation
+%   Mw: wetting phase saturation
+%   UpWindNw: nonwettin phase upwind operator
+%   UpWindW: wetting phase upwind operator
+%   Inj: injection wells
+%   Prod: production wells
+%   K: permeability
+%   N: number of grid cells
+%   Nx: number of grid cells in x direction
+%   Ny: number of grid cells in y direction
+
+%Output variables:
+%   Residual:  residual
+%   Tnw: nonwetting phase transmissibility matrix
+%   Tw: wetting phase transmissibility matrix
+
 function [Residual, Tnw, Tw] = FIMResidual(p_old, s_old, p, s, pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, K, N, Nx, Ny)
 %Accumulation Term
 Ap = speye(N)*0; %It's still incompressible
@@ -62,14 +91,25 @@ qnw = zeros(N,1);
 qw = zeros(N,1);
 %Injectors
 for i=1:size(Inj)
-    c = Inj.cells;
-    qnw(c) = Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c));
-    qw(c) = Inj(i).Mw * Inj(i).PI .* K(c) .* (Inj(i).p - p(c));
+    c = Inj(i).cells;
+    switch (Inj(i).type)
+        case('RateConstrained')
+            qw(c) = Inj(i).q;
+        case('PressureConstrained')
+            qnw(c) = Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c));
+            qw(c) = Inj(i).Mw * Inj(i).PI .* K(c) .* (Inj(i).p - p(c));
+    end    
 end
 %Producers
 for i=1:size(Prod)
     c = Prod(i).cells;
-    qnw(c) =  Mnw(c).* Prod(i).PI .* K(c).* (Prod(i).p - p(c));
-    qw(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c));
+    switch (Prod(i).type)
+        case('RateConstrained')
+            qw(c) = Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q;
+            qnw(c) = Prod(i).q - qw(c);
+        case('PressureConstrained')
+            qnw(c) =  Mnw(c).* Prod(i).PI .* K(c).* (Prod(i).p - p(c));
+            qw(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c));
+    end
 end
 end
