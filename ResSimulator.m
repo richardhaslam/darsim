@@ -70,9 +70,6 @@ switch (Errors)
         
         %%%%%%%%%%%%%%%%%%%%%% TIME LOOP %%%%%%%%%%%%%%%%%%%%%%%
         TotalStart = tic;
-        t = 0;    %Simulation time
-        Ndt = 1;  %keeps track of the number of timesteps
-        Converged = 0;
         TimeDriver;
         TotalTime = toc(TotalStart);
         

@@ -21,11 +21,17 @@ else
 end
 
 %%%%% START THE TIME LOOP %%%%%
-Tstops = linspace(T/20, T, 20);
+%Initialise objects
+t = 0;    %Simulation time
+Ndt = 1;  %keeps track of the number of timesteps
+Converged = 0;
 index = 1;
 Saturations = zeros(Grid.N, 10);
 Pressures = zeros(Grid.N, 10);
 vtkcount = 1;
+%Choose with what frequency the solution as to be outputted
+Tstops = linspace(T/20, T, 20);
+
 
 while (t<T && Ndt <= TimeSteps)
     %% Initialise time-step
