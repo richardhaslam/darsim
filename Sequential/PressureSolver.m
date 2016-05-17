@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, U, Pc, Wells, A, Ab, q]=PressureSolver(Grid, Inj, Prod, Fluid, S, K)
+function [P, U, Pc, Wells, Inj, Prod, A, Ab, q]=PressureSolver(Grid, Inj, Prod, Fluid, S, K)
 %PRESSURE Solver
 
 %1.Compute transmissibilities using harmonic average.
@@ -58,9 +58,16 @@ end
 %Producers
 for i=1:length(Prod)
     a = Prod(i).cells;
-    for ii=1:length(a)
-        A(a(ii),a(ii)) = A(a(ii),a(ii)) + Prod(i).PI*Ktvector(a(ii));
-        q(a(ii)) = q(a(ii)) + Prod(i).PI*Ktvector(a(ii)).*Prod(i).p;
+    switch(Prod(i).type)
+        case('PressureConstrained')
+            for ii=1:length(a)
+                A(a(ii),a(ii)) = A(a(ii),a(ii)) + Prod(i).PI*Ktvector(a(ii));
+                q(a(ii)) = q(a(ii)) + Prod(i).PI*Ktvector(a(ii)).*Prod(i).p;
+            end
+        case('RateConstrained')
+            for ii=1:length(a)
+                q(a(ii)) = q(a(ii)) + Prod(i).q;
+            end
     end
 end
 
@@ -81,15 +88,22 @@ for i=1:length(Inj)
     a = Inj(i).cells;
     switch(Inj(i).type)
         case('PressureConstrained')
-            Fluxes(a) = Fluxes(a) + Inj(i).PI.* Kvector(a).*Inj.Mw.*(Inj(i).p-p(a));
+            Fluxes(a) = Fluxes(a) + Inj(i).PI.* Kvector(a).*Inj(i).Mw.*(Inj(i).p-p(a));
         case('RateConstrained')
             Fluxes(a) = Fluxes(a) + Inj(i).q;
+            Inj(i).p = Inj(i).q./(Kvector(a).*Inj(i).Mw) + p(a);
     end
 end
 %Producers
 for i=1:length(Prod)
     a = Prod(i).cells;
-    Fluxes(a) = Fluxes(a) + Prod(i).PI.* Ktvector(a).*(Prod(i).p-p(a));
+    switch(Prod(i).type)
+        case('PressureConstrained')
+            Fluxes(a) = Fluxes(a) + Prod(i).PI.* Ktvector(a).*(Prod(i).p-p(a));
+        case('RateConstrained')
+            Fluxes(a) = Fluxes(a) + Prod(i).q;
+            Prod(i).p = Prod(i).q./(Ktvector(a)) + p(a);
+    end
 end
 Wells.Fluxes = reshape(Fluxes, Nx, Ny);
 end

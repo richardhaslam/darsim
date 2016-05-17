@@ -103,7 +103,13 @@ end
 %Producers
 for i=1:size(Prod)
     c = Prod(i).cells;
-    qnw(c) =  Mnw(c).* Prod(i).PI .* K(c).* (Prod(i).p - p(c));
-    qw(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c));
+    switch (Prod(i).type)
+        case('RateConstrained')
+            qw(c) = Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q;
+            qnw(c) = Prod(i).q - qw(c);
+        case('PressureConstrained')
+            qnw(c) =  Mnw(c).* Prod(i).PI .* K(c).* (Prod(i).p - p(c));
+            qw(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c));
+    end
 end
 end

@@ -4,8 +4,9 @@
 %Author: Matteo Cusini
 %TU Delft
 %Year: 2015
+%Last modified: 16 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, Pc, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
+function [P, S, Pc, Inj, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
 %SEQUENTIAL STRATEGY
 Grid.CFL = Sequential.CFL;
 MaxExtIter = Sequential.MaxExtIter;
@@ -25,7 +26,7 @@ while (Converged==0 && Iter <= MaxExtIter)
     tstart1 = tic;
     %1. Solve flow equation for pressure and compute fluxes
     disp('Pressure solver')
-    [P, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+    [P, U, Pc, Wells, Inj, Prod] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
     %% 
     ptimer(Iter) = toc(tstart1);
     
@@ -38,16 +39,15 @@ while (Converged==0 && Iter <= MaxExtIter)
     if (Iter==1)
         dT = timestepping(Fluid, S, Grid, U, Wells);
         dT = min(dT, maxdT);
-        dT = 1500/30*24*3600;
     end
     
     %4. Solve transport equation given the total velocity field
     tstart4 = tic;
-    Sold=S; %Last converged solution
+    Sold = S; %Last converged solution
     if (Balance==1)
-        q=reshape(Wells.Fluxes, N,1);
+        q = reshape(Wells.Fluxes, N,1);
         if (Sequential.ImpSat==0)
-            [S]=ExplicitTransport(Fluid, Grid, S0, U, q, dT);
+            [S] = ExplicitTransport(Fluid, Grid, S0, U, q, dT);
             Converged = 1;
         else
             disp('Transport solver');

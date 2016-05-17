@@ -77,7 +77,12 @@ CapJwS = full(Jwp);
 for i = 1:N
      CapJwS(i,:) = CapJwS(i,:).* dPc';
 end
-JwS = JwS - sparse(CapJwS);
+new = spdiags(dPc, 0, N, N);
+%CapJwS = Jwp*new;
+% if CapJwS ~= CapJwS2
+%     disp('SHIIIT');
+% end
+JwS = JwS - CapJwS;
 
 % Add wells
 [Jnwp, Jwp, JnwS, JwS] = AddWellsToJacobian(Jnwp, Jwp, JnwS, JwS, Inj, Prod, K, p, Mw, Mnw, dMw, dMnw);

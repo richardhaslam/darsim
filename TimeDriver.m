@@ -87,7 +87,7 @@ while (t<T && Ndt <= TimeSteps)
             if ~Sequential.ImpSat
                 Sequential.MaxExtIter = 1;
             end
-            [P, S, Pc, dT, Converged, Timers, Sequential.ImplicitSolver] =...
+            [P, S, Pc, Inj, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             disp('------------FIM Non-linear solver--------------');
@@ -95,7 +95,7 @@ while (t<T && Ndt <= TimeSteps)
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
-                [P0, U, Pc, Wells] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+                [P0, U, Pc, Wells, Inj, Prod] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
                 %[Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
                 
                 %Plot initial conditions

@@ -57,7 +57,7 @@ else
     ylabel('y [m]');
     colormap(jet);
     colorbar;
-    %caxis ([Prod(1).p,Inj(1).p]);
+    caxis ([Prod(1).p(1),Inj(1).p(1)]);
     axis('image');
     set(gca,'fontsize',24);
     
@@ -98,7 +98,7 @@ else
     colorbar;
     pressuremax =max(max(Pc));
     pressuremin = min(min(Pc));
-    caxis ([pressuremin, pressuremax]);
+    %caxis ([pressuremin, pressuremax]);
     axis('image');
     set(gca,'fontsize',24);
     
