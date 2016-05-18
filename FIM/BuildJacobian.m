@@ -71,17 +71,9 @@ v = ones(N,1)*pv/dt;
 DiagVecs = [-y2, -x2, y2+x2-y1-x1+v, x1, y1];
 DiagIndx = [-Nx, -1, 0, 1, Nx];
 JwS = spdiags(DiagVecs,DiagIndx,N,N);
-CapJwS = full(Jwp);
 
 %Add capillarity
-for i = 1:N
-     CapJwS(i,:) = CapJwS(i,:).* dPc';
-end
-new = spdiags(dPc, 0, N, N);
-%CapJwS = Jwp*new;
-% if CapJwS ~= CapJwS2
-%     disp('SHIIIT');
-% end
+CapJwS = Jwp * spdiags(dPc, 0, N, N);
 JwS = JwS - CapJwS;
 
 % Add wells

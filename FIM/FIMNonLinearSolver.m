@@ -38,7 +38,7 @@
 %   CoarseGrid: for ADM knows which coarse cells are active 
 %   Grid: for ADM knows which fine cells are active
 
-function [P, S, Pc, dt, dtnext, FIM, Timers, Converged, CoarseGrid, Grid] = ...
+function [P, S, Pc, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings)
 Nx = Grid.Nx;
@@ -151,6 +151,20 @@ if ADM.active
         S = Average(S, CoarseGrid(x), Grid);
     end
 end
+
+%Compute Nwetting and wetting phase fluxes for production curves
+for i=1:length(Prod)
+    c = Prod(i).cells;
+    switch (Prod(i).type)
+        case('RateConstrained')
+            Prod(i).qw = sum (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q);
+            Prod(i).qnw = sum (Prod(i).q - Prod(i).qw(c));
+        case('PressureConstrained')
+            Prod(i).qnw =  sum(Mnw(c).* Prod(i).PI .* Kvector(c).* (Prod(i).p - p(c)))/(pv*Grid.N)*3600*24;
+            Prod(i).qw =   sum(Mw(c).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - p(c)))/(pv*Grid.N)*3600*24;
+    end
+end
+Prod(i).qnw + Prod(i).qw
 
 %% Stats and timers 
 FIM.Iter(Ndt) = itCount-1;

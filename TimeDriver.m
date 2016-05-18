@@ -49,7 +49,6 @@
 
 %% Timers and variables for statistics
 TimerTimestep = zeros(TimeSteps,1);
-CumulativeTime = zeros(TimeSteps, 1);
 if (strcmp(Strategy, 'Sequential')==1)
     TimerPressure = zeros(TimeSteps,1);
     TimerBalance = zeros(TimeSteps,1);
@@ -66,8 +65,10 @@ t = 0;
 Ndt = 1; 
 Converged = 0;
 index = 1;
-Saturations = zeros(Grid.N, 10);
-Pressures = zeros(Grid.N, 10);
+Saturations = zeros(Grid.N, 20);
+Pressures = zeros(Grid.N, 20);
+NwProduction = zeros(length(Prod) + 1, TimeSteps);
+WProduction = zeros(length(Prod) + 1, TimeSteps);
 vtkcount = 1;
 %Choose with what frequency the solution as to be outputted
 Tstops = linspace(T/20, T, 20);
@@ -90,7 +91,7 @@ while (t<T && Ndt <= TimeSteps)
             if ~Sequential.ImpSat
                 Sequential.MaxExtIter = 1;
             end
-            [P, S, Pc, Inj, dT, Converged, Timers, Sequential.ImplicitSolver] =...
+            [P, S, Pc, Inj, Prod, dT, Converged, Timers, Sequential.ImplicitSolver] =...
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             disp('------------FIM Non-linear solver--------------');
@@ -122,13 +123,13 @@ while (t<T && Ndt <= TimeSteps)
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 
                 %Non-linear solver
-                [P, S, Pc, dT, dTnext, FIM, Timers, Converged, CoarseGrid, Grid] = ...
+                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             else
                 dT = min(dTnext, maxdT(index));
                 % Newton-loop
-                [P, S, Pc, dT, dTnext, FIM, Timers, Converged, CoarseGrid, Grid] = ...
+                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
             end
@@ -155,16 +156,23 @@ while (t<T && Ndt <= TimeSteps)
     disp(char(5));
     t = t+dT;    
     Ndt = Ndt+1;
-    CumulativeTime(Ndt) = t/(3600*24);
     
-    %% %%%%%%%%% POST PROCESSING and output %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% COMPUTE OIL and WATER productions
+    for w=1:length(Prod)
+        NwProduction(1, Ndt) =  t/(3600*24); 
+        NwProduction(w+1, Ndt) = NwProduction(w+1, Ndt-1) - Prod(w).qnw*dT/(3600*24);
+        WProduction(1, Ndt) = t/(3600*24); 
+        WProduction(w+1,Ndt) = WProduction(w+1, Ndt-1) - Prod(w).qw*dT/(3600*24);
+    end
+    
+    %% %%%%%%%%% POST PROCESSING and OUTPUT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Print solution to a file at fixed intervals
     if (t == Tstops(index))
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
         Saturations(:,index) = reshape(S, Grid.N, 1);
         Pressures(:,index) = reshape(P, Grid.N, 1);
-    end
-      
+    end   
+    
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
     switch (Options.PlotSolution)
         case('Matlab')

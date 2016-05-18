@@ -4,12 +4,32 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 2015
-%Last modified: 21 March 2016
+%Last modified: 18 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[row, columns] = size(Pressures);
+
+%Format for solution output
+format = '%10.5f';
+for i=1:columns-2
+    format = [format, ' %10.5f'];
+    i = i+1;
+end
+format = [format, ' %10.5f\n'];
+
+%Format for production output
+format2 = '%10.5f';
+for i=1:length(Prod) - 2
+    format2 = [format2, ' %10.5f'];
+    i = i+1;
+end
+format2 = [format2, ' %10.5f\n'];
+
 if (strcmp(Strategy, 'Sequential')==1)
     Statistics = [Sequential.ImplicitSolver.timestep; Sequential.ImplicitSolver.Chops; Sequential.ImplicitSolver.Newtons];
     fileID = fopen(strcat(Directory,'SeqStat.txt'),'w');
     fileID2 = fopen(strcat(Directory,'SeqTimings.txt'),'w');
+    fileID3a = fopen(strcat(Directory,'SeqNwProd.txt'),'w');
+        fileID3b = fopen(strcat(Directory,'SeqWProd.txt'),'w');
     fileID4 = fopen(strcat(Directory,'SeqSaturation.txt'),'w');
     fileID5 = fopen(strcat(Directory,'SeqPressure.txt'),'w');
     fprintf(fileID,'%6s %12s %12s\n','Timestep','# Chops', '# Newtons');
@@ -20,16 +40,13 @@ if (strcmp(Strategy, 'Sequential')==1)
     fprintf(fileID2,'%6s %12s %12s %12s  %12s\n','Timestep', 'Total Time','Pressure-Solver', 'Balance-check', 'Transport-Solver');
     fprintf(fileID2,'%6.0f %12.3f %12.3f %12.3f %12.3f\n', Timers);
     fclose(fileID2);
-    fprintf(fileID4,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Saturations');
-    fclose(fileID4);
-    fprintf(fileID5,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Pressures');
-    fclose(fileID5);
 else
     if (ADMSettings.active == 0)
         Statistics = [FIM.timestep(1:Ndt-1), FIM.Chops(1:Ndt-1), FIM.Iter(1:Ndt-1)];
         fileID = fopen(strcat(Directory,'FIMStat.txt'),'w');
         fileID2 = fopen(strcat(Directory,'FIMTimings.txt'),'w');
-        %fileID3 = fopen(strcat(Directory,'FIMOilProd.txt'),'w');
+        fileID3a = fopen(strcat(Directory,'FIMNwProd.txt'),'w');
+        fileID3b = fopen(strcat(Directory,'FIMWProd.txt'),'w');
         fileID4 = fopen(strcat(Directory,'FIMSaturation.txt'),'w');
         fileID5 = fopen(strcat(Directory,'FIMPressure.txt'),'w');
         %fprintf(fileID,'%6s %12s %12s\n','Timestep', '# Chops', '# Iterations');
@@ -42,16 +59,14 @@ else
         fclose(fileID2);
         %fprintf(fileID3,'%12.3f %12.3f\n', [CumulativeTime(1:Ndt)'; Prod.oil(1:Ndt)']);
         %fclose(fileID3);
-        fprintf(fileID4,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Saturations');
-        fclose(fileID4);
-        fprintf(fileID5,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Pressures');
     else
         Statistics = [FIM.timestep(1:Ndt-1), FIM.Chops(1:Ndt-1), FIM.Iter(1:Ndt-1), FIM.ActiveCells(1:Ndt-1, :)];
-        fileID1 = fopen(strcat(Directory,'DLGRStat.txt'),'w');
-        fileID2 = fopen(strcat(Directory,'DLGRTimings.txt'),'w');
-        %fileID3 = fopen(strcat(Directory,'DLGROilProd.txt'),'w');
-        fileID4 = fopen(strcat(Directory,'Saturation.txt'),'w');
-        fileID5 = fopen(strcat(Directory,'Pressure.txt'),'w');
+        fileID1 = fopen(strcat(Directory,'ADMStat.txt'),'w');
+        fileID2 = fopen(strcat(Directory,'ADMTimings.txt'),'w');
+        fileID3a = fopen(strcat(Directory,'ADMNwProd.txt'),'w');
+        fileID3b = fopen(strcat(Directory,'ADMWProd.txt'),'w');
+        fileID4 = fopen(strcat(Directory,'ADMSaturation.txt'),'w');
+        fileID5 = fopen(strcat(Directory,'ADMPressure.txt'),'w');
         %fprintf(fileID,'%6s %12s %12s %12.s\n','Timestep', '# Chops', '# Iterations', '# Active Cells');
         fprintf(fileID1,'%6.0f %12.0f %12.0f %12.0f %12.0f %12.0f\n', Statistics');
         fclose(fileID1);
@@ -59,11 +74,14 @@ else
         fprintf(fileID2,'%6s %12s %12s %12s %12s\n','Timestep', 'Total Time', 'R and P', 'Jacobian', 'Solve');
         fprintf(fileID2,'%6.0f %12.3f %12.3f %12.3f %12.3f\n', Timers);
         fclose(fileID2);
-        %fprintf(fileID3,'%12.3f %12.3f\n', [CumulativeTime(1:Ndt)'; Prod.oil(1:Ndt)']);
-        %fclose(fileID3);
-        fprintf(fileID4,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Saturations');
-        fclose(fileID4);
-        fprintf(fileID5,'%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n', Pressures');
-        fclose(fileID5);
+        
     end
 end
+fprintf(fileID3a, format2, NwProduction(:,1:Ndt));
+fclose(fileID3a);
+fprintf(fileID3b, format2, WProduction(:,1:Ndt));
+fclose(fileID3b);
+fprintf(fileID4, format, Saturations');
+fclose(fileID4);
+fprintf(fileID5,format, Pressures');
+fclose(fileID5);

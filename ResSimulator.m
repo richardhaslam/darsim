@@ -58,8 +58,8 @@ switch (Errors)
         
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
         P = zeros(Grid.Nx, Grid.Ny, 1);
-        S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
-        S(1:Grid.Nx/2, 1:Grid.Ny/2) = S(1:Grid.Nx/2, 1:Grid.Ny/2)*5;
+        S = ones(Grid.Nx, Grid.Ny, 1)*0.05;
+        %S(1:Grid.Nx/2, 1:Grid.Ny/2) = S(1:Grid.Nx/2, 1:Grid.Ny/2)*5;
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
