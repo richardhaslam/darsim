@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Snew, ImplicitSolver, dt, converged]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, ImplicitSolver, dt, K)
+function [Snew, qnw, qw, ImplicitSolver, dt, converged]=ImplicitTransport(Fluid, Grid, S0, Sold, U, q, ImplicitSolver, dt, K)
 %Implicit Transport Solver
 Nx = Grid.Nx;
 Ny = Grid.Ny;
@@ -29,7 +29,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
     snew = sold;
     
     %Residual at first iteration
-    [Residual, V, CapJac, df] = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
+    [Residual, V, CapJac, f, df] = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
     
     % Initialise objects
     Norm = 1;
@@ -54,7 +54,7 @@ while (converged==0 && chops<=10)   %If it does not converge the timestep is cho
         Norm = norm(dS, inf);
         disp(['iter ', num2str(Newton), '  ', num2str(Norm)]);
         %Compute Residual at nu
-        [Residual, V, CapJac, df] = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
+        [Residual, V, CapJac, f, df] = TransportResidual(snew, s0, q, pv, U, dt, Fluid, Grid, K);
         
         %Increase iteration counter
         Newton = Newton+1;
@@ -74,5 +74,8 @@ ImplicitSolver.Chops = [ImplicitSolver.Chops, chops];
 ImplicitSolver.Newtons = [ImplicitSolver.Newtons, Newton];
 %New saturation matrix
 Snew=reshape(snew,Nx,Ny,1);
+%wetting phase fluxes from productors
+qw = f.*min(q,0)/(pv*Grid.N)*3600*24;
+qnw = min(q,0)/(pv*Grid.N)*3600*24 - qw;
 
 end

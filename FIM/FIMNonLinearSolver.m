@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 21 March 2016
-%Last Modified: 15 May 2016
+%Last Modified: 18 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% FIM non-linear solver
 % solves the non-linear equations at timestep n with a fully implicit
@@ -164,7 +164,6 @@ for i=1:length(Prod)
             Prod(i).qw =   sum(Mw(c).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - p(c)))/(pv*Grid.N)*3600*24;
     end
 end
-Prod(i).qnw + Prod(i).qw
 
 %% Stats and timers 
 FIM.Iter(Ndt) = itCount-1;

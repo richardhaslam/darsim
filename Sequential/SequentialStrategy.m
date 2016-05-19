@@ -52,7 +52,7 @@ while (Converged==0 && Iter <= MaxExtIter)
         else
             disp('Transport solver');
             Sequential.ImplicitSolver.timestep = [Sequential.ImplicitSolver.timestep, Ndt];
-            [S, Sequential.ImplicitSolver, dT, Tconverged] = ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT, K);
+            [S, qnw, qw, Sequential.ImplicitSolver, dT, Tconverged] = ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT, K);
             if Tconverged == 0
                 disp('Transport solver did not converge')
                 break
@@ -73,6 +73,14 @@ while (Converged==0 && Iter <= MaxExtIter)
     end
     Iter = Iter+1;
 end
+
+%Compute Nwetting and wetting phase fluxes for production curves
+for i=1:length(Prod)
+    c = Prod(i).cells;
+    Prod(i).qw = sum(qw(c));
+    Prod(i).qnw = sum(qnw(c));
+end
+
  if (Sequential.ImpSat==1)
     ImplicitSolver=Sequential.ImplicitSolver;
  else
