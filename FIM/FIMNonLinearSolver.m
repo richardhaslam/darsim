@@ -73,7 +73,7 @@ while (Converged==0 && chops<=10)
     [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
     
     % Compute residual
-    [Residual, TMatrixNw, TMatrixW] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
+    [Residual, ~, TMatrixNw, TMatrixW] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
 
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
@@ -119,10 +119,10 @@ while (Converged==0 && chops<=10)
         [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
         
         % 4. Compute residual 
-        Residual = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
+        [Residual, qtot] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
 
         % 5. Check convergence criteria
-        Converged = NewtonConvergence(itCount, Residual, Delta(N+1:end), Tol, N, ADM);
+        Converged = NewtonConvergence(itCount, Residual, qtot, Delta(N+1:end), Tol, N, ADM);
         
         itCount = itCount+1;
     end

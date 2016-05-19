@@ -18,7 +18,7 @@ format = [format, ' %10.5f\n'];
 
 %Format for production output
 format2 = '%10.5f';
-for i=1:length(Prod) - 2
+for i=1:length(Prod) - 1
     format2 = [format2, ' %10.5f'];
     i = i+1;
 end

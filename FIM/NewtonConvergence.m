@@ -20,15 +20,15 @@
 %Output variables:
 %   Converged:  1 if it's a converged solution, 0 otherwise
 
-function Converged = NewtonConvergence(iter, Residual, Delta, Tol, N, ADM)
+function Converged = NewtonConvergence(iter, Residual, qtot, Delta, Tol, N, ADM)
 Converged = 0;
 %Evaluate norms
 if ADM.active == 1
-   Residual_c = RestrictResidual(Residual, ADM.Rest, N, ADM.level);
-   Norm1 =  norm(Residual_c, inf);
-   Norm2 = norm(Delta, inf);
+    Residual_c = RestrictResidual(Residual, ADM.Rest, N, ADM.level);
+    Norm1 =  norm(Residual_c, inf) / max(abs(qtot));
+    Norm2 = norm(Delta, inf);
 else
-    Norm1 =  norm(Residual, inf);
+    Norm1 =  norm(Residual, inf) / max(abs(qtot));
     Norm2 = norm(Delta, inf);
 end
 disp(['Iter ' num2str(iter) '    ' num2str(Norm1), '    ', num2str(Norm2)]);

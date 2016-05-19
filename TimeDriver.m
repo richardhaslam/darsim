@@ -65,13 +65,13 @@ t = 0;
 Ndt = 1; 
 Converged = 0;
 index = 1;
-Saturations = zeros(Grid.N, 20);
-Pressures = zeros(Grid.N, 20);
+Saturations = zeros(Grid.N, 50);
+Pressures = zeros(Grid.N, 50);
 NwProduction = zeros(length(Prod) + 1, TimeSteps);
 WProduction = zeros(length(Prod) + 1, TimeSteps);
 vtkcount = 1;
 %Choose with what frequency the solution as to be outputted
-Tstops = linspace(T/20, T, 20);
+Tstops = linspace(T/50, T, 50);
 
 
 while (t<T && Ndt <= TimeSteps)
@@ -158,10 +158,10 @@ while (t<T && Ndt <= TimeSteps)
     Ndt = Ndt+1;
     
     %% COMPUTE OIL and WATER productions
+    NwProduction(1, Ndt) =  t/(3600*24); 
+    WProduction(1, Ndt) = t/(3600*24);
     for w=1:length(Prod)
-        NwProduction(1, Ndt) =  t/(3600*24); 
         NwProduction(w+1, Ndt) = NwProduction(w+1, Ndt-1) - Prod(w).qnw*dT/(3600*24);
-        WProduction(1, Ndt) = t/(3600*24); 
         WProduction(w+1,Ndt) = WProduction(w+1, Ndt-1) - Prod(w).qw*dT/(3600*24);
     end
     
