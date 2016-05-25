@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, ADMActive, CoarseGrid, maxLevel)
+function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, ADMActive, CoarseGrid, maxLevel, basisfunction)
 %Write a VTK file
 fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
 fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -38,6 +38,13 @@ PrintScalar2VTK(fileID, reshape(S, Grid.N, 1), ' SATURATION');
 fprintf(fileID, '\n');
 PrintScalar2VTK(fileID, reshape(Pc, Grid.N, 1), ' CapPRESSURE');
 fprintf(fileID, '\n');
+if (basisfunction == 1)
+    Nc = CoarseGrid(1).Nx * CoarseGrid(1).Ny;
+    for c = 1:Nc
+        PrintScalar2VTK(fileID, full(CoarseGrid(1).MsP(:,c)), strcat(' BasisFunction', num2str(c)));
+        fprintf(fileID, '\n');
+    end
+end
 if (ADMActive == 1)
     %ADD ADM coarse grids
     PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
@@ -64,6 +71,14 @@ if (ADMActive == 1)
         fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).Nx*CoarseGrid(i).Ny);
         PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
         fprintf(fileID, '\n');
+        %Output Basis functions
+        if (basisfunction == 1 && i < maxLevel)
+            Nc = CoarseGrid(i+1).Nx * CoarseGrid(i+1).Ny;
+            for c = 1:Nc
+                PrintScalar2VTK(fileID, full(CoarseGrid(i+1).MsP(:,c)), strcat(' BasisFunction', num2str(c)));
+                fprintf(fileID, '\n');
+            end
+        end
     end
 end
 fclose(fileID);
