@@ -111,7 +111,8 @@ while (t<T && Ndt <= TimeSteps)
                             Plotting(Grid, P0, Pc, S, Fluid, 'red', 'blue', Prod, Inj);
                         end
                     case('VTK')
-                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 1);
+                        Wells2VTK(Grid, Inj, Prod, Directory, Problem);
+                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P0, S, Pc, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 1);
                         vtkcount = vtkcount + 1;
                 end
                 
@@ -186,7 +187,7 @@ while (t<T && Ndt <= TimeSteps)
             end
         case('VTK')
             if (t == Tstops(index))
-                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 0);
+                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 0);
                 vtkcount = vtkcount + 1;
                 index = index +1;
             end

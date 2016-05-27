@@ -62,10 +62,10 @@ switch (Errors)
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
-            ADMSetup;
+            [Grid, CoarseGrid] = ADMSetup(Grid, K, ADMSettings, Inj, Prod);
         else
             CoarseGrid = 0;
-            maxLevel = 0;
+            ADMSettings.maxLevel = 0;
         end
         
         %%%%%%%%%%%%%%%%%%%%%% TIME LOOP %%%%%%%%%%%%%%%%%%%%%%%

@@ -4,6 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Year: 2015
+%Last modified: 25 may 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, ADMActive, CoarseGrid, maxLevel, basisfunction)
 %Write a VTK file
@@ -38,14 +39,15 @@ PrintScalar2VTK(fileID, reshape(S, Grid.N, 1), ' SATURATION');
 fprintf(fileID, '\n');
 PrintScalar2VTK(fileID, reshape(Pc, Grid.N, 1), ' CapPRESSURE');
 fprintf(fileID, '\n');
-if (basisfunction == 1)
-    Nc = CoarseGrid(1).Nx * CoarseGrid(1).Ny;
-    for c = 1:Nc
-        PrintScalar2VTK(fileID, full(CoarseGrid(1).MsP(:,c)), strcat(' BasisFunction', num2str(c)));
-        fprintf(fileID, '\n');
-    end
-end
 if (ADMActive == 1)
+    if (basisfunction == 1)
+        Nc = CoarseGrid(1).Nx * CoarseGrid(1).Ny;
+        for c = 1:Nc
+            PrintScalar2VTK(fileID, full(CoarseGrid(1).MsP(:,c)), strcat(' BasisFunction', num2str(c)));
+            fprintf(fileID, '\n');
+        end
+    end
+
     %ADD ADM coarse grids
     PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
     for i=1:maxLevel

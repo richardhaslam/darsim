@@ -3,10 +3,12 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 2015
+%Last modified: 27 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [Grid, CoarseGrid] = CoarseGridding(Grid, ADMSettings, Inj, Prod)
 global NoWellsCoarseCells
-Grid.CoarseFactor = [1, 1];
 
 % Add I, J coordinates to Grid
 Grid.I = ones(Grid.N, 1);
@@ -44,4 +46,5 @@ else
            NoWellsCoarseCells(i) = 0;
         end
     end
+end
 end
