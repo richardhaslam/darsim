@@ -3,17 +3,23 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
+%Created: 2015
+%Last modified: 1 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Active = DefinePossibleActive(CoarseGrid, FineGrid, level)
 % For a given level defines possible active cells
+
 Active = ones(CoarseGrid.Nx*CoarseGrid.Ny,1);
+%If a cell inside the block is refined the whole block cannot be coarsened
 Nf = FineGrid.Nx*FineGrid.Ny;
 for i=1:Nf
     if FineGrid.Active(i) == 0
         Active(FineGrid.Father(i, level)) = 0;
+        %Active(FineGrid.Father(FineGrid.Neighbours(i).indexes, level)) = 0;
     end
 end
+
+%Force the jump between two neighbouring cells to be max 1 level!
 Nc = CoarseGrid.Nx*CoarseGrid.Ny;
 temp = 1 - Active;
 for j=1:Nc

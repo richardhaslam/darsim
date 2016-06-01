@@ -43,6 +43,8 @@ switch (Errors)
         disp(['h  ', num2str(Grid.h), ' m']);
         disp(['Grid: ', num2str(Grid.Nx), ' x ',  num2str(Grid.Ny), ' x 1']);
         disp(char(5));
+        disp('---------Simulator Settings-----------');
+        disp(['Nonlinear Solver: ', Strategy]);
         if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
             mkdir(InputDirectory,'/Output/VTK');
         end
@@ -62,6 +64,11 @@ switch (Errors)
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
+            disp('ADM Settings');
+            disp(['Pressure Interpolator: ', ADMSettings.Pressure_Interpolator]);
+            disp(['Number of levels: ', num2str(ADMSettings.maxLevel)]);
+            disp(char(5));
+            %disp(['Coarsening ratio: ', num2str(ADMSettings)]);
             [Grid, CoarseGrid] = ADMSetup(Grid, K, ADMSettings, Inj, Prod);
         else
             CoarseGrid = 0;

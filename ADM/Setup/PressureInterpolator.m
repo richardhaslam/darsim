@@ -12,8 +12,10 @@ switch (Pressure_Interpolator)
     case ('Constant')
         %If it's constant interpolation I only need to build restriction
         CoarseGrid(1).MsR = MsRestriction(FineGrid, CoarseGrid(1), FineGrid.Nx*FineGrid.Ny, CoarseGrid(1).Nx*CoarseGrid(1).Ny, 1);
+        CoarseGrid(1).MsP = CoarseGrid(1).MsR';
         for x = 2:maxLevel
             CoarseGrid(x).MsR = MsRestriction(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x-1).Nx*CoarseGrid(x-1).Ny, CoarseGrid(x).Nx*CoarseGrid(x).Ny, x);
+            CoarseGrid(x).MsP = CoarseGrid(x).MsR'; 
             CoarseGrid(x).constant = 1;
         end
     case ('Homogeneous')

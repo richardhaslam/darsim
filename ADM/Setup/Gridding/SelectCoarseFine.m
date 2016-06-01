@@ -29,6 +29,7 @@ switch (RefinementCriterion)
                     if (abs(Smax-S(CoarseGrid.I(n(i)),CoarseGrid.J(n(i))))...
                             > tol || abs(Smin-S(CoarseGrid.I(n(i)),CoarseGrid.J(n(i)))) > tol)
                         CoarseGrid.Active(c) = 0;
+                        %CoarseGrid.Active(i) = 0;
                         i = Nn + 1;
                     else
                         i = i+1;
@@ -61,12 +62,19 @@ switch (RefinementCriterion)
                     CoarseGrid.Active(c) = 0;
                 end
             end
-        end
-    case ('TimeDependent')
-        
+        end         
 end
 
-%2. Set to inactive fine block belonging to Active Coarse Blocks
+%2. Do not coarsen neighbors of cells that are fine
+DummyActive = CoarseGrid.Active;
+for i = 1:Nc
+    if (CoarseGrid.Active(i) == 0)
+        DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
+    end
+end
+CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
+
+%3. Set to inactive fine block belonging to Active Coarse Blocks
 Nf = FineGrid.Nx*FineGrid.Ny;
 for i = 1:Nf
     if (CoarseGrid.Active(FineGrid.Father(i, level)) == 1)

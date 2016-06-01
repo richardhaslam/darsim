@@ -117,7 +117,9 @@ while (t<T && Ndt <= TimeSteps)
                 end
                 
                 %Keep first timestep to be small
-                Grid.CFL = 1e-1;
+                Grid.CFL = 1;
+                maxiteration = FIM.MaxIter;
+                FIM.MaxIter = 40;
                 dT = timestepping(Fluid, S, Grid, U, Wells);
 
                 %Compute rock transmissibility
@@ -127,6 +129,7 @@ while (t<T && Ndt <= TimeSteps)
                 [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
+                FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
                 % Newton-loop
