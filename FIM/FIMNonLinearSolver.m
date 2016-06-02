@@ -40,7 +40,7 @@
 
 function [P, S, Pc, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings)
+                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Directory, Problem)
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
@@ -73,7 +73,7 @@ while (Converged==0 && chops<=10)
     [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
     
     % Compute residual
-    [Residual, ~, TMatrixNw, TMatrixW] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
+    [Residual, TMatrixNw, TMatrixW] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
 
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
@@ -101,7 +101,7 @@ while (Converged==0 && chops<=10)
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
-        Delta = LinearSolver(J, Residual, N, ADM);
+        [Delta, Delta_c] = LinearSolver(J, Residual, N, ADM);
         TimerSolve(itCount) = toc(start2);
       
         % 2.c Update solution
@@ -118,11 +118,17 @@ while (Converged==0 && chops<=10)
         [UpWindNw, Unw] = UpwindOperator(Grid, P, Trx, Try);
         [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
         
+        %Print residual if required
+        if (Ndt == 1734 && ADMSettings.active == 1)
+            Residualc = RestrictResidual(Residual, ADM.Rest, Grid.N, ADM.level);
+            Residualc = Prolong(Residualc, ADM.Prols, ADM.Prols, ADM.level);
+            WriteADMResiduals2VTK(Directory, Problem, itCount, Grid, abs(Residual), abs(Residualc), CoarseGrid, ADM.level)
+        end
         % 4. Compute residual 
-        [Residual, qtot] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
+        [Residual] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
 
         % 5. Check convergence criteria
-        Converged = NewtonConvergence(itCount, Residual, qtot, Delta(N+1:end), Tol, N, ADM);
+        Converged = NewtonConvergence(itCount, Residual, Delta, p, Tol, N, ADM, Delta_c);
         
         itCount = itCount+1;
     end

@@ -60,7 +60,10 @@ switch (Errors)
         
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
         P = zeros(Grid.Nx, Grid.Ny, 1);
+        %Sat = load('../Input/SPE10T2/Output/ADMSaturation1.txt');
+        %s = Sat(:,12);
         S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
+        %S = reshape(s, Grid.Nx, Grid.Ny);
         
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)

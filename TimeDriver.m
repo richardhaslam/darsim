@@ -95,7 +95,7 @@ while (t<T && Ndt <= TimeSteps)
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             disp('------------FIM Non-linear solver--------------');
-            disp('        ||Residual||   Sat. delta');
+            disp('        ||Residual||   ||delta p||   ||delta S||');
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
@@ -135,7 +135,7 @@ while (t<T && Ndt <= TimeSteps)
                 % Newton-loop
                 [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
+                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
             end
     end
     
