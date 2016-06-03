@@ -119,11 +119,11 @@ while (Converged==0 && chops<=10)
         [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
         
         %Print residual if required
-        if (Ndt == 1734 && ADMSettings.active == 1)
-            Residualc = RestrictResidual(Residual, ADM.Rest, Grid.N, ADM.level);
-            Residualc = Prolong(Residualc, ADM.Prols, ADM.Prols, ADM.level);
-            WriteADMResiduals2VTK(Directory, Problem, itCount, Grid, abs(Residual), abs(Residualc), CoarseGrid, ADM.level)
-        end
+%         if (Ndt == 50000 && ADMSettings.active == 1)
+%             Residualc = RestrictResidual(Residual, ADM.Rest, Grid.N, ADM.level);
+%             Residualc = Prolong(Residualc, ADM.Prols, ADM.Prols, ADM.level);
+%             WriteADMResiduals2VTK(Directory, Problem, itCount, Grid, abs(Residual), abs(Residualc), CoarseGrid, ADM.level)
+%         end
         % 4. Compute residual 
         [Residual] = FIMResidual(p0, s0, p, s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
 

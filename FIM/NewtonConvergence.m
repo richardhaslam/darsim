@@ -38,7 +38,7 @@ end
 disp(['Iter ' num2str(iter) '    ' num2str(Norm1), '    ', num2str(Norm2), '    ', num2str(Norm3)]);
 
 %Check convergence
-if (Norm1 < Tol && Norm2<Tol*1e2 && Norm2 < Tol*1e2)
+if (Norm1 < Tol && Norm2<Tol*1e2 && Norm3 < Tol*1e2)
     Converged = 1;
 end
 end
