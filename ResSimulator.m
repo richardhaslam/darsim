@@ -18,8 +18,6 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 %%%%%%%%%%%%%%%% READ DATA from INPUT file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 global Errors
 Errors = 0;
-%InputDirectory = '../Input/GeoStat_ADM';
-%InputFile = strcat(InputDirectory, '/GeoStat.txt');
 delete(strcat(InputDirectory, '/Output/RunDiary.txt')); 
 diary(strcat(InputDirectory, '/Output/RunDiary.txt'));
 disp('******************************************************************');
@@ -61,9 +59,7 @@ switch (Errors)
         end
         
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
-        [Status] = Initialize(Fluid,Grid,FlashSettings);
-        P = reshape(Status.p,Grid.Nx,Grid.Ny);         %Finds pressure in rectangular matrix form used for plotting and convection
-        S = reshape(Status.s(:,1),Grid.Nx,Grid.Ny);    %Finds saturation in rectangular matrix form used for plotting and convection
+        Status = Initialize(Fluid, Grid, K, FlashSettings); 
    
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)

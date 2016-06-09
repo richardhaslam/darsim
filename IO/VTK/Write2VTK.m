@@ -6,10 +6,7 @@
 %Year: 2015
 %Last modified: 25 may 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, ADMActive, CoarseGrid, maxLevel, basisfunction, Status)
-
-P = reshape(Status.p,Grid.Nx,Grid.Ny);
-S = reshape(Status.s,Grid.Nx,Grid.Ny);
+function Write2VTK(Directory, Problem, timestep, Grid, K, Status, ADMActive, CoarseGrid, maxLevel, basisfunction)
 
 %Write a VTK file
 fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
@@ -36,12 +33,12 @@ fprintf(fileID, '\n');
 PrintScalar2VTK(fileID, reshape(K(1,:,:), Grid.N, 1), ' PERMX');
 fprintf(fileID, '\n');
 %Pressure
-PrintScalar2VTK(fileID, reshape(P, Grid.N, 1), ' PRESSURE');
+PrintScalar2VTK(fileID, Status.p, ' PRESSURE');
 fprintf(fileID, '\n');
 %Saturation
-PrintScalar2VTK(fileID, reshape(S, Grid.N, 1), ' SATURATION');
+PrintScalar2VTK(fileID, Status.s, ' SATURATION');
 fprintf(fileID, '\n');
-PrintScalar2VTK(fileID, reshape(Pc, Grid.N, 1), ' CapPRESSURE');
+PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
 fprintf(fileID, '\n');
 if (ADMActive == 1)
     if (basisfunction == 1)

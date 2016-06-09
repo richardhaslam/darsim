@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Snew]=ExplicitTransport(Fluid, Grid, S, U, q, dt)
+function [s]=ExplicitTransport(Fluid, Grid, S, U, q, dt)
 %Explicit Transport Solver
 Nx=Grid.Nx;
 Ny=Grid.Ny;
@@ -26,5 +26,4 @@ fi=max(q,0).*dt/pv;                 % injection flux*dt/pv
 Mt=Mw+Mo;   %total mobility
 fw=Mw./Mt;
 s = s +(B*fw+fi);                   
-Snew=reshape(s,Nx,Ny,1);
 end

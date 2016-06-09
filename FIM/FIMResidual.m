@@ -10,15 +10,9 @@
 % Builds Residual vector
 
 %Input variables:
-%   p_old: previous timestep pressure solution
-%   s_old: previous timestep saturation solution
-%   p: new pressure
-%   s: new saturaton
-%   pc: capillary pressure
-%   pv: pore volume
+%   Status0: initial status
+%   Status: new status
 %   dt: timestep
-%   Trx: rock transmissibility in x direction
-%   Try: rock transmissibility in y direction
 %   Mnw: nonwetting phase saturation
 %   Mw: wetting phase saturation
 %   UpWindNw: nonwettin phase upwind operator
@@ -26,23 +20,31 @@
 %   Inj: injection wells
 %   Prod: production wells
 %   K: permeability
-%   N: number of grid cells
-%   Nx: number of grid cells in x direction
-%   Ny: number of grid cells in y direction
+
 
 %Output variables:
 %   Residual:  residual
 %   Tnw: nonwetting phase transmissibility matrix
 %   Tw: wetting phase transmissibility matrix
 
-function [Residual, Tnw, Tw] = FIMResidual(p_old, s_old, p, s, pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, K, N, Nx, Ny)
+function [Residual, Tnw, Tw] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, K)
+
+%Create local variables
+N = Grid.N;
+pv = Grid.por*Grid.Volume;
+p_old = Status0.p;
+s_old = Status0.s;
+p = Status.p;
+s = Status.s;
+pc = Status.pc;
+
 %Accumulation Term
 Ap = speye(N)*0; %It's still incompressible
 AS = speye(N)*pv/dt;
 
 %Transmissibility matrix
-Tnw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindNw, Mnw);
-Tw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindW, Mw);
+Tnw = TransmissibilityMatrix (Grid, UpWindNw, Mnw);
+Tw = TransmissibilityMatrix (Grid, UpWindW, Mw);
 
 %Gravity
 G = ComputeGravityTerm(N);
@@ -60,7 +62,11 @@ Residual = [Rnw; Rw];
 end
 
 %% Transmissibility
-function T  = TransmissibilityMatrix(Trx, Try, N, Nx, Ny, UpWind, M)
+function T  = TransmissibilityMatrix(Grid, UpWind, M)
+Nx = Grid.Nx;
+Ny = Grid.Ny;
+N = Grid.N;
+
 %%%Transmissibility matrix construction
 Tx = zeros(Nx+1, Ny);
 Ty = zeros(Nx, Ny+1);
@@ -69,8 +75,8 @@ Mupx = UpWind.x*M;
 Mupy = UpWind.y*M;
 Mupx = reshape(Mupx, Nx, Ny);
 Mupy = reshape(Mupy, Nx, Ny);
-Tx(2:Nx,:)= Trx(2:Nx,:).*Mupx(1:Nx-1,:);
-Ty(:,2:Ny)= Try(:,2:Ny).*Mupy(:,1:Ny-1);
+Tx(2:Nx,:)= Grid.Tx(2:Nx,:).*Mupx(1:Nx-1,:);
+Ty(:,2:Ny)= Grid.Ty(:,2:Ny).*Mupy(:,1:Ny-1);
 %Construct matrix 
 x1 = reshape(Tx(1:Nx,:),N,1);
 x2 = reshape(Tx(2:Nx+1,:),N,1);
