@@ -18,13 +18,14 @@
 %Output variables:
 %   x: solution
 
-function [x] = LinearSolver (A, RHS, N, ADM)
-if ADM.active == 1
+function [x, x_c] = LinearSolver (A, RHS, N, ADM)
+if ADM.active == 1 && ADM.level~=0
     RHS_c = RestrictResidual(RHS, ADM.Rest, N, ADM.level);
     [A_c] = RestrictSystem(A, ADM.Rest, ADM.Prolp, ADM.Prols, N, ADM.level);
     x_c = -A_c\RHS_c;
     x = Prolong(x_c, ADM.Prolp, ADM.Prols, ADM.level);
 else
     x = -A\RHS;
+    x_c = x;
 end
 end

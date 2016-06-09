@@ -20,20 +20,25 @@
 %Output variables:
 %   Converged:  1 if it's a converged solution, 0 otherwise
 
-function Converged = NewtonConvergence(iter, Residual, qtot, Delta, Tol, N, ADM)
+function Converged = NewtonConvergence(iter, Residual, Delta, p, Tol, N, ADM, Delta_c)
 Converged = 0;
 %Evaluate norms
 if ADM.active == 1
     Residual_c = RestrictResidual(Residual, ADM.Rest, N, ADM.level);
-    Norm1 =  norm(Residual_c, inf) / max(abs(qtot));
-    Norm2 = norm(Delta, inf);
+    Nc = length(Delta_c)/2;
+    Norm1 =  norm(Residual_c, inf);
+    Norm2 = norm(Delta_c(1:Nc), inf)/max(p);
+    Norm3 = norm(Delta_c(Nc+1:end), inf);
 else
-    Norm1 =  norm(Residual, inf) / max(abs(qtot));
-    Norm2 = norm(Delta, inf);
+    Norm1 =  norm(Residual, inf);
+    Norm2 = norm(Delta(1:N), inf)/max(p);
+    Norm3 = norm(Delta(N+1:end), inf);
 end
-disp(['Iter ' num2str(iter) '    ' num2str(Norm1), '    ', num2str(Norm2)]);
+
+disp(['Iter ' num2str(iter) '    ' num2str(Norm1), '    ', num2str(Norm2), '    ', num2str(Norm3)]);
+
 %Check convergence
-if (Norm1 < Tol && Norm2 < Tol*1e3)
-   Converged = 1;
+if (Norm1 < Tol && Norm2<Tol*1e2 && Norm3 < Tol*1e2)
+    Converged = 1;
 end
 end

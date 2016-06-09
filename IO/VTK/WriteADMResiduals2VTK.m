@@ -6,13 +6,9 @@
 %Year: 2015
 %Last modified: 25 may 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, ADMActive, CoarseGrid, maxLevel, basisfunction, Status)
-
-P = reshape(Status.p,Grid.Nx,Grid.Ny);
-S = reshape(Status.s,Grid.Nx,Grid.Ny);
-
+function WriteADMResiduals2VTK(Directory, Problem, iter, Grid, Residual, Residualc, CoarseGrid, maxLevel)
 %Write a VTK file
-fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
+fileID = fopen(strcat(Directory,'/VTK/',Problem,'Residual',num2str(iter),'.vtk'), 'w');
 fprintf(fileID, '# vtk DataFile Version 2.0\n');
 fprintf(fileID, strcat(Problem, ' results: Matteo Simulator\n'));
 fprintf(fileID, 'ASCII\n');
@@ -32,30 +28,21 @@ fprintf(fileID, '\n');
 fprintf(fileID, '\n');
 fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
 fprintf(fileID, '\n');
-%Permeability
-PrintScalar2VTK(fileID, reshape(K(1,:,:), Grid.N, 1), ' PERMX');
+%FineScale residual
+PrintScalar2VTK(fileID, Residual(1:Grid.N), ' FineResidualNw');
 fprintf(fileID, '\n');
-%Pressure
-PrintScalar2VTK(fileID, reshape(P, Grid.N, 1), ' PRESSURE');
+PrintScalar2VTK(fileID, Residual(Grid.N+1:end), ' FineResidualW');
 fprintf(fileID, '\n');
-%Saturation
-PrintScalar2VTK(fileID, reshape(S, Grid.N, 1), ' SATURATION');
+%ADM residual
+PrintScalar2VTK(fileID, Residualc(1:Grid.N), ' CoarseResidualNw');
 fprintf(fileID, '\n');
-PrintScalar2VTK(fileID, reshape(Pc, Grid.N, 1), ' CapPRESSURE');
+PrintScalar2VTK(fileID, Residualc(Grid.N+1:end), ' CoarseResidualW');
 fprintf(fileID, '\n');
-if (ADMActive == 1)
-    if (basisfunction == 1)
-        Nc = CoarseGrid(1).Nx * CoarseGrid(1).Ny;
-        for c = 1:Nc
-            PrintScalar2VTK(fileID, full(CoarseGrid(1).MsP(:,c)), strcat(' BasisFunction', num2str(c)));
-            fprintf(fileID, '\n');
-        end
-    end
-    %ADD ADM coarse grids
+%ADD ADM coarse grids
     PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
     for i=1:maxLevel
         fclose(fileID);
-        fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(i),'Level',num2str(timestep - 1),'.vtk'), 'w');
+        fileID = fopen(strcat(Directory,'/VTK/',Problem,'Residual',num2str(i),'Level',num2str(iter),'.vtk'), 'w');
         fprintf(fileID, '# vtk DataFile Version 2.0\n');
         fprintf(fileID, strcat(Problem, ' results: Matteo Simulator\n'));
         fprintf(fileID, 'ASCII\n');
@@ -76,15 +63,8 @@ if (ADMActive == 1)
         fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).Nx*CoarseGrid(i).Ny);
         PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
         fprintf(fileID, '\n');
-        %Output Basis functions
-        if (basisfunction == 1 && i < maxLevel)
-            Nc = CoarseGrid(i+1).Nx * CoarseGrid(i+1).Ny;
-            for c = 1:Nc
-                PrintScalar2VTK(fileID, full(CoarseGrid(i+1).MsP(:,c)), strcat(' BasisFunction', num2str(c)));
-                fprintf(fileID, '\n');
-            end
-        end
     end
+fclose(fileID);    
 end
-fclose(fileID);
-end
+
+

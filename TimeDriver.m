@@ -101,7 +101,7 @@ while (t<T && Ndt <= TimeSteps)
                 SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             disp('------------FIM Non-linear solver--------------');
-            disp('        ||Residual||   Sat. delta');
+            disp('        ||Residual||   ||delta p||   ||delta S||');
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
@@ -118,11 +118,14 @@ while (t<T && Ndt <= TimeSteps)
                         end
                     case('VTK')
                         Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 1, Status);
+                        Wells2VTK(Grid, Inj, Prod, Directory, Problem);
                         vtkcount = vtkcount + 1;
                 end
                 
                 %Keep first timestep to be small
-                Grid.CFL = 1e-1;
+                Grid.CFL = 1;
+                maxiteration = FIM.MaxIter;
+                FIM.MaxIter = 40;
                 dT = timestepping(Fluid, S, Grid, U, Wells, Status);
 
                 %Compute rock transmissibility
@@ -132,12 +135,13 @@ while (t<T && Ndt <= TimeSteps)
                 [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
                     FIMNonLinearSolver...
                 (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Status);
+                FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
                 % Newton-loop
                 [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
                     FIMNonLinearSolver...
-                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Status);
+                (P0, S0, Status, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
             end
     end
     
@@ -192,7 +196,7 @@ while (t<T && Ndt <= TimeSteps)
             end
         case('VTK')
             if (t == Tstops(index))
-                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 0, Status);
+                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 0, Status);
                 vtkcount = vtkcount + 1;
                 index = index +1;
             end

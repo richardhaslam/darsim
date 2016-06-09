@@ -43,8 +43,12 @@ switch (Errors)
         disp(['h  ', num2str(Grid.h), ' m']);
         disp(['Grid: ', num2str(Grid.Nx), ' x ',  num2str(Grid.Ny), ' x 1']);
         disp(char(5));
+        disp('---------Simulator Settings-----------');
+        disp(['Nonlinear Solver: ', Strategy]);
         if ~exist(strcat(InputDirectory,'/Output/VTK/'), 'dir')
             mkdir(InputDirectory,'/Output/VTK');
+        else
+            delete(strcat(InputDirectory,'/Output/VTK/*.vtk'));
         end
         Directory = strcat(InputDirectory,'/Output/');
         
@@ -57,19 +61,21 @@ switch (Errors)
         end
         
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
-        P = zeros(Grid.Nx, Grid.Ny, 1);
-        S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
-        
         [Status] = Initialize(Fluid,Grid,FlashSettings);
         P = reshape(Status.p,Grid.Nx,Grid.Ny);         %Finds pressure in rectangular matrix form used for plotting and convection
         S = reshape(Status.s(:,1),Grid.Nx,Grid.Ny);    %Finds saturation in rectangular matrix form used for plotting and convection
    
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
-            ADMSetup;
+            disp('ADM Settings');
+            disp(['Pressure Interpolator: ', ADMSettings.Pressure_Interpolator]);
+            disp(['Number of levels: ', num2str(ADMSettings.maxLevel)]);
+            disp(char(5));
+            %disp(['Coarsening ratio: ', num2str(ADMSettings)]);
+            [Grid, CoarseGrid] = ADMSetup(Grid, K, ADMSettings, Inj, Prod);
         else
             CoarseGrid = 0;
-            maxLevel = 0;
+            ADMSettings.maxLevel = 0;
         end
         
         %%%%%%%%%%%%%%%%%%%%%% TIME LOOP %%%%%%%%%%%%%%%%%%%%%%%

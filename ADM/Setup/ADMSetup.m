@@ -7,13 +7,16 @@
 %Last modified: 21 March 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%Set-up all objects needed by ADM%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%Set-up all objects needed by ADM%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [Grid, CoarseGrid] = ADMSetup(Grid, K, ADMSettings, Inj, Prod)
 %% Construct Coarse Grids
-CoarseGridding;
+Grid.CoarseFactor = [1, 1];
+[Grid, CoarseGrid] = CoarseGridding(Grid, ADMSettings, Inj, Prod);
 
 %% Pressure interpolators
 disp('Pressure interpolator - start computation');
-CoarseGrid = PressureInterpolator(Grid, K, CoarseGrid, maxLevel, ADMSettings.Pressure_Interpolator);
+CoarseGrid = PressureInterpolator(Grid, K, CoarseGrid, ADMSettings.maxLevel, ADMSettings.Pressure_Interpolator);
 disp('Pressure interpolator - end')
 disp(char(2));
-
+end

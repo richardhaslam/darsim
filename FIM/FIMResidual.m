@@ -35,7 +35,7 @@
 %   Tnw: nonwetting phase transmissibility matrix
 %   Tw: wetting phase transmissibility matrix
 
-function [Residual, qtot, Tnw, Tw] = FIMResidual(p_old, s_old, p, s, pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, K, N, Nx, Ny)
+function [Residual, Tnw, Tw] = FIMResidual(p_old, s_old, p, s, pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, K, N, Nx, Ny)
 %Accumulation Term
 Ap = speye(N)*0; %It's still incompressible
 AS = speye(N)*pv/dt;
@@ -49,7 +49,6 @@ G = ComputeGravityTerm(N);
 
 %Source terms
 [qnw, qw] = ComputeWells(N, Inj, Prod, K, p, Mnw, Mw);
-qtot = qnw + qw;
 
 %% RESIDUAL
 %Non-wetting phase

@@ -40,7 +40,7 @@
 
 function [P, S, Pc, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
                     FIMNonLinearSolver...
-                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Status0)
+                (P0, S0, Status0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Directory, Problem)
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
@@ -106,7 +106,7 @@ while (Converged==0 && chops<=10)
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
-        Delta = LinearSolver(J, Residual, N, ADM);
+        [Delta, Delta_c] = LinearSolver(J, Residual, N, ADM);
         TimerSolve(itCount) = toc(start2);
       
         % 2.c Update solution
@@ -125,14 +125,20 @@ while (Converged==0 && chops<=10)
         
         % Inner Update and Flash
         %[Status] = Inner_Update(Status,Fluid,FlashSettings,Grid);
+          
+        %Print residual if required
+%         if (Ndt == 50000 && ADMSettings.active == 1)
+%             Residualc = RestrictResidual(Residual, ADM.Rest, Grid.N, ADM.level);
+%             Residualc = Prolong(Residualc, ADM.Prols, ADM.Prols, ADM.level);
+%             WriteADMResiduals2VTK(Directory, Problem, itCount, Grid, abs(Residual), abs(Residualc), CoarseGrid, ADM.level)
+%         end
         
         % 4. Compute residual 
         [Residual, qtot] = FIMResidual(Status0.p, Status0.s, Status.p, Status.s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
         [Residual, qtot] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
-        
-        
+      
         % 5. Check convergence criteria
-        Converged = NewtonConvergence(itCount, Residual, qtot, Delta(N+1:end), Tol, N, ADM);
+        Converged = NewtonConvergence(itCount, Residual, Delta, p, Tol, N, ADM, Delta_c);
         
         itCount = itCount+1;
     end
