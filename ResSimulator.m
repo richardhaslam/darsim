@@ -6,7 +6,7 @@
 %Created: 2015
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function ResSimulator(InputDirectory, InputFile)
+function ResSimulator(InputDirectory, InputFile) %#ok<INUSD>
 clc;
 %cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
 addpath(genpath('../src'));
@@ -60,6 +60,10 @@ switch (Errors)
         P = zeros(Grid.Nx, Grid.Ny, 1);
         S = ones(Grid.Nx, Grid.Ny, 1)*0.1;
         
+        [Status] = Initialize(Fluid,Grid,FlashSettings);
+        P = reshape(Status.p,Grid.Nx,Grid.Ny);         %Finds pressure in rectangular matrix form used for plotting and convection
+        S = reshape(Status.s(:,1),Grid.Nx,Grid.Ny);    %Finds saturation in rectangular matrix form used for plotting and convection
+   
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)
             ADMSetup;

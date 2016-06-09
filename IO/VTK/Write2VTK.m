@@ -5,7 +5,11 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, ADMActive, CoarseGrid, maxLevel, basisfunction)
+function Write2VTK(Directory, Problem, timestep, Grid, K, P, S, Pc, ADMActive, CoarseGrid, maxLevel, basisfunction, Status)
+
+P = reshape(Status.p,Grid.Nx,Grid.Ny);
+S = reshape(Status.s,Grid.Nx,Grid.Ny);
+
 %Write a VTK file
 fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
 fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -38,6 +42,7 @@ PrintScalar2VTK(fileID, reshape(S, Grid.N, 1), ' SATURATION');
 fprintf(fileID, '\n');
 PrintScalar2VTK(fileID, reshape(Pc, Grid.N, 1), ' CapPRESSURE');
 fprintf(fileID, '\n');
+if (ADMActive == 1)
 if (basisfunction == 1)
     Nc = CoarseGrid(1).Nx * CoarseGrid(1).Ny;
     for c = 1:Nc
@@ -45,7 +50,6 @@ if (basisfunction == 1)
         fprintf(fileID, '\n');
     end
 end
-if (ADMActive == 1)
     %ADD ADM coarse grids
     PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
     for i=1:maxLevel

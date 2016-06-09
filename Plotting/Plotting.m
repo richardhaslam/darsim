@@ -6,7 +6,11 @@
 %Created: 2015
 %Last modified: 7 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Plotting(Grid, P, Pc, S, Fluid, color1, color2, Prod, Inj)
+function Plotting(Grid, P, Pc, S, Fluid, color1, color2, Prod, Inj, Status)
+
+P = reshape(Status.p,Grid.Nx,Grid.Ny);
+S = reshape(Status.s,Grid.Nx,Grid.Ny);
+
 problem_1D = 0;
 if (Grid.Nx == 1 || Grid.Ny == 1)
             problem_1D = 1;
@@ -57,6 +61,7 @@ else
     ylabel('y [m]');
     colormap(jet);
     colorbar;
+    [Prod(1).p(1),Inj(1).p(1)]
     caxis ([Prod(1).p(1),Inj(1).p(1)]);
     axis('image');
     set(gca,'fontsize',24);

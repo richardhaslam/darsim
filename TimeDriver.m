@@ -80,6 +80,12 @@ while (t<T && Ndt <= TimeSteps)
     tstart = tic;
     S0 = S;
     P0 = P;
+    
+    Status0.s = Status.s;
+    Status0.p = Status.p;
+    Stauts0.x1 = Status.x1;
+    Status0.z = Status.z;
+    
     maxdT = Tstops - t;
     %Reset all fine cells to active
     Grid.Active = ones(Grid.N, 1);
@@ -99,7 +105,7 @@ while (t<T && Ndt <= TimeSteps)
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
                 % Use IMPES as intial guess for pressure for the 1st timestep
-                [P0, U, Pc, Wells, Inj, Prod] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+                [P0, U, Pc, Wells, Inj, Prod, Status] = PressureSolver(Grid, Inj, Prod, Fluid, S, K, Status);
                 %[Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
                 
                 %Plot initial conditions
@@ -108,30 +114,30 @@ while (t<T && Ndt <= TimeSteps)
                         if ADMSettings.active
                             Plotting_ADM
                         else
-                            Plotting(Grid, P0, Pc, S, Fluid, 'red', 'blue', Prod, Inj);
+                            Plotting(Grid, P0, Pc, S, Fluid, 'red', 'blue', Prod, Inj, Status);
                         end
                     case('VTK')
-                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 1);
+                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 1, Status);
                         vtkcount = vtkcount + 1;
                 end
                 
                 %Keep first timestep to be small
                 Grid.CFL = 1e-1;
-                dT = timestepping(Fluid, S, Grid, U, Wells);
+                dT = timestepping(Fluid, S, Grid, U, Wells, Status);
 
                 %Compute rock transmissibility
                 [Trx, Try] = ComputeTransmissibility(Grid, K);
                 
                 %Non-linear solver
-                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
+                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
                     FIMNonLinearSolver...
-                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
+                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Status);
             else
                 dT = min(dTnext, maxdT(index));
                 % Newton-loop
-                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
+                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
                     FIMNonLinearSolver...
-                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings);
+                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Status);
             end
     end
     
@@ -180,13 +186,13 @@ while (t<T && Ndt <= TimeSteps)
                 if ADMSettings.active
                     Plotting_ADM
                 else
-                    Plotting(Grid, P, Pc, S, Fluid, 'red', 'blue', Prod, Inj);
+                    Plotting(Grid, P, Pc, S, Fluid, 'red', 'blue', Prod, Inj, Status);
                 end
                 index = index +1;
             end
         case('VTK')
             if (t == Tstops(index))
-                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 0);
+                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 0, Status);
                 vtkcount = vtkcount + 1;
                 index = index +1;
             end
@@ -205,4 +211,7 @@ while (t<T && Ndt <= TimeSteps)
             TimerRP(Ndt-1) = Timers.RP;
         end
     end
+    Status.p = reshape(P,Grid.N,1);
+    Status.s = reshape(S,Grid.N,1);
+%    Status.z = reshape(Z,Grid.N,1);
 end

@@ -6,22 +6,23 @@
 %Created: 2015
 %Last modified: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Grid, K] = ReservoirProperties(size, grid, perm, pert, por, inputMatrix)
+function [Grid, K] = ReservoirProperties(size, grid, perm, pert, por, temperature, inputMatrix)
 %Dimensions
 Grid.Lx = str2double(inputMatrix(size +1));  %Dimension in x−direction [m] 
 Grid.Ly = str2double(inputMatrix(size +2));  %Dimension in y−direction [m]
 Grid.h = str2double(inputMatrix(size + 3));  %Reservoir thickness [m]
 
 %Gridding
-Grid.Nx = str2double(inputMatrix(grid +1));  %Nx
-Grid.dx = Grid.Lx/Grid.Nx;                   %dx
-Grid.Ny = str2double(inputMatrix(grid +2));  %Ny
-Grid.dy = Grid.Ly/Grid.Ny;                   %dy
-Grid.Ax = Grid.dy*Grid.h;                    %Cross section in x direction
-Grid.Ay = Grid.dx*Grid.h;                    %Cross section in y direction
+Grid.Nx = str2double(inputMatrix(grid +1));  %Nx [-] 
+Grid.dx = Grid.Lx/Grid.Nx;                   %dx [m] 
+Grid.Ny = str2double(inputMatrix(grid +2));  %Ny [-]
+Grid.dy = Grid.Ly/Grid.Ny;                   %dy [m] 
+Grid.Ax = Grid.dy*Grid.h;                    %Cross section in x direction [m^2] 
+Grid.Ay = Grid.dx*Grid.h;                    %Cross section in y direction [m^2] 
 Grid.Volume = Grid.dx.*Grid.dy*Grid.h;       %Cell volume [m^3]
-Grid.por = str2double(inputMatrix(por + 1)); %Porosity
-Grid.N = Grid.Nx*Grid.Ny;                    %Total number of cells  
+Grid.por = str2double(inputMatrix(por + 1)); %Porosity [-]
+Grid.N = Grid.Nx*Grid.Ny;                    %Total number of cells [-] 
+Grid.Tres = str2double(inputMatrix(temperature + 1));   %Res temperature [K]
 
 %Rock permeability in [m^2].
 if strcmp(inputMatrix(perm - 1), 'INCLUDE')

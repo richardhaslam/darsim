@@ -25,26 +25,34 @@ temp = strfind(inputMatrix{1}, 'PERTURB');
 pert = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'POR'); 
 por = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'TEMPERATURE (K)'); 
+temperature = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'TOTALTIME');
-x = find(~cellfun('isempty', temp));
-T = str2double(inputMatrix{1}(x + 1))*24*3600;
-[Grid, K] = ReservoirProperties(size, grid, perm, pert, por, inputMatrix{1});
-clear temp size grid perm por x
+xv = find(~cellfun('isempty', temp));
+T = str2double(inputMatrix{1}(xv + 1))*24*3600;
+[Grid, K] = ReservoirProperties(size, grid, perm, pert, por, temperature, inputMatrix{1});
+clear temp size grid perm por temperature x
 
 %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
 fplot = 0;    %if 1 the fractional function curves are plotted
-temp = strfind(inputMatrix{1}, 'VISCOSITY'); % Search a specific string and find all rows containing matches
+temp = strfind(inputMatrix{1}, 'DENSITY (kg/m^3)'); % Search a specific string and find all rows containing matches
+density = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'VISCOSITY (Pa sec)'); 
 viscosity = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'RELPERM');
 relperm = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'COMPRESSIBILITY (1/Pa)');
+compressibility = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'CAPILLARITY');
 capillarity = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'FOAM');
 foam = find(~cellfun('isempty', temp));
-temp = strfind(inputMatrix{1}, 'COREY');
-corey = find(~cellfun('isempty', temp));
-Fluid = FluidProperties(viscosity, relperm, capillarity, foam, corey, inputMatrix{1});
-clear temp viscosity relperm capillarity foam corey;
+temp = strfind(inputMatrix{1}, 'COMPOSITION TYPE');
+Comp_Type = find(~cellfun('isempty', temp));
+temp = strfind(inputMatrix{1}, 'COMPONENT PROPERTIES');
+Comp_Prop = find(~cellfun('isempty', temp));
+Fluid = FluidProperties(density, viscosity, relperm, compressibility, capillarity, foam, Comp_Type, Comp_Prop, inputMatrix{1});
+clear temp density viscosity relperm compressibility capillarity foam corey Comp_Type Comp_Prop;
 
 %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
 temp = regexp(inputMatrix{1}, 'INJ\d', 'match'); 
@@ -73,26 +81,34 @@ else
     impsat = find(~cellfun('isempty', temp));
 end
 temp = strfind(inputMatrix{1}, 'TIMESTEPS');
-x = find(~cellfun('isempty', temp));
-TimeSteps = str2double(inputMatrix{1}(x+1));
+xv = find(~cellfun('isempty', temp));
+TimeSteps = str2double(inputMatrix{1}(xv+1));
 temp = strfind(inputMatrix{1}, 'ADM');
 adm = find(~cellfun('isempty', temp));
-[FIM, Sequential, ADMSettings] = ...
+[FIM, Sequential, ADMSettings,FlashSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix);
 
+Fluid
+Grid
+FlashSettings
+Fluid.Comp
+CheckInputErrors;
+
 %%%%Properties of Injected fluid%%%%
-for i=1:length(inj)
-    [Inj(i).Mw, Inj(i).Mo, Inj(i).dMw, Inj(i).dMo] = Mobilities(1,Fluid);
-    Inj(i).water = zeros(TimeSteps+1,1);
-end
-for i=1:length(prod)
-    Prod(i).water = zeros(TimeSteps+1,1);
-    Prod(i).oil = zeros(TimeSteps+1,1);
+if Errors == 0
+    for i=1:length(inj)
+        [Inj(i).Mw, Inj(i).Mo, Inj(i).dMw, Inj(i).dMo] = Mobilities(1,Fluid);
+        Inj(i).water = zeros(TimeSteps+1,1);
+    end
+    for i=1:length(prod)
+        Prod(i).water = zeros(TimeSteps+1,1);
+        Prod(i).oil = zeros(TimeSteps+1,1);
+    end
 end
 
 %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
 temp = strfind(inputMatrix{1}, 'OUTPUT');
-x = find(~cellfun('isempty', temp));
-Options.PlotSolution = char(inputMatrix{1}(x+1)); %Matlab or VTK
+xv = find(~cellfun('isempty', temp));
+Options.PlotSolution = char(inputMatrix{1}(xv+1)); %Matlab or VTK
 
-clear settings impsat adm inputMatrix x
+clear settings impsat adm inputMatrix xv

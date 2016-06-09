@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function dt = timestepping(Fluid, S, Grid, U, Wells)
+function dt = timestepping(Fluid, S, Grid, U, Wells, Status)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Returns the timestep size based on the velocity field, the Grid and the
 %fluid present. CFL condition is used. 
@@ -17,7 +17,7 @@ pv = por*Grid.Volume;   %Void Volume in each cell
 CFL = Grid.CFL;
 
 %I take the worst possible scenario
-s = Fluid.swc:0.01:1-Fluid.sor;
+s = Fluid.sr(2):0.01:1-Fluid.sr(1);
 df =  ComputeFractionalFlow(s, Fluid);
 dfmax = max(df);
 Uxmax = max(max(abs(U.x)));
@@ -32,7 +32,7 @@ dt = min(dtx,dty);
 % %%%%%%%%%%%%%% Foam? Compute based on worst-case scenario
 % 
 % if (strcmp(Fluid.RelPerm,'Foam') == 1) 
-% 	A = linspace(Fluid.swc,1-Fluid.sor,Ny);
+% 	A = linspace(FluidSr(2),1-FluidSr(1),Ny);
 % 	S = repmat(A,Nx,1);
 % end
 % 
@@ -78,6 +78,6 @@ dt = min(dtx,dty);
 %      -XN(2:Nx+1,:)-YN(:,2:Ny+1); % each gridblock
 % 
 % pm = min(pv./(Vi(:)+fi));            % estimate of influx
-% dt = round(((1-Fluid.swc-Fluid.sor)/3)*pm); % CFL restriction
+% dt = round(((1-Fluid.sr(2)-Fluid.sr(1))/3)*pm); % CFL restriction
 % option = toc(tstart)
 end

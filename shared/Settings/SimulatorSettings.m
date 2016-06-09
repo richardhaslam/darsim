@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [FIM, Sequential, ADMSettings] = ...
+function [FIM, Sequential, ADMSettings, FlashSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix)
 %SIMULATOR SETTINGS
 switch (Strategy)
@@ -57,4 +57,10 @@ if (str2double(inputMatrix{1}(adm + 1))~=0)
 else
     ADMSettings.active = 0;
 end
+
+temp = strfind(inputMatrix{1}, 'FLASH LOOPS');
+FlashSet = find(~cellfun('isempty', temp));
+FlashSettings.TolInner=str2double(inputMatrix{1}(FlashSet + 2));
+FlashSettings.MaxIt=str2double(inputMatrix{1}(FlashSet + 3));
+FlashSettings.TolFlash=str2double(inputMatrix{1}(FlashSet + 4));
 end

@@ -5,7 +5,7 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, U, Pc, Wells, Inj, Prod, A, Ab, q]=PressureSolver(Grid, Inj, Prod, Fluid, S, K)
+function [P, U, Pc, Wells, Inj, Prod, Status, A, Ab, q]=PressureSolver(Grid, Inj, Prod, Fluid, S, K, Status)
 %PRESSURE Solver
 
 %1.Compute transmissibilities using harmonic average.
@@ -14,7 +14,7 @@ N = Grid.N;
 
 %Transmissibility
 % Effective permeability
-[Mw, Mo] = Mobilities(S, Fluid);
+[Mw, Mo] = Mobilities(Status.s, Fluid);
 Mt = Mw+Mo;   %total mobility
 Kt = zeros(2, Grid.Nx, Grid.Ny);
 Kt(1,:,:) = reshape(Mt, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
@@ -36,7 +36,7 @@ if ~isempty(Fluid.Pc)
     Kw = zeros(2, Grid.Nx, Grid.Ny);
     Kw(1,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
     Kw(2,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
-    [q, Pc, Ucap] = AddPcToPressureSystem(q, S, Fluid, Kw, K(1,:,:), Grid);
+    [q, Pc, Ucap] = AddPcToPressureSystem(q, Status.s, Fluid, Kw, K(1,:,:), Grid);
 end
 
 %% Add Wells
@@ -72,10 +72,10 @@ for i=1:length(Prod)
 end
 
 %Solve for pressure
-p = A\q;
+Status.p = A\q;
 
 %Compute total fluxes ([m^3/s])
-P = reshape(p, Nx, Ny,1);
+P = reshape(Status.p, Nx, Ny,1);
 U.x = zeros(Nx+1,Ny,1);
 U.y = zeros(Nx,Ny+1,1);
 U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)).*Tx(2:Nx,:) - Ucap.x(2:Nx,:);
@@ -91,7 +91,7 @@ for i=1:length(Inj)
             Fluxes(a) = Fluxes(a) + Inj(i).PI.* Kvector(a).*Inj(i).Mw.*(Inj(i).p-p(a));
         case('RateConstrained')
             Fluxes(a) = Fluxes(a) + Inj(i).q;
-            Inj(i).p = Inj(i).q./(Kvector(a).*Inj(i).Mw) + p(a);
+            Inj(i).p = Inj(i).q./(Kvector(a).*Inj(i).Mw) + Status.p(a);
     end
 end
 %Producers
@@ -99,10 +99,10 @@ for i=1:length(Prod)
     a = Prod(i).cells;
     switch(Prod(i).type)
         case('PressureConstrained')
-            Fluxes(a) = Fluxes(a) + Prod(i).PI.* Ktvector(a).*(Prod(i).p-p(a));
+            Fluxes(a) = Fluxes(a) + Prod(i).PI.* Ktvector(a).*(Prod(i).p-Status.p(a));
         case('RateConstrained')
             Fluxes(a) = Fluxes(a) + Prod(i).q;
-            Prod(i).p = Prod(i).q./(Ktvector(a)) + p(a);
+            Prod(i).p = Prod(i).q./(Ktvector(a)) + Status.p(a);
     end
 end
 Wells.Fluxes = reshape(Fluxes, Nx, Ny);
