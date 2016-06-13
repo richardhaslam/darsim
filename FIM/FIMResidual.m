@@ -58,7 +58,7 @@ Rnw = Ap*(p-p_old) - AS*(s-s_old) + Tnw*p + G*s - qnw;
 %Wetting phase (This one has capillarity)
 Rw = Ap*(p-p_old) + AS*(s-s_old) + Tw*p - Tw*pc + G*s - qw;
 %Stick them together
-Residual = [Rnw; Rw];
+Residual = [Rw; Rnw];
 end
 
 %% Transmissibility

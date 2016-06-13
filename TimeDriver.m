@@ -112,7 +112,8 @@ while (t<T && Ndt <= TimeSteps)
                 Grid.CFL = 1; %Keep first timestep to be small
                 maxiteration = FIM.MaxIter;
                 FIM.MaxIter = 40;
-                dT = timestepping(Fluid, Grid, U);
+                dTnext = timestepping(Fluid, Grid, U);
+                dT = min(dTnext, maxdT(index));
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...

@@ -63,14 +63,16 @@ while (Converged==0 && chops<=10)
      
     %Update fluid prowperties 
     [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
+    [Rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho); 
     [Status.pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por);
     %Define updwind operators
-    [UpWindNw, Unw] = UpwindOperator(Grid, P);
     [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
+    [UpWindNw, Unw] = UpwindOperator(Grid, P);
     
     % Compute residual
-    [Residual, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1));
-    %[Residual, ~, TMatrixNw, TMatrixW] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
+    [Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1));
+    [Residual, TMatrix1, TMatrix2] = FIMResidualComp(Status0, Status, dt, Grid, reshape(K(1,:,:), N, 1), Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
+    
     
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
@@ -93,13 +95,16 @@ while (Converged==0 && chops<=10)
               
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
-        J = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
-        %J2 = BuildJacobian2(Grid, Kvector, TMatrixNw, TMatrixW, Status, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
+        J1 = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
+        J = BuildJacobianComp(Grid, K, TMatrix1, TMatrix2, Status, Mw, Mnw, dMw, dMnw, Rho, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw);
+        max(Residual - Residual1)
+        J - J1
+        
         TimerConstruct(itCount) = toc(start1);
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
-        [Delta, Delta_c] = LinearSolver(J, Residual, N, ADM);
+        [Delta, Delta_c] = LinearSolver(J1, Residual1, N, ADM);
         TimerSolve(itCount) = toc(start2);
       
         % 2.c Update solution
@@ -127,11 +132,11 @@ while (Converged==0 && chops<=10)
 %         end
         
         % 4. Compute residual 
-        [Residual] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1));
-        %[Residual, qtot] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
-      
+        [Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1));
+        [Residual, TMatrix1, TMatrix2] = FIMResidualComp(Status0, Status, dt, Grid, reshape(K(1,:,:), N, 1), Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
+        
         % 5. Check convergence criteria
-        Converged = NewtonConvergence(itCount, Residual, Delta, Status.p, Tol, N, ADM, Delta_c);
+        Converged = NewtonConvergence(itCount, Residual1, Delta, Status.p, Tol, N, ADM, Delta_c);
         
         itCount = itCount+1;
     end

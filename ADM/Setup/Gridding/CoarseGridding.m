@@ -28,7 +28,7 @@ for i=1:maxLevel
     CoarseGrid(i).CoarseFactor = ADMSettings.Coarsening(i,:);
     CoarseGrid(i) = BuildCoarseGrid(Grid, CoarseGrid(i));
 end
-AssignFathers;
+[Grid, CoarseGrid] = AssignFathers(Grid, CoarseGrid, ADMSettings.maxLevel);
 
 %Flag coarse blocks with wells
 [CoarseGrid] = CoarseWells(Grid, CoarseGrid, maxLevel, Inj, Prod);

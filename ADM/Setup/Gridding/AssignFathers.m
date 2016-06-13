@@ -1,32 +1,33 @@
-% ASSIGN FATHERS
+% Assign fathers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
 %Created: 2015
-%Last modified: 21 March 2016
+%Last modified: 13 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [Grid, CoarseGrid] = AssignFathers(Grid, CoarseGrid, maxLevel)
 % Fine Grid
 Grid.Father = zeros(Grid.N, maxLevel);
 Grid.Centers = zeros(Grid.N, maxLevel);
 for i=1:maxLevel
-Nc = CoarseGrid(i).Nx*CoarseGrid(i).Ny;
-for c = 1:Nc
-    Imin = CoarseGrid(i).I(c) - floor((CoarseGrid(i).CoarseFactor(1) - 1)/2);
-    Imax = CoarseGrid(i).I(c) + ceil((CoarseGrid(i).CoarseFactor(1) - 1)/2);
-    Jmin = CoarseGrid(i).J(c) - floor((CoarseGrid(i).CoarseFactor(2) - 1)/2);
-    Jmax = CoarseGrid(i).J(c) + ceil((CoarseGrid(i).CoarseFactor(2) - 1)/2);
-    fc = CoarseGrid(i).I(c) + (CoarseGrid(i).J(c) - 1)*Grid.Nx;
-    Grid.Centers(fc,i) = 1;
-    %Scan fine cells inside c
-    for I = Imin:Imax
-        for J = Jmin:Jmax
-            f = I + (J-1)*Grid.Nx;
-            Grid.Father(f,i) = c;
+    Nc = CoarseGrid(i).Nx*CoarseGrid(i).Ny;
+    for c = 1:Nc
+        Imin = CoarseGrid(i).I(c) - floor((CoarseGrid(i).CoarseFactor(1) - 1)/2);
+        Imax = CoarseGrid(i).I(c) + ceil((CoarseGrid(i).CoarseFactor(1) - 1)/2);
+        Jmin = CoarseGrid(i).J(c) - floor((CoarseGrid(i).CoarseFactor(2) - 1)/2);
+        Jmax = CoarseGrid(i).J(c) + ceil((CoarseGrid(i).CoarseFactor(2) - 1)/2);
+        fc = CoarseGrid(i).I(c) + (CoarseGrid(i).J(c) - 1)*Grid.Nx;
+        Grid.Centers(fc,i) = 1;
+        %Scan fine cells inside c
+        for I = Imin:Imax
+            for J = Jmin:Jmax
+                f = I + (J-1)*Grid.Nx;
+                Grid.Father(f,i) = c;
+            end
         end
     end
-end
-CoarseGrid(i).Centers = ones(CoarseGrid(i).Nx*CoarseGrid(i).Ny, 1);
+    CoarseGrid(i).Centers = ones(CoarseGrid(i).Nx*CoarseGrid(i).Ny, 1);
 end
 % Coarse Grids
 for x = 1:maxLevel-1
@@ -55,4 +56,5 @@ for x = 1:maxLevel-1
 end
 CoarseGrid(maxLevel).Father = zeros(CoarseGrid(maxLevel).Nx*CoarseGrid(maxLevel).Ny, maxLevel);
 CoarseGrid(maxLevel).Centers = zeros(CoarseGrid(maxLevel).Nx*CoarseGrid(maxLevel).Ny, maxLevel);
+end
 %CoarseGrid(maxLevel).Centers(:, maxLevel) = ones(CoarseGrid(maxLevel).Nx*CoarseGrid(maxLevel).Ny, 1);
