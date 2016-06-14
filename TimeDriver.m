@@ -83,7 +83,7 @@ while (t<T && Ndt <= TimeSteps)
     
     Status0.s = Status.s;
     Status0.p = Status.p;
-    Stauts0.x1 = Status.x1;
+    Status0.x1 = Status.x1;
     Status0.z = Status.z;
     
     maxdT = Tstops - t;
@@ -117,7 +117,7 @@ while (t<T && Ndt <= TimeSteps)
                             Plotting(Grid, P0, Pc, S, Fluid, 'red', 'blue', Prod, Inj, Status);
                         end
                     case('VTK')
-                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, maxLevel, 1, Status);
+                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 1, Status);
                         Wells2VTK(Grid, Inj, Prod, Directory, Problem);
                         vtkcount = vtkcount + 1;
                 end
@@ -134,7 +134,7 @@ while (t<T && Ndt <= TimeSteps)
                 %Non-linear solver
                 [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
                     FIMNonLinearSolver...
-                (P0, S0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Status);
+                (P0, S0, Status0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
                 FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));

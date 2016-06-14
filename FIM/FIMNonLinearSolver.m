@@ -76,9 +76,9 @@ while (Converged==0 && chops<=10)
     [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
     
     % Compute residual
-    [Residual, ~, TMatrixNw, TMatrixW] = FIMResidual(Status0.p, Status0.s, Status.p, Status.s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
-    [Residual, ~, TMatrixNw, TMatrixW] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
-    
+    [Residual, TMatrixNw, TMatrixW] = FIMResidual(Status0.p, Status0.s, Status.p, Status.s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
+    %[Residual, ~, TMatrixNw2, TMatrixW2] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
+    Residual = Residual/1000;
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
         tic
@@ -101,7 +101,11 @@ while (Converged==0 && chops<=10)
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
         J = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
-        %J2 = BuildJacobian2(Grid, Kvector, TMatrixNw, TMatrixW, Status, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
+        J2 = BuildJacobian2(Grid, Kvector, TMatrixNw, TMatrixW, Status, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW, Fluid, pv);
+        Jcheck = full(J);
+        J2check = full(J2/1000);
+        Jcompare = Jcheck - J2check;
+        Jcompare(abs(Jcompare)<1e-15) = 0;
         TimerConstruct(itCount) = toc(start1);
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
@@ -134,11 +138,13 @@ while (Converged==0 && chops<=10)
 %         end
         
         % 4. Compute residual 
-        [Residual, qtot] = FIMResidual(Status0.p, Status0.s, Status.p, Status.s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
-        [Residual, qtot] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
-      
+        [Residual,~,~] = FIMResidual(Status0.p, Status0.s, Status.p, Status.s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
+        [Residual,qtot2,~,~] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
+        Residual = Residual/1000;
+      check = sparse(Residual);
+%      check2 = sparse(Residual2);
         % 5. Check convergence criteria
-        Converged = NewtonConvergence(itCount, Residual, Delta, p, Tol, N, ADM, Delta_c);
+        Converged = NewtonConvergence(itCount, Residual, Delta, Status.p, Tol, N, ADM, Delta_c);
         
         itCount = itCount+1;
     end

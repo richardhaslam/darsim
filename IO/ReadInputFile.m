@@ -99,6 +99,18 @@ if Errors == 0
     for i=1:length(inj)
         [Inj(i).Mw, Inj(i).Mo, Inj(i).dMw, Inj(i).dMo] = Mobilities(1,Fluid);
         Inj(i).water = zeros(TimeSteps+1,1);
+        Inj(i).z = [1 0];
+        if strcmp(Inj(i).type, 'PressureConstrained')
+            if (strcmp(Fluid.Type,'BlackOil')==1)
+                Inj(i).x1 = BO_Flash(Inj(i).p); 
+            elseif(strcmp(Fluid.Type,'Compositional')==1)
+                [PhaseOneSplit,PhaseTwoSplit] = Comp_Calc(Inj(i).p,Grid.Tres,Fluid.Comp.b,Fluid.Comp.Tb,Inj(i).z,FlashSettings.TolFlash);    %Finds new phase mole fractions (x)
+                Inj(i).x1(1,1) = PhaseOneSplit(1,1);           %Assigns phase split of phase 1
+                Inj(i).x1(1,2) = PhaseTwoSplit(1,1);           %Assigns phase split of phase 2
+            else
+                Inj(i).x1 = [1 0];
+            end
+        end
     end
     for i=1:length(prod)
         Prod(i).water = zeros(TimeSteps+1,1);

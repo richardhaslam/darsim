@@ -42,6 +42,7 @@ pv = Grid.Volume*Grid.por;
 
 %1. Rnw Pressure Block
 Jnwp = TMatrixNw;
+%J1 = TMatrixNw .* matrix(x) + T... 
 
 %2. Rw Pressure Block
 Jwp = TMatrixW;

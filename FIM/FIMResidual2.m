@@ -55,8 +55,9 @@ Ap = speye(N)*0; %It's still incompressible
 AS = speye(N)*pv/dt;
 
 %Transmissibility matrix
-Tnw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindNw, Mnw);
-Tw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindW, Mw);
+Tnw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpWindNw, UpWindW, Mnw, Mw, x1);
+Tw = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpwWindNw, UpWindW, Mnw, Mw, x1);
+[Tnw, Tw] = TransmissibilityMatrix (Trx, Try, N, Nx, Ny, UpwWindNw, UpWindW, Mnw, Mw, x1);
 
 %Gravity
 G = ComputeGravityTerm(N);
@@ -80,7 +81,7 @@ Rw = Ap*p - Ap*p_old...                                                 %Compres
     + G*s - qnw.*(1-x1(:,1)).*Rho(:,1) - qw.*(1-x1(:,2)).*Rho(:,2);                         %Gravity and source terms
 %Stick them together
 Residual = [Rnw; Rw];
-Residual = Residual/Rho(1,1);
+%Residual = Residual/Rho(1,1);
 end
 
 %% Transmissibility
