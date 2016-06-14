@@ -11,6 +11,9 @@ function Plotting(Grid, Status, Fluid, color1, color2, Inj, Prod)
 P = reshape(Status.p,Grid.Nx,Grid.Ny);
 S = reshape(Status.s,Grid.Nx,Grid.Ny);
 Pc = reshape(Status.pc,Grid.Nx,Grid.Ny);
+x1 = reshape(Status.x1(:,1),Grid.Nx,Grid.Ny);
+x2 = reshape(1-Status.x1(:,2),Grid.Nx,Grid.Ny);
+z = reshape(Status.z(:,1),Grid.Nx,Grid.Ny);
 
 problem_1D = 0;
 if (Grid.Nx == 1 || Grid.Ny == 1)
@@ -37,6 +40,36 @@ if problem_1D
     %title('Saturation of water');
     xlabel('x [m]');
     ylabel('Saturation');
+    hold on;
+    set(gca,'fontsize',24);
+    drawnow;
+    
+    figure(5)
+    subplot(3,1,1);
+    plot(x, x1, color2, 'LineWidth', 1);
+    axis([0 Grid.Lx 0 1.1]);
+    %title('Component 1 in Phase 1 [-]');
+    xlabel('x [m]');
+    ylabel('x1w [-]');
+    axis([0 max(x) .8 1])
+    hold on;
+    set(gca,'fontsize',24);
+    subplot(3,1,2);
+    plot(x, x2, color2, 'LineWidth', 1);
+    axis([0 Grid.Lx 0 1.1]);
+    %title('Component 2 in Phase 2 [-]');
+    xlabel('x [m]');
+    ylabel('x2nw [-]');
+    axis([0 max(x) .8 1])
+    hold on;
+    set(gca,'fontsize',24);
+    subplot(3,1,3);
+    plot(x, z, color2, 'LineWidth', 1);
+    axis([0 Grid.Lx 0 1.1]);
+    %title('Component 1 Total Mass Fraction [-]');
+    xlabel('x [m]');
+    ylabel('z1 [-]');
+    axis([0 max(x) 0 1])
     hold on;
     set(gca,'fontsize',24);
     drawnow;

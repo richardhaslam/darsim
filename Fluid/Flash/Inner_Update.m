@@ -12,7 +12,7 @@ switch(Fluid.Type)
         else
             [Status.z] = Update_z(Status.s,Status.x1,rho);          %Updates total mole fraction based on NR result
         end
-        
+        Status.s(:,2) = 1 - Status.s(:,1);
         while InnerError > FlashSettings.TolInner
             
             [Status.x1] = BO_Flash(Status.p);                   %Updates x with Black Oil Flash
@@ -25,8 +25,8 @@ switch(Fluid.Type)
                 [snew(Status.x1(:,1) > Status.z(:,1),:)] = Update_S(Status.x1(Status.x1(:,1) > Status.z(:,1),:),...
                     Status.z(Status.x1(:,1) > Status.z(:,1),:),rho(Status.x1(:,1) > Status.z(:,1),:));      %When two-phases
                 
-                Status.x1(Status.x1(:,1) < Status.z(:,1),1) = Status.z(x1(:,1) < Status.z(:,1),1);           %One phase x limit
-                Status.x1(Status.x1(:,2) > Status.z(:,2),2) = Status.z(x1(:,2) > Status.z(:,2),2);
+                Status.x1(Status.x1(:,1) < Status.z(:,1),1) = Status.z(Status.x1(:,1) < Status.z(:,1),1);           %One phase x limit
+                Status.x1(Status.x1(:,2) > Status.z(:,2),2) = Status.z(Status.x1(:,2) > Status.z(:,2),2);
             end
             
             [Status.z] = Update_z(snew,Status.x1,rho);          %Updates z with new parameters. Different from my version
@@ -43,7 +43,8 @@ switch(Fluid.Type)
         if (strcmp(Status.s,'Initialize')==1)                   %Checks if we are doing initialization or have just come from NR loop
             Status.x1 = zeros(Grid.N,2,1);                      %Predefines memory for x
         else
-            [Status.z] = Update_z(Status.s,Status.x,rho);       %Updates total mole fraction based on NR result
+            Status.s(:,2) = 1 - Status.s(:,1);
+            [Status.z] = Update_z(Status.s,Status.x1,rho);       %Updates total mole fraction based on NR result
         end
         
         while InnerError > FlashSettings.TolInner               %Checks error in loop
@@ -55,7 +56,11 @@ switch(Fluid.Type)
             [snew] = Update_S(Status.x1,Status.z,rho);          %Update s based on new x's
             [Status.z] = Update_z(snew,Status.x1,rho);          %Update z so that everything agrees
             InnerError = sum(abs(Status.s(:,1) - snew(:,1)));   %Find error of loop
-            Status.s = snew;                                    %Dummy s becomes s for next loop
+            if (strcmp(Status.s,'Initialize')==1) 
+                InnerError = 0;
+            else
+                Status.s = snew;                                    %Dummy s becomes s for next loop
+            end
             InnerCounter = InnerCounter + 1;                    %Update counter
             if InnerCounter > FlashSettings.MaxIt               %If this loop iterates too much we stop it
                 InnerError = 0;                                 %Allows exit of loop
@@ -68,6 +73,11 @@ switch(Fluid.Type)
         Status.x1 = zeros(Grid.N, 2, 1);                         %Phase split is always the same (every component in its own phase)
         Status.x1(:,1) = Status.x1(:,1) + 1;
         Status.z = Status.s;                                     %Total mole fraction is simply saturation in immiscible case
+end
+if (strcmp(Status.s,'Initialize')==1) 
+    [Status.s] = Update_S(Status.x1,Status.z,rho);
+else
+    Status.s = Status.s(:,1);
 end
 
 end

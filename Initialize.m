@@ -53,11 +53,11 @@ switch (Fluid.Type)
         
         Status.p = ones(Grid.N, 1)*Pinit;           %Defines pressure vector
         Status.s = 'Initialize';                    %Sets saturation so that we do initialization in Inner_Update.m
-        Status.x1 = zeros(Grid.N,1);                %Predefines space for x1 vector
+        Status.x1 = zeros(Grid.N,2);                %Predefines space for x1 vector
         Status.z = zeros(Grid.N, 2);                %Defines mole fraction vector for 2 component
         Status.z(:,1) = zinit;                      %Assigns first component mole fraction
+        Status.z(:,2) = 1 - zinit;
         
-        %Do you need to send a dummy x!!!
         [Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);   %Initializes reservoir using update function
         
 end
