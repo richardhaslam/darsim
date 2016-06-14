@@ -5,8 +5,12 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [A] = AssemblePressureMatrix(Tx, Ty, Nx, Ny)
-N = Nx*Ny;
+function [A] = AssemblePressureMatrix(Grid)
+N = Grid.N;
+Nx = Grid.Nx;
+Ny = Grid.Ny;
+Tx = Grid.Tx;
+Ty = Grid.Ty;
 %Construct pressure matrix
 x1=reshape(Tx(1:Nx,:),N,1);
 x2=reshape(Tx(2:Nx+1,:),N,1);

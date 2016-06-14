@@ -6,10 +6,11 @@
 %Created: 2015
 %Last modified: 7 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Plotting(Grid, P, Pc, S, Fluid, color1, color2, Prod, Inj, Status)
+function Plotting(Grid, Status, Fluid, color1, color2, Inj, Prod)
 
 P = reshape(Status.p,Grid.Nx,Grid.Ny);
 S = reshape(Status.s,Grid.Nx,Grid.Ny);
+Pc = reshape(Status.pc,Grid.Nx,Grid.Ny);
 
 problem_1D = 0;
 if (Grid.Nx == 1 || Grid.Ny == 1)

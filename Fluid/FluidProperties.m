@@ -19,17 +19,17 @@ fplot = 0; %hard-coded for now
 
     for getDataPhase = 1:Fluid.NumPhase
        %Gets all densities [kg/m^3]
-       Fluid.rho(getDataPhase)=str2double(inputMatrix(density + 2*getDataPhase));
+       Fluid.rho(getDataPhase) = str2double(inputMatrix(density + 2*getDataPhase));
        %Gets all viscosities [Pa sec]
-       Fluid.mu(getDataPhase)=str2double(inputMatrix(viscosity + 2*getDataPhase));
+       Fluid.mu(getDataPhase) = str2double(inputMatrix(viscosity + 2*getDataPhase));
        %Gets all Corey exponents [-]
-       Fluid.n(getDataPhase)=str2double(inputMatrix(relperm + 9 + 2*getDataPhase));
+       Fluid.n(getDataPhase) = str2double(inputMatrix(relperm + 9 + 2*getDataPhase));
        %Gets all compressibilities [1/Pa]
-       Fluid.c(getDataPhase)=str2double(inputMatrix(compressibility + 2*getDataPhase));
+       Fluid.c(getDataPhase) = str2double(inputMatrix(compressibility + 2*getDataPhase));
        %Gets all residual saturations [-]
-       Fluid.sr(getDataPhase)=str2double(inputMatrix(relperm + 1 + 2*getDataPhase));
+       Fluid.sr(getDataPhase) = str2double(inputMatrix(relperm + 1 + 2*getDataPhase));
        %Gets all end-point rel perms [-]
-       Fluid.kre(getDataPhase)=str2double(inputMatrix(relperm + 5 + 2*getDataPhase));
+       Fluid.kre(getDataPhase) = str2double(inputMatrix(relperm + 5 + 2*getDataPhase));
     end
 if isnan(Fluid.Comp.NumComp)
 else

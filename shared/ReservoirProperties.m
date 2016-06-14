@@ -50,4 +50,7 @@ else
     Ky = ones(Grid.N,1)*10^(-12);
     K=reshape([Kx, Ky]', 2, Grid.Nx, Grid.Ny);
 end
+
+%Compute rock transmissibility
+Grid = ComputeTransmissibility(Grid, K);
 end

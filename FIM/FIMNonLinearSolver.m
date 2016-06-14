@@ -1,7 +1,7 @@
 %FIM non-linear solver
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Matteo Cusini's Research Code
-%Author: Matteo Cusini
+%Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 21 March 2016
 %Last Modified: 18 May 2016
@@ -14,8 +14,6 @@
 %   P0: pressure at previous timestep
 %   S0: saturation at previous time-step
 %   K: permeability
-%   Trx: rock transmissibility in x direction
-%   Try: rock transmissibility in y direction
 %   Grid: fine-scale grid information
 %   Fluid: Fluid information
 %   Inj: injection wells info
@@ -27,9 +25,7 @@
 %   ADMSettings: settings for ADM
 
 %Output variables
-%   P: pressure at current timestep
-%   S: saturation at current timestep
-%   Pc: capillary pressure at current timestep
+%   Status
 %   dt: timestep size (it can be modified for convergence issues)
 %   dtnext: timestep size for next timestep
 %   FIM: stats of FIM solver
@@ -38,9 +34,9 @@
 %   CoarseGrid: for ADM knows which coarse cells are active 
 %   Grid: for ADM knows which fine cells are active
 
-function [P, S, Pc, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
+function [Status, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (P0, S0, Status0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Directory, Problem)
+                (Status0, K, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Directory, Problem)
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
@@ -51,8 +47,6 @@ Kvector = reshape(K(1,:,:), N, 1);
 
 % Initialise objects
 Converged=0;
-p0 = reshape(P0, N, 1);
-s0 = reshape(S0, N, 1);
 chops=0;
 while (Converged==0 && chops<=10)
     if (chops > 0)
@@ -62,23 +56,23 @@ while (Converged==0 && chops<=10)
     end
     
     Status.p = Status0.p;
-    Status.s = Status0.s; % I start fRnwm solution at previous timestep.
+    Status.s = Status0.s; % I start from solution at previous timestep.
     Status.x1 = Status0.x1;
     Status.z = Status0.z;
     P = reshape(Status.p,Grid.Nx,Grid.Ny);
-    
-    
+     
     %Update fluid prowperties 
     [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
-    [Pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por);
+    [Rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho); 
+    [Status.pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por);
     %Define updwind operators
-    [UpWindNw, Unw] = UpwindOperator(Grid, P, Trx, Try);
-    [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
+    [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
+    [UpWindNw, Unw] = UpwindOperator(Grid, P);
     
     % Compute residual
-    [Residual, TMatrixNw, TMatrixW] = FIMResidual(Status0.p, Status0.s, Status.p, Status.s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector, N, Nx, Ny);
-    %[Residual, ~, TMatrixNw2, TMatrixW2] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
-    Residual = Residual/1000;
+    [Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
+    [Residual, TMatrix1, TMatrix2] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
+    
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
         tic
@@ -100,12 +94,10 @@ while (Converged==0 && chops<=10)
               
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
-        J = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
-        J2 = BuildJacobian2(Grid, Kvector, TMatrixNw, TMatrixW, Status, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW, Fluid, pv);
-        Jcheck = full(J);
-        J2check = full(J2/1000);
-        Jcompare = Jcheck - J2check;
-        Jcompare(abs(Jcompare)<1e-15) = 0;
+        J1 = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
+        J = BuildJacobianComp(Grid, Kvector, TMatrix1, TMatrix2, Status, Mw, Mnw, dMw, dMnw, Rho, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw);
+        %max(Residual - Residual1)
+        %J - J1
         TimerConstruct(itCount) = toc(start1);
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
@@ -122,10 +114,10 @@ while (Converged==0 && chops<=10)
         
         % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
-        [Pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por); 
+        [Status.pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por); 
         % Define updwind
-        [UpWindNw, Unw] = UpwindOperator(Grid, P, Trx, Try);
-        [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Pc, Nx, Ny), Trx, Try);
+        [UpWindNw, Unw] = UpwindOperator(Grid, P);
+        [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
         
         % Inner Update and Flash
         %[Status] = Inner_Update(Status,Fluid,FlashSettings,Grid);
@@ -138,11 +130,9 @@ while (Converged==0 && chops<=10)
 %         end
         
         % 4. Compute residual 
-        [Residual,~,~] = FIMResidual(Status0.p, Status0.s, Status.p, Status.s, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), N, Nx, Ny);
-        [Residual,qtot2,~,~] = FIMResidual2(Status0, Status, Pc, pv, dt, Trx, Try, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, reshape(K(1,:,:), N, 1), Grid, Fluid);
-        Residual = Residual/1000;
-      check = sparse(Residual);
-%      check2 = sparse(Residual2);
+        [Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
+        [Residual, TMatrix1, TMatrix2] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
+        
         % 5. Check convergence criteria
         Converged = NewtonConvergence(itCount, Residual, Delta, Status.p, Tol, N, ADM, Delta_c);
         
@@ -162,10 +152,6 @@ elseif itCount > 8
 else
     dtnext = dt;
 end
-
-% Reshape S before quitting
-S = reshape(Status.s,Nx,Ny);
-Pc = reshape(Pc,Nx,Ny);
 
 %Average saturation in Coarse Blocks
 if ADM.active

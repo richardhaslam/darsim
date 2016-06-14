@@ -14,10 +14,10 @@ if Grid.por < 0 || Grid.por > 1
     display('Invalid porosity input')
     Errors = 1;
 end
-if max(Fluid.rho) < 100
-    display('Most likely wrong units for fluid density (must be kg/m^3)')
-    Errors = 1;
-end
+% if max(Fluid.rho) < 100
+%     display('Most likely wrong units for fluid density (must be kg/m^3)')
+%     Errors = 1;
+% end
 if min(Fluid.c) < 0
     display('Invalid fluid compressibility')
     Errors = 1;

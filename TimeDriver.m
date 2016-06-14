@@ -25,11 +25,7 @@
 %   Inj: injection wells
 %   Prod: production wells
 
-%   P: pressure at current timestep
-%   S: saturation at current timestep 
-%   P0: pressure at previous timestep
-%   S0: saturation at previous timestep
-%   Pc: capillary pressure
+%   Status: contains the status of the reservoir (p, s, pc, x)
 
 %   dT: timestep size
 %   Ndt: timestep number
@@ -78,14 +74,7 @@ while (t<T && Ndt <= TimeSteps)
     %% Initialise time-step
     disp(['Time-step ' num2str(Ndt) ': Initial time: ' num2str(t/(3600*24),4) ' days']);
     tstart = tic;
-    S0 = S;
-    P0 = P;
-    
-    Status0.s = Status.s;
-    Status0.p = Status.p;
-    Status0.x1 = Status.x1;
-    Status0.z = Status.z;
-    
+
     maxdT = Tstops - t;
     %Reset all fine cells to active
     Grid.Active = ones(Grid.N, 1);
@@ -97,51 +86,46 @@ while (t<T && Ndt <= TimeSteps)
             if ~Sequential.ImpSat
                 Sequential.MaxExtIter = 1;
             end
-            [P, S, Pc, Inj, Prod, dT, Converged, Timers, Sequential.ImplicitSolver] =...
-                SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
+            [Status, Pc, Inj, Prod, dT, Converged, Timers, Sequential.ImplicitSolver] =...
+                SequentialStrategy(Status, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             disp('------------FIM Non-linear solver--------------');
             disp('        ||Residual||   ||delta p||   ||delta S||');
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
-                % Use IMPES as intial guess for pressure for the 1st timestep
-                [P0, U, Pc, Wells, Inj, Prod, Status] = PressureSolver(Grid, Inj, Prod, Fluid, S, K, Status);
-                %[Pms, ~] = MMsFVPressureSolver(Grid, Inj, Prod, K, Fluid, S, CoarseGrid, maxLevel);
-                
+             
                 %Plot initial conditions
                 switch (Options.PlotSolution)
                     case('Matlab')
                         if ADMSettings.active
                             Plotting_ADM
                         else
-                            Plotting(Grid, P0, Pc, S, Fluid, 'red', 'blue', Prod, Inj, Status);
+                            Plotting(Grid, Status, Fluid, 'green', 'green', Prod, Inj);
                         end
                     case('VTK')
-                        Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 1, Status);
+                        Write2VTK(Directory, Problem, vtkcount, Grid, K, Status, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 1);
                         Wells2VTK(Grid, Inj, Prod, Directory, Problem);
                         vtkcount = vtkcount + 1;
                 end
-                
-                %Keep first timestep to be small
-                Grid.CFL = 1;
+               
+                % Use IMPES to estimate timestep size for the 1st timestep
+                [~, U, ~, Wells, ~, ~] = PressureSolver(Grid, Inj, Prod, Fluid, Status.s, K);
+                Grid.CFL = 1; %Keep first timestep to be small
                 maxiteration = FIM.MaxIter;
                 FIM.MaxIter = 40;
-                dT = timestepping(Fluid, S, Grid, U, Wells, Status);
-
-                %Compute rock transmissibility
-                [Trx, Try] = ComputeTransmissibility(Grid, K);
+                dTnext = timestepping(Fluid, Grid, U);
+                dT = min(dTnext, maxdT(index));
                 
-                %Non-linear solver
-                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
+                [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (P0, S0, Status0, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
+                (Status, K, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
                 FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
-                % Newton-loop
-                [P, S, Pc, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid, Status] = ...
+                %Non-linear solver
+                [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (P0, S0, Status, K, Trx, Try, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
+                (Status, K, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
             end
     end
     
@@ -179,8 +163,8 @@ while (t<T && Ndt <= TimeSteps)
     %Print solution to a file at fixed intervals
     if (t == Tstops(index))
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
-        Saturations(:,index) = reshape(S, Grid.N, 1);
-        Pressures(:,index) = reshape(P, Grid.N, 1);
+        Saturations(:,index) = Status.s;
+        Pressures(:,index) = Status.p;
     end   
     
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
@@ -190,13 +174,13 @@ while (t<T && Ndt <= TimeSteps)
                 if ADMSettings.active
                     Plotting_ADM
                 else
-                    Plotting(Grid, P, Pc, S, Fluid, 'red', 'blue', Prod, Inj, Status);
+                    Plotting(Grid, Status, Fluid, 'red', 'blue', Inj, Prod);
                 end
                 index = index +1;
             end
         case('VTK')
             if (t == Tstops(index))
-                Write2VTK(Directory, Problem, vtkcount, Grid, K, P, S, Pc, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 0, Status);
+                Write2VTK(Directory, Problem, vtkcount, Grid, K, Status, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 0);
                 vtkcount = vtkcount + 1;
                 index = index +1;
             end
@@ -215,7 +199,4 @@ while (t<T && Ndt <= TimeSteps)
             TimerRP(Ndt-1) = Timers.RP;
         end
     end
-    Status.p = reshape(P,Grid.N,1);
-    Status.s = reshape(S,Grid.N,1);
-%    Status.z = reshape(Z,Grid.N,1);
 end

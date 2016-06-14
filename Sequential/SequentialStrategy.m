@@ -6,27 +6,30 @@
 %Year: 2015
 %Last modified: 16 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [P, S, Pc, Inj, Prod, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(S0, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
+function [Status, Pc, Inj, Prod, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(Status, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
 %SEQUENTIAL STRATEGY
 Grid.CFL = Sequential.CFL;
 MaxExtIter = Sequential.MaxExtIter;
-N = Grid.Nx*Grid.Ny;
 Tol = Sequential.Tol;
+
+%Initialise variables
+s0 = Status.s; %previus timestep solution
 
 %Timers inside timesteps
 ptimer = zeros(MaxExtIter,1);
 btimer = zeros(MaxExtIter,1);
 stimer = zeros(MaxExtIter,1);
+
 %External Newton loop
 Iter = 1; %External iterations counter
 Converged = 0;
-S = S0;
+s = s0;
 while (Converged==0 && Iter <= MaxExtIter)
     disp(['Outer-loop iteration: ' num2str(Iter)]);
     tstart1 = tic;
     %1. Solve flow equation for pressure and compute fluxes
     disp('Pressure solver')
-    [P, U, Pc, Wells, Inj, Prod] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
+    [p, U, Pc, Wells, Inj, Prod] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
     %% 
     ptimer(Iter) = toc(tstart1);
     
@@ -37,22 +40,23 @@ while (Converged==0 && Iter <= MaxExtIter)
     
     %3. Compute timestep-size based on CFL
     if (Iter==1)
-        dT = timestepping(Fluid, S, Grid, U, Wells);
+        dT = timestepping(Fluid, Grid);
         dT = min(dT, maxdT);
     end
     
     %4. Solve transport equation given the total velocity field
     tstart4 = tic;
-    Sold = S; %Last converged solution
+    sold = s; %Last converged solution
     if (Balance==1)
-        q = reshape(Wells.Fluxes, N,1);
+        q = reshape(Wells.Fluxes, Grid.N,1);
         if (Sequential.ImpSat==0)
-            [S] = ExplicitTransport(Fluid, Grid, S0, U, q, dT);
+            [s] = ExplicitTransport(Fluid, Grid, s0, U, q, dT);
             Converged = 1;
         else
             disp('Transport solver');
             Sequential.ImplicitSolver.timestep = [Sequential.ImplicitSolver.timestep, Ndt];
-            [S, qnw, qw, Sequential.ImplicitSolver, dT, Tconverged] = ImplicitTransport(Fluid, Grid, S0, Sold, U, q, Sequential.ImplicitSolver, dT, K);
+            [s, qnw, qw, Sequential.ImplicitSolver, dT, Tconverged] = ...
+                ImplicitTransport(Fluid, Grid, s0, sold, U, q, Sequential.ImplicitSolver, dT, K);
             if Tconverged == 0
                 disp('Transport solver did not converge')
                 break
@@ -66,13 +70,17 @@ while (Converged==0 && Iter <= MaxExtIter)
     stimer(Iter) = toc(tstart4);
     
     %5. Compute DeltaS to check convergence
-    Delta=(S-Sold);
-    DeltaNorm = norm(reshape(Delta, N,1));
+    Delta = (Fluid.s - sold);
+    DeltaNorm = norm(Delta);
     if (DeltaNorm < Tol || MaxExtIter==1)
         Converged = 1;
+        %%%%% Save converged solution %%%%
+        Status.p = p;
+        Status.s = s;
     end
-    Iter = Iter+1;
+    Iter = Iter + 1;
 end
+
 
 %Compute Nwetting and wetting phase fluxes for production curves
 for i=1:length(Prod)
@@ -82,7 +90,7 @@ for i=1:length(Prod)
 end
 
  if (Sequential.ImpSat==1)
-    ImplicitSolver=Sequential.ImplicitSolver;
+    ImplicitSolver = Sequential.ImplicitSolver;
  else
      ImplicitSolver.timestep = 0;
      ImplicitSolver.Chops = 0;

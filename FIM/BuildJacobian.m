@@ -81,5 +81,5 @@ JwS = JwS - CapJwS;
 [Jnwp, Jwp, JnwS, JwS] = AddWellsToJacobian(Jnwp, Jwp, JnwS, JwS, Inj, Prod, K, p, Mw, Mnw, dMw, dMnw);
 
 % Full Jacobian: put the 4 blocks together
-J = [Jnwp, JnwS; Jwp, JwS];
+J = [Jwp, JwS; Jnwp, JnwS];
 end

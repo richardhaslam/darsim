@@ -11,15 +11,13 @@
 
 %Input variables:
 %   Grid: grid information
-%   P: pressure 
-%   Tx: rock transmissibility in x direction
-%   Ty: rock transmissibility in y direction 
+%   P: phase pressure 
 
 %Output variables:
 %   A: upwind operator
 %   U: velocity
 
-function [A, U] = UpwindOperator (Grid, P, Tx, Ty)
+function [A, U] = UpwindOperator (Grid, P)
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
@@ -27,8 +25,8 @@ N = Grid.N;
 %Compute 'rock' fluxes ([m^3/s])
 U.x = zeros(Nx+1,Ny,1);
 U.y = zeros(Nx,Ny+1,1);
-U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)).*Tx(2:Nx,:);
-U.y(:,2:Ny)  = (P(:,1:Ny-1)-P(:,2:Ny)).*Ty(:,2:Ny);
+U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)).*Grid.Tx(2:Nx,:);
+U.y(:,2:Ny)  = (P(:,1:Ny-1)-P(:,2:Ny)).*Grid.Ty(:,2:Ny);
 
 %Use velocity to build upwind operator
 R = reshape((U.x(2:Nx+1,:) >= 0), N, 1);
