@@ -99,7 +99,7 @@ while (t<T && Ndt <= TimeSteps)
                         if ADMSettings.active
                             Plotting_ADM
                         else
-                            Plotting(Grid, Status, Fluid, 'red', 'blue', Prod, Inj);
+                            Plotting(Grid, Status, Fluid, 'green', 'green', Prod, Inj);
                         end
                     case('VTK')
                         Write2VTK(Directory, Problem, vtkcount, Grid, K, Status, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 1);
@@ -173,7 +173,7 @@ while (t<T && Ndt <= TimeSteps)
                 if ADMSettings.active
                     Plotting_ADM
                 else
-                    Plotting(Grid, Status, Fluid, 'red', 'blue', Prod, Inj);
+                    Plotting(Grid, Status, Fluid, 'red', 'blue', Inj, Prod);
                 end
                 index = index +1;
             end
