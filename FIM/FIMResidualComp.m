@@ -35,19 +35,19 @@ T2 = TransmissibilityMatrix (Grid, UpWindW, UpWindNw, Mw, Mnw, Rho, x2);
 G = ComputeGravityTerm(Grid.N);
 
 %Source terms
-[qw, qnw] = ComputeWells(Grid.N, Inj, Prod, K, Status, Mnw, Mw);
+[q1, q2] = ComputeWells(Grid.N, Inj, Prod, K, Status, Mnw, Mw, Rho);
 
 %% RESIDUAL
 %Component 1
 R1 = A * (m1 - m1_old)...
     + T1 * p...
     + G*s...
-    - qw.*x1(:,1).*Rho(:,1) - qnw.*x1(:,2).*Rho(:,2);                      %Gravity and source terms
+    - q1;                      %Source terms
 %Component 2
 R2 = A * (m2 - m2_old)...
     + T2 * p...
     + G*s...
-    - qw.*x2(:,1).*Rho(:,1) - qnw.*x2(:,2).*Rho(:,2);                      %Gravity and source terms
+    - q2;                      %Source terms
 
 %Stick them together
 Residual = [R1; R2];
@@ -86,19 +86,23 @@ G = speye(N)*0;
 end
 
 %% Wells
-function [qw, qnw] = ComputeWells(N, Inj, Prod, K, Status, Mnw, Mw)
+function [q1, q2] = ComputeWells(N, Inj, Prod, K, Status, Mnw, Mw, Rho)
 p = Status.p;
-qw = zeros(N,1);
-qnw = zeros(N,1);
+q1 = zeros(N,1);
+q2 = zeros(N,1);
+x1 = Status.x1;
+x2 = 1 - x1;
 %Injectors
 for i=1:length(Inj)
     c = Inj(i).cells;
     switch (Inj(i).type)
         case('RateConstrained')
-            qw(c) = Inj(i).q;
+            q1(c) = Inj(i).q * Inj(i).x1(1,1) * Inj(i).Rho(1,1) + Inj(i).q * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
         case('PressureConstrained')
-            qw(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c));
-            qnw(c) = Inj(i).Mo * Inj(i).PI .* K(c) .* (Inj(i).p - p(c));
+            q1(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x1(1,1) * Inj(i).Rho(1,1)...
+                + Inj(i).Mo * Inj(i).PI .* K(c).* Inj(i).p * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
+            q2(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x2(1,1) * Inj(i).Rho(1,1)...
+                + Inj(i).Mo * Inj(i).PI .* K(c).* Inj(i).p * Inj(i).x2(1,2) * Inj(i).Rho(1,2);
     end    
 end
 %Producers
@@ -106,11 +110,13 @@ for i=1:length(Prod)
     c = Prod(i).cells;
     switch (Prod(i).type)
         case('RateConstrained')
-            qw(c) = Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q;
-            qnw(c) = Prod(i).q - qw(c);
+            q1(c) = (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x1(c,1)*Rho(c,1) + (Mnw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x1(c,2)*Rho(c,2);
+            q2(c) = (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x2(c,1)*Rho(c,1) + (Mnw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x2(c,2)*Rho(c,2);
         case('PressureConstrained')
-            qw(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c));
-            qnw(c) =  Mnw(c).* Prod(i).PI .* K(c).* (Prod(i).p - p(c));
+            q1(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x1(c,1) * Rho(c,1)...
+                + Mnw(c).* Prod(i).PI .* K(c) .* Prod(i).p * x1(c,2) * Rho(c,2);
+            q2(c) =  Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x2(c,1) * Rho(c,1)...
+                + Mnw(c).* Prod(i).PI .* K(c) .* Prod(i).p * x2(c,2) * Rho(c,2);
     end
 end
 end
