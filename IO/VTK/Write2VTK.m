@@ -7,6 +7,8 @@
 %Last modified: 25 may 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Write2VTK(Directory, Problem, timestep, Grid, K, Status, ADMActive, CoarseGrid, maxLevel, basisfunction)
+x1 = Status.x1(:,1);
+x2 = 1-Status.x1(:,2);
 
 %Write a VTK file
 fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
@@ -38,7 +40,17 @@ fprintf(fileID, '\n');
 %Saturation
 PrintScalar2VTK(fileID, Status.s, ' SATURATION');
 fprintf(fileID, '\n');
+%Capillary Pressure
 PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
+fprintf(fileID, '\n');
+%x11
+PrintScalar2VTK(fileID, x1, ' x11');
+fprintf(fileID, '\n');
+%x22
+PrintScalar2VTK(fileID, x2, ' x22');
+fprintf(fileID, '\n');
+%z1
+PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
 fprintf(fileID, '\n');
 if (ADMActive == 1)
     if (basisfunction == 1)

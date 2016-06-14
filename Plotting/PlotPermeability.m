@@ -19,6 +19,7 @@ if (Grid.Nx == 1 || Grid.Ny==1)
     ylabel('Log(K) [m^2]');
     set(gca,'fontsize',24);
     %axis('image');
+    figure(5);
 else
     %Plot permeability
     x = linspace(0, Grid.Lx-Grid.dx, Grid.Nx);

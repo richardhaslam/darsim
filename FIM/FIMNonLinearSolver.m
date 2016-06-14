@@ -36,7 +36,7 @@
 
 function [Status, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (Status0, K, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Directory, Problem)
+                (Status0, K, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Directory, Problem, FlashSettings)
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
@@ -120,7 +120,7 @@ while (Converged==0 && chops<=10)
         [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
         
         % Inner Update and Flash
-        %[Status] = Inner_Update(Status,Fluid,FlashSettings,Grid);
+        [Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
           
         %Print residual if required
 %         if (Ndt == 50000 && ADMSettings.active == 1)

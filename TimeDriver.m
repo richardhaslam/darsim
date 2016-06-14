@@ -100,7 +100,7 @@ while (t<T && Ndt <= TimeSteps)
                         if ADMSettings.active
                             Plotting_ADM
                         else
-                            Plotting(Grid, Status, Fluid, 'green', 'green', Prod, Inj);
+                            Plotting(Grid, Status, Fluid, 'green', 'green', Inj, Prod);
                         end
                     case('VTK')
                         Write2VTK(Directory, Problem, vtkcount, Grid, K, Status, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 1);
@@ -118,14 +118,14 @@ while (t<T && Ndt <= TimeSteps)
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (Status, K, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
+                (Status, K, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem, FlashSettings);
                 FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
                 %Non-linear solver
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (Status, K, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem);
+                (Status, K, Grid, Fluid, Inj, Prod, FIM, dT, Ndt, CoarseGrid, ADMSettings, Directory, Problem, FlashSettings);
             end
     end
     
