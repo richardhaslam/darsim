@@ -96,7 +96,7 @@ while (Converged==0 && chops<=10)
         start1 = tic;
         J1 = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
         J = BuildJacobianComp(Grid, Kvector, TMatrix1, TMatrix2, Status, Mw, Mnw, dMw, dMnw, Rho, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw);
-        %max(Residual - Residual1)
+        norm(abs(Residual - Residual1), inf)
         %J - J1
         TimerConstruct(itCount) = toc(start1);
        

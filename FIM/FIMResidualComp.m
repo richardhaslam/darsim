@@ -100,9 +100,9 @@ for i=1:length(Inj)
             q1(c) = Inj(i).q * Inj(i).x1(1,1) * Inj(i).Rho(1,1) + Inj(i).q * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
         case('PressureConstrained')
             q1(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x1(1,1) * Inj(i).Rho(1,1)...
-                + Inj(i).Mo * Inj(i).PI .* K(c).* Inj(i).p * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
+                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
             q2(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x2(1,1) * Inj(i).Rho(1,1)...
-                + Inj(i).Mo * Inj(i).PI .* K(c).* Inj(i).p * Inj(i).x2(1,2) * Inj(i).Rho(1,2);
+                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x2(1,2) * Inj(i).Rho(1,2);
     end    
 end
 %Producers
@@ -114,9 +114,9 @@ for i=1:length(Prod)
             q2(c) = (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x2(c,1)*Rho(c,1) + (Mnw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x2(c,2)*Rho(c,2);
         case('PressureConstrained')
             q1(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x1(c,1) * Rho(c,1)...
-                + Mnw(c).* Prod(i).PI .* K(c) .* Prod(i).p * x1(c,2) * Rho(c,2);
+                + Mnw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x1(c,2) * Rho(c,2);
             q2(c) =  Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x2(c,1) * Rho(c,1)...
-                + Mnw(c).* Prod(i).PI .* K(c) .* Prod(i).p * x2(c,2) * Rho(c,2);
+                + Mnw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x2(c,2) * Rho(c,2);
     end
 end
 end
