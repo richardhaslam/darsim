@@ -88,6 +88,9 @@ DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
 DiagIndx = [-Nx, -1, 0, 1, Nx];
 J2S = spdiags(DiagVecs,DiagIndx,N,N);
 
+%% 5.Add capillarity
+
+
 %% Add wells to each block
 [J1p, J2p, J1S, J2S] = AddWellsToJacobeanComp(J1p, J2p, J1S, J2S, Inj, Prod, K, Status, Rho, dRho, Mw, Mnw, dMw, dMnw);
 %% Full Jacobean: combine the 4 blocks

@@ -7,12 +7,13 @@ snew = zeros(Grid.N,2);                                     %Predefines memory f
 %Black Oil inner update
 switch(Fluid.Type)
     case('BlackOil')
-        InnerCounter = 0;                                       %Initializes counter
+        InnerCounter = 0;
+        Status.s(:,2) = 1 - Status.s(:,1);                      %Initializes counter
         if (strcmp(Status.z,'Initialize')==1)                   %Checks if we are doing initialization or have just come from NR loop
         else
             [Status.z] = Update_z(Status.s,Status.x1,rho);          %Updates total mole fraction based on NR result
         end
-        Status.s(:,2) = 1 - Status.s(:,1);
+        
         while InnerError > FlashSettings.TolInner
             
             [Status.x1] = BO_Flash(Status.p);                   %Updates x with Black Oil Flash
