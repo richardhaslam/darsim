@@ -170,12 +170,13 @@ while (t<T && Ndt <= TimeSteps)
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
     switch (Options.PlotSolution)
         case('Matlab')
+            Plotting(Grid, Status, Fluid, 'red', 'green', Inj, Prod);
             if (t == Tstops(index))
-                if ADMSettings.active
-                    Plotting_ADM
-                else
-                    Plotting(Grid, Status, Fluid, 'red', 'blue', Inj, Prod);
-                end
+%                 if ADMSettings.active
+%                     Plotting_ADM
+%                 else
+%                     Plotting(Grid, Status, Fluid, 'red', 'blue', Inj, Prod);
+%                 end
                 index = index +1;
             end
         case('VTK')

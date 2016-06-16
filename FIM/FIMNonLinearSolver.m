@@ -48,7 +48,7 @@ Kvector = reshape(K(1,:,:), N, 1);
 % Initialise objects
 Converged=0;
 chops=0;
-while (Converged==0 && chops<=10)
+while (Converged==0 && chops<=1)
     if (chops > 0)
         disp('Maximum number of iterations was reached: time-step was chopped');
         disp('Restart Newton loop');
@@ -108,9 +108,13 @@ while (Converged==0 && chops<=10)
         % 2.c Update solution
         Status.p = Status.p + Delta(1:N);
         Status.s = Status.s + Delta(N+1:2*N);
+        Status.p = max(Status.p,0);
         Status.s = min(Status.s,1);
         Status.s = max(Status.s,0);
         P = reshape(Status.p, Nx, Ny);
+        
+        % 2.d Update solution based on phase split
+        [Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
         
         % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
@@ -119,8 +123,6 @@ while (Converged==0 && chops<=10)
         [UpWindNw, Unw] = UpwindOperator(Grid, P);
         [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
         
-        % Inner Update and Flash
-        [Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
           
         %Print residual if required
 %         if (Ndt == 50000 && ADMSettings.active == 1)
@@ -132,14 +134,14 @@ while (Converged==0 && chops<=10)
         % 4. Compute residual 
         %[Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
         [Residual, TMatrix1, TMatrix2] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
-        
+  
         % 5. Check convergence criteria
         Converged = NewtonConvergence(itCount, Residual, Delta, Status.p, Tol, N, ADM, Delta_c);
         
         itCount = itCount+1;
     end
     if (Converged == 0)
-        dt = dt/10;
+        dt = dt/1e10;
         chops = chops + 1;
     end
 end
