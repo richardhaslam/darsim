@@ -47,29 +47,26 @@ if problem_1D
     figure(5)
     subplot(3,1,1);
     plot(x, x1, color2, 'LineWidth', 1);
-    axis([0 Grid.Lx 0 1.1]);
+    axis([0 Grid.Lx .5 1]);
     %title('Component 1 in Phase 1 [-]');
     xlabel('x [m]');
     ylabel('x1w [-]');
-    axis([0 max(x) .8 1])
     hold on;
     set(gca,'fontsize',24);
     subplot(3,1,2);
     plot(x, x2, color2, 'LineWidth', 1);
-    axis([0 Grid.Lx 0 1.1]);
+    axis([0 Grid.Lx .5 1]);
     %title('Component 2 in Phase 2 [-]');
     xlabel('x [m]');
     ylabel('x2nw [-]');
-    axis([0 max(x) .8 1])
     hold on;
     set(gca,'fontsize',24);
     subplot(3,1,3);
     plot(x, z, color2, 'LineWidth', 1);
-    axis([0 Grid.Lx 0 1.1]);
+    axis([0 Grid.Lx 0 1]);
     %title('Component 1 Total Mass Fraction [-]');
     xlabel('x [m]');
     ylabel('z1 [-]');
-    axis([0 max(x) 0 1])
     hold on;
     set(gca,'fontsize',24);
     drawnow;
