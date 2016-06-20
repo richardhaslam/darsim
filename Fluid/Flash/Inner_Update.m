@@ -27,7 +27,7 @@ switch(Fluid.Type)
                 [snew(Status.x1(:,2) < Status.z(:,1),:)] = Update_S(Status.x1(Status.x1(:,2) < Status.z(:,1),:),...
                     Status.z(Status.x1(:,2) < Status.z(:,1),:),rho(Status.x1(:,2) < Status.z(:,1),:));      %When two-phases
                 
-                Status.x1(Status.x1(:,2) > Status.z(:,1),1) = Status.z(Status.x1(:,2) > Status.z(:,1),1);   %One phase x limit
+                Status.x1(Status.x1(:,2) > Status.z(:,1),2) = Status.z(Status.x1(:,2) > Status.z(:,1),1);   %One phase x limit
             end       
                         
             if (strcmp(Status.z,'Initialize')==1)
