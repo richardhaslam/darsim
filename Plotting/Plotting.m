@@ -92,7 +92,6 @@ else
     ylabel('y [m]');
     colormap(jet);
     colorbar;
-    [Prod(1).p(1),Inj(1).p(1)]
     caxis ([Prod(1).p(1),Inj(1).p(1)]);
     axis('image');
     set(gca,'fontsize',24);

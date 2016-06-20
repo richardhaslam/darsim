@@ -9,6 +9,8 @@ p = Status.p;
 s = Status.s;
 x1 = Status.x1;
 x2 = 1 - x1;
+s2 = 1 -s;
+s2_old = 1 -s_old;
 pv = Grid.por*Grid.Volume;
 
 %Density
@@ -18,11 +20,11 @@ pv = Grid.por*Grid.Volume;
 %Accumulation term
 A = speye(Grid.N)*pv/dt;
 %Component 1
-m1 = x1(:,1).*Rho(:,1).*s + x1(:,2).*Rho(:,2).*(1-s); 
-m1_old = x1_old(:,1).*Rho_old(:,1).*s_old + x1_old(:,2).*Rho_old(:,2).*(1-s_old);
+m1 = x1(:,1).*Rho(:,1).*s + x1(:,2).*Rho(:,2).*s2; 
+m1_old = x1_old(:,1).*Rho_old(:,1).*s_old + x1_old(:,2).*Rho_old(:,2).*s2_old;
 %Component 2
-m2 = x2(:,1).*Rho(:,1).*s + x2(:,2).*Rho(:,2).*(1-s); 
-m2_old = x2_old(:,1).*Rho_old(:,1).*s_old + x2_old(:,2).*Rho_old(:,2).*(1-s_old);
+m2 = x2(:,1).*Rho(:,1).*s + x2(:,2).*Rho(:,2).*s2; 
+m2_old = x2_old(:,1).*Rho_old(:,1).*s_old + x2_old(:,2).*Rho_old(:,2).*s2_old;
 
 %Convective term
 T1 = TransmissibilityMatrix (Grid, UpWindW, UpWindNw, Mw, Mnw, Rho, x1);
@@ -39,12 +41,12 @@ G = ComputeGravityTerm(Grid.N);
 
 %% RESIDUAL
 %Component 1
-R1 = A * (m1 - m1_old)...
+R1 = A * m1 - A * m1_old...
     + T1 * p...
     + G*s...
     - q1;                      %Source terms
 %Component 2
-R2 = A * (m2 - m2_old)...
+R2 = A * m2 - A * m2_old...
     + T2 * p...
     + G*s...
     - q2;                      %Source terms
@@ -99,10 +101,10 @@ for i=1:length(Inj)
         case('RateConstrained')
             q1(c) = Inj(i).q * Inj(i).x1(1,1) * Inj(i).Rho(1,1) + Inj(i).q * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
         case('PressureConstrained')
-            q1(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x1(1,1) * Inj(i).Rho(1,1)...
-                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
-            q2(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x2(1,1) * Inj(i).Rho(1,1)...
-                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) * Inj(i).x2(1,2) * Inj(i).Rho(1,2);
+            q1(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x1(1,1) * Inj(i).Rho(1,1)...
+                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x1(1,2) * Inj(i).Rho(1,2);
+            q2(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x2(1,1) * Inj(i).Rho(1,1)...
+                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x2(1,2) * Inj(i).Rho(1,2);
     end    
 end
 %Producers
@@ -113,10 +115,10 @@ for i=1:length(Prod)
             q1(c) = (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x1(c,1)*Rho(c,1) + (Mnw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x1(c,2)*Rho(c,2);
             q2(c) = (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x2(c,1)*Rho(c,1) + (Mnw(c)./(Mw(c)+Mnw(c)).*Prod(i).q)*x2(c,2)*Rho(c,2);
         case('PressureConstrained')
-            q1(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x1(c,1) * Rho(c,1)...
-                + Mnw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x1(c,2) * Rho(c,2);
-            q2(c) =  Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x2(c,1) * Rho(c,1)...
-                + Mnw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) * x2(c,2) * Rho(c,2);
+            q1(c) =   Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) .* x1(c,1) .* Rho(c,1)...
+                + Mnw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) .* x1(c,2) .* Rho(c,2);
+            q2(c) =  Mw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) .* x2(c,1) .* Rho(c,1)...
+                + Mnw(c).* Prod(i).PI .* K(c) .* (Prod(i).p - p(c)) .* x2(c,2) .* Rho(c,2);
     end
 end
 end

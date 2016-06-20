@@ -6,7 +6,7 @@
 %Created: 2015
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function ResSimulator(InputDirectory, InputFile) %#ok<INUSD>
+function Status = ResSimulator(InputDirectory, InputFile) %#ok<INUSD>
 clc;
 %cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
 addpath(genpath('../src'));

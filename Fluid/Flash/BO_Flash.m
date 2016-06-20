@@ -1,7 +1,7 @@
 function [x] = BO_Flash(p)
 
 %% - Description
-PwfValue = 1e6;                                 %HARD CODED to set up Pdim
+PwfValue = 10e5;                                 %HARD CODED to set up Pdim
 
 %% - Dimensionless pressure!
 Pdim = p/max(PwfValue);                  %Find dimensionless pressure to perform flash      
