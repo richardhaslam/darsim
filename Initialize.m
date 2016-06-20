@@ -30,10 +30,8 @@ switch (Fluid.Type)
         Status.z = Status.s;                        %For immiscible displacement total mole fraction is the saturation
         
     case('BlackOil')       %For the black oil model
-        %Manually define pressure and saturation. x and z simply calculated
-        
-        Pinit = 1e5*linspace(50,10,Grid.N);                                  %HARD CODED initial pressure
-        Pinit = 10e5;
+        %Manually define pressure and saturation. x and z simply calculated               
+        Pinit = 0;
         Swinit = 0;                                %HARD CODED initial saturation of phase 1
         
         Status.p = ones(Grid.N, 1).*Pinit';           %Defines pressure vector

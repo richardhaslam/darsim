@@ -30,7 +30,7 @@ if problem_1D
     %title('Pressure [Pa]');
     xlabel('x [m]');
     ylabel('Pressure [Pa]');
-    axis([0 Grid.Lx min(P-Pc)-100 max(P)+100])
+    axis([0 Grid.Lx min(P-Pc)-Inj.p*0.1 max(P)+Inj.p*0.1])
     %legend('oil','water', 'Location', 'east');
      set(gca,'fontsize',24);
     hold on
@@ -92,7 +92,6 @@ else
     ylabel('y [m]');
     colormap(jet);
     colorbar;
-    [Prod(1).p(1),Inj(1).p(1)]
     caxis ([Prod(1).p(1),Inj(1).p(1)]);
     axis('image');
     set(gca,'fontsize',24);

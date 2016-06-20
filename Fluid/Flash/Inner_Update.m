@@ -7,12 +7,14 @@ snew = zeros(Grid.N,2);                                     %Predefines memory f
 %Black Oil inner update
 switch(Fluid.Type)
     case('BlackOil')
-        InnerCounter = 0;                                       %Initializes counter
+        InnerCounter = 0;
+        Status.s(:,2) = 1 - Status.s(:,1);                      %Initializes counter
         if (strcmp(Status.z,'Initialize')==1)                   %Checks if we are doing initialization or have just come from NR loop
         else
             Status.s(:,2) = 1 - Status.s(:,1);
             [Status.z] = Update_z(Status.s,Status.x1,rho);          %Updates total mole fraction based on NR result
         end
+
         Converged =0;
         while Converged == 0
              x_old = Status.x1;
@@ -22,12 +24,13 @@ switch(Fluid.Type)
             if (strcmp(Status.z,'Initialize')==1)               %Checks if we are doing initialization or have just come from NR loop
                 snew = Status.s;                                %Updates dummy s that we can find z later and have zero error in error check
             else                                                %This is NOT initialization so update s and x
-                snew(Status.x1(:,2) > Status.z(:,1),1) = 0;     %One phase S limit
-                snew(Status.x1(:,2) > Status.z(:,1),2) = 1;
+                snew(Status.x1(:,2) >= Status.z(:,1),1) = 0;     %One phase S limit
+                snew(Status.x1(:,2) >= Status.z(:,1),2) = 1;
                 [snew(Status.x1(:,2) < Status.z(:,1),:)] = Update_S(Status.x1(Status.x1(:,2) < Status.z(:,1),:),...
                     Status.z(Status.x1(:,2) < Status.z(:,1),:),rho(Status.x1(:,2) < Status.z(:,1),:));      %When two-phases
-                
-                Status.x1(Status.x1(:,2) > Status.z(:,1),2) = Status.z(Status.x1(:,2) > Status.z(:,1),1);   %One phase x limit
+
+                Status.x1(Status.x1(:,2) > Status.z(:,1), 2) = Status.z(Status.x1(:,2) > Status.z(:,1), 1);   %One phase x limit
+
             end       
                         
             if (strcmp(Status.z,'Initialize')==1)
@@ -86,10 +89,9 @@ switch(Fluid.Type)
         
         %Immiscible inner update
     case('Immiscible')
-        Status.s = Status.s;                                     %S does not get update in immiscible
-        Status.x1 = zeros(Grid.N, 2, 1);                         %Phase split is always the same (every component in its own phase)
-        Status.x1(:,1) = Status.x1(:,1) + 1;
-        Status.z = Status.s;                                     %Total mole fraction is simply saturation in immiscible case
+        Status.s = min(Status.s,1);
+        Status.s = max(Status.s,0);                                         %S does not get update in immiscible
+        Status.z = Status.s;                                                %Total mole fraction is simply saturation in immiscible case
 end
 if (strcmp(Status.s,'Initialize')==1) 
     [Status.s] = Update_S(Status.x1,Status.z,rho);

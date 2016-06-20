@@ -110,12 +110,13 @@ while (t<T && Ndt <= TimeSteps)
                
                 % Use IMPES to estimate timestep size for the 1st timestep
                 [~, U, ~, Wells, ~, ~] = PressureSolver(Grid, Inj, Prod, Fluid, Status.s, K);
-                Grid.CFL = .01; %Keep first timestep to be small
+
+                Grid.CFL = 1e-1; %Keep first timestep to be small
                 maxiteration = FIM.MaxIter;
-                FIM.MaxIter = 40;
+                FIM.MaxIter = 50;
                 dTnext = timestepping(Fluid, Grid, U);
                 dT = min(dTnext, maxdT(index));
-                dT = .005;
+                dT = .05;
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
@@ -123,7 +124,7 @@ while (t<T && Ndt <= TimeSteps)
                 FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
-                 dT = .005;
+
                 %Non-linear solver
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
@@ -170,23 +171,24 @@ while (t<T && Ndt <= TimeSteps)
     end   
     
     %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-    switch (Options.PlotSolution)
-        case('Matlab')
-            Plotting(Grid, Status, Fluid, 'red', 'green', Inj, Prod);
-            if (t == Tstops(index))
-%                 if ADMSettings.active
-%                     Plotting_ADM
-%                 else
-%                     Plotting(Grid, Status, Fluid, 'red', 'blue', Inj, Prod);
-%                 end
-                index = index +1;
-            end
-        case('VTK')
-            if (t == Tstops(index))
-                Write2VTK(Directory, Problem, vtkcount, Grid, K, Status, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 0);
-                vtkcount = vtkcount + 1;
-                index = index +1;
-            end
+    if (t == Tstops(index))
+        switch (Options.PlotSolution)
+            case('Matlab')
+                Plotting(Grid, Status, Fluid, 'red', 'green', Inj, Prod);
+                
+                if ADMSettings.active
+                    Plotting_ADM
+                else
+                    Plotting(Grid, Status, Fluid, 'red', 'blue', Inj, Prod);
+                end
+                
+            case('VTK')
+                if (t == Tstops(index))
+                    Write2VTK(Directory, Problem, vtkcount, Grid, K, Status, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 0);
+                    vtkcount = vtkcount + 1;
+                end
+        end
+        index = index +1;
     end
     
     %%%%%%%%%%%%%TImers of each timestep%%%%%%%%
