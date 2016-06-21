@@ -16,7 +16,7 @@ CFL = Grid.CFL;
 
 %I take the worst possible scenario
 s = Fluid.sr(2):0.01:1-Fluid.sr(1);
-df =  ComputeFractionalFlow(s, Fluid);
+[~, df] =  ComputeFractionalFlow(s, Fluid);
 dfmax = max(df);
 Uxmax = max(max(abs(U.x)));
 Uymax = max(max(abs(U.y)));

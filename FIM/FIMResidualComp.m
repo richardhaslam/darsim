@@ -1,4 +1,4 @@
-function [Residual, T1, T2] = FIMResidualComp(Status0, Status, dt, Grid, K, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod)
+function [Residual, T1, T2, Tw] = FIMResidualComp(Status0, Status, dt, Grid, K, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod)
 
 %Initialise local variables
 p_old = Status0.p;
@@ -11,6 +11,7 @@ x1 = Status.x1;
 x2 = 1 - x1;
 s2 = 1 -s;
 s2_old = 1 -s_old;
+Pc = Status.pc;
 pv = Grid.por*Grid.Volume;
 
 %Density
@@ -31,7 +32,7 @@ T1 = TransmissibilityMatrix (Grid, UpWindW, UpWindNw, Mw, Mnw, Rho, x1);
 T2 = TransmissibilityMatrix (Grid, UpWindW, UpWindNw, Mw, Mnw, Rho, x2);
 
 %Capillarity
-%Matteo fixes this
+Tw = TransmissibilityMatrix (Grid, UpWindW, UpWindNw, Mw, Mnw, Rho, [ones(Grid.N,1), zeros(Grid.N,1)]);
 
 %Gravity
 G = ComputeGravityTerm(Grid.N);
@@ -41,14 +42,16 @@ G = ComputeGravityTerm(Grid.N);
 
 %% RESIDUAL
 %Component 1
-R1 = A * m1 - A * m1_old...
-    + T1 * p...
-    + G*s...
+R1 = A * m1 - A * m1_old...    %Accumulation term
+    + T1 * p...                %Convective term
+    - x1(:,1).*(Tw*Pc)...           %Capillarity
+    + G*s...                   %Gravity
     - q1;                      %Source terms
 %Component 2
 R2 = A * m2 - A * m2_old...
-    + T2 * p...
-    + G*s...
+    + T2 * p...                %Convective term
+    - x2(:,1).*(Tw*Pc)...           %Capillarity
+    + G*s...                   %Gravity
     - q2;                      %Source terms
 
 %Stick them together

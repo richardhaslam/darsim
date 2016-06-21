@@ -17,7 +17,7 @@ switch (Fluid.Type)
         %interaction and z is simply equal to saturation
         
         Pinit = 0;                                  %HARD CODED initial pressure
-        Swinit = .1;                                %HARD CODED initial saturation of phase 1
+        Swinit = 0;                                %HARD CODED initial saturation of phase 1
         
         Status.p = zeros(Grid.N, 1)*Pinit;          %Defines pressure vector
         Status.s = ones(Grid.N,2)*Swinit;           %Defines saturation vector for 2 phase
@@ -32,9 +32,9 @@ switch (Fluid.Type)
     case('BlackOil')       %For the black oil model
         %Manually define pressure and saturation. x and z simply calculated
         
-        %Pinit = 1e5*linspace(50,10,Grid.N);                                  %HARD CODED initial pressure
+        %Pinit = 1e6*linspace(10, .5, Grid.N);                                  %HARD CODED initial pressure
         Pinit = 0;
-        Swinit = 0;                                %HARD CODED initial saturation of phase 1
+        Swinit = 0.0;                                %HARD CODED initial saturation of phase 1
         
         Status.p = ones(Grid.N, 1).*Pinit';           %Defines pressure vector
         Status.s = ones(Grid.N,2)*Swinit;           %Defines saturation vector for 2 phase
@@ -50,7 +50,7 @@ switch (Fluid.Type)
         %Manually define pressure and z. x and S are then calculated
         
         Pinit = 0;                                  %HARD CODED initial pressure
-        zinit = .1;                                 %HARD CODED initial mole fraction of component 1
+        zinit = 0.1;                                 %HARD CODED initial mole fraction of component 1
         
         Status.p = ones(Grid.N, 1)*Pinit;           %Defines pressure vector
         Status.s = 'Initialize';                    %Sets saturation so that we do initialization in Inner_Update.m
@@ -66,6 +66,6 @@ end
 %Removes column of second phase
 Status.s = Status.s(:,1);
 Status.z = Status.z(:,1);
-Status.pc = ComputePc(Status.s, Fluid, K, Grid.por);
+Status.pc = ComputePc(Status.s, Fluid, reshape(K(1,:,:), Grid.N, 1), Grid.por);
 end
 

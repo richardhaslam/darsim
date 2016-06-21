@@ -6,7 +6,7 @@
 %Created: 13 June 2016
 %Last Modified: 13 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function J = BuildJacobianComp(Grid, K, TMatrix1, TMatrix2, Status, Mw, Mnw, dMw, dMnw, Rho, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw)
+function J = BuildJacobianComp(Grid, K, TMatrix1, TMatrix2, TMatrixW, Status, Mw, Mnw, dMw, dMnw, Rho, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw)
 %Build FIM Jacobian
 Nx = Grid.Nx; 
 Ny = Grid.Ny; 
@@ -89,10 +89,11 @@ DiagIndx = [-Nx, -1, 0, 1, Nx];
 J2S = spdiags(DiagVecs,DiagIndx,N,N);
 
 %% 5.Add capillarity
-
+J1S = J1S - TMatrixW * spdiags(x1(:,1).*dPc, 0, N, N);
+J2S = J2S - TMatrixW * spdiags(x2(:,1).*dPc, 0, N, N);
 
 %% Add wells to each block
-[J1p, J2p, J1S, J2S] = AddWellsToJacobeanComp(J1p, J2p, J1S, J2S, Inj, Prod, K, Status, Rho, dRho, Mw, Mnw, dMw, dMnw);
+[J1p, J2p, J1S, J2S] = AddWellsToJacobianComp(J1p, J2p, J1S, J2S, Inj, Prod, K, Status, Rho, dRho, Mw, Mnw, dMw, dMnw);
 %% Full Jacobean: combine the 4 blocks
 J = [J1p, J1S; J2p, J2S];
 
