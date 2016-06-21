@@ -19,7 +19,7 @@ switch(Fluid.Type)
         while Converged == 0
              x_old = Status.x1;
              z_old = Status.z;
-             [Status.x1] = BO_Flash(Status.p);                   %Updates x with Black Oil Flash
+             [Status.x1] = BO_Flash(Status.p,Fluid);                   %Updates x with Black Oil Flash
             
             if (strcmp(Status.z,'Initialize')==1)               %Checks if we are doing initialization or have just come from NR loop
                 snew = Status.s;                                %Updates dummy s that we can find z later and have zero error in error check

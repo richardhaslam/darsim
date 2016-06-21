@@ -116,7 +116,7 @@ while (t<T && Ndt <= TimeSteps)
                 FIM.MaxIter = 50;
                 dTnext = timestepping(Fluid, Grid, U);
                 dT = min(dTnext, maxdT(index));
-                dT = .05;
+                %dT = .005;
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
@@ -124,6 +124,7 @@ while (t<T && Ndt <= TimeSteps)
                 FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
+                %dT = .005;
 
                 %Non-linear solver
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...

@@ -42,8 +42,8 @@ BubCheck = sum(BubCheck);
 if BubCheck < 1
     %display('Below bubble point. Only liquid present. Need higher temperature of lower pressure.')
     x = z;
-    y = zeros(1,length(z));
-    y(1,2) = 1;
+    y = ones(1,length(z));
+    %y(1,2) = 1;
     breakers = 1;
 end
 
@@ -53,8 +53,8 @@ DewCheck = sum(DewCheck);
 if DewCheck < 1
     %display('Above dew point. Only vapor present. Need lower temperature of higher pressure.')
     y = z;
-    x = zeros(1,length(z));
-    x(1,1) = 1;
+    x = ones(1,length(z));
+    %x(1,1) = 1;
     breakers = 1;
 end
 

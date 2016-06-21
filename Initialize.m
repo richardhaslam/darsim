@@ -47,7 +47,7 @@ switch (Fluid.Type)
     case('Compositional')  %For the compositional case
         %Manually define pressure and z. x and S are then calculated
         
-        Pinit = 0;                                  %HARD CODED initial pressure
+        Pinit = 10e5;                                  %HARD CODED initial pressure
         zinit = .1;                                 %HARD CODED initial mole fraction of component 1
         
         Status.p = ones(Grid.N, 1)*Pinit;           %Defines pressure vector
