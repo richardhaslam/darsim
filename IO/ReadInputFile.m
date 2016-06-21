@@ -103,7 +103,7 @@ if Errors == 0
         if strcmp(Inj(i).type, 'PressureConstrained')
             [Inj(i).Rho,~] = LinearDensity(Inj(i).p, Fluid.c, Fluid.rho);
             if (strcmp(Fluid.Type,'BlackOil')==1)
-                Inj(i).x1 = BO_Flash(Inj(i).p); 
+                Inj(i).x1 = BO_Flash(Inj(i).p,Fluid); 
             elseif(strcmp(Fluid.Type,'Compositional')==1)
                 [PhaseOneSplit,PhaseTwoSplit] = Comp_Calc(Inj(i).p,Grid.Tres,Fluid.Comp.b,Fluid.Comp.Tb,Inj(i).z,FlashSettings.TolFlash);    %Finds new phase mole fractions (x)
                 Inj(i).x1(1,1) = PhaseOneSplit(1,1);           %Assigns phase split of phase 1
@@ -134,5 +134,17 @@ end
 temp = strfind(inputMatrix{1}, 'OUTPUT');
 xv = find(~cellfun('isempty', temp));
 Options.PlotSolution = char(inputMatrix{1}(xv+1)); %Matlab or VTK
+
+
+% Plot denisty range
+Pdummy = linspace(min(Prod.p), max(Inj.p), 100);
+[Rho, ~] = LinearDensity( Pdummy, Fluid.c, Fluid.rho);
+figure(10)
+plot(Pdummy, Rho(:,1), Pdummy, Rho(:,2))
+xlabel('Pressure [Pa]')
+ylabel('Density [kg/m^3]')
+title('Density Range')
+legend('Phase 1', 'Phase 2')
+axis([min(Prod.p), max(Inj.p), min(min(Rho))*.9, max(max(Rho))*1.1])
 
 clear settings impsat adm inputMatrix xv

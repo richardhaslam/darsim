@@ -110,12 +110,14 @@ while (t<T && Ndt <= TimeSteps)
                
                 % Use IMPES to estimate timestep size for the 1st timestep
                 [~, U, ~, Wells, ~, ~] = PressureSolver(Grid, Inj, Prod, Fluid, Status.s, K);
+
                 Grid.CFL = 1e-1; %Keep first timestep to be small
                 maxiteration = FIM.MaxIter;
                 FIM.MaxIter = 50;
                 dTnext = timestepping(Fluid, Grid, U);
                 dT = min(dTnext, maxdT(index));
                 dT = 5;
+
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
@@ -123,7 +125,8 @@ while (t<T && Ndt <= TimeSteps)
                 FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
-        
+                %dT = .005;
+
                 %Non-linear solver
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...

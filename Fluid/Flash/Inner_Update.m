@@ -19,7 +19,7 @@ switch(Fluid.Type)
         while Converged == 0
              x_old = Status.x1;
              z_old = Status.z;
-             [Status.x1] = BO_Flash(Status.p);                   %Updates x with Black Oil Flash
+             [Status.x1] = BO_Flash(Status.p,Fluid);                   %Updates x with Black Oil Flash
             
             if (strcmp(Status.z,'Initialize')==1)               %Checks if we are doing initialization or have just come from NR loop
                 snew = Status.s;                                %Updates dummy s that we can find z later and have zero error in error check
@@ -28,8 +28,9 @@ switch(Fluid.Type)
                 snew(Status.x1(:,2) >= Status.z(:,1),2) = 1;
                 [snew(Status.x1(:,2) < Status.z(:,1),:)] = Update_S(Status.x1(Status.x1(:,2) < Status.z(:,1),:),...
                     Status.z(Status.x1(:,2) < Status.z(:,1),:),rho(Status.x1(:,2) < Status.z(:,1),:));      %When two-phases
-                
+
                 Status.x1(Status.x1(:,2) > Status.z(:,1), 2) = Status.z(Status.x1(:,2) > Status.z(:,1), 1);   %One phase x limit
+
             end       
                         
             if (strcmp(Status.z,'Initialize')==1)
