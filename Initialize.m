@@ -17,7 +17,7 @@ switch (Fluid.Type)
         %interaction and z is simply equal to saturation
         
         Pinit = 0;                                  %HARD CODED initial pressure
-        Swinit = .1;                                %HARD CODED initial saturation of phase 1
+        Swinit = 0;                                %HARD CODED initial saturation of phase 1
         
         Status.p = zeros(Grid.N, 1)*Pinit;          %Defines pressure vector
         Status.s = ones(Grid.N,2)*Swinit;           %Defines saturation vector for 2 phase
@@ -30,9 +30,12 @@ switch (Fluid.Type)
         Status.z = Status.s;                        %For immiscible displacement total mole fraction is the saturation
         
     case('BlackOil')       %For the black oil model
+        %Manually define pressure and saturation. x and z simply calculated
+      
+        %Pinit = 1e6*linspace(10, .5, Grid.N);                                  %HARD CODED initial pressure
         %Manually define pressure and saturation. x and z simply calculated               
         Pinit = 0;
-        Swinit = 0;                                %HARD CODED initial saturation of phase 1
+        Swinit = 0.0;                                %HARD CODED initial saturation of phase 1
         
         Status.p = ones(Grid.N, 1).*Pinit';           %Defines pressure vector
         Status.s = ones(Grid.N,2)*Swinit;           %Defines saturation vector for 2 phase
@@ -47,8 +50,13 @@ switch (Fluid.Type)
     case('Compositional')  %For the compositional case
         %Manually define pressure and z. x and S are then calculated
         
+<<<<<<< HEAD
+        Pinit = 0;                                  %HARD CODED initial pressure
+        zinit = 0.1;                                 %HARD CODED initial mole fraction of component 1
+=======
         Pinit = 10e5;                                  %HARD CODED initial pressure
         zinit = .1;                                 %HARD CODED initial mole fraction of component 1
+>>>>>>> a7387d25b66a6cf6cc11c06fcf7b625f535a14e2
         
         Status.p = ones(Grid.N, 1)*Pinit;           %Defines pressure vector
         Status.s = 'Initialize';                    %Sets saturation so that we do initialization in Inner_Update.m
@@ -64,6 +72,6 @@ end
 %Removes column of second phase
 Status.s = Status.s(:,1);
 Status.z = Status.z(:,1);
-Status.pc = ComputePc(Status.s, Fluid, K, Grid.por);
+Status.pc = ComputePc(Status.s, Fluid, reshape(K(1,:,:), Grid.N, 1), Grid.por);
 end
 

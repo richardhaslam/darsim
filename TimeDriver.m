@@ -116,7 +116,8 @@ while (t<T && Ndt <= TimeSteps)
                 FIM.MaxIter = 50;
                 dTnext = timestepping(Fluid, Grid, U);
                 dT = min(dTnext, maxdT(index));
-                %dT = .005;
+                dT = 5;
+
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
@@ -175,14 +176,11 @@ while (t<T && Ndt <= TimeSteps)
     if (t == Tstops(index))
         switch (Options.PlotSolution)
             case('Matlab')
-                Plotting(Grid, Status, Fluid, 'red', 'green', Inj, Prod);
-                
                 if ADMSettings.active
                     Plotting_ADM
                 else
-                    Plotting(Grid, Status, Fluid, 'red', 'blue', Inj, Prod);
+                    Plotting(Grid, Status, Fluid, 'red', 'green', Inj, Prod);
                 end
-                
             case('VTK')
                 if (t == Tstops(index))
                     Write2VTK(Directory, Problem, vtkcount, Grid, K, Status, ADMSettings.active, CoarseGrid, ADMSettings.maxLevel, 0);

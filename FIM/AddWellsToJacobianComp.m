@@ -6,7 +6,7 @@
 %Created: 13 June 2016
 %Last Modified: 13 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [J1p, J2p, J1S, J2S] = AddWellsToJacobeanComp(J1p, J2p, J1S, J2S, Inj, Prod, K, Status, Rho, dRho, Mw, Mnw, dMw, dMnw)
+function [J1p, J2p, J1S, J2S] = AddWellsToJacobianComp(J1p, J2p, J1S, J2S, Inj, Prod, K, Status, Rho, dRho, Mw, Mnw, dMw, dMnw)
 x1 = Status.x1;
 x2 = 1 - Status.x1;
 p = Status.p;

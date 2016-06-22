@@ -17,14 +17,15 @@ switch(Fluid.Pc)
         dJ = dPc;
     case('JLeverett')
         %J-leverett curve
-        S = (S - Fluid.sr(2))./(1 - Fluid.sr(2));
+        S = (S - Fluid.sr(2))./(1 - Fluid.sr(2)) + 0.1;
         J = 0.1.*(S).^(-0.5);
         dJ = - 0.1*0.5*(S).^(-1.5);
         %Define parameters
         alpha = 4.361e-2;
         %Compute Pc and dPc analytically
         Pc = alpha .* (por./K).^(0.5).*J;
-        dPc = alpha .* (por./K).^(0.5).* dJ;
+        dPc = alpha .* (por./K).^(0.5).* dJ;     
+        
     case('BrooksCorey')
         %Define parameters
         Pct = 700;
