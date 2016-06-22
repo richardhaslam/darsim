@@ -24,9 +24,11 @@ switch (Pressure_Interpolator)
         K = zeros(2,FineGrid.Nx, FineGrid.Ny);
         K(1,:,:) = ones(FineGrid.Nx, FineGrid.Ny)*mean(mean(Kt(1,:,:)));
         K(2,:,:) = ones(FineGrid.Nx, FineGrid.Ny)*mean(mean(Kt(2,:,:)));
-        [Tx, Ty] = ComputeTransmissibility(FineGrid, K);
+        [Grid] = ComputeTransmissibility(FineGrid, K);
+        Tx = Grid.Tx;
+        Ty = Grid.Ty;
         %Assemble pressure matrix
-        Ap = AssemblePressureMatrix(Tx, Ty, FineGrid.Nx, FineGrid.Ny);
+        Ap = AssemblePressureMatrix(Grid);
         %Build MS operators
         [CoarseGrid(1).MsR, CoarseGrid(1).MsP, CoarseGrid(1).C] = MSFVOperators(FineGrid, CoarseGrid(1), Ap, 1);
         %Build first coarse system (with MsFV)

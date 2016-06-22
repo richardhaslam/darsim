@@ -76,7 +76,7 @@ while (Converged==0 && chops<=10)
     if (ADMSettings.active == 1 && chops == 0)
         tic
         % Choose where to coarsen and build ADM grid
-        [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, S0, Residual(1:N), Residual(N+1:end), ADMSettings.maxLevel, ADMSettings.tol);
+        [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, reshape(Status0.s,Nx,Ny), Residual(1:N), Residual(N+1:end), ADMSettings.maxLevel, ADMSettings.tol);
         % Construct R & P based on ADM grid
         [ADM.Rest, ADM.Prolp, ADM.Prols] = ConstructOperators(Grid, CoarseGrid, ADMGrid);
         ADM.level = ADMGrid.level(end);
@@ -148,8 +148,9 @@ end
 %Average saturation in Coarse Blocks
 if ADM.active
     for x = 1:ADM.level
-        S = Average(S, CoarseGrid(x), Grid);
+        Status.s = Average(Status.s, CoarseGrid(x), Grid);
     end
+    Status.s = reshape(Status.s,Nx*Ny,1);
 end
 
 %Compute Nwetting and wetting phase fluxes for production curves
