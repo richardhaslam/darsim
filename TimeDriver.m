@@ -68,7 +68,7 @@ NwProduction = zeros(length(Prod) + 1, TimeSteps);
 WProduction = zeros(length(Prod) + 1, TimeSteps);
 vtkcount = 1;
 %Choose with what frequency the solution as to be outputted
-Tstops = linspace(T/50, T, 50);
+Tstops = linspace(T/10, T, 10);
 
 
 while (t<T && Ndt <= TimeSteps)
@@ -116,8 +116,8 @@ while (t<T && Ndt <= TimeSteps)
                 maxiteration = FIM.MaxIter;
                 FIM.MaxIter = 50;
                 dTnext = timestepping(Fluid, Grid, U);
+                dTnext = 5;
                 dT = min(dTnext, maxdT(index));
-                dT = 5;
 
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
@@ -165,16 +165,12 @@ while (t<T && Ndt <= TimeSteps)
         WProduction(w+1,Ndt) = WProduction(w+1, Ndt-1) - Prod(w).qw*dT/(3600*24);
     end
     
-    %% %%%%%%%%% POST PROCESSING and OUTPUT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Print solution to a file at fixed intervals
+    
+    %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
     if (t == Tstops(index))
         disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
         Saturations(:,index) = Status.s;
         Pressures(:,index) = Status.p;
-    end   
-    
-    %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-    if (t == Tstops(index))
         switch (Options.PlotSolution)
             case('Matlab')
                 if ADMSettings.active

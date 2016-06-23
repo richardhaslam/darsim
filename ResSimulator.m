@@ -59,7 +59,8 @@ switch (Errors)
         end
         
         %%%%%%%%%%%%%%% INITIAL CONDITIONS %%%%%%%%%%%%%
-        Status = Initialize(Fluid, Grid, K, FlashSettings); 
+        %Status = Initialize(Fluid, Grid, K, FlashSettings); 
+        Status = InitializeReservoir(Fluid, Grid, K, FlashSettings);
    
         %%%%%%%%%%%%%% ADM SETUP %%%%%%%%%%%%%%%%%%
         if (strcmp(Strategy, 'FIM') == 1 && ADMSettings.active == 1)

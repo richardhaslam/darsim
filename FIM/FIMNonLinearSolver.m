@@ -47,8 +47,9 @@ Kvector = reshape(K(1,:,:), N, 1);
 
 % Initialise objects
 Converged=0;
+CompConverged = 0;
 chops=0;
-while (Converged==0 && chops<=10)
+while ((Converged==0 || CompConverged == 0) && chops<=10)
     if (chops > 0)
         disp('Maximum number of iterations was reached: time-step was chopped');
         disp(['Restart Newton loop dt = ', num2str(dt)]);
@@ -90,7 +91,7 @@ while (Converged==0 && chops<=10)
     TimerSolve = zeros(FIM.MaxIter, 1);
     TimerInner = zeros(FIM.MaxIter, 1);
     itCount = 1;
-    while ((Converged==0) && (itCount <= FIM.MaxIter))
+    while ((Converged==0 || CompConverged == 0)  && (itCount <= FIM.MaxIter))
               
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
@@ -116,7 +117,7 @@ while (Converged==0 && chops<=10)
         % 2.d Update solution based on phase split
         start3 = tic;
         [Rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho);
-        [Status] = CompositionUpdate(Status, Rho, Fluid, Grid, FlashSettings);
+        [Status, CompConverged] = CompositionUpdate(Status, Rho, Fluid, Grid, FlashSettings);
         %[Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
         TimerInner(itCount) = toc(start3);
         
@@ -135,7 +136,7 @@ while (Converged==0 && chops<=10)
         Converged = NewtonConvergence(itCount, Residual, Delta, Status.p, Tol, N, ADM, Delta_c);
         itCount = itCount+1;
     end
-    if (Converged == 0)
+    if (Converged == 0 || CompConverged == 0)
         dt = dt/2;
         chops = chops + 1;
     end
@@ -145,7 +146,7 @@ end
 if itCount < 12 
     dtnext = 2*dt;
 elseif itCount > 15
-    dtnext = dt/2;
+    dtnext = dt;
 else
     dtnext = dt;
 end
