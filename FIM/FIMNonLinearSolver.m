@@ -113,7 +113,14 @@ while (Converged==0 && chops<=10)
         P = reshape(Status.p, Nx, Ny);
      
         % 2.d Update solution based on phase split
-        [Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
+        compflash = tic;
+        [Rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho);
+        [Status] = CompositionUpdate(Status, Rho, Fluid, Grid, FlashSettings);
+        %[Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
+        %Statusnew.x1 == Status.x1
+        %Statusnew.z == Status.z
+        %Statusnew.s == Status.s
+        toc(compflash)
         
         % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);

@@ -66,12 +66,16 @@ switch(Fluid.Type)
             [Status.z] = Update_z(Status.s,Status.x1,rho);       %Updates total mole fraction based on NR result
         end
         
-        while InnerError > FlashSettings.TolInner               %Checks error in loop
+        while InnerError > FlashSettings.TolInner
+            compflash1 = tic;
+            %Checks error in loop
             for ii = 1:Grid.Nx*Grid.Ny
                 [PhaseOneSplit,PhaseTwoSplit] = Comp_Calc(Status.p(ii,1),Grid.Tres,Fluid.Comp.b,Fluid.Comp.Tb,Status.z(ii,:),FlashSettings.TolFlash);    %Finds new phase mole fractions (x)
                 Status.x1(ii,1) = PhaseOneSplit(1,1);           %Assigns phase split of phase 1
                 Status.x1(ii,2) = PhaseTwoSplit(1,1);           %Assigns phase split of phase 2
             end
+            toc(compflash1)
+            
             [snew] = Update_S(Status.x1,Status.z,rho);          %Update s based on new x's
             [Status.z] = Update_z(snew,Status.x1,rho);          %Update z so that everything agrees
 

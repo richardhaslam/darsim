@@ -9,7 +9,7 @@ function [Snew, qnw, qw, ImplicitSolver, dt, converged]=ImplicitTransport(Fluid,
 %Implicit Transport Solver
 Nx = Grid.Nx;
 Ny = Grid.Ny;
-N = Nx*Ny;
+N = Grid.N;
 por = Grid.por;
 pv = por*Grid.Volume;   %Void Volume in each cell
 tol = ImplicitSolver.tol;

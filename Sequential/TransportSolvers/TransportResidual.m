@@ -11,7 +11,7 @@ function [Residual, A, CapJac, fw, df] = TransportResidual(snew, s0, q, pv, U, d
 [fw, df] = ComputeFractionalFlow(snew, Fluid);
 
 % viscous fluxes matrix
-A = SaturationMatrix(Grid,U,q);      % Total fluxes matrix
+A = SaturationMatrix(Grid, U, q);      % Total fluxes matrix
 % capillary fluxes
 if isempty(Fluid.Pc)
     B = 0*speye(Grid.N);
