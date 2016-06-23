@@ -52,6 +52,7 @@ if (strcmp(Strategy, 'Sequential')==1)
 else
     TimerConstruct = zeros(TimeSteps,1);
     TimerSolve = zeros(TimeSteps,1);
+    TimerInner = zeros(TimeSteps,1);
     TimerRP = zeros(TimeSteps,1);
 end
 
@@ -199,6 +200,7 @@ while (t<T && Ndt <= TimeSteps)
     else
         TimerConstruct(Ndt-1) = sum(Timers.Construct);
         TimerSolve(Ndt-1) = sum(Timers.Solve);
+        TimerInner(Ndt-1) = sum(Timers.Inner);
         if (ADMSettings.active == 1)
             TimerRP(Ndt-1) = Timers.RP;
         end

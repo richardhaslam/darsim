@@ -137,7 +137,7 @@ Options.PlotSolution = char(inputMatrix{1}(xv+1)); %Matlab or VTK
 
 
 % Plot denisty range
-Pdummy = linspace(min(Prod.p), max(Inj.p), 100);
+Pdummy = linspace(min(Prod(1).p), max(Inj(1).p), 100);
 [Rho, ~] = LinearDensity( Pdummy, Fluid.c, Fluid.rho);
 figure(10)
 plot(Pdummy, Rho(:,1), Pdummy, Rho(:,2))
@@ -145,6 +145,6 @@ xlabel('Pressure [Pa]')
 ylabel('Density [kg/m^3]')
 title('Density Range')
 legend('Phase 1', 'Phase 2')
-axis([min(Prod.p), max(Inj.p), min(min(Rho))*.9, max(max(Rho))*1.1])
+axis([min(Prod(1).p), max(Inj(1).p), min(min(Rho))*.9, max(max(Rho))*1.1])
 
 clear settings impsat adm inputMatrix xv

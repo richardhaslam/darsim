@@ -76,7 +76,7 @@ while (Converged==0 && chops<=10)
     if (ADMSettings.active == 1 && chops == 0)
         tic
         % Choose where to coarsen and build ADM grid
-        [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, S0, Residual(1:N), Residual(N+1:end), ADMSettings.maxLevel, ADMSettings.tol);
+        [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, reshape(Status0.s,Nx,Ny), Residual(1:N), Residual(N+1:end), ADMSettings.maxLevel, ADMSettings.tol);
         % Construct R & P based on ADM grid
         [ADM.Rest, ADM.Prolp, ADM.Prols] = ConstructOperators(Grid, CoarseGrid, ADMGrid);
         ADM.level = ADMGrid.level(end);
@@ -88,6 +88,7 @@ while (Converged==0 && chops<=10)
     % Initialise Timers
     TimerConstruct = zeros(FIM.MaxIter,1);
     TimerSolve = zeros(FIM.MaxIter, 1);
+    TimerInner = zeros(FIM.MaxIter, 1);
     itCount = 1;
     while ((Converged==0) && (itCount <= FIM.MaxIter))
               
@@ -113,14 +114,11 @@ while (Converged==0 && chops<=10)
         P = reshape(Status.p, Nx, Ny);
      
         % 2.d Update solution based on phase split
-        compflash = tic;
+        start3 = tic;
         [Rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho);
         [Status] = CompositionUpdate(Status, Rho, Fluid, Grid, FlashSettings);
         %[Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
-        %Statusnew.x1 == Status.x1
-        %Statusnew.z == Status.z
-        %Statusnew.s == Status.s
-        toc(compflash)
+        TimerInner(itCount) = toc(start3);
         
         % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
@@ -155,8 +153,9 @@ end
 %Average saturation in Coarse Blocks
 if ADM.active
     for x = 1:ADM.level
-        S = Average(S, CoarseGrid(x), Grid);
+        Status.s = Average(Status.s, CoarseGrid(x), Grid);
     end
+    Status.s = reshape(Status.s,Nx*Ny,1);
 end
 
 %Compute Nwetting and wetting phase fluxes for production curves
@@ -180,4 +179,5 @@ if ADMSettings.active
 end
 Timers.Construct = TimerConstruct;
 Timers.Solve = TimerSolve;
+Timers.Inner = TimerInner;
 end
