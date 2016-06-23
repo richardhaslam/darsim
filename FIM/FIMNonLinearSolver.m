@@ -88,6 +88,7 @@ while (Converged==0 && chops<=10)
     % Initialise Timers
     TimerConstruct = zeros(FIM.MaxIter,1);
     TimerSolve = zeros(FIM.MaxIter, 1);
+    TimerInner = zeros(FIM.MaxIter, 1);
     itCount = 1;
     while ((Converged==0) && (itCount <= FIM.MaxIter))
               
@@ -113,7 +114,9 @@ while (Converged==0 && chops<=10)
         P = reshape(Status.p, Nx, Ny);
      
         % 2.d Update solution based on phase split
+        start3 = tic;
         [Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
+        TimerInner(itCount) = toc(start3);
         
         % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
@@ -174,4 +177,5 @@ if ADMSettings.active
 end
 Timers.Construct = TimerConstruct;
 Timers.Solve = TimerSolve;
+Timers.Inner = TimerInner;
 end

@@ -53,9 +53,9 @@ else
         fprintf(fileID,'%6.0f %12.0f %12.0f\n', Statistics');
         fclose(fileID);
         Timesteps = linspace(1,Ndt-1,Ndt-1);
-        Timers = [Timesteps; TimerTimestep(1:Ndt-1)'; TimerConstruct(1:Ndt-1)';  TimerSolve(1:Ndt-1)'];
-        fprintf(fileID2,'%6s %12s %12s %12s\n','Timestep', 'Total Time', 'Construct', 'Solve');
-        fprintf(fileID2,'%6.0f %12.3f %12.3f %12.3f\n', Timers);
+        Timers = [Timesteps; TimerTimestep(1:Ndt-1)'; TimerConstruct(1:Ndt-1)';  TimerSolve(1:Ndt-1)'; TimerInner(1:Ndt-1)'];
+        fprintf(fileID2,'%6s %12s %12s %12s %12s\n','Timestep', 'Total Time', 'Construct', 'Solve', 'Flash');
+        fprintf(fileID2,'%6.0f %12.3f %12.3f %12.3f %12.3f\n', Timers);
         fclose(fileID2);
         %fprintf(fileID3,'%12.3f %12.3f\n', [CumulativeTime(1:Ndt)'; Prod.oil(1:Ndt)']);
         %fclose(fileID3);
@@ -70,9 +70,9 @@ else
         %fprintf(fileID,'%6s %12s %12s %12.s\n','Timestep', '# Chops', '# Iterations', '# Active Cells');
         fprintf(fileID1,'%6.0f %12.0f %12.0f %12.0f %12.0f %12.0f\n', Statistics');
         fclose(fileID1);
-        Timers = [FIM.timestep(1:Ndt-1)'; TimerTimestep(1:Ndt-1)'; TimerRP(1:Ndt-1)'; TimerConstruct(1:Ndt-1)';  TimerSolve(1:Ndt-1)'];
-        fprintf(fileID2,'%6s %12s %12s %12s %12s\n','Timestep', 'Total Time', 'R and P', 'Jacobian', 'Solve');
-        fprintf(fileID2,'%6.0f %12.3f %12.3f %12.3f %12.3f\n', Timers);
+        Timers = [FIM.timestep(1:Ndt-1)'; TimerTimestep(1:Ndt-1)'; TimerRP(1:Ndt-1)'; TimerConstruct(1:Ndt-1)';  TimerSolve(1:Ndt-1)'; TimerInner(1:Ndt-1)'];
+        fprintf(fileID2,'%6s %12s %12s %12s %12s %12s\n','Timestep', 'Total Time', 'R and P', 'Jacobian', 'Solve', 'Flash');
+        fprintf(fileID2,'%6.0f %12.3f %12.3f %12.3f %12.3f %12.3f\n', Timers);
         fclose(fileID2);
         
     end
