@@ -72,6 +72,7 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
     % Compute residual
     %[Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
     [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
+    disp()
     
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)

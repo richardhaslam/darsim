@@ -67,7 +67,7 @@ switch Fluid.Type
         BubCheck = sum(BubCheck, 2);
         
         x(BubCheck < 1, 2) = z (BubCheck < 1, 1);
-        x(BubCheck < 1, 1) = 0;
+        x(BubCheck < 1, 1) = 1;                               % This is to avoid having singular Jacobian matrix.
         SinglePhase.onlyliquid(BubCheck < 1) = 1;
         
         % 3.b: checking if it 's all vapor: checks if mix is above dew
@@ -79,6 +79,10 @@ switch Fluid.Type
         SinglePhase.onlyvapor(DewCheck < 1) = 1;
                 
         % 4. Actual Flash: solves for fv (vapor fraction)
+        TwoPhase = ones(N, 1);
+        TwoPhase(SinglePhase.onlyliquid == 1) = 0;
+        TwoPhase(SinglePhase.onlyvapor == 1) = 0;
+        
         alpha = 0.5; 
         
         %Initilaize variables
@@ -103,8 +107,7 @@ switch Fluid.Type
                 dh = - sum(dhi, 2); 
                 
                 %Update fv 
-                h(SinglePhase.onlyliquid == 1) = 0;
-                h(SinglePhase.onlyvapor == 1) = 0;
+                h(TwoPhase == 0) = 0;
                 fvnew = alpha * (-h ./ dh) + fv;
                                    
                 fv = fvnew;
@@ -121,8 +124,8 @@ switch Fluid.Type
         end
         
         %5. Solve for x's and y's
-        x(:,2) = z(:,1) ./ (fv .* (k(:,1) - 1) + 1);    %Solves for mole fractions in liquid phase
-        x(:,1) = k(:,1) .* x(:,2);                      %Solves for mole fractions in gas phase
+        x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1) .* (k(TwoPhase == 1, 1) - 1) + 1);    %Solves for mole fractions in liquid phase
+        x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);                      %Solves for mole fractions in gas phase
 end
 Status.x1 = x;
 end
