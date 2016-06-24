@@ -50,11 +50,6 @@ Converged=0;
 CompConverged = 0;
 chops=0;
 while ((Converged==0 || CompConverged == 0) && chops<=10)
-    if (chops > 0)
-        disp('Maximum number of iterations was reached: time-step was chopped');
-        disp(['Restart Newton loop dt = ', num2str(dt)]);
-       disp('        ||Residual||   ||delta p||   ||delta S||');
-    end
     Status.p = Status0.p;
     Status.s = Status0.s; % I start from solution at previous timestep.
     Status.x1 = Status0.x1;
@@ -72,7 +67,15 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
     % Compute residual
     %[Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
     [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
-    disp()
+    
+    %Print some info to the screen 
+    if (chops > 0)
+        disp('Maximum number of iterations was reached: time-step was chopped');
+        disp(['Restart Newton loop dt = ', num2str(dt)]);
+    end
+    disp(['Initial residual norm: ', num2str(norm(Residual, inf))]);
+    disp('');
+    disp('        ||Residual||   ||delta p||   ||delta S||');
     
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)

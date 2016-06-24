@@ -91,7 +91,6 @@ while (t<T && Ndt <= TimeSteps)
                 SequentialStrategy(Status, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT(index));
         case ('FIM')
             disp('------------FIM Non-linear solver--------------');
-            disp('        ||Residual||   ||delta p||   ||delta S||');
             FIM.timestep (Ndt) = Ndt;
             if (Ndt==1)
              
