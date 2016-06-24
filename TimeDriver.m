@@ -64,8 +64,18 @@ Converged = 0;
 index = 1;
 Saturations = zeros(Grid.N, 50);
 Pressures = zeros(Grid.N, 50);
-NwProduction = zeros(length(Prod) + 1, TimeSteps);
-WProduction = zeros(length(Prod) + 1, TimeSteps);
+
+Injection.time = zeros(1, TimeSteps);
+Injection.Phase.W = zeros(length(Prod), TimeSteps);
+Injection.Phase.Nw = zeros(length(Prod), TimeSteps);
+Injection.Component.z1 = zeros(length(Prod), TimeSteps);
+Injection.Component.z2 = zeros(length(Prod), TimeSteps);
+
+Production.time = zeros(1, TimeSteps);
+Production.Phase.W = zeros(length(Prod), TimeSteps);
+Production.Phase.Nw = zeros(length(Prod), TimeSteps);
+Production.Component.z1 = zeros(length(Prod), TimeSteps);
+Production.Component.z2 = zeros(length(Prod), TimeSteps);
 vtkcount = 1;
 %Choose with what frequency the solution as to be outputted
 Tstops = linspace(T/10, T, 10);
@@ -115,9 +125,7 @@ while (t<T && Ndt <= TimeSteps)
                 maxiteration = FIM.MaxIter;
                 FIM.MaxIter = 50;
                 dTnext = timestepping(Fluid, Grid, U);
-                dTnext = 5;
                 dT = min(dTnext, maxdT(index));
-
                 
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
@@ -156,12 +164,21 @@ while (t<T && Ndt <= TimeSteps)
     t = t+dT;    
     Ndt = Ndt+1;
     
-    %% COMPUTE OIL and WATER productions
-    NwProduction(1, Ndt) =  t/(3600*24); 
-    WProduction(1, Ndt) = t/(3600*24);
+    %% COMPUTE Phase and Components Injections and Production
+    Injection.time(Ndt) = t/(3600*24);
+    for w=1:length(Inj)
+        Injection.Phase.W(w, Ndt) = Injection.Phase.W(w, Ndt-1) - Inj(w).qw*dT/(3600*24);
+        Injection.Phase.Nw(w, Ndt) = Injection.Phase.Nw(w, Ndt-1) - Inj(w).qnw*dT/(3600*24);
+        Injection.Component.z1(w, Ndt) = Injection.Component.z1(w, Ndt-1) - Inj(w).qz1*dT/(3600*24);
+        Injection.Component.z2(w, Ndt) = Injection.Component.z2(w, Ndt-1) - Inj(w).qz2*dT/(3600*24);
+    end
+    
+    Production.time(Ndt) = t/(3600*24);
     for w=1:length(Prod)
-        NwProduction(w+1, Ndt) = NwProduction(w+1, Ndt-1) - Prod(w).qnw*dT/(3600*24);
-        WProduction(w+1,Ndt) = WProduction(w+1, Ndt-1) - Prod(w).qw*dT/(3600*24);
+        Production.Phase.W(w, Ndt) = Production.Phase.W(w, Ndt-1) - Prod(w).qw*dT/(3600*24);
+        Production.Phase.Nw(w, Ndt) = Production.Phase.Nw(w, Ndt-1) - Prod(w).qnw*dT/(3600*24);
+        Production.Component.z1(w, Ndt) = Production.Component.z1(w, Ndt-1) - Prod(w).qz1*dT/(3600*24);
+        Production.Component.z2(w, Ndt) = Production.Component.z2(w, Ndt-1) - Prod(w).qz2*dT/(3600*24);
     end
     
     

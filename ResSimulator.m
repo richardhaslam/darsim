@@ -6,7 +6,7 @@
 %Created: 2015
 %Last modified: 9 April 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Status = ResSimulator(InputDirectory, InputFile) %#ok<INUSD>
+function Status = ResSimulator(InputDirectory, InputFile)
 clc;
 %cd('/media/matteo/LinuxData/PhD/MatteoResSim/src');
 addpath(genpath('../src'));
@@ -26,7 +26,11 @@ disp('******************************************************************');
 disp(char(5));
 disp('--------------------------------------------')
 disp('Reading input file')
-ReadInputFile;
+
+[Problem, T, Grid, K, Fluid, Inj, Prod, Strategy...
+    FIM, Sequential, ADMSettings, FlashSettings, TimeSteps, Options] =...
+ReadInputFile(InputDirectory, InputFile);
+
 switch (Errors)
     case(1)
         disp('-----------------------------------------------')

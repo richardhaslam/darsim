@@ -45,8 +45,10 @@ else
         Statistics = [FIM.timestep(1:Ndt-1), FIM.Chops(1:Ndt-1), FIM.Iter(1:Ndt-1)];
         fileID = fopen(strcat(Directory,'FIMStat.txt'),'w');
         fileID2 = fopen(strcat(Directory,'FIMTimings.txt'),'w');
-        fileID3a = fopen(strcat(Directory,'FIMNwProd.txt'),'w');
-        fileID3b = fopen(strcat(Directory,'FIMWProd.txt'),'w');
+        fileID3a = fopen(strcat(Directory,'FIM_W_Prod.txt'),'w');
+        fileID3b = fopen(strcat(Directory,'FIM_Nw_Prod.txt'),'w');
+        fileID3c = fopen(strcat(Directory,'FIM_Comp1_Prod.txt'),'w');
+        fileID3d = fopen(strcat(Directory,'FIM_Comp2_Prod.txt'),'w');
         fileID4 = fopen(strcat(Directory,'FIMSaturation.txt'),'w');
         fileID5 = fopen(strcat(Directory,'FIMPressure.txt'),'w');
         %fprintf(fileID,'%6s %12s %12s\n','Timestep', '# Chops', '# Iterations');
@@ -63,8 +65,10 @@ else
         Statistics = [FIM.timestep(1:Ndt-1), FIM.Chops(1:Ndt-1), FIM.Iter(1:Ndt-1), FIM.ActiveCells(1:Ndt-1, :)];
         fileID1 = fopen(strcat(Directory,'ADMStat.txt'),'w');
         fileID2 = fopen(strcat(Directory,'ADMTimings.txt'),'w');
-        fileID3a = fopen(strcat(Directory,'ADMNwProd.txt'),'w');
-        fileID3b = fopen(strcat(Directory,'ADMWProd.txt'),'w');
+        fileID3a = fopen(strcat(Directory,'ADM_W_Prod.txt'),'w');
+        fileID3b = fopen(strcat(Directory,'ADM_Nw_Prod.txt'),'w');
+        fileID3c = fopen(strcat(Directory,'ADM_Comp1_Prod.txt'),'w');
+        fileID3d = fopen(strcat(Directory,'ADM_Comp2_Prod.txt'),'w');
         fileID4 = fopen(strcat(Directory,'ADMSaturation.txt'),'w');
         fileID5 = fopen(strcat(Directory,'ADMPressure.txt'),'w');
         %fprintf(fileID,'%6s %12s %12s %12.s\n','Timestep', '# Chops', '# Iterations', '# Active Cells');
@@ -77,10 +81,14 @@ else
         
     end
 end
-fprintf(fileID3a, format2, NwProduction(:,1:Ndt));
+fprintf(fileID3a, format2, [Production.time(1:Ndt); Production.Phase.W(:,1:Ndt)]);
 fclose(fileID3a);
-fprintf(fileID3b, format2, WProduction(:,1:Ndt));
+fprintf(fileID3b, format2, [Production.time(1:Ndt); Production.Phase.Nw(:,1:Ndt)]);
 fclose(fileID3b);
+fprintf(fileID3c, format2, [Production.time(1:Ndt); Production.Component.z1(:,1:Ndt)]);
+fclose(fileID3c);
+fprintf(fileID3d, format2, [Production.time(1:Ndt); Production.Component.z2(:,1:Ndt)]);
+fclose(fileID3d);
 fprintf(fileID4, format, Saturations');
 fclose(fileID4);
 fprintf(fileID5,format, Pressures');

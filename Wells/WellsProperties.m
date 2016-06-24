@@ -19,6 +19,9 @@ for i=1:length(inj)
     Well.r = str2double(inputMatrix(inj(i) + 6)); %Well radius in m
     Well.PI = 2000;
     Inj(i) = Well;
+    Inj(i).z = [0, 0];
+    Inj(i).s = 0;
+    Inj(i).x1 = [0, 0];
     %Inj(i).PI = ComputeProductivityIndex(Inj.r, K(1, 1, 1), K(2, 1, 1), Grid.dx, Grid.dy, 1);
 end
 %Production Wells

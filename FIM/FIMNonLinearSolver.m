@@ -163,7 +163,25 @@ if ADM.active
     Status.s = reshape(Status.s,Nx*Ny,1);
 end
 
-%Compute Nwetting and wetting phase fluxes for production curves
+%Compute Injection and production fluxes for Injection  and Production curves
+for i=1:length(Inj)
+    c = Inj(i).cells;
+    switch (Inj(i).type)
+        case('RateConstrained')
+            Inj(i).qw = sum (Mw(c)./(Mw(c)+Mnw(c)).*Inj(i).q);
+            Inj(i).qnw = sum (Inj(i).q - Inj(i).qw(c));
+        case('PressureConstrained')
+            %Phases
+            Inj(i).qw =   sum(Mw(c).* Rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
+            Inj(i).qnw =  sum(Mnw(c).* Rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)))*3600*24;
+            %Components
+            Inj(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
+                          sum(Status.x1(c, 2) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
+            Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
+                          sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24; 
+    end
+end
+
 for i=1:length(Prod)
     c = Prod(i).cells;
     switch (Prod(i).type)
@@ -171,8 +189,14 @@ for i=1:length(Prod)
             Prod(i).qw = sum (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q);
             Prod(i).qnw = sum (Prod(i).q - Prod(i).qw(c));
         case('PressureConstrained')
-            Prod(i).qnw =  sum(Mnw(c).* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)))/(pv*Grid.N)*3600*24;
-            Prod(i).qw =   sum(Mw(c).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))/(pv*Grid.N)*3600*24;
+            %Phases
+            Prod(i).qw =   sum(Mw(c).* Rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
+            Prod(i).qnw =  sum(Mnw(c).* Rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)))*3600*24;
+            %Components
+            Prod(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
+                          sum(Status.x1(c, 2) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
+            Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
+                          sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24; 
     end
 end
 

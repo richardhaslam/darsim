@@ -3,7 +3,7 @@ function [Rho, dRhodP] = LinearDensity( P, cf, Rho0)
 %original density at a reference pressure. Does the same for porosity when
 %required.
 
-Prho = zeros(1,length(cf));
+Prho = 1e5;
 Rho = zeros(length(P),length(cf));
 dRhodP = zeros(length(P),length(cf));
 %needs to be vectorized

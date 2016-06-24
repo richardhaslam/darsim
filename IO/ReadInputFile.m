@@ -6,6 +6,11 @@
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+function [Problem, T, Grid, K, Fluid, Inj, Prod, Strategy, FIM, Sequential, ADMSettings, FlashSettings, TimeSteps, Options]...
+    = ReadInputFile(InputDirectory, InputFile)
+global Errors
+
 %ReadInputFile
 fileID = fopen(InputFile, 'r');
 %// Read lines from input file
@@ -34,7 +39,6 @@ T = str2double(inputMatrix{1}(xv + 1))*24*3600;
 clear temp size grid perm por temperature x
 
 %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
-fplot = 0;    %if 1 the fractional function curves are plotted
 temp = strfind(inputMatrix{1}, 'DENSITY (kg/m^3)'); % Search a specific string and find all rows containing matches
 density = find(~cellfun('isempty', temp));
 temp = strfind(inputMatrix{1}, 'VISCOSITY (Pa sec)'); 
@@ -88,46 +92,33 @@ adm = find(~cellfun('isempty', temp));
 [FIM, Sequential, ADMSettings,FlashSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix);
 
-Fluid
-Grid
-FlashSettings
-Fluid.Comp
 CheckInputErrors;
 
 %%%%Properties of Injected fluid%%%%
 if Errors == 0
+    
     for i=1:length(inj)
-        [Inj(i).Mw, Inj(i).Mo, Inj(i).dMw, Inj(i).dMo] = Mobilities(1,Fluid);
-        Inj(i).water = zeros(TimeSteps+1,1);
         Inj(i).z = [1 0];
-        if strcmp(Inj(i).type, 'PressureConstrained')
-            [Inj(i).Rho,~] = LinearDensity(Inj(i).p, Fluid.c, Fluid.rho);
-            if (strcmp(Fluid.Type,'BlackOil')==1)
-                Inj(i).x1 = BO_Flash(Inj(i).p,Fluid); 
-            elseif(strcmp(Fluid.Type,'Compositional')==1)
-                [PhaseOneSplit,PhaseTwoSplit] = Comp_Calc(Inj(i).p,Grid.Tres,Fluid.Comp.b,Fluid.Comp.Tb,Inj(i).z,FlashSettings.TolFlash);    %Finds new phase mole fractions (x)
-                Inj(i).x1(1,1) = PhaseOneSplit(1,1);           %Assigns phase split of phase 1
-                Inj(i).x1(1,2) = PhaseTwoSplit(1,1);           %Assigns phase split of phase 2
-            else
-                Inj(i).x1 = [1 0];
-            end
-        end
-        if strcmp(Inj(i).type, 'RateConstrained')
-            if (strcmp(Fluid.Type,'BlackOil')==1)
-                Inj(i).x1 = [1 0];        
-            elseif(strcmp(Fluid.Type,'Compositional')==1)
-                Inj(i).x1 = [1 0];
-                display('Change this - ReadInputFile line ~120')
-            else
-                Inj(i).x1 = [1 0];
-            end
+        switch (Inj(i).type)
+            case('PressureConstrained')
+                [Inj(i).Rho, ~] = LinearDensity(Inj(i).p, Fluid.c, Fluid.rho);
+                if (strcmp(Fluid.Type,'Immiscible') == 1)
+                    Inj(i).x1 = [1 0];
+                else
+                    [Inj(i), SinglePhase] = Flash(Inj(i), Fluid, Grid.Tres, FlashSettings.TolFlash);
+                    [Inj(i)] = ComputePhaseSaturation(Inj(i), SinglePhase, Inj(i).Rho);
+                end
+            case('RateConstrained')
+                if (strcmp(Fluid.Type,'Immiscible')==1)
+                    Inj(i).x1 = [1 0];
+                else
+                    display('Sorry, no rate constrained injectors for compositional problems.')
+                end
         end
         Inj(i).x2 = 1 - Inj(i).x1;
+        [Inj(i).Mw, Inj(i).Mo, Inj(i).dMw, Inj(i).dMo] = Mobilities(Inj(i).s ,Fluid);
     end
-    for i=1:length(prod)
-        Prod(i).water = zeros(TimeSteps+1,1);
-        Prod(i).oil = zeros(TimeSteps+1,1);
-    end
+    
 end
 
 %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
@@ -148,3 +139,4 @@ legend('Phase 1', 'Phase 2')
 axis([min(Prod(1).p), max(Inj(1).p), min(min(Rho))*.9, max(max(Rho))*1.1])
 
 clear settings impsat adm inputMatrix xv
+end

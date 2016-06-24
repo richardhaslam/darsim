@@ -1,14 +1,14 @@
-%Initialization the reservoir
+%Initialization of the reservoir
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Matteo Cusini's Research Code
 %Author: Barnaby Fryer
 %TU Delft
-%Created: 3 June 2016 
-%Last modified: 9 June 2016
+%Created: 22 June 2016 
+%Last modified: 22 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Initializes pressure, saturation, phase mole fraction, and total mole
-%fraction in each cell of a 2-D reservoir based on either immiscible
-%displacement, black oil, or compositional simulation.
+%% Initialization of the reservoir
+% Initializes pressure, saturation and composition of the reservoir.
+
 function [Status] = InitializeReservoir(Fluid, Grid, K, FlashSettings)
 P_init = ones(Grid.N, 1)*10e5;
 z_init = ones(Grid.N, 1)*0.0;

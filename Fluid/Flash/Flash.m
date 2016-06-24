@@ -4,7 +4,7 @@
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 22 June 2016
-%Last Modified: 22 June 2016
+%Last Modified: 23 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Flash calculator
 % Updates the composition of the 2 phases. Two options:
@@ -91,9 +91,8 @@ switch Fluid.Type
         fv(SinglePhase.onlyvapor == 1) = 1;
         fv(SinglePhase.onlyliquid == 1)= 0;
         
-        % Start loop
+        % Find fv with the tangent method
         converged = 0;
-        
         while ~converged && alpha > 0.1
             itCounter = 0;
             while itCounter < 200 && ~converged
@@ -124,7 +123,7 @@ switch Fluid.Type
         end
         
         %5. Solve for x's and y's
-        x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1) .* (k(TwoPhase == 1, 1) - 1) + 1);    %Solves for mole fractions in liquid phase
+        x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1, 1) .* (k(TwoPhase == 1, 1) - 1) + 1);    %Solves for mole fractions in liquid phase
         x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);                      %Solves for mole fractions in gas phase
 end
 Status.x1 = x;
