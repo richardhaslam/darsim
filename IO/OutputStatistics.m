@@ -9,29 +9,50 @@
 [row, columns] = size(Pressures);
 
 %Format for solution output
-format = '%10.5f';
+format_s = '%10.4e';
 for i=1:columns-2
-    format = [format, ' %10.5f'];
+    format_s = [format_s, ' %10.4e'];
     i = i+1;
 end
-format = [format, ' %10.5f\n'];
+format_s = [format_s, ' %10.4e\n'];
+
+format_p = '%10.5e';
+for i=1:columns-2
+    format_p = [format_p, ' %10.5e'];
+    i = i+1;
+end
+format_p = [format_p, ' %10.5e\n'];
 
 %Format for production output
-format2 = '%10.5f';
-for i=1:length(Prod) - 1
-    format2 = [format2, ' %10.5f'];
+format2 = '%10.2f';
+for i=1:length(Prod)
+    format2 = [format2, ' %10.2e'];
     i = i+1;
 end
-format2 = [format2, ' %10.5f\n'];
+format2 = [format2, ' %10.2e\n'];
+
+%Format for production output
+format3 = '%10.2f';
+for i=1:length(Inj)
+    format3 = [format3, ' %10.2e'];
+    i = i+1;
+end
+format3 = [format3, ' %10.2e\n'];
 
 if (strcmp(Strategy, 'Sequential')==1)
     Statistics = [Sequential.ImplicitSolver.timestep; Sequential.ImplicitSolver.Chops; Sequential.ImplicitSolver.Newtons];
     fileID = fopen(strcat(Directory,'SeqStat.txt'),'w');
     fileID2 = fopen(strcat(Directory,'SeqTimings.txt'),'w');
-    fileID3a = fopen(strcat(Directory,'SeqNwProd.txt'),'w');
-        fileID3b = fopen(strcat(Directory,'SeqWProd.txt'),'w');
-    fileID4 = fopen(strcat(Directory,'SeqSaturation.txt'),'w');
-    fileID5 = fopen(strcat(Directory,'SeqPressure.txt'),'w');
+    fileID3a = fopen(strcat(Directory,'Seq_W_Prod.txt'),'w');
+    fileID3b = fopen(strcat(Directory,'Seq_Nw_Prod.txt'),'w');
+    fileID3c = fopen(strcat(Directory,'Seq_Comp1_Prod.txt'),'w');
+    fileID3d = fopen(strcat(Directory,'Seq_Comp2_Prod.txt'),'w');
+    fileID4a = fopen(strcat(Directory,'Seq_W_Inj.txt'),'w');
+    fileID4b = fopen(strcat(Directory,'Seq_Nw_Inj.txt'),'w');
+    fileID4c = fopen(strcat(Directory,'Seq_Comp1_Inj.txt'),'w');
+    fileID4d = fopen(strcat(Directory,'Seq_Comp2_Inj.txt'),'w');
+    fileID5 = fopen(strcat(Directory,'SeqSaturation.txt'),'w');
+    fileID6 = fopen(strcat(Directory,'SeqPressure.txt'),'w');
     fprintf(fileID,'%6s %12s %12s\n','Timestep','# Chops', '# Newtons');
     fprintf(fileID,'%6.0f %12.0f %12.0f\n', Statistics);
     fclose(fileID);
@@ -49,8 +70,12 @@ else
         fileID3b = fopen(strcat(Directory,'FIM_Nw_Prod.txt'),'w');
         fileID3c = fopen(strcat(Directory,'FIM_Comp1_Prod.txt'),'w');
         fileID3d = fopen(strcat(Directory,'FIM_Comp2_Prod.txt'),'w');
-        fileID4 = fopen(strcat(Directory,'FIMSaturation.txt'),'w');
-        fileID5 = fopen(strcat(Directory,'FIMPressure.txt'),'w');
+        fileID4a = fopen(strcat(Directory,'FIM_W_Inj.txt'),'w');
+        fileID4b = fopen(strcat(Directory,'FIM_Nw_Inj.txt'),'w');
+        fileID4c = fopen(strcat(Directory,'FIM_Comp1_Inj.txt'),'w');
+        fileID4d = fopen(strcat(Directory,'FIM_Comp2_Inj.txt'),'w');
+        fileID5 = fopen(strcat(Directory,'FIMSaturation.txt'),'w');
+        fileID6 = fopen(strcat(Directory,'FIMPressure.txt'),'w');
         %fprintf(fileID,'%6s %12s %12s\n','Timestep', '# Chops', '# Iterations');
         fprintf(fileID,'%6.0f %12.0f %12.0f\n', Statistics');
         fclose(fileID);
@@ -69,8 +94,12 @@ else
         fileID3b = fopen(strcat(Directory,'ADM_Nw_Prod.txt'),'w');
         fileID3c = fopen(strcat(Directory,'ADM_Comp1_Prod.txt'),'w');
         fileID3d = fopen(strcat(Directory,'ADM_Comp2_Prod.txt'),'w');
-        fileID4 = fopen(strcat(Directory,'ADMSaturation.txt'),'w');
-        fileID5 = fopen(strcat(Directory,'ADMPressure.txt'),'w');
+        fileID4a = fopen(strcat(Directory,'ADM_W_Inj.txt'),'w');
+        fileID4b = fopen(strcat(Directory,'ADM_Nw_Inj.txt'),'w');
+        fileID4c = fopen(strcat(Directory,'ADM_Comp1_Inj.txt'),'w');
+        fileID4d = fopen(strcat(Directory,'ADM_Comp2_Inj.txt'),'w');
+        fileID5 = fopen(strcat(Directory,'ADMSaturation.txt'),'w');
+        fileID6 = fopen(strcat(Directory,'ADMPressure.txt'),'w');
         %fprintf(fileID,'%6s %12s %12s %12.s\n','Timestep', '# Chops', '# Iterations', '# Active Cells');
         fprintf(fileID1,'%6.0f %12.0f %12.0f %12.0f %12.0f %12.0f\n', Statistics');
         fclose(fileID1);
@@ -81,15 +110,29 @@ else
         
     end
 end
-fprintf(fileID3a, format2, [Production.time(1:Ndt); Production.Phase.W(:,1:Ndt)]);
+
+%Production
+fprintf(fileID3a, format2, [Production.time(1:Ndt); Production.Phase.W(:,1:Ndt); sum(Production.Phase.W(:,1:Ndt), 1)]);
 fclose(fileID3a);
-fprintf(fileID3b, format2, [Production.time(1:Ndt); Production.Phase.Nw(:,1:Ndt)]);
+fprintf(fileID3b, format2, [Production.time(1:Ndt); Production.Phase.Nw(:,1:Ndt); sum(Production.Phase.Nw(:,1:Ndt), 1)]);
 fclose(fileID3b);
-fprintf(fileID3c, format2, [Production.time(1:Ndt); Production.Component.z1(:,1:Ndt)]);
+fprintf(fileID3c, format2, [Production.time(1:Ndt); Production.Component.z1(:,1:Ndt); sum(Production.Component.z1(:,1:Ndt), 1)]);
 fclose(fileID3c);
-fprintf(fileID3d, format2, [Production.time(1:Ndt); Production.Component.z2(:,1:Ndt)]);
+fprintf(fileID3d, format2, [Production.time(1:Ndt); Production.Component.z2(:,1:Ndt); sum(Production.Component.z2(:,1:Ndt), 1)]);
 fclose(fileID3d);
-fprintf(fileID4, format, Saturations');
-fclose(fileID4);
-fprintf(fileID5,format, Pressures');
+
+
+%Injection
+fprintf(fileID4a, format3, [Injection.time(1:Ndt); Injection.Phase.W(:,1:Ndt); sum(Injection.Phase.W(:,1:Ndt), 1)]);
+fclose(fileID4a);
+fprintf(fileID4b, format3, [Injection.time(1:Ndt); Injection.Phase.Nw(:,1:Ndt); sum(Injection.Phase.Nw(:,1:Ndt), 1)]);
+fclose(fileID4b);
+fprintf(fileID4c, format3, [Injection.time(1:Ndt); Injection.Component.z1(:,1:Ndt); sum(Injection.Component.z1(:,1:Ndt), 1)]);
+fclose(fileID4c);
+fprintf(fileID4d, format3, [Injection.time(1:Ndt); Injection.Component.z2(:,1:Ndt); sum(Injection.Component.z2(:,1:Ndt),1)]);
+fclose(fileID4d);
+
+fprintf(fileID5, format_s, Saturations');
 fclose(fileID5);
+fprintf(fileID6,format_p, Pressures');
+fclose(fileID6);

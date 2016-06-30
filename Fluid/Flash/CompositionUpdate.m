@@ -13,17 +13,17 @@
 %                  so mass fractions are updated.
 %   b. Compositional fluid model: for Black oil or full compositional.
 
-function [Status, Converged] = CompositionUpdate(Status, rho, Fluid, Grid, FlashSettings)              
+function [Status, Converged] = CompositionUpdate(Status, Fluid, Grid, FlashSettings)              
 
 switch(Fluid.Type)
     case('Immiscible')
         Status.s = min(Status.s,1);
         Status.s = max(Status.s,0);                                         %S does not get update in immiscible
-        Status.z =  Compute_Z(Status.s,Status.x1, rho);
+        Status.z =  Compute_Z(Status.s,Status.x1, Status.rho);
         Converged = 1;
     otherwise    
         %% Flash loop
-        [Status.z] =  Compute_Z(Status.s, Status.x1,rho);          %Updates total mole fraction based on NR result
+        [Status.z] =  Compute_Z(Status.s, Status.x1, Status.rho);          %Updates total mole fraction based on NR result
         
         Converged = 0;
         InnerCounter = 1;
@@ -38,10 +38,10 @@ switch(Fluid.Type)
             [Status, SinglePhase] = Flash(Status, Fluid, Grid.Tres, FlashSettings.TolFlash);    
             
             %3. Update x and S based on components mass balance
-            Status = ComputePhaseSaturation(Status, SinglePhase, rho);
+            Status = ComputePhaseSaturation(Status, SinglePhase);
             
             %4. Compute new total mass fractions (z)
-            [Status.z] =  Compute_Z(Status.s,Status.x1,rho);
+            [Status.z] =  Compute_Z(Status.s,Status.x1, Status.rho);
             
             %5.a Compute errors
             InnerError1 = norm(abs(Status.s(:,1) - s_old(:,1)), inf);   %Checks if this loop is converging

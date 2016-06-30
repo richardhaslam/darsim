@@ -13,8 +13,8 @@
 %   - rho_t = rho_1*S_1 + rho_2*S_2
 % If the system is one-phase the saturation is set to 1 (vapor) or 0 (liquid)
 
-function Status = ComputePhaseSaturation(Status, SinglePhase, rho)
-Status.s = Update_S(Status.x1, Status.z, rho);
+function Status = ComputePhaseSaturation(Status, SinglePhase)
+Status.s = Update_S(Status.x1, Status.z, Status.rho);
 Status.s(SinglePhase.onlyvapor == 1) = 1;
 Status.s(SinglePhase.onlyliquid == 1) = 0;
 end

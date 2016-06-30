@@ -6,7 +6,7 @@
 %Created: 13 June 2016
 %Last Modified: 13 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function J = BuildJacobianComp(Grid, K, TMatrix1, TMatrix2, TMatrixW, Status, Mw, Mnw, dMw, dMnw, Rho, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw)
+function J = BuildJacobianComp(Grid, K, TMatrix1, TMatrix2, TMatrixW, Status, Mw, Mnw, dMw, dMnw, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw)
 %Build FIM Jacobian
 Nx = Grid.Nx; 
 Ny = Grid.Ny; 
@@ -15,6 +15,7 @@ pv = Grid.Volume*Grid.por;
 x1 = Status.x1;
 x2 = 1 - x1;
 s = Status.s;
+Rho = Status.rho;
 
 % BUILD FIM JACOBIAN BLOCK BY BLOCK
 

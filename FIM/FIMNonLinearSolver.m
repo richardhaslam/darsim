@@ -40,7 +40,6 @@ function [Status, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Gri
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
-pv = Grid.por*Grid.Volume;
 ADM.active = 0;
 Tol = FIM.Tol;
 Kvector = reshape(K(1,:,:), N, 1);
@@ -58,7 +57,7 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
      
     %Update fluid prowperties 
     [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
-    [Rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho); 
+    [Status.rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho); 
     [Status.pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por);
     %Define updwind operators
     [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
@@ -66,7 +65,7 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
     
     % Compute residual
     %[Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
-    [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
+    [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
     
     %Print some info to the screen 
     if (chops > 0)
@@ -100,14 +99,11 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
         %J1 = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
-        J = BuildJacobianComp(Grid, Kvector, TMatrix1, TMatrix2, TMatrixW, Status, Mw, Mnw, dMw, dMnw, Rho, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw);
-        %Residual - Residual1
-        %J - J1
+        J = BuildJacobianComp(Grid, Kvector, TMatrix1, TMatrix2, TMatrixW, Status, Mw, Mnw, dMw, dMnw, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw);
         TimerConstruct(itCount) = toc(start1);
        
         % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
         start2 = tic;
-        %[Delta, Delta_c] = LinearSolver(J, Residual, N, ADM);
         [Delta, Delta_c] = LinearSolver(J, Residual, N, ADM);
         TimerSolve(itCount) = toc(start2);
       
@@ -120,9 +116,8 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
      
         % 2.d Update solution based on phase split
         start3 = tic;
-        [Rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho);
-        [Status, CompConverged] = CompositionUpdate(Status, Rho, Fluid, Grid, FlashSettings);
-        %[Status] = Inner_Update(Status, Fluid, FlashSettings, Grid);
+        [Status.rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho);
+        [Status, CompConverged] = CompositionUpdate(Status, Fluid, Grid, FlashSettings);
         TimerInner(itCount) = toc(start3);
         
         % 3. Update fluid properties
@@ -134,7 +129,7 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
         
         % 4. Compute residual 
         %[Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
-        [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
+        [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
         
         % 5. Check convergence criteria
         Converged = NewtonConvergence(itCount, Residual, Delta, Status.p, Tol, N, ADM, Delta_c);
@@ -172,13 +167,13 @@ for i=1:length(Inj)
             Inj(i).qnw = sum (Inj(i).q - Inj(i).qw(c));
         case('PressureConstrained')
             %Phases
-            Inj(i).qw =   sum(Mw(c).* Rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
-            Inj(i).qnw =  sum(Mnw(c).* Rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)))*3600*24;
+            Inj(i).qw =   sum(Mw(c).* Inj(i).rho(c,1).* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
+            Inj(i).qnw =  sum(Mnw(c).* Inj(i).rho(c,2) .* Inj(i).PI .* Kvector(c).* (Inj(i).p - Status.p(c)))*3600*24;
             %Components
-            Inj(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
-                          sum(Status.x1(c, 2) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
-            Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
-                          sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24; 
+            Inj(i).qz1 = sum(Inj(i).x1(1) .* Inj(i).Mw .* Inj.rho(1) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24 +... 
+                          sum(Inj(i).x1(2) .* Inj(i).Mo(c) .* Inj(i).rho(2) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
+            Inj(i).qz2 = sum((1 - Inj(i).x1(1)) .* Inj(i).Mw .* Inj(i).rho(1) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24 +... 
+                          sum((1 - Inj(i).x1(2)) .* Inj(i).Mo .* Inj(i).rho(2) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24; 
     end
 end
 
@@ -190,13 +185,13 @@ for i=1:length(Prod)
             Prod(i).qnw = sum (Prod(i).q - Prod(i).qw(c));
         case('PressureConstrained')
             %Phases
-            Prod(i).qw =   sum(Mw(c).* Rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
-            Prod(i).qnw =  sum(Mnw(c).* Rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)))*3600*24;
+            Prod(i).qw =   sum(Mw(c).* Status.rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
+            Prod(i).qnw =  sum(Mnw(c).* Status.rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)))*3600*24;
             %Components
-            Prod(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
-                          sum(Status.x1(c, 2) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
-            Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
-                          sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24; 
+            Prod(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
+                          sum(Status.x1(c, 2) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
+            Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
+                          sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24; 
     end
 end
 

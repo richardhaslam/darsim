@@ -62,8 +62,8 @@ t = 0;
 Ndt = 1; 
 Converged = 0;
 index = 1;
-Saturations = zeros(Grid.N, 50);
-Pressures = zeros(Grid.N, 50);
+Saturations = zeros(Grid.N, 10);
+Pressures = zeros(Grid.N, 10);
 
 Injection.time = zeros(1, TimeSteps);
 Injection.Phase.W = zeros(length(Prod), TimeSteps);
@@ -133,7 +133,6 @@ while (t<T && Ndt <= TimeSteps)
                 FIM.MaxIter = maxiteration;
             else
                 dT = min(dTnext, maxdT(index));
-                %dT = .005;
 
                 %Non-linear solver
                 [Status, dT, dTnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
@@ -167,10 +166,10 @@ while (t<T && Ndt <= TimeSteps)
     %% COMPUTE Phase and Components Injections and Production
     Injection.time(Ndt) = t/(3600*24);
     for w=1:length(Inj)
-        Injection.Phase.W(w, Ndt) = Injection.Phase.W(w, Ndt-1) - Inj(w).qw*dT/(3600*24);
-        Injection.Phase.Nw(w, Ndt) = Injection.Phase.Nw(w, Ndt-1) - Inj(w).qnw*dT/(3600*24);
-        Injection.Component.z1(w, Ndt) = Injection.Component.z1(w, Ndt-1) - Inj(w).qz1*dT/(3600*24);
-        Injection.Component.z2(w, Ndt) = Injection.Component.z2(w, Ndt-1) - Inj(w).qz2*dT/(3600*24);
+        Injection.Phase.W(w, Ndt) = Injection.Phase.W(w, Ndt-1) + Inj(w).qw*dT/(3600*24);
+        Injection.Phase.Nw(w, Ndt) = Injection.Phase.Nw(w, Ndt-1) + Inj(w).qnw*dT/(3600*24);
+        Injection.Component.z1(w, Ndt) = Injection.Component.z1(w, Ndt-1) + Inj(w).qz1*dT/(3600*24);
+        Injection.Component.z2(w, Ndt) = Injection.Component.z2(w, Ndt-1) + Inj(w).qz2*dT/(3600*24);
     end
     
     Production.time(Ndt) = t/(3600*24);

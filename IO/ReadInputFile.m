@@ -101,12 +101,12 @@ if Errors == 0
         Inj(i).z = [1 0];
         switch (Inj(i).type)
             case('PressureConstrained')
-                [Inj(i).Rho, ~] = LinearDensity(Inj(i).p, Fluid.c, Fluid.rho);
+                [Inj(i).rho, ~] = LinearDensity(Inj(i).p, Fluid.c, Fluid.rho);
                 if (strcmp(Fluid.Type,'Immiscible') == 1)
                     Inj(i).x1 = [1 0];
                 else
                     [Inj(i), SinglePhase] = Flash(Inj(i), Fluid, Grid.Tres, FlashSettings.TolFlash);
-                    [Inj(i)] = ComputePhaseSaturation(Inj(i), SinglePhase, Inj(i).Rho);
+                    [Inj(i)] = ComputePhaseSaturation(Inj(i), SinglePhase);
                 end
             case('RateConstrained')
                 if (strcmp(Fluid.Type,'Immiscible')==1)

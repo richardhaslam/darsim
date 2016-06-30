@@ -7,9 +7,6 @@
 %Last modified: 25 may 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Write2VTK(Directory, Problem, timestep, Grid, K, Status, ADMActive, CoarseGrid, maxLevel, basisfunction)
-x1 = Status.x1(:,1);
-x2 = 1-Status.x1(:,2);
-
 %Write a VTK file
 fileID = fopen(strcat(Directory,'/VTK/',Problem,num2str(timestep - 1),'.vtk'), 'w');
 fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -44,13 +41,24 @@ fprintf(fileID, '\n');
 PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
 fprintf(fileID, '\n');
 %x11
-PrintScalar2VTK(fileID, x1, ' x11');
+PrintScalar2VTK(fileID, Status.x1(:,1), ' x1w');
+fprintf(fileID, '\n');
+%x12
+PrintScalar2VTK(fileID, Status.x1(:,2), ' x1nw');
+fprintf(fileID, '\n');
+%x21
+PrintScalar2VTK(fileID, 1-Status.x1(:,1), ' x2w');
 fprintf(fileID, '\n');
 %x22
-PrintScalar2VTK(fileID, x2, ' x22');
+PrintScalar2VTK(fileID, 1-Status.x1(:,2), ' x2nw');
 fprintf(fileID, '\n');
 %z1
 PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
+%Density
+PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoW');
+PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoNw');
+PrintScalar2VTK(fileID, Status.rho(:,1).*Status.s + Status.rho(:,2).*(1 - Status.s), ' rhoT');
+
 fprintf(fileID, '\n');
 if (ADMActive == 1)
     if (basisfunction == 1)

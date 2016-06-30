@@ -1,4 +1,4 @@
-function [Residual, T1, T2, Tw] = FIMResidualComp(Status0, Status, dt, Grid, K, Fluid, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod)
+function [Residual, T1, T2, Tw] = FIMResidualComp(Status0, Status, dt, Grid, K, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod)
 
 %Initialise local variables
 p_old = Status0.p;
@@ -13,10 +13,9 @@ s2 = 1 -s;
 s2_old = 1 -s_old;
 Pc = Status.pc;
 pv = Grid.por*Grid.Volume;
-
 %Density
-[Rho, ~] = LinearDensity(p, Fluid.c, Fluid.rho);
-[Rho_old, ~] = LinearDensity(p_old, Fluid.c, Fluid.rho);
+Rho = Status.rho; 
+Rho_old = Status0.rho; 
 
 %Accumulation term
 A = speye(Grid.N)*pv/dt;
@@ -102,12 +101,12 @@ for i=1:length(Inj)
     c = Inj(i).cells;
     switch (Inj(i).type)
         case('RateConstrained')
-            q1(c) = Inj(i).q * Inj(i).x1(1,1) * Inj(i).Rho(1,1) + Inj(i).q * Inj(i).x1(1,2) * Inj(i).Rho(1,2);
+            q1(c) = Inj(i).q * Inj(i).x1(1,1) * Inj(i).rho(1,1) + Inj(i).q * Inj(i).x1(1,2) * Inj(i).rho(1,2);
         case('PressureConstrained')
-            q1(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x1(1,1) * Inj(i).Rho(1,1)...
-                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x1(1,2) * Inj(i).Rho(1,2);
-            q2(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x2(1,1) * Inj(i).Rho(1,1)...
-                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x2(1,2) * Inj(i).Rho(1,2);
+            q1(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x1(1,1) * Inj(i).rho(1,1)...
+                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x1(1,2) * Inj(i).rho(1,2);
+            q2(c) = Inj(i).Mw * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x2(1,1) * Inj(i).rho(1,1)...
+                + Inj(i).Mo * Inj(i).PI .* K(c).* (Inj(i).p - p(c)) .* Inj(i).x2(1,2) * Inj(i).rho(1,2);
     end    
 end
 %Producers
