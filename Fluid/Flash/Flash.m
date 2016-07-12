@@ -67,7 +67,7 @@ switch Fluid.Type
         BubCheck = sum(BubCheck, 2);
         
         x(BubCheck < 1, 2) = z (BubCheck < 1, 1);
-        x(BubCheck < 1, 1) = 1;                               % This is to avoid having singular Jacobian matrix.
+        x(BubCheck < 1, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
         SinglePhase.onlyliquid(BubCheck < 1) = 1;
         
         % 3.b: checking if it 's all vapor: checks if mix is above dew
@@ -75,7 +75,7 @@ switch Fluid.Type
         DewCheck = z ./ k;                  
         DewCheck = sum(DewCheck, 2);
         x(DewCheck < 1, 1) = z (DewCheck < 1, 1);
-        x(DewCheck < 1, 2) = 0;
+        x(DewCheck < 1, 2) = 1;                    % This is to avoid having singular Jacobian matrix.
         SinglePhase.onlyvapor(DewCheck < 1) = 1;
                 
         % 4. Actual Flash: solves for fv (vapor fraction)

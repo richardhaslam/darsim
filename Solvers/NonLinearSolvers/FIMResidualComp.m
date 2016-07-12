@@ -1,7 +1,6 @@
 function [Residual, T1, T2, Tw] = FIMResidualComp(Status0, Status, dt, Grid, K, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod)
 
 %Initialise local variables
-p_old = Status0.p;
 s_old = Status0.s;
 x1_old = Status0.x1;
 x2_old = 1-x1_old;
@@ -44,13 +43,13 @@ G = ComputeGravityTerm(Grid.N);
 R1 = A * m1 - A * m1_old...    %Accumulation term
     + T1 * p...                %Convective term
     - x1(:,1).*(Tw*Pc)...           %Capillarity
-    + G*s...                   %Gravity
+    + G*p...                   %Gravity
     - q1;                      %Source terms
 %Component 2
 R2 = A * m2 - A * m2_old...
     + T2 * p...                %Convective term
     - x2(:,1).*(Tw*Pc)...           %Capillarity
-    + G*s...                   %Gravity
+    + G*p...                   %Gravity
     - q2;                      %Source terms
 
 %Stick them together

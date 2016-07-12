@@ -11,8 +11,8 @@
 
 function [Status] = InitializeReservoir(Fluid, Grid, K, FlashSettings)
 %P_init = ones(Grid.N, 1)*10e5;
-P_init = linspace(10e6, 10e5, Grid.N);
-z_init = ones(Grid.N,1)*0.5;
+P_init = linspace(1e5, 10e4, Grid.N);
+z_init = ones(Grid.N,1)*0.0;
 
 %Initialize objects
 Status.s = zeros(Grid.N, 1);

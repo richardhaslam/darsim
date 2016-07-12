@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-function [Problem, T, Grid, K, Fluid, Inj, Prod, Strategy, FIM, Sequential, ADMSettings, FlashSettings, TimeSteps, Options]...
+function [Output, T, Grid, K, Fluid, Inj, Prod, Coupling, Summary, ADMSettings, FlashSettings, TimeSteps]...
     = ReadInputFile(InputDirectory, InputFile)
 global Errors
 
@@ -18,6 +18,7 @@ inputMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
 fclose(fileID);
 temp = strfind(inputMatrix{1}, 'TITLE'); % Search a specific string and find all rows containing matches
 Problem = char(inputMatrix{1}(find(~cellfun('isempty', temp)) + 1));
+
 
 %%%%%%%%%%%%%PROPERTIES OF THE RESERVOIR%%%%%%%%%%%%%%%%
 temp = strfind(inputMatrix{1}, 'DIMENS'); % Search a specific string and find all rows containing matches
@@ -69,6 +70,7 @@ clear temp inputMatrix;
 %%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
 InputFile = strcat(InputDirectory, '/SimulatorSettings.txt');
 fileID = fopen(InputFile, 'r');
+
 %// Read lines from input file
 inputMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
 fclose(fileID);
@@ -89,7 +91,7 @@ xv = find(~cellfun('isempty', temp));
 TimeSteps = str2double(inputMatrix{1}(xv+1));
 temp = strfind(inputMatrix{1}, 'ADM');
 adm = find(~cellfun('isempty', temp));
-[FIM, Sequential, ADMSettings,FlashSettings] = ...
+[Coupling, CouplingStats, ADMSettings,FlashSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix);
 
 CheckInputErrors;
@@ -104,6 +106,7 @@ if Errors == 0
                 [Inj(i).rho, ~] = LinearDensity(Inj(i).p, Fluid.c, Fluid.rho);
                 if (strcmp(Fluid.Type,'Immiscible') == 1)
                     Inj(i).x1 = [1 0];
+                    Inj(i).s = 1;
                 else
                     [Inj(i), SinglePhase] = Flash(Inj(i), Fluid, Grid.Tres, FlashSettings.TolFlash);
                     [Inj(i)] = ComputePhaseSaturation(Inj(i), SinglePhase);
@@ -124,7 +127,20 @@ end
 %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
 temp = strfind(inputMatrix{1}, 'OUTPUT');
 xv = find(~cellfun('isempty', temp));
-Options.PlotSolution = char(inputMatrix{1}(xv+1)); %Matlab or VTK
+plotoption = char(inputMatrix{1}(xv+1)); %Matlab or VTK
+switch(plotoption)
+    case('Matlab')
+        if Grid.Nx == 1 || Grid.Ny == 1
+            plotter = Matlab_Plotter_1D();
+        else
+            plotter = Matlab_Plotter_2D();
+        end
+    case('VTK')
+        plotter = VTK_Plotter(InputDirectory, Problem);
+    otherwise
+        plotter = no_Plotter();
+end
+
 
 
 % Plot denisty range
@@ -139,4 +155,12 @@ legend('Phase 1', 'Phase 2')
 axis([min(Prod(1).p), max(Inj(1).p), min(min(Rho))*.9, max(max(Rho))*1.1])
 
 clear settings impsat adm inputMatrix xv
+
+
+%%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
+wellsData = Wells_Data(TimeSteps, Fluid.NumPhase, Fluid.Comp.NumComp, Inj, Prod);
+Summary = Run_Summary(TimeSteps, CouplingStats, wellsData);
+Output = output_txt(InputDirectory, Problem, length(Inj), length(Prod), Summary.CouplingStats.NTimers, Summary.CouplingStats.NStats);
+Output.AddPlotter(plotter);
+
 end

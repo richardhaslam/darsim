@@ -29,6 +29,6 @@ Ky(:,2:Ny) = 2*K(2,:,1:Ny-1).*K(2,:,2:Ny)./(K(2,:,1:Ny-1)+K(2,:,2:Ny));
 %Transmissibility
 Grid.Tx = zeros(Nx+1, Ny);
 Grid.Ty = zeros(Nx, Ny+1);
-Grid.Tx(2:Nx,:) = Ax/dx.*Kx(2:Nx,:);
-Grid.Ty(:,2:Ny) = Ay/dy.*Ky(:,2:Ny);
+Grid.Tx(2:Nx,:) = Ax./dx.*Kx(2:Nx,:);
+Grid.Ty(:,2:Ny) = Ay./dy.*Ky(:,2:Ny);
 end

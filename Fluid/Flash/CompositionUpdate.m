@@ -13,13 +13,14 @@
 %                  so mass fractions are updated.
 %   b. Compositional fluid model: for Black oil or full compositional.
 
-function [Status, Converged] = CompositionUpdate(Status, Fluid, Grid, FlashSettings)              
+function [Status, delta, Converged] = CompositionUpdate(Status, Fluid, Grid, FlashSettings)              
 
 switch(Fluid.Type)
     case('Immiscible')
         Status.s = min(Status.s,1);
         Status.s = max(Status.s,0);                                         %S does not get update in immiscible
         Status.z =  Compute_Z(Status.s,Status.x1, Status.rho);
+        delta = 0;
         Converged = 1;
     otherwise    
         %% Flash loop
@@ -27,6 +28,7 @@ switch(Fluid.Type)
         
         Converged = 0;
         InnerCounter = 1;
+        s_0 = Status.s;
         while Converged == 0 && InnerCounter < FlashSettings.MaxIt
             
             % 1. Stores old values
@@ -58,7 +60,8 @@ switch(Fluid.Type)
         if Converged == 0               
             disp('Warning: the inner update has not converged! It may cause problems.');
         end
-        
+        delta = zeros(2*Grid.N, 1);
+        delta(Grid.N+1:end) = Status.s - s_0;
 end
 
 end

@@ -10,7 +10,7 @@ function PlotPermeability(Perm, Grid)
 if (Grid.Nx == 1 || Grid.Ny==1)
     figure(4)
     x = linspace(0, Grid.Lx-Grid.dx, Grid.Nx);
-    subplot(3,1,1);
+    %subplot(3,1,1);
     plot(x, log10(Perm));
     %title('Permeability');
     axis([0 Grid.Lx min(min(log10(Perm)))-1 max(max(log10(Perm)))+1]);
@@ -19,7 +19,6 @@ if (Grid.Nx == 1 || Grid.Ny==1)
     ylabel('Log(K) [m^2]');
     set(gca,'fontsize',24);
     %axis('image');
-    figure(5);
 else
     %Plot permeability
     x = linspace(0, Grid.Lx-Grid.dx, Grid.Nx);

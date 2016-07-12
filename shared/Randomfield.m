@@ -1,9 +1,9 @@
 % 2D random permeability field generator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Matteo Cusini's Research Code
+%DARSim 2 Reservoir Simulator
 %Author: Tom Postma
 %TU Delft
-%Year: January 2016
+%Created: January 2016
 %Last modified: January 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [K] = Randomfield(Grid)

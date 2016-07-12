@@ -3,8 +3,8 @@
 %Matteo Cusini's Research Code
 %Author: Matteo Cusini
 %TU Delft
-%Year: 2015
-%Last modified: 25 may 2016
+%Created: 2015
+%Last modified: 30 june 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Write2VTK(Directory, Problem, timestep, Grid, K, Status, ADMActive, CoarseGrid, maxLevel, basisfunction)
 %Write a VTK file

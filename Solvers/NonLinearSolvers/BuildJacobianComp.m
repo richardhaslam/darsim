@@ -25,10 +25,10 @@ Rho = Status.rho;
 J1p = TMatrix1;
 
 % 1.b: compressibility part
-dMupxW = UpWindW.x*(Mw .* x1(:,1) .* dRho(:,1)); 
-dMupyW = UpWindW.y*(Mw .* x1(:,1) .* dRho(:,1)); 
-dMupxNw = UpWindNw.x*(Mnw .* x1(:,2) .* dRho(:,2));
-dMupyNw = UpWindNw.y*(Mnw .* x1(:,2) .* dRho(:,2));
+dMupxW = UpWindW.x * (Mw .* x1(:,1) .* dRho(:,1)); 
+dMupyW = UpWindW.y * (Mw .* x1(:,1) .* dRho(:,1)); 
+dMupxNw = UpWindNw.x * (Mnw .* x1(:,2) .* dRho(:,2));
+dMupyNw = UpWindNw.y * (Mnw .* x1(:,2) .* dRho(:,2));
 
 vecX1 = min(reshape(Uw.x(1:Nx,:),N,1), 0).*dMupxW + min(reshape(Unw.x(1:Nx,:),N,1), 0).*dMupxNw;
 vecX2 = max(reshape(Uw.x(2:Nx+1,:),N,1), 0).*dMupxW + max(reshape(Unw.x(2:Nx+1,:),N,1), 0).*dMupxNw;
@@ -97,6 +97,7 @@ J2S = J2S - TMatrixW * spdiags(x2(:,1).*dPc, 0, N, N);
 [J1p, J2p, J1S, J2S] = AddWellsToJacobianComp(J1p, J2p, J1S, J2S, Inj, Prod, K, Status, Rho, dRho, Mw, Mnw, dMw, dMnw);
 
 %% Full Jacobean: combine the 4 blocks
-J = [J1p, J1S; J2p, J2S];
+J = [ J1p, J1S ;...
+      J2p, J2S ];
 
 end

@@ -5,14 +5,13 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function dt = timestepping(Fluid, Grid, U)
+function dt = timestepping(Fluid, Grid, CFL, U)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Returns the timestep size based on the velocity field, the Grid and the
 %fluid present. CFL condition is used. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 por = Grid.por;
 pv = por*Grid.Volume;   %Void Volume in each cell
-CFL = Grid.CFL;
 
 %I take the worst possible scenario
 s = Fluid.sr(2):0.01:1-Fluid.sr(1);

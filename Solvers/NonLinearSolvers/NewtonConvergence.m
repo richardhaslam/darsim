@@ -35,7 +35,7 @@ else
     Norm3 = norm(Delta(N+1:end), inf);
 end
 
-disp(['Iter ' num2str(iter) '    ' num2str(Norm1), '    ', num2str(Norm2), '    ', num2str(Norm3)]);
+disp(['Iter ' num2str(iter) '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e'), '    ', num2str(Norm3, '%5.5e')]);
 
 %Check convergence
 if (Norm1 < Tol && Norm2<Tol && Norm3 < Tol)

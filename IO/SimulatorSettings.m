@@ -5,8 +5,9 @@
 %TU Delft
 %Year: 2015
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [FIM, Sequential, ADMSettings, FlashSettings] = ...
+function [Coupling, CouplingStats, ADMSettings, FlashSettings] = ...
     SimulatorSettings(TimeSteps, Strategy, settings, impsat, adm, inputMatrix)
+
 %SIMULATOR SETTINGS
 switch (Strategy)
     case ('Sequential')
@@ -26,17 +27,17 @@ switch (Strategy)
             Sequential.ImplicitSolver.Newtons = 0;
             Sequential.ImplicitSolver.Chops = 0;
         end
-        FIM = 0;
     case ('FIM')
         %%%%FIM settings
-        FIM.MaxIter = str2double(inputMatrix{1}(settings + 1));
-        FIM.Tol = str2double(inputMatrix{1}(settings + 2));
-        FIM.CFL = str2double(inputMatrix{1}(settings + 3));
+        NLSolver = NL_Solver;
+        Coupling = FIM_Strategy('FIM', NLSolver);
+        Coupling.CFL = str2double(inputMatrix{1}(settings + 3));
+        
+        Coupling.NLSolver.MaxIter = str2double(inputMatrix{1}(settings + 1));
+        Coupling.NLSolver.Tol = str2double(inputMatrix{1}(settings + 2));
+        
         %%%Initialise objects for outputting statistics
-        FIM.timestep = zeros(TimeSteps,1);
-        FIM.Iter = zeros(TimeSteps,1);
-        FIM.Chops = zeros(TimeSteps,1);
-        Sequential = 0;
+        CouplingStats = FIM_Stats(TimeSteps);
 end
 if (str2double(inputMatrix{1}(adm + 1))~=0)
     ADMSettings.active = 1;

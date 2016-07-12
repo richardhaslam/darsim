@@ -6,7 +6,7 @@
 %Year: 2015
 %Last modified: 16 May 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Status, Pc, Inj, Prod, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(Status, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
+function [Status, Inj, Prod, dT, Converged, Timers, ImplicitSolver] = SequentialStrategy(Status, K, Grid, Fluid, Inj, Prod, Sequential, Ndt, maxdT)
 %SEQUENTIAL STRATEGY
 Grid.CFL = Sequential.CFL;
 MaxExtIter = Sequential.MaxExtIter;
@@ -30,7 +30,6 @@ while (Converged==0 && Iter <= MaxExtIter)
     %1. Solve flow equation for pressure and compute fluxes
     disp('Pressure solver')
     [p, U, Pc, Wells, Inj, Prod] = PressureSolver(Grid, Inj, Prod, Fluid, S, K);
-    %% 
     ptimer(Iter) = toc(tstart1);
     
     %2. Check mass balance
@@ -76,6 +75,7 @@ while (Converged==0 && Iter <= MaxExtIter)
         Converged = 1;
         %%%%% Save converged solution %%%%
         Status.p = p;
+        Status.pc = reshape(Pc, Grid.N, 1);
         Status.s = s;
     end
     Iter = Iter + 1;

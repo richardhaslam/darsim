@@ -34,9 +34,9 @@
 %   CoarseGrid: for ADM knows which coarse cells are active 
 %   Grid: for ADM knows which fine cells are active
 
-function [Status, dt, dtnext, Inj, Prod, FIM, Timers, Converged, CoarseGrid, Grid] = ...
+function [Status, dt, dtnext, Inj, Prod, Summary, Converged, CoarseGrid, Grid] = ...
                     FIMNonLinearSolver...
-                (Status0, K, Grid, Fluid, Inj, Prod, FIM, dt, Ndt, CoarseGrid, ADMSettings, Directory, Problem, FlashSettings)
+                (Status0, K, Grid, Fluid, Inj, Prod, FIM, Summary, dt, Ndt, CoarseGrid, ADMSettings, FlashSettings)
 Nx = Grid.Nx;
 Ny = Grid.Ny;
 N = Grid.N;
@@ -53,18 +53,19 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
     Status.s = Status0.s; % I start from solution at previous timestep.
     Status.x1 = Status0.x1;
     Status.z = Status0.z;
-    P = reshape(Status.p,Grid.Nx,Grid.Ny);
      
     %Update fluid prowperties 
     [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
     [Status.rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho); 
     [Status.pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por);
+    Status.Pot(:,1) = Status.p - Status.pc;
+    Status.Pot(:,2) = Status.p;
+    %[Status] = ComputePotential(Status, Grid);
     %Define updwind operators
-    [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
-    [UpWindNw, Unw] = UpwindOperator(Grid, P);
+    [UpWindW, Uw] = UpwindOperator(Grid, reshape(Status.Pot(:,1), Grid.Nx, Grid.Ny));
+    [UpWindNw, Unw] = UpwindOperator(Grid, reshape(Status.Pot(:,2), Grid.Nx, Grid.Ny));
     
     % Compute residual
-    %[Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
     [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
     
     %Print some info to the screen 
@@ -78,14 +79,12 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
     
     % Build ADM Grid and objects
     if (ADMSettings.active == 1 && chops == 0)
-        tic
         % Choose where to coarsen and build ADM grid
         [ADMGrid, CoarseGrid, Grid] = AdaptGrid(Grid, CoarseGrid, reshape(Status0.s,Nx,Ny), Residual(1:N), Residual(N+1:end), ADMSettings.maxLevel, ADMSettings.tol);
         % Construct R & P based on ADM grid
         [ADM.Rest, ADM.Prolp, ADM.Prols] = ConstructOperators(Grid, CoarseGrid, ADMGrid);
         ADM.level = ADMGrid.level(end);
-        ADM.active = 1;
-        Timers.RP = toc;        
+        ADM.active = 1;      
     end
     
     % NEWTON LOOP
@@ -98,7 +97,6 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
               
         % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
         start1 = tic;
-        %J1 = BuildJacobian(Grid, Kvector, TMatrixNw, TMatrixW, Status.p, Mw, Mnw, dMw, dMnw, Unw, Uw, dPc, dt, Inj, Prod, UpWindNw, UpWindW);
         J = BuildJacobianComp(Grid, Kvector, TMatrix1, TMatrix2, TMatrixW, Status, Mw, Mnw, dMw, dMnw, dRho, Uw, Unw, dPc, dt, Inj, Prod, UpWindW, UpWindNw);
         TimerConstruct(itCount) = toc(start1);
        
@@ -110,29 +108,28 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
         % 2.c Update solution
         Status.p = Status.p + Delta(1:N);
         Status.s = Status.s + Delta(N+1:2*N);
-        Status.p = max(Status.p,0);
         
-        P = reshape(Status.p, Nx, Ny);
-     
         % 2.d Update solution based on phase split
         start3 = tic;
         [Status.rho, dRho] = LinearDensity(Status.p, Fluid.c, Fluid.rho);
-        [Status, CompConverged] = CompositionUpdate(Status, Fluid, Grid, FlashSettings);
+        [Status, Delta2, CompConverged] = CompositionUpdate(Status, Fluid, Grid, FlashSettings);
         TimerInner(itCount) = toc(start3);
         
         % 3. Update fluid properties
         [Mw, Mnw, dMw, dMnw] = Mobilities(Status.s, Fluid);
         [Status.pc, dPc] = ComputePc(Status.s, Fluid, Kvector, Grid.por); 
+        %[Status] = ComputePotential(Status, Grid);
         % Define updwind
-        [UpWindNw, Unw] = UpwindOperator(Grid, P);
-        [UpWindW, Uw] = UpwindOperator(Grid, P-reshape(Status.pc, Nx, Ny));
+        Status.Pot(:,1) = Status.p - Status.pc;
+        Status.Pot(:,2) = Status.p;
+        [UpWindW, Uw] = UpwindOperator(Grid, reshape(Status.Pot(:,1), Grid.Nx, Grid.Ny));
+        [UpWindNw, Unw] = UpwindOperator(Grid, reshape(Status.Pot(:,2), Grid.Nx, Grid.Ny));
         
         % 4. Compute residual 
-        %[Residual1, TMatrixNw, TMatrixW] = FIMResidual(Status0, Status, Grid, dt, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod, Kvector);
         [Residual, TMatrix1, TMatrix2, TMatrixW] = FIMResidualComp(Status0, Status, dt, Grid, Kvector, Mnw, Mw, UpWindNw, UpWindW, Inj, Prod);
         
         % 5. Check convergence criteria
-        Converged = NewtonConvergence(itCount, Residual, Delta, Status.p, Tol, N, ADM, Delta_c);
+        Converged = NewtonConvergence(itCount, Residual, Delta+Delta2, Status.p, Tol, N, ADM, Delta_c);
         itCount = itCount+1;
     end
     if (Converged == 0 || CompConverged == 0)
@@ -142,10 +139,10 @@ while ((Converged==0 || CompConverged == 0) && chops<=10)
 end
 
 %Choose next time-step size
-if itCount < 12 
+if itCount < 4 
     dtnext = 2*dt;
-elseif itCount > 15
-    dtnext = dt;
+elseif itCount > 8
+    dtnext = dt/2;
 else
     dtnext = dt;
 end
@@ -167,8 +164,8 @@ for i=1:length(Inj)
             Inj(i).qnw = sum (Inj(i).q - Inj(i).qw(c));
         case('PressureConstrained')
             %Phases
-            Inj(i).qw =   sum(Mw(c).* Inj(i).rho(c,1).* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
-            Inj(i).qnw =  sum(Mnw(c).* Inj(i).rho(c,2) .* Inj(i).PI .* Kvector(c).* (Inj(i).p - Status.p(c)))*3600*24;
+            Inj(i).qw =   sum(Inj(i).Mw.* Inj(i).rho(c,1).* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
+            Inj(i).qnw =  sum(Inj(i).Mo(i).* Inj(i).rho(c,2) .* Inj(i).PI .* Kvector(c).* (Inj(i).p - Status.p(c)))*3600*24;
             %Components
             Inj(i).qz1 = sum(Inj(i).x1(1) .* Inj(i).Mw .* Inj.rho(1) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24 +... 
                           sum(Inj(i).x1(2) .* Inj(i).Mo(c) .* Inj(i).rho(2) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
@@ -185,23 +182,23 @@ for i=1:length(Prod)
             Prod(i).qnw = sum (Prod(i).q - Prod(i).qw(c));
         case('PressureConstrained')
             %Phases
-            Prod(i).qw =   sum(Mw(c).* Status.rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
-            Prod(i).qnw =  sum(Mnw(c).* Status.rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)))*3600*24;
+            Prod(i).qw =   sum(Mw(c).* Status.rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)));
+            Prod(i).qnw =  sum(Mnw(c).* Status.rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)));
             %Components
-            Prod(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
-                          sum(Status.x1(c, 2) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24;
-            Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24 +... 
-                          sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)))*3600*24; 
+            Prod(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c))) +... 
+                          sum(Status.x1(c, 2) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)));
+            Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c))) +... 
+                          sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c))); 
     end
 end
 
-%% Stats and timers 
-FIM.Iter(Ndt) = itCount-1;
-FIM.Chops(Ndt) = chops;
+%% Stats, timers and Injection/Production data
+Summary.CouplingStats.SaveStats(Ndt, itCount-1, chops);
+Summary.CouplingStats.SaveTimers(Ndt, TimerConstruct, TimerSolve, TimerInner);
+Summary.SaveWellsData(Ndt+1, Inj, Prod, dt);
+
 if ADMSettings.active
     FIM.ActiveCells(Ndt, :) = ADMGrid.N';
 end
-Timers.Construct = TimerConstruct;
-Timers.Solve = TimerSolve;
-Timers.Inner = TimerInner;
+
 end
