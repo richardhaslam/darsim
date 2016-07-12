@@ -1,4 +1,4 @@
-% Sequential coupling strategy
+% Sequential Stats
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -8,11 +8,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Sequential_Stats < Coupling_Stats
     properties
-        Pressure_stats
-        Saturation_stats
-        Pressure_timer
-        Balance_timer
-        Transport_timer
+        PressureStats
+        SaturationStats
+        PressureTimer
+        BalanceTimer
+        TransportTimer
     end
     methods
         function obj = Sequential_Stats(MaxNTimeSteps)
