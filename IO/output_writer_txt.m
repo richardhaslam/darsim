@@ -6,7 +6,7 @@
 %Created: 4 July 2016
 %Last modified: 11 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef output_txt < output
+classdef output_writer_txt < output_writer
     properties
         FormatInj
         FormatProd

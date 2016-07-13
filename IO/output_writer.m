@@ -6,7 +6,7 @@
 %Created: 4 July 2016
 %Last modified: 8 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef output < handle
+classdef output_writer < handle
     properties
         Directory
         ProblemName
