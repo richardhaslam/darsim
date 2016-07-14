@@ -14,8 +14,8 @@ classdef output_writer_txt < output_writer
         FormatTimers
     end
     methods
-        function obj = output_txt(dir, problem, n_inj, n_prod, n_timers,  n_stats)
-            obj@output(dir, problem);
+        function obj = output_writer_txt(dir, problem, n_inj, n_prod, n_timers,  n_stats)
+            obj@output_writer(dir, problem);
             %Format for production output
             obj.FormatInj = '%10.2f';
             for i=1:n_inj

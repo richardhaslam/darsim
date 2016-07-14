@@ -103,6 +103,7 @@ classdef builder < handle
             
         end
         function simulation = BuildSimulation(obj, inputMatrix, SettingsMatrix)
+            simulation = Reservoir_Simulation();
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix);
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix);
@@ -151,10 +152,11 @@ classdef builder < handle
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
             %Gridding
-            Nx = str2double(inputMatrix(obj.grid +1));  %Nx [-]
-            Ny = str2double(inputMatrix(obj.grid +2));  %Ny [-]
+            nx = str2double(inputMatrix(obj.grid + 1));  
+            ny = str2double(inputMatrix(obj.grid + 2));
+            nz = str2double(inputMatrix(obj.grid + 3));
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
-                Discretization = FS_Discretization_model(Nx, Ny);
+                Discretization = FS_Discretization_model(nx, ny, nz);
             else
                 temp = strfind(inputMatrix{1}, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
@@ -170,12 +172,21 @@ classdef builder < handle
                 cx = str2double(inputMatrix{1}(x+1));
                 cy = str2double(inputMatrix{1}(x+2));
                 ADMSettings.Coarsening = [cx, cy; cx^2, cy^2; cx^3, cy^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
-                Discretization = ADM_Discretization_model(Nx, Ny, ADMSettings);
+                Discretization = ADM_Discretization_model(nx, ny, nz, ADMSettings);
             end
             
         end
-        function FluidModel = BuildFluidModel(obj)
+        function FluidModel = BuildFluidModel(obj, inputMatrix)
             
+            
+           switch (char(inputMatrix(obj.Comp_Type+1)))
+               case ('Immiscible')
+                   FluidModel = Immiscible_fluid_model(n_phases);
+               case ('BlackOil')
+                   FluidModel = BO_fluid_model(n_phases, n_comp);
+               case ('Compositional')
+                   FluidModel = Comp_fluid_model(n_phases, n_comp);
+           end
         end
         function Formulation = BuildFormulation(obj)
         end

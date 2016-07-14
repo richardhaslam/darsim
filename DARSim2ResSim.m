@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 13 July 2016
+%Last modified: 14 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function ResSimulator = DARSim2ResSim(Directory, File)
 
@@ -13,7 +13,7 @@ function ResSimulator = DARSim2ResSim(Directory, File)
 ResSimulator = Reservoir_Simulator(Directory, File);
 % Read Input File
 ResSimulator.Reader.ReadInputFile();
-%
+% Build objects
 ResSimulator.BuildObjects();
 
 %% Run Simulation

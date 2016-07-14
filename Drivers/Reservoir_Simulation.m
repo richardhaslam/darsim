@@ -9,7 +9,8 @@
 classdef Reservoir_Simulation
     properties
         ProductionSystem
-        Fluid_Model
+        FluidModel
+        DiscretizationModel
         Formulation
         TimeDriver
         Summary

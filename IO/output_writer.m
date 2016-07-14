@@ -13,7 +13,7 @@ classdef output_writer < handle
         Plotter
     end
     methods
-        function obj = output(dir, problem)
+        function obj = output_writer(dir, problem)
             obj.Directory = strcat(dir, '/Output/');
             obj.ProblemName = problem;
         end
