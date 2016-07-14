@@ -15,5 +15,8 @@ classdef Discretization_model < handle
         function obj = Discretization_model(nx, ny, nz)
             obj.ReservoirGrid = grid_cartesian(nx, ny, nz);
         end
+        function Initialize(obj, ProductionSystem)
+            obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
+        end
     end
 end

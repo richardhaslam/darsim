@@ -13,7 +13,8 @@ classdef reservoir < handle
         Depth
         Temp
         K
-        por
+        Por
+        State
     end
     methods
         function obj = reservoir(length, width, depth, temp)
@@ -21,6 +22,11 @@ classdef reservoir < handle
             obj.Width = width;
             obj.Depth = depth;
             obj.Temp = temp;
+            obj.State = status();
+        end
+        function AddPermeabilityPorosity(obj, k, por)
+            obj.K = k;
+            obj.Por = por;
         end
     end
 end

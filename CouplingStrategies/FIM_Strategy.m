@@ -37,8 +37,7 @@ methods
             if obj.NLSolver.Converged == 0
                 dt = dt/2;
                 obj.chops = obj.chops + 1;
-            end
-            
+            end  
         end
         obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount)
     end

@@ -104,23 +104,64 @@ classdef builder < handle
         end
         function simulation = BuildSimulation(obj, inputMatrix, SettingsMatrix)
             simulation = Reservoir_Simulation();
-            simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix);
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
+            simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix);
             simulation.Formulation = obj.BuildFormulation(inputMatrix);
             simulation.TimeDriver = obj.BuildTimeDriver();
             simulation.Summary = obj.BuildSummary();
         end
-        function ProductionSystem = BuildProductionSystem (obj, inputMatrix)
+        function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
+            %Gridding
+            nx = str2double(inputMatrix(obj.grid + 1));  
+            ny = str2double(inputMatrix(obj.grid + 2));
+            nz = str2double(inputMatrix(obj.grid + 3));
+            if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
+                Discretization = FS_Discretization_model(nx, ny, nz);
+            else
+                temp = strfind(inputMatrix{1}, 'PRESSURE_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                ADMSettings.Pressure_Interpolator =  char(inputMatrix{1}(x+1));
+                temp = strfind(inputMatrix{1}, 'LEVELS');
+                x = find(~cellfun('isempty', temp));
+                ADMSettings.maxLevel = str2double(inputMatrix{1}(x+1));
+                temp = strfind(inputMatrix{1}, 'TOLERANCE');
+                x = find(~cellfun('isempty', temp));
+                ADMSettings.tol = str2double(inputMatrix{1}(x+1));
+                temp = strfind(inputMatrix{1}, 'COARSENING_RATIOS');
+                x = find(~cellfun('isempty', temp));
+                cx = str2double(inputMatrix{1}(x+1));
+                cy = str2double(inputMatrix{1}(x+2));
+                ADMSettings.Coarsening = [cx, cy; cx^2, cy^2; cx^3, cy^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                Discretization = ADM_Discretization_model(nx, ny, nz, ADMSettings);
+            end
             
-            ProductionSystem = Production_System();
-            
+        end
+        function ProductionSystem = BuildProductionSystem (obj, inputMatrix, DiscretizationModel)           
+            ProductionSystem = Production_System();          
             %Reservoir
             Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x−direction [m] 
             Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y−direction [m]
             h = str2double(inputMatrix(obj.size + 3));  %Reservoir thickness [m]
             Tres = str2double(inputMatrix(obj.temperature + 1));   %Res temperature [K]
             Reservoir = reservoir(Lx, Ly, h, Tres);
+            phi = str2double(inputMatrix(obj.por + 1));
+            if strcmp(inputMatrix(obj.perm - 1), 'INCLUDE')
+                %File name
+                file  = strcat('../Permeability/', char(inputMatrix(obj.perm +1))); 
+                %load the file in a vector
+                field = load(file);     
+                % reshape it to specified size
+                field = reshape(field(3:end),[field(1) field(2)]);     
+                % make it the size of the grid
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny)*10^(-12), DiscretizationModel.ReservoirGrid.N, 1);  
+                Ky = Kx;
+            else
+                Kx = ones(Grid.N,1)*10^(-12);
+                Ky = ones(Grid.N,1)*10^(-12);
+            end
+            K = [Kx, Ky];
+            Reservoir.AddPermeabilityPorosity(K, phi);
             ProductionSystem.AddReservoir(Reservoir);
             
             % Wells
@@ -150,35 +191,7 @@ classdef builder < handle
             ProductionSystem.AddWells(Wells);
             
         end
-        function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
-            %Gridding
-            nx = str2double(inputMatrix(obj.grid + 1));  
-            ny = str2double(inputMatrix(obj.grid + 2));
-            nz = str2double(inputMatrix(obj.grid + 3));
-            if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
-                Discretization = FS_Discretization_model(nx, ny, nz);
-            else
-                temp = strfind(inputMatrix{1}, 'PRESSURE_INTERPOLATOR');
-                x = find(~cellfun('isempty', temp));
-                ADMSettings.Pressure_Interpolator =  char(inputMatrix{1}(x+1));
-                temp = strfind(inputMatrix{1}, 'LEVELS');
-                x = find(~cellfun('isempty', temp));
-                ADMSettings.maxLevel = str2double(inputMatrix{1}(x+1));
-                temp = strfind(inputMatrix{1}, 'TOLERANCE');
-                x = find(~cellfun('isempty', temp));
-                ADMSettings.tol = str2double(inputMatrix{1}(x+1));
-                temp = strfind(inputMatrix{1}, 'COARSENING_RATIOS');
-                x = find(~cellfun('isempty', temp));
-                cx = str2double(inputMatrix{1}(x+1));
-                cy = str2double(inputMatrix{1}(x+2));
-                ADMSettings.Coarsening = [cx, cy; cx^2, cy^2; cx^3, cy^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
-                Discretization = ADM_Discretization_model(nx, ny, nz, ADMSettings);
-            end
-            
-        end
-        function FluidModel = BuildFluidModel(obj, inputMatrix)
-            
-            
+        function FluidModel = BuildFluidModel(obj, inputMatrix)     
            switch (char(inputMatrix(obj.Comp_Type+1)))
                case ('Immiscible')
                    FluidModel = Immiscible_fluid_model(n_phases);
