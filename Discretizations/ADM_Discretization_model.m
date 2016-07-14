@@ -8,9 +8,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef ADM_Discretization_model < Discretization_model
     properties
+        ADMSettings
         CoarseGrid
         ADMGrid
-        ADMSettings
     end
     methods
         function obj = ADM_Discretization_model(nx, ny, nz, settings)

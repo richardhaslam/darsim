@@ -8,123 +8,74 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef NL_Solver < handle
 properties
-    MaxChops
     MaxIter
-    Tol
+    Converged
+    itCount
     LinearSolver
+    ConvergenceChecker
 end
 properties (Access = private)
-    
+    Residual
+    Jacobian
+    delta
 end
 methods
-    function Solve(obj, ProductionSystem, Formulation, dt, Summary)
-        % Initialise objects
-        Converged=0;
-        CompConverged = 0;
-        chops=0;
-        while ((Converged==0 || CompConverged == 0) && chops <= obj.MaxChops)
-            
-            %Update fluid prowperties
-                     
-            % Compute residual
-            [Residual] = Formulation.BuildResidual(ProductionSystem);
-            
-            %Print some info to the screen
-            if (chops > 0)
-                disp('Maximum number of iterations was reached: time-step was chopped');
-                disp(['Restart Newton loop dt = ', num2str(dt)]);
-            end
-            disp(['Initial residual norm: ', num2str(norm(Residual, inf))]);
-            disp('');
-            disp('        ||Residual||   ||delta p||   ||delta S||');
-            
-            %Linear Solver Setup
-            obj.LinearSolver.setup(ProductionSystem, Discretization);
-            
-            % NEWTON LOOP
-            % Initialise Timers
-            TimerConstruct = zeros(obj.MaxIter,1);
-            TimerSolve = zeros(obj.MaxIter, 1);
-            TimerInner = zeros(obj.MaxIter, 1);
-            itCount = 1;
-            while ((Converged==0 || CompConverged == 0)  && (itCount <= obj.MaxIter))
-                
-                % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
-                start1 = tic;
-                J = Formulation.BuildJacobian();
-                TimerConstruct(itCount) = toc(start1);
-                
-                % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
-                start2 = tic;
-                [Delta, Delta_c] = obj.LinearSolver.Solve(J, Residual, N, ADM);
-                TimerSolve(itCount) = toc(start2);
-                
-                % 3. Update Solution
-                ProductionSystem = Formulation.UpdateSolution(ProductionSystem);
-                
-                % 5. Compute residual
-                [Residual] = Formulation.BuildResidual(ProductionSystem);
-                
-                % 6. Check convergence criteria
-                Converged = NewtonConvergence(itCount, Residual, Delta+Delta2, Status.p, Tol, N, ADM, Delta_c);
-                itCount = itCount+1;
-            end
-            if (Converged == 0 || CompConverged == 0)
-                dt = dt/2;
-                chops = chops + 1;
-            end
-        end
+    function [ProductionSystem, Summary] = Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt, Summary)
         
-        %Choose next time-step size
-        if itCount < 4
-            dtnext = 2*dt;
-        elseif itCount > 8
-            dtnext = dt/2;
-        else
-            dtnext = dt;
-        end
+        % Initialise objects for new NL Solve
+        obj.TimerConstruct = zeros(obj.MaxIter,1);
+        obj.TimerSolve = zeros(obj.MaxIter, 1);
+        obj.TimerInner = zeros(obj.MaxIter, 1);
+        obj.itCount = 1;
+        obj.Converged = 0;
+        obj.CompConverged = 0;
         
-        %Compute Injection and production fluxes for Injection  and Production curves
-        for i=1:length(Inj)
-            c = Inj(i).cells;
-            switch (Inj(i).type)
-                case('RateConstrained')
-                    Inj(i).qw = sum (Mw(c)./(Mw(c)+Mnw(c)).*Inj(i).q);
-                    Inj(i).qnw = sum (Inj(i).q - Inj(i).qw(c));
-                case('PressureConstrained')
-                    %Phases
-                    Inj(i).qw =   sum(Inj(i).Mw.* Inj(i).rho(c,1).* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
-                    Inj(i).qnw =  sum(Inj(i).Mo(i).* Inj(i).rho(c,2) .* Inj(i).PI .* Kvector(c).* (Inj(i).p - Status.p(c)))*3600*24;
-                    %Components
-                    Inj(i).qz1 = sum(Inj(i).x1(1) .* Inj(i).Mw .* Inj.rho(1) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24 +...
-                        sum(Inj(i).x1(2) .* Inj(i).Mo(c) .* Inj(i).rho(2) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
-                    Inj(i).qz2 = sum((1 - Inj(i).x1(1)) .* Inj(i).Mw .* Inj(i).rho(1) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24 +...
-                        sum((1 - Inj(i).x1(2)) .* Inj(i).Mo .* Inj(i).rho(2) .* Inj(i).PI .* Kvector(c) .* (Inj(i).p - Status.p(c)))*3600*24;
-            end
-        end
+        % Compute residual
+        obj.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, dt);
         
-        for i=1:length(Prod)
-            c = Prod(i).cells;
-            switch (Prod(i).type)
-                case('RateConstrained')
-                    Prod(i).qw = sum (Mw(c)./(Mw(c)+Mnw(c)).*Prod(i).q);
-                    Prod(i).qnw = sum (Prod(i).q - Prod(i).qw(c));
-                case('PressureConstrained')
-                    %Phases
-                    Prod(i).qw =   sum(Mw(c).* Status.rho(c,1).* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)));
-                    Prod(i).qnw =  sum(Mnw(c).* Status.rho(c,2) .* Prod(i).PI .* Kvector(c).* (Prod(i).p - Status.p(c)));
-                    %Components
-                    Prod(i).qz1 = sum(Status.x1(c, 1) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c))) +...
-                        sum(Status.x1(c, 2) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)));
-                    Prod(i).qz2 = sum((1 - Status.x1(c, 1)) .* Mw(c) .* Status.rho(c,1) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c))) +...
-                        sum((1 - Status.x1(c, 2)) .* Mnw(c) .* Status.rho(c,2) .* Prod(i).PI .* Kvector(c) .* (Prod(i).p - Status.p(c)));
-            end
-        end
+        % Print some info
+        disp(['Initial residual norm: ', num2str(norm(obj.Residual, inf))]);
+        disp('');
+        disp('        ||Residual||   ||delta p||   ||delta S||');
         
-        %% Stats, timers and Injection/Production data
-        Summary.CouplingStats.SaveStats(Ndt, itCount-1, chops);
-        Summary.CouplingStats.SaveTimers(Ndt, TimerConstruct, TimerSolve, TimerInner);
-        Summary.SaveWellsData(Ndt+1, Inj, Prod, dt);
+        % NEWTON LOOP
+        while ((obj.Converged==0)  && (obj.itCount <= obj.MaxIter))
+            
+            % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
+            start1 = tic;
+            obj.BuildJacobian(ProductionSystem, FluidModel, DiscretizationModel, dt);
+            obj.TimerConstruct(obj.itCount) = toc(start1);
+            
+            % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
+            start2 = tic;
+            obj.SolveLinearSystem();
+            obj.TimerSolve(obj.itCount) = toc(start2);
+            
+            % 3. Update Solution
+            start3 = tic;
+            ProductionSystem = Formulation.UpdateSolution(ProductionSystem);
+            obj.TimerInner(obj.itCount) = toc(start3);
+            
+            % 5. Compute residual
+            obj.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, dt);
+            
+            % 6. Check NonLinear convergence
+            obj.CheckConvergence();
+            
+            obj.itCount = obj.itCount + 1;
+        end
+    end
+    function BuildResidual(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel, dt)
+        obj.Residual = Formulation.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, dt);
+    end
+    function SolveLinearSystem(obj)
+        obj.delta = obj.LinearSolver.Solve(obj.Jacobian, obj.Residual);
+    end
+    function BuildJacobian(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel, dt)
+        obj.Jacobian = Formulation.BuildJacobian(ProductionSystem, FluidModel, DiscretizationModel, dt);
+    end
+    function CheckConvergence(obj)
+        obj.Converged = obj.ConvergenceChecker.Check();
     end
 end
 end
