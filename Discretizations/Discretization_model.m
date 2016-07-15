@@ -8,9 +8,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Discretization_model < handle
     properties
-        Grid
+        ReservoirGrid
+        FracturesGrid
     end
     methods
+        function obj = Discretization_model(Nx, Ny)
+            obj.ReservoirGrid = cartesian_grid(Nx, Ny);
+        end
         
     end
 end

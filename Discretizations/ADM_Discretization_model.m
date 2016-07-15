@@ -6,12 +6,15 @@
 %Created: 12 July 2016
 %Last modified: 12 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef ADM_Discretization_model < handle
+classdef ADM_Discretization_model < Discretization_model
     properties
+        ADMSettings
         CoarseGrid
         ADMGrid
     end
     methods
-        
+        function obj = ADM_Discretization_model(Nx, Ny, ADMSettings)
+            obj@Discretization_model(Nx, Ny);
+            obj.ADMSettings = ADMSettigns;
     end
 end

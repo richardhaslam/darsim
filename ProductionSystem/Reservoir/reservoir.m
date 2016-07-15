@@ -14,6 +14,13 @@ classdef reservoir < handle
         Temp
         K
         por
-        Discretization
+    end
+    methods
+        function obj = reservoir(length, width, depth, temp)
+            obj.Length = length;
+            obj.Width = width;
+            obj.Depth = depth;
+            obj.Temp = temp;
+        end
     end
 end

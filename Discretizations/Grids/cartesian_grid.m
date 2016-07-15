@@ -13,6 +13,11 @@ classdef cartesian_grid < grid
         Nz
     end
     methods
-        
+        function obj = cartesian_grid(nx, ny)
+            obj.Nx = nx;
+            obj.Ny = ny;
+            obj.Nz = 1;
+            obj.N = nx * ny * 1;
+        end
     end
 end

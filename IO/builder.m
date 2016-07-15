@@ -107,7 +107,7 @@ classdef builder < handle
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix);
             simulation.Formulation = obj.BuildFormulation(inputMatrix);
-            simulation.TimeDriver = obj.BuildTimeDriver();
+            simulation.TimeDriver = obj.BuildTimeDriver(inputMatrix, SettingsMatrix);
             simulation.Summary = obj.BuildSummary();
         end
         function ProductionSystem = BuildProductionSystem (obj, inputMatrix)
@@ -174,12 +174,20 @@ classdef builder < handle
             end
             
         end
-        function FluidModel = BuildFluidModel(obj)
-            
+        function FluidModel = BuildFluidModel(obj, inputMatrix)
+            switch()
+                case ('BlackOil')
+                case ('Compositional')
+                case ('Immiscible')
+            end
         end
-        function Formulation = BuildFormulation(obj)
+        function Formulation = BuildFormulation(obj, inputMatrix)
+            switch()
+                case ('MassBased')
+                case ('NaturalVariables')
+            end
         end
-        function TimeDriver = BuildTimeDriver(obj)
+        function TimeDriver = BuildTimeDriver(obj, inputMatrix, SettingsMatrix)
         end
         function Summary = BuildSummary(obj)
         end

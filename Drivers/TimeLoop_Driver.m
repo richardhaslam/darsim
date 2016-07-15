@@ -23,7 +23,7 @@ classdef TimeLoop_Driver < handle
         function AddCouplingStrategy(obj, coupling)
             obj.Coupling = coupling;
         end
-        function SolveTimeDependentProblem(obj, ProductionSystem, FluidModel, Formulation, Summary)
+        function SolveTimeDependentProblem(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, Summary)
             %%%%% START THE TIME LOOP %%%%%
             Converged = 0;
             index = 1;
@@ -35,9 +35,13 @@ classdef TimeLoop_Driver < handle
                 maxdT = Tstops - t;
                 
                 %% Non-linear Solver
-                [ProductionSystem, obj.dt, Summary] = Obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, Formulation, Summary, maxdT);
+                [ProductionSystem, obj.dt] =...
+                    obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation, maxdT);
                 
-                %Check for convergence at the end of the timestep
+                % Save Stats
+                Summary = obj.Coupling.UpdateSummary(Summary, obj.Ndt);
+                
+                % Check for convergence at the end of the timestep
                 if (Converged==0)
                    disp(['The solution has not converged at timestep ' num2str(obj.Ndt)]);
                    break

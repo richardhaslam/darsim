@@ -9,15 +9,26 @@
 classdef Reservoir_Simulator < handle
     properties
         Reader
+        Builder
         Simulation
-        Output
+        Writer
     end
     methods
-        function AddSimulation(obj, simulation)
-            obj.Simulation = simulation;
+        function obj = Reservoir_Simulator(Directory, File)
+            obj.Reader = reader(Directory, File);
+            obj.Builder = builder();
+            obj.Simulation = Reservoir_Simulation();
         end
-        function AddOutput(obj, output)
-            obj.Output = output;
+        function BuildObjects(obj)
+            obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix);
+            obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1});
+            obj.Writer = obj.Builder.BuildWriter(obj.Simulation); 
+        end
+        function Run(obj)
+            obj.Simulation.Run();
+        end
+        function OutputResutls(obj)
+            obj.Output.WriteSummary(obj.Simulation.Summary);
         end
     end
 end

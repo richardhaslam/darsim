@@ -16,4 +16,7 @@ methods
         obj.Name = name;
     end
 end
+methods (Abstract)
+    [ProductionSystem, dt, Summary] = SolveTimeStep(obj, ProductionSystem, DiscretizationModel, Formulation, maxDt, Summary)
+end
 end

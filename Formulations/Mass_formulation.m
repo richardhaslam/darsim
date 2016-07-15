@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 12 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Mass_formulation < handle
+classdef Mass_formulation < formulation
     properties
         
     end

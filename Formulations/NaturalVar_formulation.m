@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 12 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef NaturalVar_formulation < handle
+classdef NaturalVar_formulation < formulation
     properties
         
     end
@@ -15,7 +15,7 @@ classdef NaturalVar_formulation < handle
         end
         function BuildJacobian(obj)
         end
-        function UpdateStatus(obj, Status, delta)
+        function UpdateStatus(obj, ProductionSystem, delta)
         end
         function BuildPressureSystem(obj)
         end
