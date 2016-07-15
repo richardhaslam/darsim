@@ -25,10 +25,15 @@ classdef Reservoir_Simulator < handle
             obj.Writer = obj.Builder.BuildWriter(obj.Simulation); 
         end
         function Run(obj)
-            obj.Simulation.Run();
+            % Initialize Simulation
+            obj.Simulation.Initialize();
+            % Plot initial state of the reservoir
+            obj.Writer.Plotter.PlotInitialStatus(obj.Simulation.ProductionSystem, obj.Simulation.DiscretizationModel);
+            % Run simulation
+            obj.Simulation.Run(obj.Writer);
         end
         function OutputResutls(obj)
-            obj.Output.WriteSummary(obj.Simulation.Summary);
+            obj.Writer.WriteSummary(obj.Simulation.Summary);
         end
     end
 end

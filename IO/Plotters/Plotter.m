@@ -17,8 +17,12 @@ classdef Plotter < handle
     end
     methods
         function PlotInitialStatus(obj, Status, Grid, K, Inj, Prod)
+            % Plot reservoir Solution
             obj.PlotSolution(Status, Grid);
             obj.PlotPermeability(Grid, K);
+            % Plot Fractures
+            
+            % Plot Wells
             obj.PlotWells(Inj, Prod);
         end
     end

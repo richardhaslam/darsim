@@ -23,16 +23,14 @@ classdef TimeLoop_Driver < handle
         function AddCouplingStrategy(obj, coupling)
             obj.Coupling = coupling;
         end
-        function SolveTimeDependentProblem(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, Summary)
+        function Summary = SolveTimeDependentProblem(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, Summary, Writer)
             %%%%% START THE TIME LOOP %%%%%
-            Converged = 0;
-            index = 1;
-                      
+            index = 1;         
             while (obj.TotalTime < obj.FinalTime && obj.obj.Ndt <= obj.MaxNumberOfTimeSteps)
                 %% Initialise time-step
                 disp(['Time-step ' num2str(obj.Ndt) ': Initial time: ' num2str(t/(3600*24),4) ' days']);
                 tstart = tic;
-                maxdT = Tstops - t;
+                maxdT = obj.Tstops(index) - t;
                 
                 %% Non-linear Solver
                 [ProductionSystem, obj.dt] =...
@@ -42,7 +40,7 @@ classdef TimeLoop_Driver < handle
                 Summary = obj.Coupling.UpdateSummary(Summary, obj.Ndt);
                 
                 % Check for convergence at the end of the timestep
-                if (Converged==0)
+                if (obj.Coupling.NLSolver.Converged==0)
                    disp(['The solution has not converged at timestep ' num2str(obj.Ndt)]);
                    break
                 end
@@ -63,8 +61,8 @@ classdef TimeLoop_Driver < handle
                 %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
                 if (t == Tstops(index))
                     disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
-                    Output.Plotter.PlotSolution(Status, Grid);
-                    index = index +1;
+                    Writer.Plotter.PlotSolution(Status, Grid);
+                    index = index + 1;
                 end
             end
         end

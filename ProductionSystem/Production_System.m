@@ -19,5 +19,10 @@ classdef Production_System < handle
         function AddWells(obj, Wells)
             obj.Wells = Wells;
         end
+        function Initialize(obj, DiscretizationModel, FluidModel)
+            %% Initialize Reservoir state           
+            
+            %% Initialize Wells
+        end
     end
 end

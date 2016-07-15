@@ -12,9 +12,11 @@ classdef Discretization_model < handle
         FracturesGrid
     end
     methods
-        function obj = Discretization_model(Nx, Ny)
-            obj.ReservoirGrid = cartesian_grid(Nx, Ny);
+        function obj = Discretization_model(nx, ny, nz)
+            obj.ReservoirGrid = grid_cartesian(nx, ny, nz);
         end
-        
+        function Initialize(obj, ProductionSystem)
+            obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
+        end
     end
 end

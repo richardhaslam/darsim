@@ -11,8 +11,8 @@ classdef FS_Discretization_model < Discretization_model
         
     end
     methods
-        function obj = FS_Discretization_model(Nx, Ny)
-            obj@Discretization_model(Nx, Ny);
+        function obj = FS_Discretization_model(nx, ny, nz)
+            obj@Discretization_model(nx, ny, nz);
         end
     end
 end

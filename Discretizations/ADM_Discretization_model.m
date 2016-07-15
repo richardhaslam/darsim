@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 12 July 2016
+%Last modified: 14 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef ADM_Discretization_model < Discretization_model
     properties
@@ -13,8 +13,9 @@ classdef ADM_Discretization_model < Discretization_model
         ADMGrid
     end
     methods
-        function obj = ADM_Discretization_model(Nx, Ny, ADMSettings)
-            obj@Discretization_model(Nx, Ny);
-            obj.ADMSettings = ADMSettigns;
+        function obj = ADM_Discretization_model(nx, ny, nz, settings)
+            obj@Discretization_model(nx, ny, nz);
+            obj.ADMSettings = settings;
+        end
     end
 end

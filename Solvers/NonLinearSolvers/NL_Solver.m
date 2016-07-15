@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 July 2016
-%Last modified: 12 July 2016
+%Last modified: 14 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef NL_Solver < handle
 properties
@@ -20,8 +20,7 @@ properties (Access = private)
     delta
 end
 methods
-    function [ProductionSystem, Summary] = Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt, Summary)
-        
+    function [ProductionSystem, Summary] = Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt, Summary)        
         % Initialise objects for new NL Solve
         obj.TimerConstruct = zeros(obj.MaxIter,1);
         obj.TimerSolve = zeros(obj.MaxIter, 1);
@@ -38,7 +37,7 @@ methods
         disp('');
         disp('        ||Residual||   ||delta p||   ||delta S||');
         
-        % NEWTON LOOP
+        % NEWTON-RAPHSON LOOP
         while ((obj.Converged==0)  && (obj.itCount <= obj.MaxIter))
             
             % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
