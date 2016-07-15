@@ -113,7 +113,7 @@ classdef builder < handle
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
             %Gridding
-            nx = str2double(inputMatrix(obj.grid + 1));  
+            nx = str2double(inputMatrix(obj.grid + 1));
             ny = str2double(inputMatrix(obj.grid + 2));
             nz = str2double(inputMatrix(obj.grid + 3));
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
@@ -137,10 +137,10 @@ classdef builder < handle
             end
             
         end
-        function ProductionSystem = BuildProductionSystem (obj, inputMatrix, DiscretizationModel)           
-            ProductionSystem = Production_System();          
+        function ProductionSystem = BuildProductionSystem (obj, inputMatrix, DiscretizationModel)
+            ProductionSystem = Production_System();
             %Reservoir
-            Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x−direction [m] 
+            Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x−direction [m]
             Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y−direction [m]
             h = str2double(inputMatrix(obj.size + 3));  %Reservoir thickness [m]
             Tres = str2double(inputMatrix(obj.temperature + 1));   %Res temperature [K]
@@ -148,13 +148,13 @@ classdef builder < handle
             phi = str2double(inputMatrix(obj.por + 1));
             if strcmp(inputMatrix(obj.perm - 1), 'INCLUDE')
                 %File name
-                file  = strcat('../Permeability/', char(inputMatrix(obj.perm +1))); 
+                file  = strcat('../Permeability/', char(inputMatrix(obj.perm +1)));
                 %load the file in a vector
-                field = load(file);     
+                field = load(file);
                 % reshape it to specified size
-                field = reshape(field(3:end),[field(1) field(2)]);     
+                field = reshape(field(3:end),[field(1) field(2)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny)*10^(-12), DiscretizationModel.ReservoirGrid.N, 1);  
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny)*10^(-12), DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
             else
                 Kx = ones(Grid.N,1)*10^(-12);
@@ -191,15 +191,32 @@ classdef builder < handle
             ProductionSystem.AddWells(Wells);
             
         end
-        function FluidModel = BuildFluidModel(obj, inputMatrix)     
-           switch (char(inputMatrix(obj.Comp_Type+1)))
-               case ('Immiscible')
-                   FluidModel = Immiscible_fluid_model(n_phases);
-               case ('BlackOil')
-                   FluidModel = BO_fluid_model(n_phases, n_comp);
-               case ('Compositional')
-                   FluidModel = Comp_fluid_model(n_phases, n_comp);
-           end
+        function FluidModel = BuildFluidModel(obj, inputMatrix)
+            n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
+            n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
+            switch(char(inputMatrix(obj.Comp_Type+1)))
+                case('Immiscible')
+                    FluidModel = Immiscible_fluid_model(n_phases);
+                case('BlackOil')
+                    FluidModel = BO_fluid_model(n_phases, n_comp);
+                case('Compositional')
+                    FluidModel = Comp_fluid_model(n_phases, n_comp);
+            end
+            switch(char(inputMatrix(obj.relperm + 1)))
+                case('Linear')
+                    FluidModel.RelPermModel = relperm_model_linear();
+                case('Quadratic')
+                    FluidModel.RelPermModel = relperm_model_quadratic();
+            end
+            switch(char(inputMatrix(obj.capillarity + 1)))
+                case('JLeverett')
+                    FluidModel.CapillaryModel = capillary_model_leverett();
+                case('BrooksCorey')
+                    FluidModel.CapillaryModel = capillary_model_corey();
+                case('Linear')
+                    FluidModel.CapillaryModel = capillary_model_linear();
+            end
+            
         end
         function Formulation = BuildFormulation(obj, inputMatrix)
             
