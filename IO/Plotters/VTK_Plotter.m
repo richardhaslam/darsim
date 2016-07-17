@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 11 July 2016
-%Last modified: 11 July 2016
+%Last modified: 17 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef VTK_Plotter < Plotter
     properties
@@ -13,6 +13,11 @@ classdef VTK_Plotter < Plotter
     end
     methods
         function obj = VTK_Plotter(Directory, Problem)
+            if ~exist(strcat(Directory,'/Output/VTK/'), 'dir')
+                mkdir(Directory,'/Output/VTK');
+            else
+                delete(strcat(Directory,'/Output/VTK/*.vtk'));
+            end
             obj.FileName = strcat(Directory, '/Output/VTK/', Problem);
             obj.VTKindex = 0;
         end

@@ -18,7 +18,7 @@ classdef TimeLoop_Driver < handle
     methods
         function obj = TimeLoop_Driver(total_time, n_reports)
             obj.TotalTime = total_time;
-            obj.TStops = linspace(obj.TotalTime/n_reports, T, n_reports);
+            obj.TStops = linspace(obj.TotalTime/n_reports, obj.TotalTime, n_reports);
         end
         function AddCouplingStrategy(obj, coupling)
             obj.Coupling = coupling;

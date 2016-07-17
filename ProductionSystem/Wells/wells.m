@@ -10,6 +10,8 @@ classdef wells < handle
     properties
         Inj
         Prod
+        NofInj
+        NofProd
     end
     methods
         function AddInjector(obj, Injector)

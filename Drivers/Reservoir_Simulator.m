@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 12 July 2016
+%Last modified: 17 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Reservoir_Simulator < handle
     properties
@@ -22,7 +22,7 @@ classdef Reservoir_Simulator < handle
         function BuildObjects(obj)
             obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix);
             obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1});
-            obj.Writer = obj.Builder.BuildWriter(obj.Simulation); 
+            obj.Writer = obj.Builder.BuildWriter(obj.Reader.Directory, obj.Simulation); 
         end
         function Run(obj)
             % Initialize Simulation

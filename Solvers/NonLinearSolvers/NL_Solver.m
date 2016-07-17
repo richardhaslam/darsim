@@ -20,6 +20,9 @@ properties (Access = private)
     delta
 end
 methods
+    function AddConvergenceChecker(obj, convcheck)
+        obj.ConvergenceChecker = convcheck;
+    end
     function [ProductionSystem, Summary] = Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt, Summary)        
         % Initialise objects for new NL Solve
         obj.TimerConstruct = zeros(obj.MaxIter,1);

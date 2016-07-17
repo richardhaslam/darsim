@@ -16,7 +16,10 @@ classdef injector < handle
         PI
         z
         s
-        x
+        x1
+        x2
+        rho
+        Mob
     end
     methods
         function obj = injector(PI, coord)

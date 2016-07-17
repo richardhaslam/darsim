@@ -31,8 +31,8 @@ Status.z(:,2) = 1-z_init;
 switch (Fluid.Type)
     case('Immiscible')         
         %Composition in this case is fixed to be 1 and 0
-        Status.x1(:,1) = ones(Grid.N, 1);           
-        Status.x1(:,2) = zeros(Grid.N, 1);   
+        Status.x1(:,1) = ones(N, 1);           
+        Status.x1(:,2) = zeros(N, 1);   
         
         SinglePhase.onlyvapor (Status.z(:,1) == 1) = 1;
         SinglePhase.onlyliquid (Status.z(:,2) == 1) = 1;

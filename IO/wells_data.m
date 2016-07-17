@@ -6,15 +6,15 @@
 %Created: 4 July 2016
 %Last modified: 8 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Wells_Data < handle 
+classdef wells_data < handle 
     properties
         Injection
         Production
     end
     methods
-        function obj = Wells_Data(MaxNTimeSteps, n_phases, n_components, Inj, Prod)
-            obj.Injection = Curve_Inj_Prod(MaxNTimeSteps, n_phases, n_components, Inj);
-            obj.Production = Curve_Inj_Prod(MaxNTimeSteps, n_phases, n_components, Prod);
+        function obj = wells_data(MaxNTimeSteps, n_phases, n_components, Wells)
+            obj.Injection = Curve_Inj_Prod(MaxNTimeSteps, n_phases, n_components, Wells.Inj);
+            obj.Production = Curve_Inj_Prod(MaxNTimeSteps, n_phases, n_components, Wells.Prod);
         end
         function UpdateInjectionCurve(obj, Ndt, Inj, dT)
             for w = 1:length(Inj)

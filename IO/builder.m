@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 13 July 2016
+%Last modified: 17 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -28,6 +28,7 @@ classdef builder < handle
         prod
         MaxNumTimeSteps
         CouplingType
+        coupling
         transport
         plotting
         adm
@@ -83,8 +84,8 @@ classdef builder < handle
             xv = find(~cellfun('isempty', temp));
             obj.MaxNumTimeSteps = str2double(SettingsMatrix{1}(xv+1));
             temp = strfind(SettingsMatrix{1}, 'FIM'); 
-            strategy = find(~cellfun('isempty', temp));
-            if strategy ~= 0
+            obj.coupling = find(~cellfun('isempty', temp));
+            if obj.coupling ~= 0
                 obj.CouplingType = 'FIM';
             else
                 temp = strfind(SettingsMatrix{1}, 'SEQUENTIAL'); 
@@ -97,9 +98,9 @@ classdef builder < handle
             obj.adm = find(~cellfun('isempty', temp));
             
             %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
-            temp = strfind(inputMatrix{1}, 'OUTPUT');
+            temp = strfind(SettingsMatrix{1}, 'OUTPUT');
             xv = find(~cellfun('isempty', temp));
-            obj.plotting = char(inputMatrix{1}(xv+1)); %Matlab or VTK
+            obj.plotting = char(SettingsMatrix{1}(xv+1)); %Matlab or VTK
             
         end
         function simulation = BuildSimulation(obj, inputMatrix, SettingsMatrix)
@@ -108,8 +109,8 @@ classdef builder < handle
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix);
             simulation.Formulation = obj.BuildFormulation(inputMatrix);
-            simulation.TimeDriver = obj.BuildTimeDriver(inputMatrix, SettingsMatrix);
-            simulation.Summary = obj.BuildSummary();
+            simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
+            simulation.Summary = obj.BuildSummary(simulation);
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
             %Gridding
@@ -166,8 +167,10 @@ classdef builder < handle
             
             % Wells
             Wells = wells();
+            Wells.NofInj = length(obj.inj);
+            Wells.NofProd = length(obj.prod);
             %Injectors
-            for i=1:length(obj.inj)
+            for i=1:Wells.NofInj
                 i_init = str2double(inputMatrix(obj.inj(i) + 1));
                 i_final = str2double(inputMatrix(obj.inj(i) + 2));
                 j_init = str2double(inputMatrix(obj.inj(i) + 3));
@@ -178,7 +181,7 @@ classdef builder < handle
                 Wells.AddInjector(Injector);
             end
             %Producers
-            for i=1:length(obj.prod)
+            for i=1:Wells.NofProd
                 i_init = str2double(inputMatrix(obj.prod(i) + 1));
                 i_final = str2double(inputMatrix(obj.prod(i) + 2));
                 j_init = str2double(inputMatrix(obj.prod(i) + 3));
@@ -199,9 +202,34 @@ classdef builder < handle
                     FluidModel = Immiscible_fluid_model(n_phases);
                 case('BlackOil')
                     FluidModel = BO_fluid_model(n_phases, n_comp);
+                    FluidModel.Pref = str2double(inputMatrix(obj.Comp_Prop + 2));
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
+                    % Add components
+                    for i = FluidModel.NofComp
+                        %Gets all atmospheric bubble points [K]
+                        str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*5));
+                        %Gets all slopes connecting bubble point and
+                        %critical point on 1/T plot [K]
+                        str2double(inputMatrix(obj.Comp_Prop + 5*i));
+                        FluidModel.Components(i) = compoent(Tb, b);
+                    end
             end
+            % Add phases
+            for i = 1:FluidModel.NofPhases
+                Phase = phase();
+                %Gets all densities [kg/m^3]
+                Phase.rho0 = str2double(inputMatrix(obj.density + 2*i));
+                %Gets all viscosities [Pa sec]
+                Phase.mu = str2double(inputMatrix(obj.viscosity + 2*i));
+                %Gets all compressibilities [1/Pa]
+                Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
+                %Gets all residual saturations [-]
+                Phase.sr = str2double(inputMatrix(obj.relperm + 1 + 2*i));
+                FluidModel.AddPhase(Phase, i);
+            end
+            
+            
             switch(char(inputMatrix(obj.relperm + 1)))
                 case('Linear')
                     FluidModel.RelPermModel = relperm_model_linear();
@@ -219,14 +247,75 @@ classdef builder < handle
             
         end
         function Formulation = BuildFormulation(obj, inputMatrix)
+            formulationtype = 'Natural';
+            if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
+                formulationtype = 'Immiscible';
+            end
+            switch(formulationtype)
+                case('Immiscible')
+                    Formulation = Immiscible_formulation();
+                case('Natural')
+                    Formulation = NaturalVar_formulation();
+                case('Mass')
+                    Formulation = Mass_formulation();
+            end
+        end
+        function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
+            n_reports = 10; %Hard coded for now
+            TimeDriver = TimeLoop_Driver(obj.TotalTime, n_reports);
+            TimeDriver.MaxNumberOfTimeSteps = obj.MaxNumTimeSteps;
+            %% Construct Coupling
+            switch(obj.CouplingType)
+                case('FIM')
+                    %%%%FIM settings
+                    NLSolver = NL_Solver();
+                    NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
+                    % Build a different convergence cheker and a proper LS for ADM
+                    if (str2double(SettingsMatrix(obj.adm + 1))==0)
+                        ConvergenceChecker = convergence_checker_FS();
+                        NLSolver.LinearSolver = linear_solver();
+                    else
+                        ConvergenceChecker = convergence_checker_ADM();
+                        NLSolver.LinearSolver = linear_solver_ADM();
+                    end
+                    ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));                 
+                    NLSolver.AddConvergenceChecker(ConvergenceChecker); 
+                    
+                    Coupling = FIM_Strategy('FIM', NLSolver);
+                    Coupling.CFL = str2double(SettingsMatrix(obj.coupling + 3));  
+                case('Sequential')
+                    Coupling = Sequential_Strategy();
+            end
+            TimeDriver.AddCouplingStrategy(Coupling);
+        end
+        function Summary = BuildSummary(obj, simulation)
+            %%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
+            switch(obj.CouplingType)
+                case('FIM')
+                    CouplingStats = FIM_Stats(obj.MaxNumTimeSteps);
+                case('Sequential')
+                    CouplingStats = Sequential_Stats(obj.MaxNumTimeSteps);
+            end
+            wellsData = wells_data(obj.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
+            Summary = Run_Summary(obj.MaxNumTimeSteps, CouplingStats, wellsData);
+        end
+        function Writer = BuildWriter(obj, InputDirectory, simulation)
+            % Build Plotter
+            switch(obj.plotting)
+                case('Matlab')
+                    if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.ReservoirGrid.Ny == 1
+                        plotter = Matlab_Plotter_1D();
+                    else
+                        plotter = Matlab_Plotter_2D();
+                    end
+                case('VTK')
+                    plotter = VTK_Plotter(InputDirectory, obj.ProblemName);
+                otherwise
+                    plotter = no_Plotter();
+            end
             
-        end
-        function TimeDriver = BuildTimeDriver(obj, inputMatrix, SettingsMatrix)
-        end
-        function Summary = BuildSummary(obj)
-        end
-        function Writer = BuildWriter(obj, simulation)
-            
+            Writer = output_writer_txt(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats);
+            Writer.AddPlotter(plotter);
         end
     end
 end

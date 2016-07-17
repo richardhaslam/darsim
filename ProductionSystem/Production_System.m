@@ -1,10 +1,10 @@
-% Simulation class
+% Production System class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 13 July 2016
+%Last modified: 17 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 classdef Production_System < handle
@@ -21,8 +21,13 @@ classdef Production_System < handle
         end
         function Initialize(obj, DiscretizationModel, FluidModel)
             %% Initialize Reservoir state           
+            % 1. Initialize State object
+            obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N);
+            % 2. Compute initial phase and component distribution
+            obj.Reservoir.State = FluidModel.InitializeReservoir(obj.Reservoir.State);
             
-            %% Initialize Wells
+            %% Initialize Wells: Injection fluid properties have to be defined
+            obj.Wells.Inj = FluidModel.InitializeInjectors(obj.Wells.Inj);
         end
     end
 end

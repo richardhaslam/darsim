@@ -6,7 +6,7 @@
 %Created: 22 June 2016
 %Last Modified: 22 June 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Compute pahse saturations
+%% Compute phase saturations
 % Updates the saturation of the 2 phases based on mass balance.
 % 2 equations are used:
 %   - z1*rho_t = x11*rho_1*S_1 + x12*rho_2*S_2
