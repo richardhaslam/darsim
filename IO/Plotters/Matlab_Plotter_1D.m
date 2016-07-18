@@ -19,13 +19,13 @@ classdef Matlab_Plotter_1D < Plotter
         function PlotSolution(obj, Status, Grid)
             % Reshape all objects
             P = reshape(Status.p,Grid.Nx,Grid.Ny);
-            S = reshape(Status.s,Grid.Nx,Grid.Ny);
+            S = reshape(Status.S,Grid.Nx,Grid.Ny);
             Pc = reshape(Status.pc,Grid.Nx,Grid.Ny);
             x1 = reshape(Status.x1(:,1),Grid.Nx,Grid.Ny);
             x2 = reshape(1-Status.x1(:,2),Grid.Nx,Grid.Ny);
             z = reshape(Status.z(:,1),Grid.Nx,Grid.Ny);
             %Plot for 1D problems
-            x = linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
+            x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
             figure(1)
             subplot(3,1,2);
             plot(x, P, obj.color1, 'LineWidth',1);

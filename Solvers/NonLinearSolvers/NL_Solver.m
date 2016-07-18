@@ -55,7 +55,7 @@ methods
             
             % 3. Update Solution
             start3 = tic;
-            ProductionSystem = Formulation.UpdateSolution(ProductionSystem);
+            ProductionSystem.UpdateState(obj.delta, Formulation, FluidModel);
             obj.TimerInner(obj.itCount) = toc(start3);
             
             % 5. Compute residual

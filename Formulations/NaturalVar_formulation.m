@@ -15,7 +15,8 @@ classdef NaturalVar_formulation < formulation
         end
         function BuildJacobian(obj)
         end
-        function UpdateStatus(obj, ProductionSystem, delta)
+        function UpdateState(obj, delta, Status, FluidModel)
+            
         end
         function BuildPressureSystem(obj)
         end

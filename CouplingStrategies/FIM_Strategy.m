@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 July 2016
-%Last modified: 8 July 2016
+%Last modified: 18 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef FIM_Strategy < Coupling_Strategy
 properties
@@ -18,7 +18,7 @@ methods
         obj@Coupling_Strategy(name);
         obj.NLSolver = NONLinearSolver;
     end
-    function [ProductionSystem, dt] = SolveTimeStep(obj, ProductionSystem, DiscretizationModel, Formulation, maxDt)
+    function [ProductionSystem, dt] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, maxDt)
         dt = obj.TimeStepSelector(maxDt);
         while (obj.NLSolver.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen

@@ -10,9 +10,10 @@ classdef injector_pressure < injector
     properties
     end
     methods
-        function obj = injector_pressure(PI, coord, pressure)
+        function obj = injector_pressure(PI, coord, pressure, temperature)
             obj@injector(PI, coord)
             obj.p = pressure;
+            obj.T = temperature;
         end
     end
 end

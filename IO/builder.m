@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 17 July 2016
+%Last modified: 18 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -32,6 +32,7 @@ classdef builder < handle
         transport
         plotting
         adm
+        flash
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
@@ -96,6 +97,8 @@ classdef builder < handle
             
             temp = strfind(SettingsMatrix{1}, 'ADM');
             obj.adm = find(~cellfun('isempty', temp));
+            temp = strfind(SettingsMatrix{1}, 'FLASH LOOPS');
+            obj.flash = find(~cellfun('isempty', temp));
             
             %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
             temp = strfind(SettingsMatrix{1}, 'OUTPUT');
@@ -107,7 +110,7 @@ classdef builder < handle
             simulation = Reservoir_Simulation();
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
-            simulation.FluidModel = obj.BuildFluidModel(inputMatrix);
+            simulation.FluidModel = obj.BuildFluidModel(inputMatrix, SettingsMatrix);
             simulation.Formulation = obj.BuildFormulation(inputMatrix);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
@@ -158,8 +161,8 @@ classdef builder < handle
                 Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny)*10^(-12), DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
             else
-                Kx = ones(Grid.N,1)*10^(-12);
-                Ky = ones(Grid.N,1)*10^(-12);
+                Kx = ones(DiscretizationModel.ReservoirGrid.N,1)*10^(-12);
+                Ky = ones(DiscretizationModel.ReservoirGrid.N,1)*10^(-12);
             end
             K = [Kx, Ky];
             Reservoir.AddPermeabilityPorosity(K, phi);
@@ -177,7 +180,8 @@ classdef builder < handle
                 j_final = str2double(inputMatrix(obj.inj(i) + 4));
                 coord = [i_init, i_final; j_init, j_final];
                 PI = 2000;
-                Injector = injector_pressure(PI, coord, str2double(inputMatrix(obj.inj(i) + 6)));
+                pressure = str2double(inputMatrix(obj.inj(i) + 6));
+                Injector = injector_pressure(PI, coord, pressure, Tres);
                 Wells.AddInjector(Injector);
             end
             %Producers
@@ -194,7 +198,7 @@ classdef builder < handle
             ProductionSystem.AddWells(Wells);
             
         end
-        function FluidModel = BuildFluidModel(obj, inputMatrix)
+        function FluidModel = BuildFluidModel(obj, inputMatrix, SettingsMatrix)
             n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
             n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
             switch(char(inputMatrix(obj.Comp_Type+1)))
@@ -202,18 +206,25 @@ classdef builder < handle
                     FluidModel = Immiscible_fluid_model(n_phases);
                 case('BlackOil')
                     FluidModel = BO_fluid_model(n_phases, n_comp);
-                    FluidModel.Pref = str2double(inputMatrix(obj.Comp_Prop + 2));
+                    FluidModel.Pref = 1e5;
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
                     % Add components
-                    for i = FluidModel.NofComp
+                    for i = 1:FluidModel.NofComp
                         %Gets all atmospheric bubble points [K]
-                        str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*5));
+                        Tb = str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*5));
                         %Gets all slopes connecting bubble point and
                         %critical point on 1/T plot [K]
-                        str2double(inputMatrix(obj.Comp_Prop + 5*i));
-                        FluidModel.Components(i) = compoent(Tb, b);
+                        b = str2double(inputMatrix(obj.Comp_Prop + 5*i));
+                        comp = component();
+                        comp.AddCompProperties(Tb, b);
+                        FluidModel.AddComponent(comp, i); 
                     end
+                                        
+                    FlashSettings.TolInner = str2double(SettingsMatrix(obj.flash + 2));
+                    FlashSettings.MaxIt = str2double(SettingsMatrix(obj.flash + 3));
+                    FlashSettings.TolFlash = str2double(SettingsMatrix(obj.flash + 4));
+                    FluidModel.AddFlash(FlashSettings);
             end
             % Add phases
             for i = 1:FluidModel.NofPhases
@@ -303,7 +314,7 @@ classdef builder < handle
             % Build Plotter
             switch(obj.plotting)
                 case('Matlab')
-                    if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.ReservoirGrid.Ny == 1
+                    if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
                         plotter = Matlab_Plotter_1D();
                     else
                         plotter = Matlab_Plotter_2D();

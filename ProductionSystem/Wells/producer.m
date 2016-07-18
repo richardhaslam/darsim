@@ -9,7 +9,7 @@
 classdef producer < handle
     properties
         Coord
-        cells
+        Cells
         p
         QPhases
         QComponents

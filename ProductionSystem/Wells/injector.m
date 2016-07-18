@@ -11,11 +11,12 @@ classdef injector < handle
         Coord
         Cells
         p
+        T
         QPhases
         QComponents
         PI
         z
-        s
+        S
         x1
         x2
         rho

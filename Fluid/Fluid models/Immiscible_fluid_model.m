@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 14 July 2016
+%Last modified: 18 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_fluid_model < fluid_model
     properties
@@ -14,6 +14,15 @@ classdef Immiscible_fluid_model < fluid_model
             obj@fluid_model(n_phases, n_phases);
         end
         function Status = InitializeReservoir(obj, Status)
+            % Define initial values
+            P_init = linspace(1e5, 10e4, length(Status.p));
+            z_init = ones(length(Status.p), 1)*0.0;
+            
+            % Assign initial valus
+            Status.p = Status.p .* P_init';
+            Status.z(:,1) = z_init;
+            Status.z(:,2) = 1 - z_init;
+            
             % Composition in this case is fixed to be 1 and 0
             Status.x1(:,1) = 1;
             Status.x1(:,2) = 0;
@@ -23,20 +32,22 @@ classdef Immiscible_fluid_model < fluid_model
                 Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status.p);
             end
             
+            SinglePhase.onlyvapor (Status.z(:,1) == 1) = 1;
+            SinglePhase.onlyliquid (Status.z(:,2) == 1) = 1;
+            
             % Two phase, two component saturation updater    
-            Status.S = Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1))./(Status.rho(:,1).*(Status.z(:,1)...
-                - Status.x1(:,1)) + Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1))); 
+            Status = obj.ComputePhaseSaturation(Status, SinglePhase);
         end
         function Inj = InitializeInjectors(obj, Inj)
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
                 Inj(i).x1 = [1 0];
-                Inj(i).s = 1;
+                Inj(i).S = 1;
                 for ph=1:obj.NofPhases
                     Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
                 end
                 Inj(i).x2 = 1 - Inj(i).x1;
-                Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).s);   
+                Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end
         end
     end

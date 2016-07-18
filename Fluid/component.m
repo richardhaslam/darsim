@@ -12,7 +12,7 @@ classdef component < handle
         b  % 
     end
     methods
-        function obj = component(Tb, b)
+        function AddCompProperties(obj, Tb, b)
            obj.Tb = Tb;
            obj.b = b;
         end

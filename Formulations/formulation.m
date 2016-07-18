@@ -13,7 +13,7 @@ classdef formulation < handle
     methods (Abstract)
         obj = BuildResidual(obj)
         obj = BuildJacobian(obj)
-        obj = UpdateStatus(obj)
+        obj = UpdateState(obj)
         obj = BuildPressureSystem(obj)
         obj = BuildTransportSystem(obj)
     end

@@ -23,7 +23,7 @@ classdef Plotter < handle
             % Plot Fractures
             
             % Plot Wells
-            obj.PlotWells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
+            obj.PlotWells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod, DiscretizationModel.ReservoirGrid);
         end
     end
 end

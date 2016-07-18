@@ -21,20 +21,20 @@ classdef VTK_Plotter < Plotter
             obj.FileName = strcat(Directory, '/Output/VTK/', Problem);
             obj.VTKindex = 0;
         end
-        function PlotWells(obj, Inj, Prod)
+        function PlotWells(obj, Inj, Prod, Grid)
             %InJectors
             for i=1:length(Inj)
                 name = strcat(obj.FileName,num2str(i),'Inj','.vtk');
-                WriteAWell(Inj(i), name, Grid);
+                obj.WriteAWell(Inj(i), name, Grid);
             end 
             %Producers
             for i=1:length(Prod)
                 name = strcat(obj.FileName, num2str(i),'Prod','.vtk');
-                WriteAWell(Prod(i), name, Grid);
+                obj.WriteAWell(Prod(i), name, Grid);
             end
             
         end
-        function WriteAWell(Well, name, Grid)
+        function WriteAWell(obj, Well, name, Grid)
             fileID = fopen(name, 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'Matteo Simulator: Well s file\n');
@@ -42,25 +42,25 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'ASCII\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET POLYDATA\n');
-            fprintf(fileID, ['POINTS ', num2str(length(Well.cells) + 1), ' float\n']);
+            fprintf(fileID, ['POINTS ', num2str(length(Well.Cells) + 1), ' float\n']);
             %loop over perforations
-            z1 = Grid.h/2;
-            z2 = 2*Grid.h;
-            for c=1:length(Well.cells)
-                dummy = mod(Well.cells(c), Grid.Nx);
+            z1 = Grid.dz/2;
+            z2 = 2*Grid.dz;
+            for c=1:length(Well.Cells)
+                dummy = mod(Well.Cells(c), Grid.Nx);
                 if dummy == 0
                     i = Grid.Nx;
                 else
                     i = dummy;
                 end
-                j = (Well.cells(c) - i)/Grid.Nx + 1;
+                j = (Well.Cells(c) - i)/Grid.Nx + 1;
                 x = (i - 1)*Grid.dx + Grid.dx/2;
                 y = (j - 1)*Grid.dy + Grid.dy/2;
                 fprintf(fileID, '%10.5f %10.5f %10.5f\n', x, y, z1);
             end
             fprintf(fileID, '%10.5f %10.5f %10.5f\n', x, y, z2);
-            fprintf(fileID, ['LINES ', num2str(length(Well.cells)), ' ',num2str(3*(length(Well.cells))), '\n']);
-            for c = 1:length(Well.cells)
+            fprintf(fileID, ['LINES ', num2str(length(Well.Cells)), ' ',num2str(3*(length(Well.Cells))), '\n']);
+            for c = 1:length(Well.Cells)
                 fprintf(fileID, '%d %d %d\n', [2, c-1, c]);
             end
             fclose(fileID);
@@ -76,10 +76,10 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, 2);
             fprintf(fileID, '\n');
             fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
-            fprintf(fileID, '%f ', 0:Grid.dx:Grid.Lx);
+            fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
             fprintf(fileID, '\n');
             fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
-            fprintf(fileID, '%f ', 0:Grid.dy:Grid.Ly);
+            fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
             fprintf(fileID, '\n');
             fprintf(fileID, 'Z_COORDINATES 2 float\n');
             fprintf(fileID, '%d ', [0 1]);
@@ -89,11 +89,12 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, '\n');
             %ADD ADM coarse grids
             PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
+            fprintf(fileID, '\n');
             %Pressure
             PrintScalar2VTK(fileID, Status.p, ' PRESSURE');
             fprintf(fileID, '\n');
             %Saturation
-            PrintScalar2VTK(fileID, Status.s, ' SATURATION');
+            PrintScalar2VTK(fileID, Status.S, ' SATURATION');
             fprintf(fileID, '\n');
             %Capillary Pressure
             PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
@@ -112,16 +113,19 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, '\n');
             %z1
             PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
+            fprintf(fileID, '\n');
             %Density
             PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoW');
+            fprintf(fileID, '\n');
             PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoNw');
-            PrintScalar2VTK(fileID, Status.rho(:,1).*Status.s + Status.rho(:,2).*(1 - Status.s), ' rhoT');
+            fprintf(fileID, '\n');
+            PrintScalar2VTK(fileID, Status.rho(:,1).*Status.S + Status.rho(:,2).*(1 - Status.S), ' rhoT');
             obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotPermeability(obj, Grid, K)
             %Permeability
             fileID = fopen(strcat(obj.FileName, num2str(0),'.vtk'), 'a');
-            PrintScalar2VTK(fileID, reshape(K(1,:,:), Grid.N, 1), ' PERMX');
+            PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
             fprintf(fileID, '\n');
         end
         function PlotResidual(obj)

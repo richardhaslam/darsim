@@ -24,6 +24,7 @@ classdef grid_cartesian < grid
             obj.Ny = ny;
             obj.Nz = nz;
             obj.N = nx * ny * nz;
+            obj.Active = ones(obj.N, 1);
         end
         function Initialize(obj, Reservoir)
             obj.dx = Reservoir.Length/obj.Nx;

@@ -14,15 +14,15 @@ classdef Matlab_Plotter_2D < Plotter
         function PlotSolution(obj, Status, Grid)
             %Reshape objects for pcolor plots
             P = reshape(Status.p,Grid.Nx,Grid.Ny);
-            S = reshape(Status.s,Grid.Nx,Grid.Ny);
+            S = reshape(Status.S,Grid.Nx,Grid.Ny);
             Pc = reshape(Status.pc,Grid.Nx,Grid.Ny);
             %x1 = reshape(Status.x1(:,1),Grid.Nx,Grid.Ny);
             %x2 = reshape(1-Status.x1(:,2),Grid.Nx,Grid.Ny);
             %z = reshape(Status.z(:,1),Grid.Nx,Grid.Ny);
             
             %Plot for 2D problems
-            x = linspace(Grid.Lx/(2*Grid.Nx), (2*Grid.Nx*Grid.Lx-Grid.Lx)/(2*Grid.Nx), Grid.Nx);
-            y = linspace(Grid.Ly/(2*Grid.Ny), (2*Grid.Ny*Grid.Ly-Grid.Ly)/(2*Grid.Ny), Grid.Ny);
+            x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
+            y = linspace(Grid.Ny * Grid.dy/(2*Grid.Ny), (2*Grid.Ny^2*Grid.dy-Grid.Ny * Grid.dy)/(2*Grid.Ny), Grid.Ny);
             [X, Y] = meshgrid(x,y);
             % Grid plot
             %Pressure
@@ -80,14 +80,15 @@ classdef Matlab_Plotter_2D < Plotter
         end
         function PlotPermeability(obj, Grid, Perm)
             %Plot permeability
-            x = linspace(0, Grid.Lx-Grid.dx, Grid.Nx);
-            y = linspace(0, Grid.Ly-Grid.dy, Grid.Ny);
+            x = linspace(0, Grid.Nx*Grid.dx-Grid.dx, Grid.Nx);
+            y = linspace(0, Grid.Ny*Grid.dy-Grid.dy, Grid.Ny);
             [X, Y] = meshgrid(x,y);
             %Use log scale
             K(:,:) = Perm(1,:,:);
             K = log10(K);
             
             figure(4)
+            K = reshape(Perm(:,1), Grid.Nx, Grid.Ny);
             h = pcolor(X,Y,K');
             set(h, 'EdgeColor', 'none');
             title('Log(K)');

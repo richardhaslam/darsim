@@ -4,12 +4,13 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 12 July 2016
+%Last modified: 18 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef TimeLoop_Driver < handle
     properties
         TotalTime
-        TStops %Choose with what frequency the solution as to be outputted
+        Time
+        TStops % List of solution report times
         MaxNumberOfTimeSteps
         Ndt
         dt
@@ -25,12 +26,14 @@ classdef TimeLoop_Driver < handle
         end
         function Summary = SolveTimeDependentProblem(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, Summary, Writer)
             %%%%% START THE TIME LOOP %%%%%
-            index = 1;         
-            while (obj.TotalTime < obj.FinalTime && obj.obj.Ndt <= obj.MaxNumberOfTimeSteps)
+            index = 1;   
+            obj.Time = 0;
+            obj.Ndt = 1;
+            while (obj.Time < obj.TotalTime && obj.Ndt <= obj.MaxNumberOfTimeSteps)
                 %% Initialise time-step
-                disp(['Time-step ' num2str(obj.Ndt) ': Initial time: ' num2str(t/(3600*24),4) ' days']);
+                disp(['Time-step ' num2str(obj.Ndt) ': Initial time: ' num2str(obj.Time/(3600*24),4) ' days']);
                 tstart = tic;
-                maxdT = obj.Tstops(index) - t;
+                maxdT = obj.TStops(index) - obj.Time;
                 
                 %% Non-linear Solver
                 [ProductionSystem, obj.dt] =...
@@ -46,22 +49,22 @@ classdef TimeLoop_Driver < handle
                 end
                 
                 %% %%%Increase time and timestep counter
+                obj.Time = obj.Time + obj.dt;
                 disp('-----------------------------------------------')
-                disp(['Final time: ' num2str((t+dT)/(3600*24),4) ' days, dT= ' num2str(dT) ' s']);
+                disp(['Final time: ' num2str((obj.Time)/(3600*24),4) ' days, dT= ' num2str(obj.dt) ' s']);
                 disp(['end of time-step ' num2str(obj.Ndt)]);
                 disp(char(5));
-                t = t+dT;
                 obj.Ndt = obj.Ndt + 1;
                 
                 % Saves the total timer of the timestep in the run summary
-                Summary.Time(obj.Ndt-1) = t/(24*3600);
+                Summary.Time(obj.Ndt-1) = obj.Time/(24*3600);
                 Summary.NumberTimeSteps = obj.Ndt - 1;
                 Summary.CouplingStats.SaveTimeStepTimer(obj.Ndt - 1, toc(tstart));
                 
                 %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-                if (t == Tstops(index))
+                if (obj.Time == obj.TStops(index))
                     disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
-                    Writer.Plotter.PlotSolution(Status, Grid);
+                    Writer.Plotter.PlotSolution(ProductionSystem, DiscretizationModel.ReservoirGrid);
                     index = index + 1;
                 end
             end
