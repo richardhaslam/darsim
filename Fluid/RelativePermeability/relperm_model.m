@@ -11,6 +11,6 @@ classdef relperm_model < handle
     end
     methods (Abstract)
         obj = ComputeRelPerm(obj);
-        obj = ComputeRelPermAndDerivative(obj);
+        obj = ComputeDerivative(obj);
     end
 end

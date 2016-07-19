@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 12 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef NaturalVar_formulation < formulation
+classdef NaturalVar_formulation < fim_formulation
     properties
         
     end

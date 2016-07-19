@@ -17,9 +17,11 @@ methods
     function obj = FIM_Strategy(name, NONLinearSolver)
         obj@Coupling_Strategy(name);
         obj.NLSolver = NONLinearSolver;
+        obj.chops = 0;
+        obj.MaxChops = 10;
     end
-    function [ProductionSystem, dt] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, maxDt)
-        dt = obj.TimeStepSelector(maxDt);
+    function [ProductionSystem, dt] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
+        dt = obj.TimeStepSelector.ChooseTimeStep();
         while (obj.NLSolver.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
@@ -28,7 +30,7 @@ methods
             end
             
             % Linear Solver Setup
-            obj.NLSolver.LinearSolver.setup(ProductionSystem, DiscretizationModel);
+            obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
             
             % NL solver call
             [ProductionSystem] = obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
@@ -40,6 +42,7 @@ methods
             end
         end
         obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount)
+        obj.chops = 0;
     end
     function Summary = UpdateSummaryStats(Summary, Ndt)
         %% Stats, timers and Injection/Production data

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 17 July 2016
+%Last modified: 19 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fluid_model < handle
     properties
@@ -13,6 +13,7 @@ classdef fluid_model < handle
         Phases
         Components
         RelPermModel
+        CapillaryModel
     end
     methods
         function obj = fluid_model(n_phases, n_comp)
@@ -34,7 +35,7 @@ classdef fluid_model < handle
                 Mob(:,i) = kr(:,i)/obj.Phases(i).mu;
             end
         end
-        function z = ComputeMassFractions(s, x, rho)
+        function z = ComputeMassFractions(obj, s, x, rho)
             %Two phase, two component total mole fraction updater
             %Based on mass balance equation z_1 * rho_t = x11*rho1*s1 + x12*rho2*s2
             z(:,1) = (x(:,1).*rho(:,1).*s + x(:,2).*...
@@ -50,6 +51,13 @@ classdef fluid_model < handle
                 - Status.x1(:,1)) + Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1)));
             Status.S(SinglePhase.onlyvapor == 1) = 1;
             Status.S(SinglePhase.onlyliquid == 1) = 0;
+        end
+        function dMob = MobilityDerivative(obj, s)
+            dMob = zeros(length(s), obj.NofPhases);
+            dkr = obj.RelPermModel.ComputeRelPerm(obj.Phases, s);
+            for i=1:obj.NofPhases
+                dMob(:,i) = dkr(:,i)/obj.Phases(i).mu;
+            end
         end
     end
     methods (Abstract)

@@ -33,11 +33,11 @@ classdef TimeLoop_Driver < handle
                 %% Initialise time-step
                 disp(['Time-step ' num2str(obj.Ndt) ': Initial time: ' num2str(obj.Time/(3600*24),4) ' days']);
                 tstart = tic;
-                maxdT = obj.TStops(index) - obj.Time;
                 
                 %% Non-linear Solver
+                obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
                 [ProductionSystem, obj.dt] =...
-                    obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation, maxdT);
+                    obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);
                 
                 % Save Stats
                 Summary = obj.Coupling.UpdateSummary(Summary, obj.Ndt);

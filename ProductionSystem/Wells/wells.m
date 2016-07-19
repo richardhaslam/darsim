@@ -20,5 +20,31 @@ classdef wells < handle
         function AddProducer(obj, Producer)
             obj.Prod = [obj.Prod, Producer];
         end
+        function InitializeFluxes(obj, n_phases, n_comp)
+            % Injectors
+            for i=1:obj.NofInj
+                obj.Inj(i).QPhases = zeros(length(obj.Inj(i).Cells), n_phases);
+                obj.Inj(i).QComponents = zeros(length(obj.Inj(i).Cells), n_comp);
+            end
+            % Producers
+            for i=1:obj.NofProd
+                obj.Prod(i).QPhases = zeros(length(obj.Prod(i).Cells), n_phases);
+                obj.Prod(i).QComponents = zeros(length(obj.Prod(i).Cells), n_comp);
+            end
+        end
+        function UpdateState(obj, Reservoir, FluidModel)
+            K = Reservoir.K(:,1);
+            p = Reservoir.State.p;
+            Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.S);
+            
+            % Injectors
+            for i=1:obj.NofInj
+                obj.Inj(i).UpdateState(p, K);         
+            end
+            % Producers
+            for i=1:obj.NofInj
+                obj.Prod(i).UpdateState(p, K, Mob);        
+            end
+        end
     end
 end

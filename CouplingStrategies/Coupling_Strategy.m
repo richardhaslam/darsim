@@ -9,7 +9,6 @@
 classdef Coupling_Strategy
 properties
     Name
-    CFL
 end
 methods
     function obj = Coupling_Strategy(name)

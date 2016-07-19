@@ -281,6 +281,7 @@ classdef builder < handle
                     %%%%FIM settings
                     NLSolver = NL_Solver();
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
+                    NLSolver.SystemBuilder = fim_system_builder();
                     % Build a different convergence cheker and a proper LS for ADM
                     if (str2double(SettingsMatrix(obj.adm + 1))==0)
                         ConvergenceChecker = convergence_checker_FS();
@@ -292,11 +293,11 @@ classdef builder < handle
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));                 
                     NLSolver.AddConvergenceChecker(ConvergenceChecker); 
                     
-                    Coupling = FIM_Strategy('FIM', NLSolver);
-                    Coupling.CFL = str2double(SettingsMatrix(obj.coupling + 3));  
+                    Coupling = FIM_Strategy('FIM', NLSolver); 
                 case('Sequential')
-                    Coupling = Sequential_Strategy();
+                    Coupling = Sequential_Strategy('Sequential');
             end
+            Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
             TimeDriver.AddCouplingStrategy(Coupling);
         end
         function Summary = BuildSummary(obj, simulation)

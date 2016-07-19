@@ -11,6 +11,8 @@ classdef linear_solver < handle
         CondNumber
     end
     methods
+        function SetUp(obj, ProductionSystem, DiscretizationModel)
+        end
         function x = Solve(obj, A, rhs)
             % Use Matlab direct solver
             obj.CondNumber = cond(A);

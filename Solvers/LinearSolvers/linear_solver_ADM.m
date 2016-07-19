@@ -12,6 +12,8 @@ classdef linear_solver_ADM < linear_solver
         R
     end
     methods
+        function SetUp(obj, ProductionSystem, DiscretizationModel)
+        end
         function x = Solve(obj, A, rhs)
             
         end

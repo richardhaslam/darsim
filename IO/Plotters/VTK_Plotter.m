@@ -88,44 +88,44 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
             fprintf(fileID, '\n');
             %ADD ADM coarse grids
-            PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
+            obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             %Pressure
-            PrintScalar2VTK(fileID, Status.p, ' PRESSURE');
+            obj.PrintScalar2VTK(fileID, Status.p, ' PRESSURE');
             fprintf(fileID, '\n');
             %Saturation
-            PrintScalar2VTK(fileID, Status.S, ' SATURATION');
+            obj.PrintScalar2VTK(fileID, Status.S, ' SATURATION');
             fprintf(fileID, '\n');
             %Capillary Pressure
-            PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
+            obj.PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
             fprintf(fileID, '\n');
             %x11
-            PrintScalar2VTK(fileID, Status.x1(:,1), ' x1w');
+            obj.PrintScalar2VTK(fileID, Status.x1(:,1), ' x1w');
             fprintf(fileID, '\n');
             %x12
-            PrintScalar2VTK(fileID, Status.x1(:,2), ' x1nw');
+            obj.PrintScalar2VTK(fileID, Status.x1(:,2), ' x1nw');
             fprintf(fileID, '\n');
             %x21
-            PrintScalar2VTK(fileID, 1-Status.x1(:,1), ' x2w');
+            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,1), ' x2w');
             fprintf(fileID, '\n');
             %x22
-            PrintScalar2VTK(fileID, 1-Status.x1(:,2), ' x2nw');
+            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,2), ' x2nw');
             fprintf(fileID, '\n');
             %z1
-            PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
+            obj.PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
             fprintf(fileID, '\n');
             %Density
-            PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoW');
+            obj.PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoW');
             fprintf(fileID, '\n');
-            PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoNw');
+            obj.PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoNw');
             fprintf(fileID, '\n');
-            PrintScalar2VTK(fileID, Status.rho(:,1).*Status.S + Status.rho(:,2).*(1 - Status.S), ' rhoT');
+            obj.PrintScalar2VTK(fileID, Status.rho(:,1).*Status.S + Status.rho(:,2).*(1 - Status.S), ' rhoT');
             obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotPermeability(obj, Grid, K)
             %Permeability
             fileID = fopen(strcat(obj.FileName, num2str(0),'.vtk'), 'a');
-            PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
+            obj.PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
             fprintf(fileID, '\n');
         end
         function PlotResidual(obj)
@@ -160,7 +160,7 @@ classdef VTK_Plotter < Plotter
         end
     end
     methods (Access = private)
-        function PrintScalar2VTK(fileID, scalar, name)
+        function PrintScalar2VTK(obj, fileID, scalar, name)
             %Print a scalar in VTK format
             fprintf(fileID, strcat('SCALARS ', name,' float 1\n'));
             fprintf(fileID, 'LOOKUP_TABLE default\n');
