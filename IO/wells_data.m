@@ -8,6 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef wells_data < handle 
     properties
+        NofPhases
+        NofComp
         Injection
         Production
     end
@@ -15,21 +17,27 @@ classdef wells_data < handle
         function obj = wells_data(MaxNTimeSteps, n_phases, n_components, Wells)
             obj.Injection = Curve_Inj_Prod(MaxNTimeSteps, n_phases, n_components, Wells.Inj);
             obj.Production = Curve_Inj_Prod(MaxNTimeSteps, n_phases, n_components, Wells.Prod);
+            obj.NofPhases = n_phases;
+            obj.NofComp = n_components;
         end
         function UpdateInjectionCurve(obj, Ndt, Inj, dT)
             for w = 1:length(Inj)
-                obj.Injection.Phases(Ndt, w, 1) = obj.Injection.Phases(Ndt-1, w, 1) + Inj(w).qw*dT;
-                obj.Injection.Phases(Ndt, w, 2) = obj.Injection.Phases(Ndt-1, w, 2) + Inj(w).qnw*dT;
-                obj.Injection.Components(Ndt, w, 1) = obj.Injection.Components(Ndt-1, w, 1) + Inj(w).qz1*dT;
-                obj.Injection.Components(Ndt, w, 2) = obj.Injection.Components(Ndt-1, w, 2) + Inj(w).qz2*dT;
+                for i=1:obj.NofPhases
+                    obj.Injection.Phases(Ndt, w, i) = obj.Injection.Phases(Ndt-1, w, i) + sum(Inj(w).QPhases(:,i), 2)*dT;
+                end
+                for i=1:obj.NofComp
+                    obj.Injection.Components(Ndt, w, i) = obj.Injection.Components(Ndt-1, w, i) + sum(Inj(w).QComponents(:,i), 2)*dT;
+                end
             end
         end
         function UpdateProductionCurve(obj, Ndt, Prod, dT)
             for w = 1:length(Prod)
-                obj.Production.Phases(Ndt, w, 1) = obj.Production.Phases(Ndt-1, w, 1) - Prod(w).qw*dT;
-                obj.Production.Phases(Ndt, w, 2) = obj.Production.Phases(Ndt-1, w, 2) - Prod(w).qnw*dT;
-                obj.Production.Components(Ndt, w, 1) = obj.Production.Components(Ndt-1, w, 1) - Prod(w).qz1*dT;
-                obj.Production.Components(Ndt, w, 2) = obj.Production.Components(Ndt-1, w, 2) - Prod(w).qz2*dT;
+                for i=1:obj.NofPhases
+                    obj.Production.Phases(Ndt, w, i) = obj.Production.Phases(Ndt-1, w, i) - sum(Prod(w).QPhases(:,i), 2)*dT;
+                end
+                for i=1:obj.NofComp
+                    obj.Production.Components(Ndt, w, i) = obj.Production.Components(Ndt-1, w, i) - sum(Prod(w).QComponents(:, i), 2)*dT;
+                end
             end
         end
     end

@@ -33,7 +33,7 @@ ResSimulator.Run();
 TotalTime = toc(TotalStart);
 
 %% Output Results
-ResSimulator.OuputResults();
+ResSimulator.OutputResults();
 
 %% Display elapsed time
 disp(char(10));

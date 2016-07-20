@@ -22,6 +22,7 @@ methods
     end
     function [ProductionSystem, dt] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
         dt = obj.TimeStepSelector.ChooseTimeStep();
+        obj.NLSolver.Converged = 0;
         while (obj.NLSolver.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
@@ -44,11 +45,11 @@ methods
         obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount)
         obj.chops = 0;
     end
-    function Summary = UpdateSummaryStats(Summary, Ndt)
+    function Summary = UpdateSummary(obj, Summary, Wells, Ndt, dt)
         %% Stats, timers and Injection/Production data
-        Summary.CouplingStats.SaveStats(obj.NLSolver.Ndt, obj.NLSolver.itCount-1, obj.chops);
+        Summary.CouplingStats.SaveStats(Ndt, obj.NLSolver.itCount-1, obj.chops);
         Summary.CouplingStats.SaveTimers(Ndt, obj.NLSolver.TimerConstruct, obj.NLSolver.TimerSolve, obj.NLSolver.TimerInner);
-        Summary.SaveWellsData(Ndt+1, ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod, dt);
+        Summary.SaveWellsData(Ndt+1, Wells.Inj, Wells.Prod, dt);
     end
 end
 end

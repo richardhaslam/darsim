@@ -5,7 +5,7 @@
 %Created: 14 July 2016
 %Last modified: 17 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef status < handle
+classdef status < matlab.mixin.Copyable
 properties
     T
     Pot
@@ -20,7 +20,7 @@ end
 methods
     function Initialize(obj, N)
         % Create objects
-        obj.p = ones(N, 1);
+        obj.p = zeros(N, 1);
         obj.pc = zeros(N, 1);
         obj.z = ones(N, 2);
         obj.S = zeros(N, 1);

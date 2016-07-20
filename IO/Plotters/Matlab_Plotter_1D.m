@@ -34,13 +34,13 @@ classdef Matlab_Plotter_1D < Plotter
             %title('Pressure [Pa]');
             xlabel('x [m]');
             ylabel('Pressure [Pa]');
-            axis([0 Grid.Lx min(P-Pc)-max(P)*0.1 max(P)+max(P)*0.1])
+            %axis([0 Grid.dx*Grid.Nx min(P-Pc)-max(P)*0.1 max(P)+max(P)*0.1])
             %legend('oil','water', 'Location', 'east');
             set(gca,'fontsize',24);
             hold on
             subplot(3,1,3);
             plot(x, S, obj.color2, 'LineWidth', 1);
-            axis([0 Grid.Lx 0 1.1]);
+            axis([0 Grid.Nx*Grid.dx 0 1.1]);
             %title('Saturation of water');
             xlabel('x [m]');
             ylabel('Saturation');
@@ -51,7 +51,7 @@ classdef Matlab_Plotter_1D < Plotter
             figure(2)
             subplot(3,1,1);
             plot(x, x1, obj.color2, 'LineWidth', 1);
-            axis([0 Grid.Lx .5 1]);
+            axis([0 Grid.Nx*Grid.dx .5 1]);
             %title('Component 1 in Phase 1 [-]');
             xlabel('x [m]');
             ylabel('x1w [-]');
@@ -59,7 +59,7 @@ classdef Matlab_Plotter_1D < Plotter
             set(gca,'fontsize',24);
             subplot(3,1,2);
             plot(x, x2, obj.color2, 'LineWidth', 1);
-            axis([0 Grid.Lx .5 1]);
+            axis([0 Grid.Nx*Grid.dx .5 1]);
             %title('Component 2 in Phase 2 [-]');
             xlabel('x [m]');
             ylabel('x2nw [-]');
@@ -67,7 +67,7 @@ classdef Matlab_Plotter_1D < Plotter
             set(gca,'fontsize',24);
             subplot(3,1,3);
             plot(x, z, obj.color2, 'LineWidth', 1);
-            axis([0 Grid.Lx 0 1]);
+            axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 1 Total Mass Fraction [-]');
             xlabel('x [m]');
             ylabel('z1 [-]');
@@ -79,11 +79,11 @@ classdef Matlab_Plotter_1D < Plotter
         end
         function PlotPermeability(obj, Grid, Perm)
             figure(1)
-            x = linspace(0, Grid.Lx-Grid.dx, Grid.Nx);
+            x = linspace(0, Grid.Nx*Grid.dx-Grid.dx, Grid.Nx);
             subplot(3,1,1);
             plot(x, log10(Perm));
             %title('Permeability');
-            axis([0 Grid.Lx min(min(log10(Perm)))-1 max(max(log10(Perm)))+1]);
+            axis([0 Grid.dx*Grid.Nx min(min(log10(Perm)))-1 max(max(log10(Perm)))+1]);
             %axis([0 Grid.Lx 0 1]);
             xlabel('x [m]');
             ylabel('Log(K) [m^2]');
@@ -91,7 +91,7 @@ classdef Matlab_Plotter_1D < Plotter
         end
         function PlotResidual(obj)
         end
-        function PlotWells(obj, Inj, Prod)
+        function PlotWells(obj, Inj, Prod, Grid)
         end
         function PlotADMGrid(obj, Grid, CoarseGrid)
             

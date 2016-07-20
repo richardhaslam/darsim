@@ -15,10 +15,12 @@ classdef injector_pressure < injector
             obj.p = pressure;
             obj.T = temperature;
         end
-        function UpdateState(obj, p, K)
-            for i = 1:min(size(obj.QPhases))
-                obj.QPhases(:,i) = obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - p(obj.Cells));
+        function UpdateState(obj, State, K, n_phases, n_components)
+            for i = 1:n_phases
+                obj.QPhases(:,i) = obj.rho(i) * obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - State.p(obj.Cells));
             end
+            obj.QComponents(:, 1) = obj.x1(1) * obj.QPhases(:,1) + obj.x1(2) * obj.QPhases(:,2);
+            obj.QComponents(:, 2) = obj.x2(1) * obj.QPhases(:,1) + obj.x2(2) * obj.QPhases(:,2);
         end
     end
 end

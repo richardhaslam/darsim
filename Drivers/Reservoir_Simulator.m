@@ -32,7 +32,7 @@ classdef Reservoir_Simulator < handle
             % Run simulation
             obj.Simulation.Run(obj.Writer);
         end
-        function OutputResutls(obj)
+        function OutputResults(obj)
             obj.Writer.WriteSummary(obj.Simulation.Summary);
         end
     end

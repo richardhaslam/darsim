@@ -54,7 +54,7 @@ classdef fluid_model < handle
         end
         function dMob = MobilityDerivative(obj, s)
             dMob = zeros(length(s), obj.NofPhases);
-            dkr = obj.RelPermModel.ComputeRelPerm(obj.Phases, s);
+            dkr = obj.RelPermModel.ComputeDerivative(obj.Phases, s);
             for i=1:obj.NofPhases
                 dMob(:,i) = dkr(:,i)/obj.Phases(i).mu;
             end

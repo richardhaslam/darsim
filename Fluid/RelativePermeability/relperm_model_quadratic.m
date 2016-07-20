@@ -21,7 +21,7 @@ classdef relperm_model_quadratic < relperm_model
         function dkr = ComputeDerivative(obj, Phases, s)
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
             dkr(:,1) = (1-Phases(1).sr-Phases(2).sr)^(-1)*2*S;
-            dkr(:,2) = -(1-Fluid.sr(2)-Fluid.sr(1))^(-1)*2*(1-S);
+            dkr(:,2) = -(1-Phases(1).sr-Phases(2).sr)^(-1)*2*(1-S);
         end
     end
 end

@@ -21,7 +21,7 @@ end
 properties (Access = private)
     Residual
     Jacobian
-    delta
+    Delta
 end
 methods
     function obj = NL_Solver()
@@ -36,10 +36,9 @@ methods
         obj.TimerSolve = zeros(obj.MaxIter, 1);
         obj.TimerInner = zeros(obj.MaxIter, 1);
         obj.itCount = 1;
-        obj.Converged = 0;
         
         % Save initial State
-        obj.SystemBuilder.State = ProductionSystem.Reservoir.State;
+        obj.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State);
         
         % Update Derivatives
         Formulation = obj.SystemBuilder.ComputeDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
@@ -66,7 +65,7 @@ methods
             
             % 3. Update Solution
             start3 = tic;
-            ProductionSystem.UpdateState(obj.delta, Formulation, FluidModel);
+            ProductionSystem.UpdateState(obj.Delta, Formulation, FluidModel);
             obj.TimerInner(obj.itCount) = toc(start3);
             
             % 4. Update Derivatives
@@ -74,8 +73,8 @@ methods
             % 5. Compute residual
             obj.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             
-            % 6. Check NonLinear convergence
-            obj.CheckConvergence();
+            % 6. Check NonLinear convergencel
+            obj.CheckConvergence(DiscretizationModel, ProductionSystem);
             
             obj.itCount = obj.itCount + 1;
         end
@@ -84,13 +83,13 @@ methods
         obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt); 
     end
     function SolveLinearSystem(obj)
-        obj.delta = obj.LinearSolver.Solve(obj.Jacobian, obj.Residual);
+        obj.Delta = obj.LinearSolver.Solve(obj.Jacobian, -obj.Residual);
     end
     function BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
         obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
     end
-    function CheckConvergence(obj)
-        obj.Converged = obj.ConvergenceChecker.Check();
+    function CheckConvergence(obj, DiscretizationModel, ProductionSystem)
+        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, DiscretizationModel, ProductionSystem.Reservoir.State.p);
     end
 end
 end

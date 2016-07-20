@@ -40,7 +40,7 @@ classdef TimeLoop_Driver < handle
                     obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);
                 
                 % Save Stats
-                Summary = obj.Coupling.UpdateSummary(Summary, obj.Ndt);
+                Summary = obj.Coupling.UpdateSummary(Summary, ProductionSystem.Wells, obj.Ndt, obj.dt);
                 
                 % Check for convergence at the end of the timestep
                 if (obj.Coupling.NLSolver.Converged==0)
@@ -63,8 +63,8 @@ classdef TimeLoop_Driver < handle
                 
                 %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
                 if (obj.Time == obj.TStops(index))
-                    disp(['Printing solution to file at  ' num2str((t)/(3600*24),4) ' days'])
-                    Writer.Plotter.PlotSolution(ProductionSystem, DiscretizationModel.ReservoirGrid);
+                    disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
+                    Writer.Plotter.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
                     index = index + 1;
                 end
             end

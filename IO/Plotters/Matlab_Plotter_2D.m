@@ -103,7 +103,7 @@ classdef Matlab_Plotter_2D < Plotter
         end
         function PlotResidual(obj)
         end
-        function PlotWells(obj, Inj, Prod)
+        function PlotWells(obj, Inj, Prod, Grid)
         end
         function PlotADMGrid(obj, Grid, CoarseGrid)
             % It s only plotted on top of the Saturation solution

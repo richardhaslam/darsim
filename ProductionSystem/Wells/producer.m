@@ -20,10 +20,6 @@ classdef producer < handle
             obj.Coord = coord;
             obj.PI = PI;
         end
-        function UpdateState(obj, p, K, Mob)
-            for i = 1:min(size(obj.QPhases))
-                obj.QPhases(:,i) = Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p(obj.Cells));
-            end
-        end
+        
     end
 end

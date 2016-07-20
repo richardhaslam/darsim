@@ -192,7 +192,8 @@ classdef builder < handle
                 j_final = str2double(inputMatrix(obj.prod(i) + 4));
                 coord = [i_init, i_final; j_init, j_final];
                 PI = 2000;
-                Producer = producer_pressure(PI, coord, str2double(inputMatrix(obj.prod(i) + 6)));
+                pressure = str2double(inputMatrix(obj.prod(i) + 6));
+                Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
             end
             ProductionSystem.AddWells(Wells);
