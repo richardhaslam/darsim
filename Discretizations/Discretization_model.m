@@ -18,7 +18,7 @@ classdef Discretization_model < handle
         function Initialize(obj, ProductionSystem)
             obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
         end
-        function Wells = DefinePerforatedCells(obj, Wells)
+        function DefinePerforatedCells(obj, Wells)
             % Has to be improved for Diagonal wells (maybe using trajectories)
             % Injectors
             for i = 1:Wells.NofInj

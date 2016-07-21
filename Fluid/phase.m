@@ -49,5 +49,8 @@ classdef phase < handle
             DiagIndx = [0,Nx];
             A.y = spdiags(DiagVecs,DiagIndx,N,N);
         end
+        function drho = DrhoDp(obj, p)
+            drho = obj.cf .* obj.rho0 .*exp (obj.cf.*(p - obj.Pref));
+        end
     end
 end

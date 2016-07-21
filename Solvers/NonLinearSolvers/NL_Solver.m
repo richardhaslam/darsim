@@ -17,11 +17,11 @@ properties
     TimerConstruct
     TimerSolve
     TimerInner
+    Delta
 end
 properties (Access = private)
     Residual
-    Jacobian
-    Delta
+    Jacobian  
 end
 methods
     function obj = NL_Solver()
@@ -30,7 +30,7 @@ methods
     function AddConvergenceChecker(obj, convcheck)
         obj.ConvergenceChecker = convcheck;
     end
-    function ProductionSystem = Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt)        
+    function Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt)        
         % Initialise objects for new NL Solve
         obj.TimerConstruct = zeros(obj.MaxIter,1);
         obj.TimerSolve = zeros(obj.MaxIter, 1);
@@ -41,9 +41,9 @@ methods
         obj.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State);
         
         % Update Derivatives
-        Formulation = obj.SystemBuilder.ComputeDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+        obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         % Compute residual
-        obj.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
+        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
         
         % Print some info
         disp(['Initial residual norm: ', num2str(norm(obj.Residual, inf))]);
@@ -65,13 +65,13 @@ methods
             
             % 3. Update Solution
             start3 = tic;
-            ProductionSystem.UpdateState(obj.Delta, Formulation, FluidModel);
+            obj.Delta  = ProductionSystem.UpdateState(obj.Delta, Formulation, FluidModel);
             obj.TimerInner(obj.itCount) = toc(start3);
             
             % 4. Update Derivatives
-            Formulation = obj.SystemBuilder.ComputeDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+            obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
             % 5. Compute residual
-            obj.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
+            obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
             
             % 6. Check NonLinear convergencel
             obj.CheckConvergence(DiscretizationModel, ProductionSystem);
@@ -79,8 +79,8 @@ methods
             obj.itCount = obj.itCount + 1;
         end
     end
-    function BuildResidual(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt)
-        obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt); 
+    function BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
+        obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt); 
     end
     function SolveLinearSystem(obj)
         obj.Delta = obj.LinearSolver.Solve(obj.Jacobian, -obj.Residual);

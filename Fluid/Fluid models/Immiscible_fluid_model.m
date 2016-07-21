@@ -13,7 +13,7 @@ classdef Immiscible_fluid_model < fluid_model
         function obj = Immiscible_fluid_model(n_phases)
             obj@fluid_model(n_phases, n_phases);
         end
-        function Status = InitializeReservoir(obj, Status)
+        function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = linspace(1e5, 10e4, length(Status.p));
             z_init = ones(length(Status.p), 1)*0.0;
@@ -36,9 +36,9 @@ classdef Immiscible_fluid_model < fluid_model
             SinglePhase.onlyliquid (Status.z(:,2) == 1) = 1;
             
             % Two phase, two component saturation updater    
-            Status = obj.ComputePhaseSaturation(Status, SinglePhase);
+            obj.ComputePhaseSaturation(Status, SinglePhase);
         end
-        function Inj = InitializeInjectors(obj, Inj)
+        function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
                 Inj(i).x1 = [1 0];

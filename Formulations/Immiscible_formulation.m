@@ -15,11 +15,12 @@ classdef Immiscible_formulation < fim_formulation
         dPc
     end
     methods
-        function ComputeDerivatives(obj, ProductionSystem, FluidModel)
-            obj.dMob = FluidModel.MobilityDerivative(ProductionSystem.Reservoir.State.S);
+        function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
+            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
+            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
             %obj.dPc = FluidModel.CapillaryModel.Derivative(ProductionSystem.Reservoir.State.S);
         end
-        function Residual = BuildResidual(obj, ProductionSystem, FluidModel, DiscretizationModel, dt, State0)
+        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             %Create local variables
             N = DiscretizationModel.ReservoirGrid.N;
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
@@ -36,7 +37,6 @@ classdef Immiscible_formulation < fim_formulation
             AS = speye(N)*pv/dt;
             
             %Transmissibility matrix
-            obj.Mob = FluidModel.ComputePhaseMobilities(s);
             obj.Tw = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWindW, obj.Mob(:,1), rho(:, 1));
             obj.Tnw = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWindNw, obj.Mob(:,2), rho(:, 2));
             
@@ -78,7 +78,7 @@ classdef Immiscible_formulation < fim_formulation
             x2 = max(reshape(obj.Unw.x(2:Nx+1,:),N,1),0).*dMupxNw;
             y1 = min(reshape(obj.Unw.y(:,1:Ny),N,1),0).*dMupyNw;
             y2 = max(reshape(obj.Unw.y(:,2:Ny+1),N,1),0).*dMupyNw;
-            v = ones(N,1)*pv/dt;
+            v = ones(N,1)*pv/dt .* rho(:,2);
             DiagVecs = [-y2, -x2, y2+x2-y1-x1-v, x1, y1];
             DiagIndx = [-Nx, -1, 0, 1, Nx];
             JnwS = spdiags(DiagVecs,DiagIndx,N,N);
@@ -91,7 +91,7 @@ classdef Immiscible_formulation < fim_formulation
             x2 = max(reshape(obj.Uw.x(2:Nx+1,:),N,1),0).*dMupxw;
             y1 = min(reshape(obj.Uw.y(:,1:Ny),N,1),0).*dMupyw;
             y2 = max(reshape(obj.Uw.y(:,2:Ny+1),N,1),0).*dMupyw;
-            v = ones(N,1)*pv/dt;
+            v = ones(N,1)*pv/dt .* rho(:,1);
             DiagVecs = [-y2, -x2, y2+x2-y1-x1+v, x1, y1];
             DiagIndx = [-Nx, -1, 0, 1, Nx];
             JwS = spdiags(DiagVecs,DiagIndx,N,N);
@@ -106,7 +106,7 @@ classdef Immiscible_formulation < fim_formulation
             % Full Jacobian: put the 4 blocks together
             Jacobian = [Jwp, JwS; Jnwp, JnwS];
         end
-        function Status = UpdateState(obj, delta, Status, FluidModel)
+        function delta = UpdateState(obj, delta, Status, FluidModel)
             % Update Solution
             Status.p = Status.p + delta(1:end/2);
             Status.S = Status.S + delta(end/2+1:end);
@@ -124,7 +124,7 @@ classdef Immiscible_formulation < fim_formulation
             Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
             
             % Update total density
-            Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);
+            Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);  
         end
         function T = TransmissibilityMatrix(obj, Grid, UpWind, M, rho)
             Nx = Grid.Nx;

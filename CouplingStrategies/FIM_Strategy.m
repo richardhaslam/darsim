@@ -20,7 +20,7 @@ methods
         obj.chops = 0;
         obj.MaxChops = 10;
     end
-    function [ProductionSystem, dt] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
+    function dt = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
         dt = obj.TimeStepSelector.ChooseTimeStep();
         obj.NLSolver.Converged = 0;
         while (obj.NLSolver.Converged == 0 && obj.chops < obj.MaxChops) 
@@ -34,7 +34,7 @@ methods
             obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
             
             % NL solver call
-            [ProductionSystem] = obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
+            obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             
             % Chop time-step if it failed to converge
             if obj.NLSolver.Converged == 0

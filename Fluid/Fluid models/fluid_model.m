@@ -46,17 +46,22 @@ classdef fluid_model < handle
             % Compute the total density
             rhoT = rho(:, 1) .* s + rho(:, 2) .* (1 - s);
         end
-        function Status = ComputePhaseSaturation(obj, Status, SinglePhase)
+        function ComputePhaseSaturation(obj, Status, SinglePhase)
             Status.S = Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1))./(Status.rho(:,1).*(Status.z(:,1)...
                 - Status.x1(:,1)) + Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1)));
             Status.S(SinglePhase.onlyvapor == 1) = 1;
             Status.S(SinglePhase.onlyliquid == 1) = 0;
         end
-        function dMob = MobilityDerivative(obj, s)
+        function dMob = DMobDS(obj, s)
             dMob = zeros(length(s), obj.NofPhases);
             dkr = obj.RelPermModel.ComputeDerivative(obj.Phases, s);
             for i=1:obj.NofPhases
                 dMob(:,i) = dkr(:,i)/obj.Phases(i).mu;
+            end
+        end
+        function drho = DrhoDp(obj, p)
+            for i=1:obj.NofPhases
+                drho(:, i) = obj.Phases(i).DrhoDp(p);
             end
         end
     end

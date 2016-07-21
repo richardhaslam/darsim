@@ -208,6 +208,10 @@ classdef builder < handle
                 case('BlackOil')
                     FluidModel = BO_fluid_model(n_phases, n_comp);
                     FluidModel.Pref = 1e5;
+                    FlashSettings.TolInner = str2double(SettingsMatrix(obj.flash + 2));
+                    FlashSettings.MaxIt = str2double(SettingsMatrix(obj.flash + 3));
+                    FlashSettings.TolFlash = str2double(SettingsMatrix(obj.flash + 4));
+                    FluidModel.AddFlash(FlashSettings);
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
                     % Add components

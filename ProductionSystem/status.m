@@ -20,7 +20,7 @@ end
 methods
     function Initialize(obj, N)
         % Create objects
-        obj.p = zeros(N, 1);
+        obj.p = ones(N, 1);
         obj.pc = zeros(N, 1);
         obj.z = ones(N, 2);
         obj.S = zeros(N, 1);

@@ -17,7 +17,7 @@ classdef Comp_fluid_model < fluid_model
         function AddFlash(obj, flash)
             obj.FlashSettings = flash;
         end
-        function Status = InitializeReservoir(obj, Status)
+        function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = linspace(1e5, 10e4, length(Status.p));
             z_init = ones(length(Status.p), 1)*0.0;
@@ -41,7 +41,7 @@ classdef Comp_fluid_model < fluid_model
             % 4. Total Density
             Status.rhoT = obj.ComputeTotalDensity(Status.S, Status.rho);
         end
-        function Inj = InitializeInjectors(obj, Inj)
+        function InitializeInjectors(obj, Inj)
             % Loop over all injectors
             for i=1:length(Inj)
                 Inj(i).z = [1 0];

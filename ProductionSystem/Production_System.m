@@ -25,21 +25,21 @@ classdef Production_System < handle
             obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N);
             % 2. Compute initial phase and component distribution
             obj.Reservoir.State.T = obj.Reservoir.Temp; % For now it's fine like this
-            obj.Reservoir.State = FluidModel.InitializeReservoir(obj.Reservoir.State);
+            FluidModel.InitializeReservoir(obj.Reservoir.State);
             
             %% Initialize Wells: 
             % 1. Perforated cells
-            obj.Wells = DiscretizationModel.DefinePerforatedCells(obj.Wells);
+            DiscretizationModel.DefinePerforatedCells(obj.Wells);
             % 2. Create objects
             obj.Wells.InitializeFluxes(FluidModel.NofPhases, FluidModel.NofComp);
             % 3. Injection fluid properties are defined
-            obj.Wells.Inj = FluidModel.InitializeInjectors(obj.Wells.Inj);
+            FluidModel.InitializeInjectors(obj.Wells.Inj);
             % 4. ComputeFluxes
             obj.Wells.UpdateState(obj.Reservoir, FluidModel);
         end
-        function UpdateState(obj, delta, Formulation, FluidModel)
+        function delta = UpdateState(obj, delta, Formulation, FluidModel)
             % Update Reservoir State
-            obj.Reservoir.State = Formulation.UpdateState(delta, obj.Reservoir.State, FluidModel);
+            delta = Formulation.UpdateState(delta, obj.Reservoir.State, FluidModel);
             % UpdateWells
             obj.Wells.UpdateState(obj.Reservoir, FluidModel);
         end

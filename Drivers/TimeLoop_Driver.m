@@ -36,11 +36,10 @@ classdef TimeLoop_Driver < handle
                 
                 %% Non-linear Solver
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
-                [ProductionSystem, obj.dt] =...
-                    obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);
+                obj.dt = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);
                 
                 % Save Stats
-                Summary = obj.Coupling.UpdateSummary(Summary, ProductionSystem.Wells, obj.Ndt, obj.dt);
+                obj.Coupling.UpdateSummary(Summary, ProductionSystem.Wells, obj.Ndt, obj.dt);
                 
                 % Check for convergence at the end of the timestep
                 if (obj.Coupling.NLSolver.Converged==0)
