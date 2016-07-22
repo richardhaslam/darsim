@@ -12,6 +12,7 @@ properties
     TimeStepSelector
     chops
     MaxChops
+    Converged
 end
 methods
     function obj = FIM_Strategy(name, NONLinearSolver)
@@ -42,7 +43,8 @@ methods
                 obj.chops = obj.chops + 1;
             end
         end
-        obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount)
+        obj.Converged = obj.NLSolver.Converged;
+        obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount - 1, obj.chops)
         obj.chops = 0;
     end
     function Summary = UpdateSummary(obj, Summary, Wells, Ndt, dt)

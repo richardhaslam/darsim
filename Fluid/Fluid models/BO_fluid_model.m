@@ -58,41 +58,6 @@ classdef BO_fluid_model < fluid_model
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end            
         end
-        function delta = UpdateComposition(obj, Status)
-            %% Flash loop
-            Converged = 0;
-            itCount = 1;
-            s_0 = Status.S;
-            while Converged == 0 && itCount < obj.FlashSettings.MaxIt
-                
-                % 1. Stores old values
-                s_old = Status.S;
-                x_old = Status.x1;
-                z_old = Status.z;
-                
-                % 2. Update Composition of the phases (Flash)
-                SinglePhase = obj.Flash(Status);
-                
-                %3. Update x and S based on components mass balance
-                obj.ComputePhaseSaturation(Status, SinglePhase);
-                
-                %4. Compute new total mass fractions (z)
-                Status.z =  obj.ComputeMassFractions(Status.S, Status.x1, Status.rho);
-                
-                %5.a Compute errors
-                InnerError1 = norm(abs(Status.S(:,1) - s_old(:,1)), inf);   %Checks if this loop is converging
-                InnerError2 = norm(abs(Status.x1(:,2) - x_old(:,2)), inf);
-                InnerError3 = norm(abs(Status.z(:,1) - z_old(:,1)), inf);
-                
-                %5.b Check convergence
-                if(InnerError1 < obj.FlashSettings.TolInner && InnerError2 < obj.FlashSettings.TolInner && InnerError3 < obj.FlashSettings.TolInner)
-                    Converged = 1;
-                end
-                
-                itCount = itCount + 1;
-            end
-            delta = Status.S - s_0;
-        end
         function SinglePhase = Flash(obj, Status)
             % Define SinglePhase objects
             SinglePhase.onlyliquid = zeros(length(Status.p), 1);

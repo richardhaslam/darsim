@@ -89,6 +89,7 @@ classdef builder < handle
             if obj.coupling ~= 0
                 obj.CouplingType = 'FIM';
             else
+                obj.CouplingType ='Sequential';
                 temp = strfind(SettingsMatrix{1}, 'SEQUENTIAL'); 
                 obj.coupling = find(~cellfun('isempty', temp));
                 temp = strfind(SettingsMatrix{1}, 'IMPSAT');
@@ -111,7 +112,7 @@ classdef builder < handle
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, SettingsMatrix);
-            simulation.Formulation = obj.BuildFormulation(inputMatrix);
+            simulation.Formulation = obj.BuildFormulation(inputMatrix, SettingsMatrix);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
         end
@@ -262,10 +263,12 @@ classdef builder < handle
             end
             
         end
-        function Formulation = BuildFormulation(obj, inputMatrix)
+        function Formulation = BuildFormulation(obj, inputMatrix, SettingsMatrix)
             formulationtype = 'Natural';
             if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
                 formulationtype = 'Immiscible';
+            elseif (strcmp(obj.CouplingType, 'Sequential') == 1)
+                formulationtype = 'Sequential';
             end
             switch(formulationtype)
                 case('Immiscible')
@@ -274,6 +277,8 @@ classdef builder < handle
                     Formulation = NaturalVar_formulation();
                 case('Mass')
                     Formulation = Mass_formulation();
+                case('Sequential')
+                    Formulation = seq_formulation();
             end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)

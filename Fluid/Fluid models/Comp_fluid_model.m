@@ -28,7 +28,7 @@ classdef Comp_fluid_model < fluid_model
             Status.z(:,2) = 1 - z_init;
             
             % 2. Update Composition of the phases (Flash)
-            [Status, SinglePhase] = obj.Flash(Status);
+            SinglePhase = obj.Flash(Status);
             
             % 2.a Compute Phase Density
             for i=1:obj.NofPhases
@@ -36,7 +36,7 @@ classdef Comp_fluid_model < fluid_model
             end
             
             %3. Update S based on components mass balance
-            Status = obj.ComputePhaseSaturation(Status, SinglePhase);
+            obj.ComputePhaseSaturation(Status, SinglePhase);
             
             % 4. Total Density
             Status.rhoT = obj.ComputeTotalDensity(Status.S, Status.rho);
@@ -45,16 +45,16 @@ classdef Comp_fluid_model < fluid_model
             % Loop over all injectors
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
-                [Inj(i), SinglePhase] = obj.Flash(Inj(i));
+                SinglePhase = obj.Flash(Inj(i));
                 for ph=1:obj.NofPhases
                     Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
                 end
-                [Inj(i)] = obj.ComputePhaseSaturation(Inj(i), SinglePhase);
+                obj.ComputePhaseSaturation(Inj(i), SinglePhase);
                 Inj(i).x2 = 1 - Inj(i).x1;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end            
         end
-        function [Status, SinglePhase] = Flash(obj, Status)
+        function SinglePhase = Flash(obj, Status)
             % Define SinglePhase objects
             SinglePhase.onlyliquid = zeros(length(Status.p), 1);
             SinglePhase.onlyvapor = zeros(length(Status.p), 1);

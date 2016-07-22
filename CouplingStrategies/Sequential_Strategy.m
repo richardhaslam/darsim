@@ -11,17 +11,32 @@ properties
     PressureSolver
     TransportSolver
     TimeStepSelector
+    MaxIter
+    itCount
+    Converged
 end
 methods
     function obj = Sequential_Strategy(name)
         obj@Coupling_Strategy(name);
     end
-    function [ProductionSystem, dt] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, maxDt)
-        ProductionSystem = obj.PressureSolver.solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation);
-        obj.ComputeVelocityField();
-        obj.CheckVelocity();
-        dt = obj.TimeStepSelector.ChooseTimestep(maxDt);
-        Status = obj.TransportSolver.solve(Status);
+    function dt = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, maxDt)
+        % This is the outer loop
+        obj.itCount = 0;
+        obj.Converged = 0;
+        while obj.Converged == 0 && obj.itCount < obj.MaxIter
+            % Solve pressure equation
+            obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
+            Formulation.ComputeVelocityField(ProductionSystem, DiscretizationModel);
+            % Check that velocity field is conservative
+            conservative = Formulation.CheckMassConservation();
+            if ~conservative
+                return
+            end
+            % Choose stable timestep
+            dt = obj.TimeStepSelector.ChooseTimestep(maxDt);
+            % Solve transport
+            obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
+        end
     end
 end
 end

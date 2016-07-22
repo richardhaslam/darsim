@@ -193,8 +193,39 @@ classdef NaturalVar_formulation < fim_formulation
             % Update z
             Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
            
-            % Update Composition
-            delta_flash = FluidModel.UpdateComposition(Status);
+            %% Composition update loop
+            Converged = 0;
+            itCount = 1;
+            s_0 = Status.S;
+            while Converged == 0 && itCount < FluidModel.FlashSettings.MaxIt
+                
+                % 1. Stores old values
+                s_old = Status.S;
+                x_old = Status.x1;
+                z_old = Status.z;
+                
+                % 2. Update Composition of the phases (Flash)
+                SinglePhase = FluidModel.Flash(Status);
+                
+                %3. Update x and S based on components mass balance
+                FluidModel.ComputePhaseSaturation(Status, SinglePhase);
+                
+                %4. Compute new total mass fractions (z)
+                Status.z =  FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
+                
+                %5.a Compute errors
+                InnerError1 = norm(abs(Status.S(:,1) - s_old(:,1)), inf);   %Checks if this loop is converging
+                InnerError2 = norm(abs(Status.x1(:,2) - x_old(:,2)), inf);
+                InnerError3 = norm(abs(Status.z(:,1) - z_old(:,1)), inf);
+                
+                %5.b Check convergence
+                if(InnerError1 < FluidModel.FlashSettings.TolInner && InnerError2 < FluidModel.FlashSettings.TolInner && InnerError3 < FluidModel.FlashSettings.TolInner)
+                    Converged = 1;
+                end
+                
+                itCount = itCount + 1;
+            end
+            delta_flash = Status.S - s_0;
             
             % Recompute delta
             delta(end/2+1:end) = delta(end/2+1:end) + delta_flash;
@@ -239,7 +270,7 @@ classdef NaturalVar_formulation < fim_formulation
             q1 = q(:,1);
             q2 = q(:,2);
         end
-        function [J1p, J1S, J2p, J2S] = AddWellsToJacobian(obj, J1p, J1S, J2p, J2S, State, Wells, K)
+        function [J1p, J2p, J1S, J2S] = AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, State, Wells, K)
             Inj = Wells.Inj;
             Prod = Wells.Prod;
             %Injectors

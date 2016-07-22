@@ -42,7 +42,7 @@ classdef TimeLoop_Driver < handle
                 obj.Coupling.UpdateSummary(Summary, ProductionSystem.Wells, obj.Ndt, obj.dt);
                 
                 % Check for convergence at the end of the timestep
-                if (obj.Coupling.NLSolver.Converged==0)
+                if ~obj.Coupling.Converged
                    disp(['The solution has not converged at timestep ' num2str(obj.Ndt)]);
                    break
                 end
