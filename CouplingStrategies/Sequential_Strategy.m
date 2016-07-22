@@ -26,7 +26,7 @@ methods
         while obj.Converged == 0 && obj.itCount < obj.MaxIter
             % Solve pressure equation
             obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
-            Formulation.ComputeVelocityField(ProductionSystem, DiscretizationModel);
+            Formulation.ComputeFluxes(ProductionSystem, DiscretizationModel);
             % Check that velocity field is conservative
             conservative = Formulation.CheckMassConservation();
             if ~conservative
