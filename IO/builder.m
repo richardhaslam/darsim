@@ -306,6 +306,7 @@ classdef builder < handle
                     Coupling = FIM_Strategy('FIM', NLSolver); 
                 case('Sequential')
                     Coupling = Sequential_Strategy('Sequential');
+                    Coupling.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
             TimeDriver.AddCouplingStrategy(Coupling);

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 July 2016
-%Last modified: 18 July 2016
+%Last modified: 23 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Sequential_Strategy < Coupling_Strategy
 properties
@@ -24,6 +24,8 @@ methods
         obj.itCount = 0;
         obj.Converged = 0;
         while obj.Converged == 0 && obj.itCount < obj.MaxIter
+            % Phase Mobilities and total Mobility
+            Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
             % Solve pressure equation
             obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             Formulation.ComputeFluxes(ProductionSystem, DiscretizationModel);
