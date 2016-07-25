@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 22 July 2016
-%Last modified: 23 July 2016
+%Last modified: 24 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef seq_formulation < handle
     properties
@@ -13,6 +13,8 @@ classdef seq_formulation < handle
         Mobt
         f
         U
+        Tx
+        Ty
     end
     methods
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
@@ -48,11 +50,20 @@ classdef seq_formulation < handle
             obj.Tx(2:Nx,:) = Ax./dx .* Kx(2:Nx,:);
             obj.Ty(:,2:Ny) = Ay./dy .* Ky(:,2:Ny);
         end
-        function BuildPressureResidual(obj)
-            
+        function A = BuildIncompressiblePressureMatrix(obj, DiscretizationModel)
+            N =  DiscretizationModel.ReservoirGrid.N;
+            Nx = DiscretizationModel.ReservoirGrid.Nx;
+            Ny = DiscretizationModel.ReservoirGrid.Ny;
+            %Construct pressure matrix
+            x1 = reshape(obj.Tx(1:Nx,:),N,1);
+            x2 = reshape(obj.Tx(2:Nx+1,:),N,1);
+            y1 = reshape(obj.Ty(:,1:Ny),N,1);
+            y2 = reshape(obj.Ty(:,2:Ny+1),N,1);
+            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
+            DiagIndx = [-Nx,-1,0,1,Nx];
+            A = spdiags(DiagVecs,DiagIndx,N,N);
         end
-        function BuildIncompressiblePressureMatrix(obj)
-            
+        function BuildIncompressibleRHS(obj, ProductionSystem, DiscretizationModel, FluidModel)
         end
         function ComputeFluxes(obj, ProductionSystem, DiscretizationModel)
             % Initialize local variables 
@@ -66,8 +77,6 @@ classdef seq_formulation < handle
             obj.U.y = zeros(Nx,Ny+1, 1);
             obj.U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)) .* obj.Tx(2:Nx,:) - Ucap.x(2:Nx,:);
             obj.U.y(:,2:Ny) = (P(:,1:Ny-1)-P(:,2:Ny)) .* obj.Ty(:,2:Ny) - Ucap.y(:,2:Ny);
-        end
-        function BuildIncompressibleRHS(obj, ProductionSystem, DiscretizationModel, FluidModel)
         end
         function BuildTransportResidual()
         end
