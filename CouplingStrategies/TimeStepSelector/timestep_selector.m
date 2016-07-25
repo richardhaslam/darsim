@@ -21,14 +21,15 @@ classdef timestep_selector < handle
             obj.NextDt = 0;
             obj.CFL = cfl;
         end
-        function dt = ComputeStableTimeStep(obj, ProductionSystem, DiscretizationModel, FluidModel, U)
-            por = ProductionSystem.Reservoir.por;
+        function dt = StableTimeStep(obj, ProductionSystem, DiscretizationModel, FluidModel, U)
+            por = ProductionSystem.Reservoir.Por;
             %Void Volume in each cell
             pv = por * DiscretizationModel.ReservoirGrid.Volume;   
             
             %I take the worst possible scenario
-            s = Fluid.sr(2):0.01:1-Fluid.sr(1);
-            [~, df] =  FluidModel.ComputeFractionalFlow(s);
+            s = FluidModel.Phases(1).sr:0.01:1-FluidModel.Phases(1).sr;
+            dMob = FluidModel.Compute(s);
+            df = ;
             dfmax = max(df);
             Uxmax = max(max(abs(U.x)));
             Uymax = max(max(abs(U.y)));
@@ -38,7 +39,7 @@ classdef timestep_selector < handle
             %Compute timestep size
             dtx = obj.CFL*pv/Lambdax;
             dty = obj.CFL*pv/Lambday;
-            dt = min(dtx,dty);
+            dt = min(dtx,dty, obj.MaxDt);
         end
         function dt = ChooseTimeStep(obj)
             dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);

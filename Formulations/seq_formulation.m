@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 22 July 2016
-%Last modified: 24 July 2016
+%Last modified: 25 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef seq_formulation < handle
     properties
@@ -15,6 +15,7 @@ classdef seq_formulation < handle
         U
         Tx
         Ty
+        Qwells
     end
     methods
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
@@ -34,12 +35,13 @@ classdef seq_formulation < handle
             dy = DiscretizationModel.ReservoirGrid.dy;
             Ax = DiscretizationModel.ReservoirGrid.Ax;
             Ay = DiscretizationModel.ReservoirGrid.Ay;
-            K = ProductionSystem.Reservoir.K .* obj.Mobt;
+            K(:, 1) = ProductionSystem.Reservoir.K(:,1) .* obj.Mobt;
+            K(:, 2) = ProductionSystem.Reservoir.K(:,2) .* obj.Mobt;
             
             % Harmonic average of permeability
-            kx = reshape(K(:,1), Nx,Ny);
+            kx = reshape(K(:,1), Nx, Ny);
             ky = reshape(K(:,2), Nx, Ny);
-            Kx = zeros(Nx, Ny+1);
+            Kx = zeros(Nx+1, Ny);
             Ky = zeros(Nx, Ny+1);
             Kx(2:Nx,:) = 2*kx(1:Nx-1,:) .* kx(2:Nx,:) ./ (kx(1:Nx-1,:) + kx(2:Nx,:));
             Ky(:,2:Ny) = 2*ky(:,1:Ny-1) .* ky(:,2:Ny) ./ (ky(:,1:Ny-1) + ky(:,2:Ny));
@@ -63,7 +65,25 @@ classdef seq_formulation < handle
             DiagIndx = [-Nx,-1,0,1,Nx];
             A = spdiags(DiagVecs,DiagIndx,N,N);
         end
-        function BuildIncompressibleRHS(obj, ProductionSystem, DiscretizationModel, FluidModel)
+        function rhs = BuildIncompressibleRHS(obj, ProductionSystem, DiscretizationModel, FluidModel)
+            N = DiscretizationModel.ReservoirGrid.N;
+            rhs = zeros(N, 1);
+            %Add capillary term to the right-hand side
+%             Kw = zeros(2, Grid.Nx, Grid.Ny);
+%             Kw(1,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(1,:,:);		% x-direction
+%             Kw(2,:,:) = reshape(Mw, 1, Grid.Nx, Grid.Ny).*K(2,:,:);		% y-direction
+%             AddPcToPressureSystem(q, S, Fluid, Kw, K(1,:,:), Grid);
+        end
+        function [A, rhs] = AddWellsToPressureSystem(obj, Wells, K, A, rhs)
+            % Injectors
+            for i=1:Wells.NofInj                
+               [A, rhs] = Wells.Inj(i).AddToPressureSystem(K, A, rhs);
+            end
+            
+            % Producers
+            for i=1:Wells.NofProd
+                [A, rhs] = Wells.Prod(i).AddToPressureSystem(obj.Mobt, K, A, rhs);
+            end
         end
         function ComputeFluxes(obj, ProductionSystem, DiscretizationModel)
             % Initialize local variables 
@@ -75,8 +95,29 @@ classdef seq_formulation < handle
             P = reshape(p, Nx, Ny, 1);
             obj.U.x = zeros(Nx+1,Ny, 1);
             obj.U.y = zeros(Nx,Ny+1, 1);
-            obj.U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)) .* obj.Tx(2:Nx,:) - Ucap.x(2:Nx,:);
-            obj.U.y(:,2:Ny) = (P(:,1:Ny-1)-P(:,2:Ny)) .* obj.Ty(:,2:Ny) - Ucap.y(:,2:Ny);
+            obj.U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)) .* obj.Tx(2:Nx,:); %- Ucap.x(2:Nx,:);
+            obj.U.y(:,2:Ny) = (P(:,1:Ny-1)-P(:,2:Ny)) .* obj.Ty(:,2:Ny); %- Ucap.y(:,2:Ny);
+            
+            % Wells total fluxes
+            obj.Qwells = ProductionSystem.Wells.TotalFluxes(ProductionSystem.Reservoir, obj.Mobt);
+        end
+        function conservative = CheckMassConservation(obj, Grid)
+            %Checks mass balance in all cells
+            Nx = Grid.Nx;
+            Ny = Grid.Ny;
+            conservative = 1;
+            maxUx = max(max(obj.U.x));
+            maxUy = max(max(obj.U.y));
+            maxU = max(maxUx, maxUy);
+            qWells = reshape(obj.Qwells, Nx, Ny);
+            for i=1:Nx
+                for j=1:Ny
+                    Accum = obj.U.x(i,j) - obj.U.x(i+1,j) + obj.U.y(i,j) - obj.U.y(i,j+1) + qWells(i,j);
+                    if (abs(Accum/maxU) > 10^(-5))
+                        conservative = 0;
+                    end
+                end
+            end
         end
         function BuildTransportResidual()
         end

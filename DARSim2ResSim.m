@@ -17,7 +17,9 @@ disp('********************DARSIM 2 RESERVOIR SIMULATOR********************');
 disp('******************************************************************');
 disp(char(5));
 disp('--------------------------------------------');
-disp('Reading input file');
+disp('Reading input file...');
+disp('--------------------------------------------');
+disp(char(5));
 
 %% Build objects
 % Build Simulator

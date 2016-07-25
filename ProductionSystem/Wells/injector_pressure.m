@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 13 July 2016
+%Last modified: 25 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef injector_pressure < injector
     properties
@@ -21,6 +21,16 @@ classdef injector_pressure < injector
             end
             obj.QComponents(:, 1) = obj.x1(1) * obj.QPhases(:,1) + obj.x1(2) * obj.QPhases(:,2);
             obj.QComponents(:, 2) = obj.x2(1) * obj.QPhases(:,1) + obj.x2(2) * obj.QPhases(:,2);
+        end
+        function [A, rhs] = AddToPressureSystem(obj, K, A, rhs)
+            a = obj.Cells;
+            for ii=1:length(a)
+                A(a(ii),a(ii)) = A(a(ii),a(ii)) + obj.PI * K(a(ii)) .* obj.Mob(ii, 1);
+                rhs(a(ii)) = rhs(a(ii)) + obj.PI .* K(a(ii)) .* obj.Mob(ii,1) .* obj.p;
+            end
+        end
+        function q = TotalFlux(obj, q, p, K)
+            q(obj.Cells) = q(obj.Cells) + obj.PI .* K(obj.Cells) .* obj.Mob(:,1) .* (obj.p - p(obj.Cells));
         end
     end
 end

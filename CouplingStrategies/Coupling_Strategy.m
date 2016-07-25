@@ -6,7 +6,7 @@
 %Created: 4 July 2016
 %Last modified: 8 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Coupling_Strategy
+classdef Coupling_Strategy < handle
 properties
     Name
 end

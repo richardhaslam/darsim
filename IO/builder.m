@@ -1,4 +1,4 @@
-% Builder
+% Builder Builds all objects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -267,7 +267,8 @@ classdef builder < handle
             formulationtype = 'Natural';
             if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
                 formulationtype = 'Immiscible';
-            elseif (strcmp(obj.CouplingType, 'Sequential') == 1)
+            end
+            if (strcmp(obj.CouplingType, 'Sequential') == 1)
                 formulationtype = 'Sequential';
             end
             switch(formulationtype)
@@ -307,6 +308,10 @@ classdef builder < handle
                 case('Sequential')
                     Coupling = Sequential_Strategy('Sequential');
                     Coupling.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
+                    pressuresolver = incompressible_pressure_solver();
+                    pressuresolver.LinearSolver = linear_solver();
+                    Coupling.AddPressureSolver(pressuresolver);
+                    %Coupling.AddTransportSolver(transportsolver);
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
             TimeDriver.AddCouplingStrategy(Coupling);

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 13 July 2016
+%Last modified: 25 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef wells < handle
     properties
@@ -45,5 +45,18 @@ classdef wells < handle
                 obj.Prod(i).UpdateState(Reservoir.State, K, Mob, FluidModel.NofPhases, FluidModel.NofComp);        
             end
         end
+        function q = TotalFluxes(obj, Reservoir, Mobt)
+            K = Reservoir.K(:,1);
+            q = zeros(length(K), 1);
+            
+            % Injectors
+            for i=1:obj.NofInj
+                q = obj.Inj(i).TotalFlux(q, Reservoir.State.p, K);         
+            end
+            % Producers
+            for i=1:obj.NofProd
+                q = obj.Prod(i).TotalFlux(q, Reservoir.State.p, K, Mobt);        
+            end
+        end 
     end
 end

@@ -22,5 +22,15 @@ classdef producer_pressure < producer
             obj.QComponents(:, 1) = State.x1(obj.Cells, 1) * obj.QPhases(:,1) + State.x1(obj.Cells, 2) * obj.QPhases(:,2);
             obj.QComponents(:, 2) = (1 - State.x1(obj.Cells, 1)) * obj.QPhases(:,1) + (1 - State.x1(obj.Cells, 2)) * obj.QPhases(:,2);
         end
+        function [A, rhs] = AddToPressureSystem(obj, Mob, K, A, rhs)
+            a = obj.Cells;
+            for ii=1:length(a)
+                A(a(ii),a(ii)) = A(a(ii),a(ii)) + obj.PI * K(a(ii)) .* Mob(a(ii));
+                rhs(a(ii)) = rhs(a(ii)) + obj.PI * K(a(ii)) .* Mob(a(ii)) .* obj.p;
+            end
+        end
+        function q = TotalFlux(obj, q, p, K, Mob)
+            q(obj.Cells) = q(obj.Cells) + obj.PI .* K(obj.Cells) .* Mob(obj.Cells,1) .* (obj.p - p(obj.Cells));
+        end
     end
 end
