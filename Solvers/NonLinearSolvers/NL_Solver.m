@@ -30,15 +30,13 @@ methods
     function AddConvergenceChecker(obj, convcheck)
         obj.ConvergenceChecker = convcheck;
     end
-    function Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt)        
+    function Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt)
         % Initialise objects for new NL Solve
+        obj.Converged = 0;
         obj.TimerConstruct = zeros(obj.MaxIter,1);
         obj.TimerSolve = zeros(obj.MaxIter, 1);
         obj.TimerInner = zeros(obj.MaxIter, 1);
         obj.itCount = 1;
-        
-        % Save initial State
-        obj.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State);
         
         % Update Derivatives
         obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
@@ -46,9 +44,7 @@ methods
         obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
         
         % Print some info
-        disp(['Initial residual norm: ', num2str(norm(obj.Residual, inf))]);
-        disp('');
-        disp('        ||Residual||   ||delta p||   ||delta S||');
+        obj.ConvergenceChecker.PrintTitles(obj.Residual);
         
         % NEWTON-RAPHSON LOOP
         while ((obj.Converged==0)  && (obj.itCount <= obj.MaxIter))
@@ -65,7 +61,7 @@ methods
             
             % 3. Update Solution
             start3 = tic;
-            obj.Delta  = ProductionSystem.UpdateState(obj.Delta, Formulation, FluidModel);
+            obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel);
             obj.TimerInner(obj.itCount) = toc(start3);
             
             % 4. Update Derivatives
@@ -89,7 +85,7 @@ methods
         obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
     end
     function CheckConvergence(obj, DiscretizationModel, ProductionSystem)
-        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, DiscretizationModel, ProductionSystem.Reservoir.State.p);
+        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, DiscretizationModel, ProductionSystem.Reservoir.State);
     end
 end
 end

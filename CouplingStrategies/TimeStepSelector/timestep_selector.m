@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 19 July 2016
-%Last modified: 19 July 2016
+%Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef timestep_selector < handle
     properties
@@ -27,9 +27,10 @@ classdef timestep_selector < handle
             pv = por * DiscretizationModel.ReservoirGrid.Volume;   
             
             %I take the worst possible scenario
-            s = FluidModel.Phases(1).sr:0.01:1-FluidModel.Phases(1).sr;
-            dMob = FluidModel.Compute(s);
-            df = ;
+            s = [FluidModel.Phases(1).sr:0.01:1-FluidModel.Phases(1).sr]';
+            Mob = FluidModel.ComputePhaseMobilities(s);
+            dMob = FluidModel.DMobDS(s);
+            df = (dMob(:,1) .* sum(Mob, 2) - sum(dMob, 2) .* Mob(:,1)) ./ sum(Mob, 2).^2;
             dfmax = max(df);
             Uxmax = max(max(abs(U.x)));
             Uymax = max(max(abs(U.y)));
@@ -39,7 +40,7 @@ classdef timestep_selector < handle
             %Compute timestep size
             dtx = obj.CFL*pv/Lambdax;
             dty = obj.CFL*pv/Lambday;
-            dt = min(dtx,dty, obj.MaxDt);
+            dt = min([dtx, dty, obj.ReportDt, obj.MaxDt]);
         end
         function dt = ChooseTimeStep(obj)
             dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);

@@ -15,9 +15,6 @@ classdef Discretization_model < handle
         function obj = Discretization_model(nx, ny, nz)
             obj.ReservoirGrid = grid_cartesian(nx, ny, nz);
         end
-        function Initialize(obj, ProductionSystem)
-            obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
-        end
         function DefinePerforatedCells(obj, Wells)
             % Has to be improved for Diagonal wells (maybe using trajectories)
             % Injectors

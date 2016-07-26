@@ -4,16 +4,13 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 19 July 2016
-%Last modified: 19 July 2016
+%Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fim_system_builder < system_builder
     properties
-        State
+ 
     end
     methods
-        function SaveInitialState(obj, InitialState)
-            obj.State = copy(InitialState);
-        end
         function ComputePropertiesAndDerivatives(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
             Formulation.ComputePropertiesAndDerivatives(ProductionSystem, FluidModel);
             Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel.ReservoirGrid, FluidModel.Phases, ProductionSystem.Reservoir.State.p, ProductionSystem.Reservoir.State.pc);
@@ -23,6 +20,12 @@ classdef fim_system_builder < system_builder
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
             Jacobian = Formulation.BuildJacobian(ProductionSystem, DiscretizationModel, dt);
+        end
+        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel)
+            % Update Reservoir State
+            delta = Formulation.UpdateState(delta, ProductionSystem.Reservoir.State, FluidModel);
+            % UpdateWells
+            ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end
     end
 end

@@ -4,13 +4,20 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 19 July 2016
-%Last modified: 19 July 2016
+%Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef system_builder < handle
     properties
+       State
     end
     methods (Abstract)
+        obj = ComputePropertiesAndDerivatives(obj);
         obj = BuildResidual(obj);
         obj = BuildJacobian(obj);
+    end
+    methods
+        function SaveInitialState(obj, InitialState)
+            obj.State = copy(InitialState);
+        end
     end
 end

@@ -124,19 +124,19 @@ classdef builder < handle
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
                 Discretization = FS_Discretization_model(nx, ny, nz);
             else
-                temp = strfind(inputMatrix{1}, 'PRESSURE_INTERPOLATOR');
+                temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
-                ADMSettings.Pressure_Interpolator =  char(inputMatrix{1}(x+1));
-                temp = strfind(inputMatrix{1}, 'LEVELS');
+                ADMSettings.Pressure_Interpolator =  char(SettingsMatrix(x+1));
+                temp = strfind(inputMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
-                ADMSettings.maxLevel = str2double(inputMatrix{1}(x+1));
-                temp = strfind(inputMatrix{1}, 'TOLERANCE');
+                ADMSettings.maxLevel = str2double(SettingsMatrix(x+1));
+                temp = strfind(SettingsMatrix, 'TOLERANCE');
                 x = find(~cellfun('isempty', temp));
-                ADMSettings.tol = str2double(inputMatrix{1}(x+1));
-                temp = strfind(inputMatrix{1}, 'COARSENING_RATIOS');
+                ADMSettings.tol = str2double(SettingsMatrix(x+1));
+                temp = strfind(SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
-                cx = str2double(inputMatrix{1}(x+1));
-                cy = str2double(inputMatrix{1}(x+2));
+                cx = str2double(SettingsMatrix(x+1));
+                cy = str2double(SettingsMatrix(x+2));
                 ADMSettings.Coarsening = [cx, cy; cx^2, cy^2; cx^3, cy^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 Discretization = ADM_Discretization_model(nx, ny, nz, ADMSettings);
             end
@@ -311,7 +311,22 @@ classdef builder < handle
                     pressuresolver = incompressible_pressure_solver();
                     pressuresolver.LinearSolver = linear_solver();
                     Coupling.AddPressureSolver(pressuresolver);
-                    %Coupling.AddTransportSolver(transportsolver);
+                    if (~isempty(obj.transport))
+                        transportsolver = NL_Solver();
+                        transportsolver.MaxIter = str2double(SettingsMatrix(obj.transport + 3));
+                        ConvergenceChecker = convergence_checker_transport();
+                        ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.transport + 2));
+                        transportsolver.AddConvergenceChecker(ConvergenceChecker);
+                        transportsolver.SystemBuilder = transport_system_builder();
+                        Coupling.ConvergenceChecker = convergence_checker_outer();
+                        Coupling.ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
+                        transportsolver.LinearSolver = linear_solver();
+                    else
+                        transportsolver = explicit_transport_solver();
+                        transportsolver.SystemBuilder = explicit_transport_system_builder();
+                        Coupling.ConvergenceChecker = convergence_checker_impes();
+                    end
+                    Coupling.AddTransportSolver(transportsolver);
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
             TimeDriver.AddCouplingStrategy(Coupling);

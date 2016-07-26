@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 22 July 2016
-%Last modified: 25 July 2016
+%Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef seq_formulation < handle
     properties
@@ -12,10 +12,12 @@ classdef seq_formulation < handle
         Mob
         Mobt
         f
+        df
         U
         Tx
         Ty
         Qwells
+        V
     end
     methods
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
@@ -26,6 +28,10 @@ classdef seq_formulation < handle
         function UpdateFractionalFlow(obj, ProductionSystem, FluidModel)
             obj.ComputeTotalMobility(ProductionSystem, FluidModel);
             obj.f = obj.Mob(:,1) ./ obj.Mobt;
+        end
+        function dfdS(obj, ProductionSystem, FluidModel)
+            dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
+            obj.df = (dMob(:,1) .* sum(obj.Mob, 2) - sum(dMob, 2) .* obj.Mob(:,1)) ./ sum(obj.Mob, 2).^2;
         end
         function ComputeTransmissibilities(obj, ProductionSystem, DiscretizationModel)
             % Initialize local variables
@@ -119,11 +125,66 @@ classdef seq_formulation < handle
                 end
             end
         end
-        function BuildTransportResidual()
+        function Residual = BuildTransportResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
+            % Initialise local objects
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            s = ProductionSystem.Reservoir.State.S;
+            s_old = State0.S;
+            
+            % viscous fluxes matrix
+            obj.ViscousMatrix(DiscretizationModel.ReservoirGrid);      
+            
+            % Compute residual
+            Residual = pv/dt * (s - s_old)  - max(obj.Qwells,0) - obj.V*obj.f;
         end
-        function UpdatePressure()
+        function ViscousMatrix(obj, Grid)
+            %Builds Upwind Flux matrix
+            Nx = Grid.Nx;
+            Ny = Grid.Ny;
+            N = Grid.N;                                    % number of cells
+            q = min(obj.Qwells,0);                        % production >> it's a negative flux
+            % right to left and top to bottom (negative x and y)
+            XN = min(obj.U.x,0); 
+            YN = min(obj.U.y,0); 
+            % make them vectors 
+            x1 = reshape(XN(1:Nx,:),N,1);
+            y1 = reshape(YN(:,1:Ny),N,1);
+            
+            % left to right and bottom to top (positive x and y)
+            XP = max(obj.U.x,0); 
+            YP = max(obj.U.y,0); 
+            % make them vectors
+            x2 = reshape(XP(2:Nx+1,:),N,1);
+            y2 = reshape(YP(:,2:Ny+1),N,1);
+            
+            % Assemble matrix
+            DiagVecs = [y2, x2, q+x1-x2+y1-y2, -x1, -y1]; % diagonal vectors
+            DiagIndx = [-Nx, -1, 0, 1, Nx]; % diagonal index
+            obj.V = spdiags(DiagVecs, DiagIndx, N, N);
         end
-        function UpdateSaturation()
+        function Jacobian = BuildTransportJacobian(obj, ProductionSystem, DiscretizationModel, dt)
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            N = DiscretizationModel.ReservoirGrid.N;
+            D = spdiags(pv/dt*ones(N,1),0,N,N);
+            Jacobian = D - obj.V * spdiags(obj.df,0,N,N); %+ CapJac;
         end
+        function UpdateSaturation(obj, State, delta, FluidModel)
+            State.S = State.S + delta;
+            State.S = min(State.S, 1);
+            State.S = max(State.S, FluidModel.Phases(1).sr);
+        end
+        function UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)
+            % 0. Initialise
+            pv = ProductionSystem.Reservoir.Por .* DiscretizationModel.ReservoirGrid.Volume;
+            N = DiscretizationModel.ReservoirGrid.N;
+            
+            % 1. Solve
+            T = spdiags(dt/pv*ones(N,1),0,N,N);    % dt/pv * Cell Fluxes and producer
+            B = T * obj.V;
+            injector = max(obj.Qwells,0) .* dt/pv;  % injection flux * dt/pv
+            
+            ProductionSystem.Reservoir.State.S = ProductionSystem.Reservoir.State.S + (B * obj.f + injector);
+        end
+        
     end
 end

@@ -19,6 +19,8 @@ classdef grid_cartesian < grid
         Volume
         Tx
         Ty
+        I
+        J
     end
     methods
         function obj = grid_cartesian(nx, ny, nz)
@@ -53,6 +55,17 @@ classdef grid_cartesian < grid
             
             obj.Tx(2:obj.Nx,:) = obj.Ax./obj.dx.*KHx(2:obj.Nx,:);
             obj.Ty(:,2:obj.Ny) = obj.Ay./obj.dy.*KHy(:,2:obj.Ny);
+        end
+        function AddCoordinates(obj)
+            % Add I, J coordinates to Grid
+            obj.I = ones(obj.N, 1);
+            obj.J = ones(obj.N, 1);
+            Jindexes = 1:1:obj.Ny;
+            for i=1:obj.Ny
+                a = obj.Nx*(i-1)+1;
+                obj.I(a:a+obj.Nx-1) = 1:1:obj.Nx;
+                obj.J(a:a+obj.Nx-1) = Jindexes(i)*ones(obj.Nx,1);
+            end
         end
     end
 end

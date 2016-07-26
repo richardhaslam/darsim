@@ -8,8 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Sequential_Stats < Coupling_Stats
     properties
-        PressureStats
-        SaturationStats
+        OuterIter
+        NLIter
         PressureTimer
         BalanceTimer
         TransportTimer
@@ -17,22 +17,30 @@ classdef Sequential_Stats < Coupling_Stats
     methods
         function obj = Sequential_Stats(MaxNTimeSteps)
            obj@Coupling_Stats(MaxNTimeSteps);
-           obj.PressureStats = zeros(MaxNTimeSteps, 2);
-           obj.SaturationStats = zeros(MaxNTimeSteps, 2);
+           obj.OuterIter = zeros(MaxNTimeSteps, 1);
+           obj.NLIter = zeros(MaxNTimeSteps, 1);
            obj.PressureTimer = zeros(MaxNTimeSteps, 1);
            obj.BalanceTimer = zeros(MaxNTimeSteps, 1);
            obj.TransportTimer = zeros(MaxNTimeSteps, 1);
+           obj.NTimers = 3;
+           obj.NStats = 2;
         end
-        function SaveTimers(obj)
+        function SaveTimers(obj, Ndt, t_pressure, t_balance, t_transport)
+            obj.PressureTimer(Ndt) = sum(t_pressure);
+            obj.BalanceTimer(Ndt) = sum(t_balance);
+            obj.TransportTimer(Ndt) = sum(t_transport);
         end
-        function SaveStats(obj)
+        function SaveStats(obj, Ndt, outit, NLit)
+             obj.OuterIter(Ndt) = outit;
+             obj.NLIter(Ndt) = NLit;
         end
-        function WriteStats(obj, itCount, n_chops)
-            disp('I have to write the Stats');
+         function Matrix = TimersMatrix(obj, Ndt)
+            timesteps = 1:Ndt;
+            Matrix = [timesteps', obj.PressureTimer(1:Ndt), obj.BalanceTimer(1:Ndt), obj.TransportTimer(1:Ndt)]';
         end
-        function WriteTimers(obj)
-            disp('I have to write the timers');
-            
+        function Matrix = StatsMatrix(obj, Ndt)
+            timesteps = 1:Ndt;
+            Matrix = [timesteps', obj.OuterIter(1:Ndt), obj.NLIter(1:Ndt)]';
         end
     end
 end

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 18 July 2016
+%Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 classdef Production_System < handle
@@ -35,12 +35,6 @@ classdef Production_System < handle
             % 3. Injection fluid properties are defined
             FluidModel.InitializeInjectors(obj.Wells.Inj);
             % 4. ComputeFluxes
-            obj.Wells.UpdateState(obj.Reservoir, FluidModel);
-        end
-        function delta = UpdateState(obj, delta, Formulation, FluidModel)
-            % Update Reservoir State
-            delta = Formulation.UpdateState(delta, obj.Reservoir.State, FluidModel);
-            % UpdateWells
             obj.Wells.UpdateState(obj.Reservoir, FluidModel);
         end
     end

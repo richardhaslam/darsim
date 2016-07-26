@@ -14,5 +14,8 @@ classdef FS_Discretization_model < Discretization_model
         function obj = FS_Discretization_model(nx, ny, nz)
             obj@Discretization_model(nx, ny, nz);
         end
+        function Initialize(obj, ProductionSystem)
+            obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
+        end
     end
 end

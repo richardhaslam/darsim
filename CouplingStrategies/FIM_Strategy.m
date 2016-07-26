@@ -23,8 +23,10 @@ methods
     end
     function dt = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
         dt = obj.TimeStepSelector.ChooseTimeStep();
-        obj.NLSolver.Converged = 0;
-        while (obj.NLSolver.Converged == 0 && obj.chops < obj.MaxChops) 
+        obj.Converged = 0;
+        % Save initial State
+        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State);
+        while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
                 disp('Maximum number of iterations was reached: time-step was chopped');
