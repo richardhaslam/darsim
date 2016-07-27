@@ -28,13 +28,11 @@ classdef Production_System < handle
             FluidModel.InitializeReservoir(obj.Reservoir.State);
             
             %% Initialize Wells: 
-            % 1. Perforated cells
-            DiscretizationModel.DefinePerforatedCells(obj.Wells);
-            % 2. Create objects
+            % 1. Create objects
             obj.Wells.InitializeFluxes(FluidModel.NofPhases, FluidModel.NofComp);
-            % 3. Injection fluid properties are defined
+            % 2. Injection fluid properties are defined
             FluidModel.InitializeInjectors(obj.Wells.Inj);
-            % 4. ComputeFluxes
+            % 3. ComputeFluxes
             obj.Wells.UpdateState(obj.Reservoir, FluidModel);
         end
     end

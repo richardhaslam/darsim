@@ -16,6 +16,8 @@ classdef FS_Discretization_model < Discretization_model
         end
         function Initialize(obj, ProductionSystem)
             obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
+            % Perforated cells
+            obj.DefinePerforatedCells(ProductionSystem.Wells);
         end
     end
 end

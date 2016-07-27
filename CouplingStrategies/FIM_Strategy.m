@@ -24,6 +24,7 @@ methods
     function dt = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
         dt = obj.TimeStepSelector.ChooseTimeStep();
         obj.Converged = 0;
+        obj.chops = 0;
         % Save initial State
         obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State);
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
@@ -44,10 +45,9 @@ methods
                 dt = dt/2;
                 obj.chops = obj.chops + 1;
             end
+            obj.Converged = obj.NLSolver.Converged;
         end
-        obj.Converged = obj.NLSolver.Converged;
         obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount - 1, obj.chops)
-        obj.chops = 0;
     end
     function Summary = UpdateSummary(obj, Summary, Wells, Ndt, dt)
         %% Stats, timers and Injection/Production data

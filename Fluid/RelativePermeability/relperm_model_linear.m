@@ -16,9 +16,9 @@ classdef relperm_model_linear < relperm_model
             kr(:,1) = S;
             kr(:,2) = 1-S;
         end
-        function dkr = ComputeDerivative(obj, s)
-            dkr(:,1) = (1-Phases(1).sr-Phases(2).sr)^(-1).*ones(length(s));
-            dkr(:,2) = -(1-Fluid.sr(2)-Fluid.sr(1))^(-1).*ones(length(s));
+        function dkr = ComputeDerivative(obj, Phases, s)
+            dkr(:,1) = (1-Phases(1).sr - Phases(2).sr)^(-1) .* ones(length(s),1);
+            dkr(:,2) = -(1-Phases(1).sr - Phases(2).sr)^(-1) .* ones(length(s),1);
         end
     end
 end

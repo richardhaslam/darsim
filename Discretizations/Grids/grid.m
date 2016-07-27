@@ -11,6 +11,8 @@ classdef grid < handle
         N
         Connections
         Active
+        Father
+        Centers
     end
     methods
         

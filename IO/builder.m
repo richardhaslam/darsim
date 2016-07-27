@@ -27,6 +27,7 @@ classdef builder < handle
         inj
         prod
         MaxNumTimeSteps
+        reports
         CouplingType
         coupling
         transport
@@ -84,6 +85,9 @@ classdef builder < handle
             temp = strfind(SettingsMatrix{1}, 'TIMESTEPS');
             xv = find(~cellfun('isempty', temp));
             obj.MaxNumTimeSteps = str2double(SettingsMatrix{1}(xv+1));
+            temp = strfind(SettingsMatrix{1}, 'REPORTS');
+            xv = find(~cellfun('isempty', temp));
+            obj.reports = str2double(SettingsMatrix{1}(xv+1));
             temp = strfind(SettingsMatrix{1}, 'FIM'); 
             obj.coupling = find(~cellfun('isempty', temp));
             if obj.coupling ~= 0
@@ -112,7 +116,7 @@ classdef builder < handle
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, SettingsMatrix);
-            simulation.Formulation = obj.BuildFormulation(inputMatrix, SettingsMatrix);
+            simulation.Formulation = obj.BuildFormulation(inputMatrix);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
         end
@@ -127,7 +131,7 @@ classdef builder < handle
                 temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
                 ADMSettings.Pressure_Interpolator =  char(SettingsMatrix(x+1));
-                temp = strfind(inputMatrix, 'LEVELS');
+                temp = strfind(SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
                 ADMSettings.maxLevel = str2double(SettingsMatrix(x+1));
                 temp = strfind(SettingsMatrix, 'TOLERANCE');
@@ -162,8 +166,9 @@ classdef builder < handle
                 Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny)*10^(-12), DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
             else
-                Kx = ones(DiscretizationModel.ReservoirGrid.N,1)*10^(-12);
-                Ky = ones(DiscretizationModel.ReservoirGrid.N,1)*10^(-12);
+                value = str2double(inputMatrix(obj.perm +1));
+                Kx = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
+                Ky = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
             end
             K = [Kx, Ky];
             Reservoir.AddPermeabilityPorosity(K, phi);
@@ -180,7 +185,7 @@ classdef builder < handle
                 j_init = str2double(inputMatrix(obj.inj(i) + 3));
                 j_final = str2double(inputMatrix(obj.inj(i) + 4));
                 coord = [i_init, i_final; j_init, j_final];
-                PI = 2000;
+                PI = 1;
                 pressure = str2double(inputMatrix(obj.inj(i) + 6));
                 Injector = injector_pressure(PI, coord, pressure, Tres);
                 Wells.AddInjector(Injector);
@@ -192,7 +197,7 @@ classdef builder < handle
                 j_init = str2double(inputMatrix(obj.prod(i) + 3));
                 j_final = str2double(inputMatrix(obj.prod(i) + 4));
                 coord = [i_init, i_final; j_init, j_final];
-                PI = 2000;
+                PI = 1;
                 pressure = str2double(inputMatrix(obj.prod(i) + 6));
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
@@ -263,7 +268,7 @@ classdef builder < handle
             end
             
         end
-        function Formulation = BuildFormulation(obj, inputMatrix, SettingsMatrix)
+        function Formulation = BuildFormulation(obj, inputMatrix)
             formulationtype = 'Natural';
             if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
                 formulationtype = 'Immiscible';
@@ -283,8 +288,7 @@ classdef builder < handle
             end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
-            n_reports = 10; %Hard coded for now
-            TimeDriver = TimeLoop_Driver(obj.TotalTime, n_reports);
+            TimeDriver = TimeLoop_Driver(obj.TotalTime, obj.reports);
             TimeDriver.MaxNumberOfTimeSteps = obj.MaxNumTimeSteps;
             %% Construct Coupling
             switch(obj.CouplingType)
