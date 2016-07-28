@@ -27,6 +27,15 @@ classdef Production_System < handle
             obj.Reservoir.State.T = obj.Reservoir.Temp; % For now it's fine like this
             FluidModel.InitializeReservoir(obj.Reservoir.State);
             
+            % Output initial status:      
+            disp('Initial conditions:')
+            disp(['reservoir pressure:' num2str(max(obj.Reservoir.State.p/1e6)), ' MPa']);
+            disp(['reservoir saturation:' num2str(max(obj.Reservoir.State.S))]);
+            disp(['reservoir z1: ', num2str(max(obj.Reservoir.State.z(:,1)))])
+            disp(['reservoir temperature: ', num2str(obj.Reservoir.Temp)]);
+            disp('---------------------------------------------------------');
+            disp(char(5));
+            
             %% Initialize Wells: 
             % 1. Create objects
             obj.Wells.InitializeFluxes(FluidModel.NofPhases, FluidModel.NofComp);

@@ -7,6 +7,8 @@
 %Last modified: 14 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function ResSimulator = DARSim2ResSim(Directory, File)
+clc;
+
 %% Set up Diary
 delete(strcat(Directory, '/Output/RunDiary.txt')); 
 diary(strcat(Directory, '/Output/RunDiary.txt'));
@@ -16,9 +18,7 @@ disp('******************************************************************');
 disp('********************DARSIM 2 RESERVOIR SIMULATOR********************');
 disp('******************************************************************');
 disp(char(5));
-disp('--------------------------------------------');
-disp('Reading input file...');
-disp('--------------------------------------------');
+disp(['Reading input file ', File, ' from ', Directory]);
 disp(char(5));
 
 %% Build objects
@@ -28,6 +28,9 @@ ResSimulator = Reservoir_Simulator(Directory, File);
 ResSimulator.Reader.ReadInputFile();
 % Build objects
 ResSimulator.BuildObjects();
+
+% Print info to screen
+ResSimulator.PrintInfo();
 
 %% Run Simulation
 TotalStart = tic;

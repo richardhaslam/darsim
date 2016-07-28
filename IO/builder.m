@@ -37,6 +37,7 @@ classdef builder < handle
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
+            %%%%%% Name of the Problem %%%%%%
             temp = strfind(inputMatrix{1}, 'TITLE'); % Search a specific string and find all rows containing matches
             obj.ProblemName = char(inputMatrix{1}(find(~cellfun('isempty', temp)) + 1));
             
@@ -185,7 +186,7 @@ classdef builder < handle
                 j_init = str2double(inputMatrix(obj.inj(i) + 3));
                 j_final = str2double(inputMatrix(obj.inj(i) + 4));
                 coord = [i_init, i_final; j_init, j_final];
-                PI = 1;
+                PI = 2000;
                 pressure = str2double(inputMatrix(obj.inj(i) + 6));
                 Injector = injector_pressure(PI, coord, pressure, Tres);
                 Wells.AddInjector(Injector);
@@ -197,7 +198,7 @@ classdef builder < handle
                 j_init = str2double(inputMatrix(obj.prod(i) + 3));
                 j_final = str2double(inputMatrix(obj.prod(i) + 4));
                 coord = [i_init, i_final; j_init, j_final];
-                PI = 1;
+                PI = 2000;
                 pressure = str2double(inputMatrix(obj.prod(i) + 6));
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
@@ -213,7 +214,6 @@ classdef builder < handle
                     FluidModel = Immiscible_fluid_model(n_phases);
                 case('BlackOil')
                     FluidModel = BO_fluid_model(n_phases, n_comp);
-                    FluidModel.Pref = 1e5;
                     FlashSettings.TolInner = str2double(SettingsMatrix(obj.flash + 2));
                     FlashSettings.MaxIt = str2double(SettingsMatrix(obj.flash + 3));
                     FlashSettings.TolFlash = str2double(SettingsMatrix(obj.flash + 4));

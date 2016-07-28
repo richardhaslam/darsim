@@ -52,7 +52,6 @@ classdef grid_cartesian < grid
             KHy(:,2:obj.Ny) = 2*Ky(:,1:obj.Ny-1).*Ky(:,2:obj.Ny)./(Ky(:,1:obj.Ny-1)+Ky(:,2:obj.Ny));
             
             %Transmissibility
-            
             obj.Tx(2:obj.Nx,:) = obj.Ax./obj.dx.*KHx(2:obj.Nx,:);
             obj.Ty(:,2:obj.Ny) = obj.Ay./obj.dy.*KHy(:,2:obj.Ny);
         end

@@ -207,18 +207,18 @@ classdef NaturalVar_formulation < fim_formulation
                 % 2. Update Composition of the phases (Flash)
                 SinglePhase = FluidModel.Flash(Status);
                 
-                %3. Update x and S based on components mass balance
+                % 3. Update x and S based on components mass balance
                 FluidModel.ComputePhaseSaturation(Status, SinglePhase);
                 
-                %4. Compute new total mass fractions (z)
+                % 4. Compute new total mass fractions (z)
                 Status.z =  FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
                 
-                %5.a Compute errors
+                % 5.a Compute errors
                 InnerError1 = norm(abs(Status.S(:,1) - s_old(:,1)), inf);   %Checks if this loop is converging
                 InnerError2 = norm(abs(Status.x1(:,2) - x_old(:,2)), inf);
                 InnerError3 = norm(abs(Status.z(:,1) - z_old(:,1)), inf);
                 
-                %5.b Check convergence
+                % 5.b Check convergence
                 if(InnerError1 < FluidModel.FlashSettings.TolInner && InnerError2 < FluidModel.FlashSettings.TolInner && InnerError3 < FluidModel.FlashSettings.TolInner)
                     Converged = 1;
                 end

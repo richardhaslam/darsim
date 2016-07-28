@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_fluid_model < fluid_model
     properties
+        name = 'Immiscible';
     end
     methods
         function obj = Immiscible_fluid_model(n_phases)

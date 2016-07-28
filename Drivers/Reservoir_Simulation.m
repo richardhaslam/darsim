@@ -20,8 +20,11 @@ classdef Reservoir_Simulation
             obj.DiscretizationModel.Initialize(obj.ProductionSystem);
             obj.ProductionSystem.Initialize(obj.DiscretizationModel, obj.FluidModel);
         end
-        function Run(obj, Writer)
+        function Run(obj, Writer)        
+            disp('BEGIN TIME-DEPENDENT SIMULATION');
+            disp(char(5))
             obj.TimeDriver.SolveTimeDependentProblem(obj.ProductionSystem, obj.FluidModel, obj.DiscretizationModel, obj.Formulation, obj.Summary, Writer);
+            disp('end of the simulation');
         end
     end
 end

@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Comp_fluid_model < fluid_model
     properties
+        name = 'Compositional';
         FlashSettings
     end
     methods
@@ -19,11 +20,11 @@ classdef Comp_fluid_model < fluid_model
         end
         function InitializeReservoir(obj, Status)
             % Define initial values
-            P_init = linspace(1e5, 10e4, length(Status.p));
+            P_init = ones(length(Status.p), 1)*0.5e7;
             z_init = ones(length(Status.p), 1)*0.0;
             
             % 1. Assign initial valus
-            Status.p = Status.p .* P_init';
+            Status.p = Status.p .* P_init;
             Status.z(:,1) = z_init;
             Status.z(:,2) = 1 - z_init;
             
@@ -137,7 +138,6 @@ classdef Comp_fluid_model < fluid_model
             end
             if ~converged
                 disp('Warning: The flash calculator could not converge.');
-                return
             end
             
             %5. Solve for x's and y's

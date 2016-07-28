@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 18 July 2016
+%Last modified: 28 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Reservoir_Simulator < handle
     properties
@@ -23,6 +23,23 @@ classdef Reservoir_Simulator < handle
             obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix);
             obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1});
             obj.Writer = obj.Builder.BuildWriter(obj.Reader.Directory, obj.Simulation); 
+        end
+        function PrintInfo(obj)
+            disp(['******************', num2str(obj.Builder.ProblemName),'******************']);
+            disp(char(5));
+            disp('FORMATION CHARACTERISTICS:');
+           
+            disp('Reservoir geometry:');
+            disp(['Lx: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Length), ' m']);
+            disp(['Ly: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Depth), ' m']);
+            disp(['Depth:  ', num2str(obj.Simulation.ProductionSystem.Reservoir.Width), ' m']);
+            disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x 1']);
+            disp('---------------------------------------------------------');
+            disp('Fluid Model:');
+            disp(['Type: ', obj.Simulation.FluidModel.name]);
+            disp(['N of phases: ', num2str(obj.Simulation.FluidModel.NofPhases)]);
+            disp(['N of components:  ', num2str(obj.Simulation.FluidModel.NofComp)]);
+            disp('---------------------------------------------------------');
         end
         function Run(obj)
             % Initialize Simulation

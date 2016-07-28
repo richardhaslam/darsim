@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef BO_fluid_model < fluid_model
     properties
+        name = 'Black Oil';
         Pref % Pref for Rs computation
         Pdim % Dimensionless pressure
         FlashSettings
@@ -15,18 +16,18 @@ classdef BO_fluid_model < fluid_model
     methods
         function obj = BO_fluid_model(n_phases, n_comp)
             obj@fluid_model(n_phases, n_comp);
-            obj.Pref = 1e5;
+            obj.Pref = 1e7;
         end
         function AddFlash(obj, flash)
             obj.FlashSettings = flash;
         end
         function Status = InitializeReservoir(obj, Status)
             % Define initial values
-            P_init = linspace(1e5, 10e4, length(Status.p));
-            z_init = ones(length(Status.p), 1)*0.0;
+            P_init = ones(length(Status.p), 1) * 5e7;
+            z_init = ones(length(Status.p), 1)*0.1;
             
             % 1. Assign initial valus
-            Status.p = Status.p .* P_init';
+            Status.p = Status.p .* P_init;
             Status.z(:,1) = z_init;
             Status.z(:,2) = 1 - z_init;
             
