@@ -129,21 +129,34 @@ classdef builder < handle
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
                 Discretization = FS_Discretization_model(nx, ny, nz);
             else
-                temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
-                x = find(~cellfun('isempty', temp));
-                ADMSettings.Pressure_Interpolator =  char(SettingsMatrix(x+1));
+                
                 temp = strfind(SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
-                ADMSettings.maxLevel = str2double(SettingsMatrix(x+1));
+                maxLevel = str2double(SettingsMatrix(x+1));
                 temp = strfind(SettingsMatrix, 'TOLERANCE');
                 x = find(~cellfun('isempty', temp));
-                ADMSettings.tol = str2double(SettingsMatrix(x+1));
+                tol = str2double(SettingsMatrix(x+1));
                 temp = strfind(SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
                 cx = str2double(SettingsMatrix(x+1));
                 cy = str2double(SettingsMatrix(x+2));
-                ADMSettings.Coarsening = [cx, cy; cx^2, cy^2; cx^3, cy^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
-                Discretization = ADM_Discretization_model(nx, ny, nz, ADMSettings);
+                Coarsening = [cx, cy; cx^2, cy^2; cx^3, cy^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                switch (char(SettingsMatrix(x+1))) 
+                    case ('Constant')
+                        operatorshandler = operators_handler_constant(maxLevel);
+                    case ('Homogeneous')
+                        operatorshandler = operators_handler_MS(maxLevel);
+                        operatorshandler.BFUpdater = bf_updater_bilin();
+                    case ('MS')
+                        operatorshandler = operators_handler_MS(maxLevel);
+                        operatorshandler.BFUpdater = bf_updater_ms();
+                end
+                gridselector = adm_grid_selector(tol);
+                Discretization = ADM_Discretization_model(nx, ny, nz, maxLevel, Coarsening);
+                Discretization.AddADMGridSelector(gridselector);
+                Discretization.AddOperatorsHandler(operatorshandler);
             end
             
         end
