@@ -14,19 +14,21 @@ classdef operators_handler_MS < operators_handler
         function obj = operators_handler_MS(n)
             obj@operators_handler(n)
         end
-        function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K)
-            
-            obj.BFUpdater.ConstructPressureSystem();
-            %Build MS operators
-            [CoarseGrid(1).MsR, CoarseGrid(1).MsP, CoarseGrid(1).C] = MSFVOperators(FineGrid, CoarseGrid(1), Ap, 1);
-            %Build first coarse system (with MsFV)
-            CoarseGrid(1).A_c = CoarseGrid(1).MsR*Ap*CoarseGrid(1).MsP;
+        function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
+            obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
+            %Build static restriction operator (FV)
+            obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1), 1);
+            % Build Prolongation operator
+            obj.Pp{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor);
+            %Build first coarse system (with MsFE)
+            obj.BFUpdater.A = obj.Pp{1}' * obj.BFUpdater.A * obj.Pp{1};
             for x = 2:maxLevel
-                %Build MS operators
-                [CoarseGrid(x).MsR, CoarseGrid(x).MsP, CoarseGrid(x).C] = MSFVOperators(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x-1).A_c, x);
-                %Build coarse system (with MsFV)
-                CoarseGrid(x).A_c = CoarseGrid(x).MsR*CoarseGrid(x-1).A_c*CoarseGrid(x).MsP;
-                CoarseGrid(x).constant = 0;
+                % Build static restriction operator (FV)
+                obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x), x);
+                % Build Prolongation operator
+                obj.Pp{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor);
+                %Build coarse system (with MsFE)
+                obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
             end
         end
         function BuildADMOperators(obj)

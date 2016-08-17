@@ -15,10 +15,10 @@ classdef operators_handler_constant < operators_handler
         end
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K)
             % Build Restriction and Prolongation operators for static grids
-            obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1), FineGrid.N, CoarseGrid(1).N, 1);
+            obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1), 1);
             obj.Pp{1} = obj.R{1}';
             for x = 2:maxLevel
-                obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x-1).Nx*CoarseGrid(x-1).Ny, CoarseGrid(x).Nx*CoarseGrid(x).Ny, x);
+                obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x), x);
                 obj.Pp{x} = obj.R{x}';
             end
         end

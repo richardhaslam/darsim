@@ -11,7 +11,5 @@ classdef bf_updater_bilin < bf_updater
         
     end
     methods 
-        function ComputeBasisFunctions(obj)
-        end
     end
 end

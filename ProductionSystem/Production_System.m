@@ -35,7 +35,8 @@ classdef Production_System < handle
             disp(['reservoir temperature: ', num2str(obj.Reservoir.Temp)]);
             disp('---------------------------------------------------------');
             disp(char(5));
-            
+        end
+        function InitializeWells(obj, FluidModel)
             %% Initialize Wells: 
             % 1. Create objects
             obj.Wells.InitializeFluxes(FluidModel.NofPhases, FluidModel.NofComp);

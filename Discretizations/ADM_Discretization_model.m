@@ -28,7 +28,7 @@ classdef ADM_Discretization_model < Discretization_model
         function AddADMGridSelector(obj, gridselector)
             obj.ADMGridSelector = gridselector;
         end
-        function Initialize(obj, ProductionSystem)
+        function Initialize(obj, ProductionSystem, FluidModel)
             disp('Algebraic Dynamic Multilevel (ADM) method run')
             obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
             % Perforated cells
@@ -39,7 +39,8 @@ classdef ADM_Discretization_model < Discretization_model
             
             %% Pressure interpolators
             disp('Static operators - start computation');
-            obj.OperatorsHandler.BuildStaticOperators(obj.CoarseGrid, obj.ReservoirGrid, obj.maxLevel, ProductionSystem.Reservoir.K);
+            obj.OperatorsHandler.BuildStaticOperators(obj.CoarseGrid, obj.ReservoirGrid, obj.maxLevel,...
+                ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.S, FluidModel);
             disp('Static operators - end')
             disp(char(2));
         end

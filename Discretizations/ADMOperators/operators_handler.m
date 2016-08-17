@@ -19,7 +19,9 @@ classdef operators_handler < handle
             obj.R = cell(1, n);
             obj.Pp = cell(1, n);
         end
-        function MsR = MsRestriction(obj, FineGrid, CoarseGrid, Nf, Nc, level)
+        function MsR = MsRestriction(obj, FineGrid, CoarseGrid, level)
+            Nf = FineGrid.N;
+            Nc = CoarseGrid.N;
             %% MSFV Restriction Operator
             MsR = zeros(Nc, Nf);
             if (level == 1)
