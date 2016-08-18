@@ -8,10 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef linear_solver_ADM < linear_solver
     properties
-        maxLevel
-        Prolp
-        Prols
-        Rest
     end
     methods
         function obj = linear_solver_ADM()
@@ -21,9 +17,9 @@ classdef linear_solver_ADM < linear_solver
         end
         function SetUp(obj, ProductionSystem, DiscretizationModel)
             % Choose where to coarsen and build ADM grid
-            DiscretizationModel.AdaptGrid();
+            DiscretizationModel.SelectADMGrid(ProductionSystem);
             % Construct R & P based on ADM grid
-            [obj.Rest, obj.Prolp, obj.Prols] = DiscretizationModel.ConstructOperators();
+            DiscretizationModel.ConstructOperators();
             obj.maxLevel = DiscretizationModel.ADMGrid.level(end);         
         end
         function xf = Solve(obj, A, rhs)

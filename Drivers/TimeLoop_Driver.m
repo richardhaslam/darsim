@@ -36,6 +36,7 @@ classdef TimeLoop_Driver < handle
                 
                 %% Non-linear Solver
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
+
                 obj.dt = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);
                 
                 % Save Stats

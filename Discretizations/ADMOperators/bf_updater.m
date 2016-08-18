@@ -37,6 +37,8 @@ classdef bf_updater < handle
             MsP = [Mii_inv*(Mie*Mee_inv*Men-Min);                                       ...
                 -Mee_inv*Men;                                       ...
                 speye(Nn,Nn)];
+            
+            MsP = G'*MsP;
         end
         %% Permutation Matrix
         function [P, nii, nee, nnn] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)

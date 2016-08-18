@@ -140,6 +140,9 @@ classdef ADM_Discretization_model < Discretization_model
                     obj.CoarseGrid(x).Wells(obj.ReservoirGrid.Father(P,x)) = 1;
                 end
             end
-        end      
+        end
+        function SelectADMGrid(obj, ProductionSystem)
+            obj.ADMGridSelector.SelectGrid(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
+        end
     end
 end
