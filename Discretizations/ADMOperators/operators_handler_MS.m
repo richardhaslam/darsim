@@ -31,7 +31,22 @@ classdef operators_handler_MS < operators_handler
                 obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
             end
         end
-        function BuildADMOperators(obj)
+        function [R, Pp, Ps] = BuildADMOperators(FineGrid, CoarseGrid, ADMGrid)
+            %Construct DLGR R and P
+            maxLevel = ADMGrid.level(end);
+            %Other Levels
+            for i=maxLevel:-1:2
+                [Nf, Nx] = NewNumberOfCells(DLGRGrid, i);
+                [R(i).matrix, Pp(i).matrix, Ps(i).matrix, ADMGrid] = BuildRandP(CoarseGrid(i-1), CoarseGrid(i), ADMGrid, i, sum(ADMGrid.N), Nf, Nx);
+            end
+            %First level
+            [R(1).matrix, Pp(1).matrix, Ps(1).matrix] = BuildRandP(FineGrid, CoarseGrid(1), ADMGrid, 1, sum(ADMGrid.N), FineGrid.Nx*FineGrid.Ny, ADMGrid.N(1));
+        end
+        
+        function [Nf, Nx] = NewNumberOfCells(ADMGrid, x)
+            %For now I use 9 that is CF between two levels
+            Nx = sum(ADMGrid.N) - ADMGrid.N(x+1);
+            Nf = Nx + ADMGrid.N(x+1) * 9;
         end
     end
 end

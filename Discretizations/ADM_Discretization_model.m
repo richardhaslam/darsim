@@ -19,6 +19,7 @@ classdef ADM_Discretization_model < Discretization_model
         function obj = ADM_Discretization_model(nx, ny, nz, maxlevel, coarsening)
             obj@Discretization_model(nx, ny, nz);
             obj.CoarseGrid = coarse_grid();
+            obj.ADMGrid = adm_grid();
             obj.Coarsening = coarsening;
             obj.maxLevel = maxlevel;
         end
@@ -142,7 +143,12 @@ classdef ADM_Discretization_model < Discretization_model
             end
         end
         function SelectADMGrid(obj, ProductionSystem)
+            % Build ADM Grid
             obj.ADMGridSelector.SelectGrid(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
+        end
+        function BuildADMOperators(obj)
+            % Build ADM R and P operators
+            obj.OperatorsHandler.BuildADMOperators(obj.ADMGrid);
         end
     end
 end

@@ -10,17 +10,11 @@ classdef linear_solver_ADM < linear_solver
     properties
     end
     methods
-        function obj = linear_solver_ADM()
-            obj.Rest = struct('matrix', {});
-            obj.Prolp = struct('matrix', {});
-            obj.Prols = struct('matrix', {});
-        end
         function SetUp(obj, ProductionSystem, DiscretizationModel)
             % Choose where to coarsen and build ADM grid
             DiscretizationModel.SelectADMGrid(ProductionSystem);
             % Construct R & P based on ADM grid
-            DiscretizationModel.ConstructOperators();
-            obj.maxLevel = DiscretizationModel.ADMGrid.level(end);         
+            DiscretizationModel.BuildADMOperators();       
         end
         function xf = Solve(obj, A, rhs)
             rhs_c = obj.RestrictResidual(rhs);

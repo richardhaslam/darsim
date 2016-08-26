@@ -6,19 +6,14 @@
 %Created: 26 July 2016
 %Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef coarse_grid < handle
+classdef coarse_grid < grid
     properties
-        N
         Nx
         Ny
-        CoarseFactor
+        Neighbours
         I
         J
-        Father
-        Active
         Wells
-        Neighbours
-        Centers   
     end
     methods
         function obj = coarse_grid()

@@ -13,6 +13,7 @@ classdef grid < handle
         Active
         Father
         Centers
+        CoarseFactor
     end
     methods
         

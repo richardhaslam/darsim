@@ -16,14 +16,16 @@ classdef adm_grid_selector < handle
             obj.tol = tol;
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
+            % Select the ADM grid
             % Coarsen the grid where resolution is not necessary
+            S = reshape(ProductionSystem.Reservoir.State.S, FineGrid.Nx, FineGrid.Ny); % it's useful in this form for selecting the grid.
             
             %1. Choose Active Coarse cells and Flag fine ones  
             CoarseGrid(1).Active = obj.NoWellsCoarseCells;
-            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), 1, RefinementCriterion, S, Rw, Ro, tol);
+            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), 1, S);
             for x = 2:maxLevel
                 obj.DefinePossibleActive(CoarseGrid(x), CoarseGrid(x-1), x);
-                obj.SelectCoarseFine(CoarseGrid(x-1), CoarseGrid(x), x, RefinementCriterion, S, Rw, Ro, tol);
+                obj.SelectCoarseFine(CoarseGrid(x-1), CoarseGrid(x), x, S);
             end
             
             %3. Count total number of active nodes
@@ -35,25 +37,110 @@ classdef adm_grid_selector < handle
                 TotalActive = TotalActive + sum(CoarseGrid(x).Active);
             end
             
-            %4. Add cells to DLGR grid
-            %Field1 = 'N';  Value1 = NumberOfActive;
-            %Field2 = 'I';  Value2 = zeros(TotalActive, 1);
-            %Field3 = 'J';  Value3 = zeros(TotalActive, 1);
-            %Field4 = 'CoarseFactor'; Value4 = zeros(TotalActive, 1);
-            %Field5 = 'CellIndex'; Value5 = zeros(TotalActive, 1);
-            %Field6 = 'Father'; Value6 = zeros(TotalActive, maxLevel);
-            %Field7 = 'Centers'; Value7 = zeros(TotalActive, maxLevel);
-            %DLGRGrid = struct(Field1,Value1,Field2,Value2,Field3,Value3,Field4,Value4,Field5,Value5, Field6, Value6, Field7, Value7);
-            ADMGrid.initialize(TotalAcive);
+            ADMGrid.Initialize(TotalActive, NumberOfActive, maxLevel);
             
             %Add fine Grid cells
-            obj.AddActiveCells(ADMGrid, FineGrid, 0, 0);
+            obj.AddActiveCells(ADMGrid, FineGrid, 0);
             
             %Add Coarse Grids cells
             for x = 1:maxLevel
-                obj.AddActiveCells(ADMGrid, CoarseGrid(x), Tot, x);
+                obj.AddActiveCells(ADMGrid, CoarseGrid(x), x);
             end
             % I need to know the maximum coarse level that was used.
+            ADMGrid.MaxLevel = max(ADMGrid.level);
+        end
+        function DefinePossibleActive(obj, CoarseGrid, FineGrid, level)
+            % For a given level defines possible active cells
+            
+            CoarseGrid.Active = ones(CoarseGrid.Nx*CoarseGrid.Ny, 1);
+            %If a cell inside the block is refined the whole block cannot be coarsened
+            Nf = FineGrid.Nx*FineGrid.Ny;
+            for i=1:Nf
+                if FineGrid.Active(i) == 0
+                    CoarseGrid.Active(FineGrid.Father(i, level)) = 0;
+                    %Active(FineGrid.Father(FineGrid.Neighbours(i).indexes, level)) = 0;
+                end
+            end
+            
+            %Force the jump between two neighbouring cells to be max 1 level!
+            Nc = CoarseGrid.Nx*CoarseGrid.Ny;
+            temp = 1 - CoarseGrid.Active;
+            for j=1:Nc
+                if CoarseGrid.Active(j) == 1
+                    vecNei = CoarseGrid.Neighbours(j).indexes;
+                    check = sum(temp(vecNei));
+                    if check > 0
+                        CoarseGrid.Active(j) = 0;
+                    end
+                end
+            end
+        end
+        function SelectCoarseFine(obj, FineGrid, CoarseGrid, level, S)
+            %Given a Fine and a Coarse Grids chooses the cells that have to be active
+            %1. Select Active Coarse Blocks
+            Nc = CoarseGrid.Nx*CoarseGrid.Ny;
+            for c = 1:Nc
+                I = CoarseGrid.I(c);
+                J = CoarseGrid.J(c);
+                Imin = I - floor((CoarseGrid.CoarseFactor(1) - 1)/2);
+                Imax = I + ceil((CoarseGrid.CoarseFactor(1) - 1)/2);
+                Jmin = J - floor((CoarseGrid.CoarseFactor(2) - 1)/2);
+                Jmax = J + ceil((CoarseGrid.CoarseFactor(2) - 1)/2);
+                % Max e Min saturation
+                Smax = max(max(S(Imin:Imax, Jmin:Jmax)));
+                Smin = min(min(S(Imin:Imax, Jmin:Jmax)));
+                if CoarseGrid.Active(c) == 1
+                    n = CoarseGrid.Neighbours(c).indexes;
+                    Nn = length(n);
+                    i = 1;
+                    while i <= Nn
+                        if (abs(Smax-S(CoarseGrid.I(n(i)),CoarseGrid.J(n(i))))...
+                                > obj.tol || abs(Smin-S(CoarseGrid.I(n(i)),CoarseGrid.J(n(i)))) > obj.tol)
+                            CoarseGrid.Active(c) = 0;
+                            %CoarseGrid.Active(i) = 0;
+                            i = Nn + 1;
+                        else
+                            i = i+1;
+                        end
+                    end
+                end
+            end
+            
+            %2. Do not coarsen neighbors of cells that are fine
+            DummyActive = CoarseGrid.Active;
+            for i = 1:Nc
+                if (CoarseGrid.Active(i) == 0)
+                    DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
+                end
+            end
+            CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
+            
+            %3. Set to inactive fine block belonging to Active Coarse Blocks
+            Nf = FineGrid.Nx*FineGrid.Ny;
+            for i = 1:Nf
+                if (CoarseGrid.Active(FineGrid.Father(i, level)) == 1)
+                    FineGrid.Active(i) = 0;
+                end
+            end
+        end
+        function AddActiveCells(obj, ADMGrid, Grid, level)
+            N = Grid.Nx*Grid.Ny;
+            count = 0;
+            for i=1:N
+                if(Grid.Active(i) == 1)
+                    h = ADMGrid.Ntot + count + 1;
+                    ADMGrid.I(h) = Grid.I(i);
+                    ADMGrid.J(h) = Grid.J(i);
+                    ADMGrid.CoarseFactor(h, 1) = Grid.CoarseFactor(1);
+                    ADMGrid.CoarseFactor(h, 2) = Grid.CoarseFactor(2);
+                    ADMGrid.CellIndex(h) = i;
+                    ADMGrid.level(h) = level;
+                    ADMGrid.Father(h,:) = Grid.Father(i,:);
+                    ADMGrid.Centers(h,:) = Grid.Centers(i,:);
+                    count = count +1;
+                end
+            end
+            ADMGrid.Ntot = ADMGrid.Ntot + count;
         end
     end
 end
