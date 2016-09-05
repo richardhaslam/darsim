@@ -11,7 +11,9 @@ classdef grid < handle
         N
         Connections
         Active
-        Father
+        Fathers
+        Children
+        GrandChildren
         Centers
         CoarseFactor
     end

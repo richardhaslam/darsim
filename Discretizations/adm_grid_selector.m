@@ -57,7 +57,7 @@ classdef adm_grid_selector < handle
             Nf = FineGrid.Nx*FineGrid.Ny;
             for i=1:Nf
                 if FineGrid.Active(i) == 0
-                    CoarseGrid.Active(FineGrid.Father(i, level)) = 0;
+                    CoarseGrid.Active(FineGrid.Fathers(i)) = 0;
                     %Active(FineGrid.Father(FineGrid.Neighbours(i).indexes, level)) = 0;
                 end
             end
@@ -116,17 +116,15 @@ classdef adm_grid_selector < handle
             CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
             
             %3. Set to inactive fine block belonging to Active Coarse Blocks
-            Nf = FineGrid.Nx*FineGrid.Ny;
-            for i = 1:Nf
-                if (CoarseGrid.Active(FineGrid.Father(i, level)) == 1)
-                    FineGrid.Active(i) = 0;
+            for i = 1:Nc
+                if (CoarseGrid.Active(i) == 1)
+                    FineGrid.Active(CoarseGrid.GrandChildren(i,:)) = 0;
                 end
             end
         end
         function AddActiveCells(obj, ADMGrid, Grid, level)
-            N = Grid.Nx*Grid.Ny;
             count = 0;
-            for i=1:N
+            for i=1:Grid.N
                 if(Grid.Active(i) == 1)
                     h = ADMGrid.Ntot + count + 1;
                     ADMGrid.I(h) = Grid.I(i);
@@ -135,9 +133,11 @@ classdef adm_grid_selector < handle
                     ADMGrid.CoarseFactor(h, 2) = Grid.CoarseFactor(2);
                     ADMGrid.CellIndex(h) = i;
                     ADMGrid.level(h) = level;
-                    ADMGrid.Father(h,:) = Grid.Father(i,:);
-                    ADMGrid.Centers(h,:) = Grid.Centers(i,:);
-                    count = count +1;
+                    ADMGrid.Fathers(h) = Grid.Fathers(i);
+                    ADMGrid.Children{h} = Grid.Children(i,:);
+                    ADMGrid.GrandChildren{h} = Grid.GrandChildren(i,:);
+                    %ADMGrid.Centers(h,:) = Grid.Centers(i,:);
+                    count = count + 1;
                 end
             end
             ADMGrid.Ntot = ADMGrid.Ntot + count;

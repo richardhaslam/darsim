@@ -10,9 +10,9 @@ classdef coarse_grid < grid
     properties
         Nx
         Ny
-        Neighbours
         I
         J
+        Neighbours
         Wells
     end
     methods
@@ -20,11 +20,11 @@ classdef coarse_grid < grid
            
         end
         function BuildCoarseGrid(obj, FineGrid)
-            %Construct a coarse Grid given coarsening ration and fine Grid
+            % Construct a coarse Grid given coarsening ration and fine Grid
             obj.Nx = FineGrid.Nx/obj.CoarseFactor(1);
             obj.Ny = FineGrid.Ny/obj.CoarseFactor(2);
             obj.N = obj.Nx*obj.Ny;
-            %Coordinates of the centres
+            % Coordinates of the centres
             obj.I = ones(obj.N, 1);
             obj.J = ones(obj.N, 1);
             Jindexes = ceil(obj.CoarseFactor(2)/2):obj.CoarseFactor(2):FineGrid.Ny;

@@ -17,36 +17,31 @@ classdef operators_handler_MS < operators_handler
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
             obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
             %Build static restriction operator (FV)
-            obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1), 1);
+            obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1));
             % Build Prolongation operator
             obj.Pp{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor);
             %Build first coarse system (with MsFE)
             obj.BFUpdater.A = obj.Pp{1}' * obj.BFUpdater.A * obj.Pp{1};
             for x = 2:maxLevel
                 % Build static restriction operator (FV)
-                obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x), x);
+                obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x));
                 % Build Prolongation operator
                 obj.Pp{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor);
                 %Build coarse system (with MsFE)
                 obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
             end
         end
-        function [R, Pp, Ps] = BuildADMOperators(FineGrid, CoarseGrid, ADMGrid)
-            %Construct DLGR R and P
-            maxLevel = ADMGrid.level(end);
-            %Other Levels
-            for i=maxLevel:-1:2
-                [Nf, Nx] = NewNumberOfCells(DLGRGrid, i);
-                [R(i).matrix, Pp(i).matrix, Ps(i).matrix, ADMGrid] = BuildRandP(CoarseGrid(i-1), CoarseGrid(i), ADMGrid, i, sum(ADMGrid.N), Nf, Nx);
-            end
-            %First level
-            [R(1).matrix, Pp(1).matrix, Ps(1).matrix] = BuildRandP(FineGrid, CoarseGrid(1), ADMGrid, 1, sum(ADMGrid.N), FineGrid.Nx*FineGrid.Ny, ADMGrid.N(1));
-        end
-        
-        function [Nf, Nx] = NewNumberOfCells(ADMGrid, x)
-            %For now I use 9 that is CF between two levels
-            Nx = sum(ADMGrid.N) - ADMGrid.N(x+1);
-            Nf = Nx + ADMGrid.N(x+1) * 9;
+        function ADMProlongation(obj, level)
+            % Pressure prolongation
+            Prolp = obj.ADMRest{level}';
+            % Copy MsP in ADM prolongation operator
+            Prolp(Nf:end, ADMmap.Verteces(:,1)) = obj.Pp{level}(ADMmap.OriginalIndex(Nf:end), ADMmap.Verteces(:,2));
+            Prolp(Nf:end, Nf + Nc) = obj.Pp{level}(ADMmap.OriginalIndex(Nf:end), ADMmap.OriginalIndex(Nf + Nc:end));
+            
+            % Copy it in the right object
+            obj.ADMProlp{level} = Prolp;
+            % Saturation prolongation: transpose(R)
+            obj.ADMProls{level} = obj.ADMRest{level}'; 
         end
     end
 end

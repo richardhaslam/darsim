@@ -41,6 +41,8 @@ classdef grid_cartesian < grid
             obj.Volume = obj.dx * obj.dy * obj.dz;
             obj.ComputeRockTransmissibilities(Reservoir.K);
             obj.CoarseFactor = [0, 0];
+            obj.Children = zeros(obj.N, 1);
+            obj.GrandChildren = zeros(obj.N, 1);
         end
         function ComputeRockTransmissibilities(obj, K)
             %Harmonic average of permeability.

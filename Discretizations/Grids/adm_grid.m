@@ -25,8 +25,10 @@ classdef adm_grid < grid
             obj.level = zeros(Ntotal, 1);
             obj.CoarseFactor = zeros(Ntotal, 1);
             obj.CellIndex = zeros(Ntotal, 1);
-            obj.Father = zeros(Ntotal, maxlevel);
-            obj.Centers = zeros(Ntotal, maxlevel);
+            obj.Fathers = zeros(Ntotal,1);
+            obj.Children = cell(Ntotal, 1);
+            obj.GrandChildren = cell(Ntotal, 1);
+            %obj.Centers = zeros(Ntotal);
         end
     end
 end

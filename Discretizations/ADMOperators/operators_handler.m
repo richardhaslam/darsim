@@ -10,6 +10,7 @@ classdef operators_handler < handle
     properties
         R
         Pp
+        ADMmap
         ADMRest
         ADMProlp
         ADMProls
@@ -18,43 +19,56 @@ classdef operators_handler < handle
         function obj = operators_handler(n)
             obj.R = cell(1, n);
             obj.Pp = cell(1, n);
+            obj.ADMmap = adm_map();
         end
-        function MsR = MsRestriction(obj, FineGrid, CoarseGrid, level)
+        function MsR = MsRestriction(obj, FineGrid, CoarseGrid)
             Nf = FineGrid.N;
             Nc = CoarseGrid.N;
             %% MSFV Restriction Operator
             MsR = zeros(Nc, Nf);
-            if (level == 1)
-                for r=1:Nc
-                    %coordinates of fine cells contained in the coarse block
-                    Imin = CoarseGrid.I(r) - floor((CoarseGrid.CoarseFactor(1) - 1)/2);
-                    Imax = CoarseGrid.I(r) + ceil((CoarseGrid.CoarseFactor(1) - 1)/2);
-                    Jmin = CoarseGrid.J(r) - floor((CoarseGrid.CoarseFactor(2) - 1)/2);
-                    Jmax = CoarseGrid.J(r) + ceil((CoarseGrid.CoarseFactor(2) - 1)/2);
-                    i=Imin:Imax;
-                    j=Jmin:Jmax;
-                    [p,q] = meshgrid(i, j);
-                    pairs = [p(:), q(:)];
-                    %indexes of the fine cells
-                    c = pairs(:,1) + (pairs(:,2)-1)*FineGrid.Nx;
-                    %I make 1 those columns
-                    MsR(r,c) = 1;
-                end
-            else
-                for r=1:Nc
-                    for c=1:Nf
-                        if (r == FineGrid.Father(c, level))
-                            %I make 1 those columns
-                            MsR(r,c) = 1;
-                        end
-                    end
-                end
+            for c = 1:Nc
+                MsR(c, CoarseGrid.Children(c,:)) = 1;
             end
             MsR = sparse(MsR);
+        end
+        function BuildADMOperators(obj, FineGrid, CoarseGrid, ADMGrid)
+             % Restriction
+            obj.ADMRestriction(ADMGrid);
+            
+            %Other Levels
+            for i=ADMGrid.MaxLevel:-1:2
+                % Prolongation
+                obj.ADMProlongation(i);
+            end
+            % FIRST LEVEL
+            % Prolongations
+            obj.ADMProlongation(1);
+        end
+        function ADMRestriction(obj, ADMGrid)
+%             Rf = speye(obj.ADMmap.Nf);
+%             Rc = zeros(obj.ADMmap.Nc, obj.ADMmap.Nx);
+%             % Restriction operator
+%             for c = 1:obj.ADMmap.Nc
+%                     % Active coarse cells
+%                     i = (obj.ADMmap.Nf+1) * c;
+%                     f = obj.ADMmap.Nf + CF;
+%                     Rc(c, i:f) = 1;
+%             end
+%             Rest = [Rf, zeros(obj.ADMmap.Nf, obj.ADMmap.Nx);
+%                 zeros(obj.ADMmap.Nc, obj.ADMmap.Nx), Rc];
+%             obj.ADMRest{level} = sparse(Rest);
+              
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+              % Fine-scale cells
+              obj.ADMRest(1:ADMGrid.N(1), ADMGrid.CellIndex(1:ADMGrid.N(1))) = 1;
+              % Coarse levels cells
+              for c = ADMGrid.N(1) + 1:ADMGrid.Ntot 
+                obj.ADMRest(c, ADMGrid.GrandChildren{c}) = 1;
+              end
+              obj.ADMRest = sparse(obj.ADMRest);
         end
     end
     methods (Abstract)
         obj = BuildStaticOperators(obj);
-        obj = BuildADMOperators(obj);
     end
 end
