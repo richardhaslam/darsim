@@ -33,18 +33,12 @@ classdef operators_handler < handle
         end
         function BuildADMOperators(obj, FineGrid, CoarseGrid, ADMGrid)
              % Restriction
-            obj.ADMRestriction(ADMGrid);
+            obj.ADMRestriction(ADMGrid, FineGrid);
             
-            %Other Levels
-            for i=ADMGrid.MaxLevel:-1:2
-                % Prolongation
-                obj.ADMProlongation(i);
-            end
-            % FIRST LEVEL
-            % Prolongations
-            obj.ADMProlongation(1);
+            % Prolongation
+            obj.ADMProlongation(ADMGrid);
         end
-        function ADMRestriction(obj, ADMGrid)
+        function ADMRestriction(obj, ADMGrid, FineGrid)
 %             Rf = speye(obj.ADMmap.Nf);
 %             Rc = zeros(obj.ADMmap.Nc, obj.ADMmap.Nx);
 %             % Restriction operator
@@ -58,9 +52,12 @@ classdef operators_handler < handle
 %                 zeros(obj.ADMmap.Nc, obj.ADMmap.Nx), Rc];
 %             obj.ADMRest{level} = sparse(Rest);
               
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               % Fine-scale cells
-              obj.ADMRest(1:ADMGrid.N(1), ADMGrid.CellIndex(1:ADMGrid.N(1))) = 1;
+              obj.ADMRest = zeros(ADMGrid.Ntot, FineGrid.N);
+              rows = 1:ADMGrid.N(1);
+              columns = ADMGrid.CellIndex(1:ADMGrid.N(1))';
+              obj.ADMRest(sub2ind(size(obj.ADMRest), rows, columns)) = 1;
               % Coarse levels cells
               for c = ADMGrid.N(1) + 1:ADMGrid.Ntot 
                 obj.ADMRest(c, ADMGrid.GrandChildren{c}) = 1;

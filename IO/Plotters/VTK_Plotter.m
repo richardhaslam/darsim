@@ -133,26 +133,26 @@ classdef VTK_Plotter < Plotter
         function PlotBasisFunctions(obj)
         end
         function PlotADMGrid(obj, Grid, CoarseGrid)
-            for i=1:maxLevel
+            for i=1:length(CoarseGrid)
                 fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
-                fprintf(fileID, strcat(Problem, ' results: Matteo Simulator\n'));
+                fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
                 fprintf(fileID, 'ASCII\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
                 fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx +1, CoarseGrid(i).Ny+1, 2);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i).Nx+1) ' float\n']);
-                fprintf(fileID, '%f ', 0:Grid.dx*3^i:Grid.Lx);
+                fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i).CoarseFactor(1) : Grid.dx * Grid.Nx);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i).Ny+1) ' float\n']);
-                fprintf(fileID, '%f ', 0:Grid.dy*3^i:Grid.Ly);
+                fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i).CoarseFactor(2) : Grid.dy * Grid.Ny);
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'Z_COORDINATES 2 float\n');
                 fprintf(fileID, '%d ', [0 1]);
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
-                fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).Nx*CoarseGrid(i).Ny);
+                fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
                 PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
                 fprintf(fileID, '\n');
                 fclose(fileID);

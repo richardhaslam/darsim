@@ -17,6 +17,8 @@ classdef adm_grid_selector < handle
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
             % Select the ADM grid
+            FineGrid.Active = ones(FineGrid.N, 1);
+            
             % Coarsen the grid where resolution is not necessary
             S = reshape(ProductionSystem.Reservoir.State.S, FineGrid.Nx, FineGrid.Ny); % it's useful in this form for selecting the grid.
             

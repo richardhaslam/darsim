@@ -34,6 +34,7 @@ classdef builder < handle
         plotting
         adm
         flash
+        ADM
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
@@ -128,8 +129,9 @@ classdef builder < handle
             nz = str2double(inputMatrix(obj.grid + 3));
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
                 Discretization = FS_Discretization_model(nx, ny, nz);
+                obj.ADM = 'inactive';
             else
-                
+                obj.ADM = 'active';
                 temp = strfind(SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
                 maxLevel = str2double(SettingsMatrix(x+1));
@@ -374,7 +376,12 @@ classdef builder < handle
                     plotter = no_Plotter();
             end
             
-            Writer = output_writer_txt(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats);
+            switch(obj.ADM)
+                case ('inactive')
+                    Writer = output_writer_FS(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats);
+                case ('active')
+                    Writer = output_writer_adm(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats);
+            end
             Writer.AddPlotter(plotter);
         end
     end

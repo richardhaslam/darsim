@@ -35,6 +35,7 @@ classdef coarse_grid < grid
             end
             obj.Active = zeros(obj.N, 1);
             obj.Wells = zeros(obj.N, 1);
+            obj.Fathers = zeros(obj.N, 1);
             obj.AssignNeighbours();
         end
         function AssignNeighbours(obj)

@@ -1,4 +1,4 @@
-%  ADM operators handler 
+%  ADM operators handler constant
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -13,7 +13,7 @@ classdef operators_handler_constant < operators_handler
         function obj = operators_handler_constant(n)
             obj@operators_handler(n)
         end
-        function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K)
+        function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, S, FluidModel)
             % Build Restriction and Prolongation operators for static grids
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1));
             obj.Pp{1} = obj.R{1}';
@@ -22,10 +22,10 @@ classdef operators_handler_constant < operators_handler
                 obj.Pp{x} = obj.R{x}';
             end
         end
-        function ADMProlongation(obj, level)
+        function ADMProlongation(obj, ADMGrid)
             % Since it s constant interpolation it is just transpose(R)
-            obj.ADMProlp{level} = obj.ADMRest{level}';
-            obj.ADMProls{level} = obj.ADMRest{level}';
+            obj.ADMProlp = obj.ADMRest';
+            obj.ADMProls = obj.ADMRest';
         end
     end
 end

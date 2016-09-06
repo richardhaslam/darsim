@@ -1,10 +1,10 @@
-%  ADM operators handler base class
+%  ADM operators handler MS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 16 August 2016
+%Last modified: 6 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_handler_MS < operators_handler
     properties
@@ -31,17 +31,53 @@ classdef operators_handler_MS < operators_handler
                 obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
             end
         end
-        function ADMProlongation(obj, level)
+        function ADMProlongation(obj)
             % Pressure prolongation
-            Prolp = obj.ADMRest{level}';
-            % Copy MsP in ADM prolongation operator
-            Prolp(Nf:end, ADMmap.Verteces(:,1)) = obj.Pp{level}(ADMmap.OriginalIndex(Nf:end), ADMmap.Verteces(:,2));
-            Prolp(Nf:end, Nf + Nc) = obj.Pp{level}(ADMmap.OriginalIndex(Nf:end), ADMmap.OriginalIndex(Nf + Nc:end));
+            obj.ADMProlp = 1;
             
-            % Copy it in the right object
-            obj.ADMProlp{level} = Prolp;
+            % Loop over the levels
+            for level = ADMGrid.MaxLevel:-1:1
+               Prolp = LevelProlongation();
+               % Multiply by previous objects
+               obj.ADMProlp = Prolp * obj.ADMProlp;
+            end
+            
+            
+            
             % Saturation prolongation: transpose(R)
-            obj.ADMProls{level} = obj.ADMRest{level}'; 
+            obj.ADMProls = obj.ADMRest'; 
+        end
+        function Prolp = LevelProlongation(obj, level)
+             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             % For a given level the prolongation operator looks like this             
+             %       Nf     Nc
+             %    ----       ----
+             %    |      |      |
+             % Nf |  I   |  0   | 
+             %    |______|______|           
+             %    |      |      |
+             % Nx |      |      |
+             %    |      |      |
+             %    ----       ----
+             
+             
+             % Update map for the next level
+             obj.ADMmap.update();
+             
+             % 1. Build the object
+             Prolp = zeros(obj.ADMmap.Nf + obj.ADMmap.Nx, obj.ADMmap.Nf + obj.ADMmap.Nc);
+             
+             % 2. Fill in top left
+             Prolp(Nf, Nf) = eye(Nf);
+             
+             % 3. Fill in Bottom left
+             Prolp(obj.ADMmap.Nf + 1 : end,  obj.ADMmap.Verteces) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexVerteces);
+             
+             % 4. Fill in Bottom right
+             Prolp(obj.ADMmap.Nf + 1 :end, obj.ADMmap.Nf + 1: end) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
+             
+             % 5. Make it sparse
+             Prolp = sparse(Prolp);
         end
     end
 end

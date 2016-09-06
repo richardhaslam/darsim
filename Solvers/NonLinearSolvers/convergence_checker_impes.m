@@ -1,4 +1,4 @@
-% Convergence checker for outer loop 
+% Convergence checker for Impes outer loop 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -11,6 +11,7 @@ classdef convergence_checker_impes < convergence_checker
     end
     methods 
         function Converged = Check(obj, State, State_old)
+            % IMPES always converges
             Converged = 1;
         end
     end
