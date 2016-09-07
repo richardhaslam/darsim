@@ -55,16 +55,16 @@ classdef adm_grid_selector < handle
             % For a given level defines possible active cells
             
             CoarseGrid.Active = ones(CoarseGrid.Nx*CoarseGrid.Ny, 1);
-            %If a cell inside the block is refined the whole block cannot be coarsened
+            % If a cell inside the block is refined the whole block cannot be coarsened
             Nf = FineGrid.Nx*FineGrid.Ny;
             for i=1:Nf
                 if FineGrid.Active(i) == 0
-                    CoarseGrid.Active(FineGrid.Fathers(i)) = 0;
+                    CoarseGrid.Active(FineGrid.Fathers(i, level)) = 0;
                     %Active(FineGrid.Father(FineGrid.Neighbours(i).indexes, level)) = 0;
                 end
             end
             
-            %Force the jump between two neighbouring cells to be max 1 level!
+            % Force the jump between two neighbouring cells to be max 1 level!
             Nc = CoarseGrid.Nx*CoarseGrid.Ny;
             temp = 1 - CoarseGrid.Active;
             for j=1:Nc
@@ -120,7 +120,7 @@ classdef adm_grid_selector < handle
             %3. Set to inactive fine block belonging to Active Coarse Blocks
             for i = 1:Nc
                 if (CoarseGrid.Active(i) == 1)
-                    FineGrid.Active(CoarseGrid.GrandChildren(i,:)) = 0;
+                    FineGrid.Active(CoarseGrid.Children(i,:)) = 0;
                 end
             end
         end
@@ -135,10 +135,10 @@ classdef adm_grid_selector < handle
                     ADMGrid.CoarseFactor(h, 2) = Grid.CoarseFactor(2);
                     ADMGrid.CellIndex(h) = i;
                     ADMGrid.level(h) = level;
-                    ADMGrid.Fathers(h) = Grid.Fathers(i);
+                    ADMGrid.Fathers(h, :) = Grid.Fathers(i, :);
                     ADMGrid.Children{h} = Grid.Children(i,:);
                     ADMGrid.GrandChildren{h} = Grid.GrandChildren(i,:);
-                    %ADMGrid.Centers(h,:) = Grid.Centers(i,:);
+                    ADMGrid.Verteces(h,:) = Grid.Verteces(i,:);
                     count = count + 1;
                 end
             end

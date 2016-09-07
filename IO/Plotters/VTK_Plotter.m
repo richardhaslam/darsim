@@ -153,7 +153,7 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
-                PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
                 fprintf(fileID, '\n');
                 fclose(fileID);
             end

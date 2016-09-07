@@ -16,10 +16,10 @@ classdef operators_handler < handle
         ADMProls
     end
     methods
-        function obj = operators_handler(n)
+        function obj = operators_handler(n, CF)
             obj.R = cell(1, n);
             obj.Pp = cell(1, n);
-            obj.ADMmap = adm_map();
+            obj.ADMmap = adm_map(CF);
         end
         function MsR = MsRestriction(obj, FineGrid, CoarseGrid)
             Nf = FineGrid.N;
@@ -36,7 +36,7 @@ classdef operators_handler < handle
             obj.ADMRestriction(ADMGrid, FineGrid);
             
             % Prolongation
-            obj.ADMProlongation(ADMGrid);
+            obj.ADMProlongation(ADMGrid, FineGrid, CoarseGrid);
         end
         function ADMRestriction(obj, ADMGrid, FineGrid)
 %             Rf = speye(obj.ADMmap.Nf);

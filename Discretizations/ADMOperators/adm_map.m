@@ -11,24 +11,40 @@ classdef adm_map < handle
        Nf % all cells belonging to l < lc
        Nc % all cells belonging to lc
        Nx % number of cells of level lc - 1 generated from lc
+       CF
        Verteces 
-       OriginalIndexCoarse
-       OriginalIndexFine
+       OriginalIndexVerteces
+       OriginalIndexNc
+       OriginalIndexNx
+       OriginalIndexNf
     end
     methods
-        function Update(obj, FineGrid, CoarseGrid, ADMGrid, level)
+        function obj = adm_map(cf)
+            obj.CF = cf;
+        end
+        function Update(obj, ADMGrid, FineGrid, level)
                 % Number of cells
                 obj.Nf = sum(ADMGrid.N(1:level));
-                obj.Nc = ADMGrid.N(level + 1);
-                obj.Nx = ADMGrid.N(level + 1) * prod(CoarseGrid(level).CoarseFactor);
+                obj.Nc = ADMGrid.N(level+1);
+                obj.Nx = obj.Nc * obj.CF;
+                
+                % Original Indeces of Nf
+                obj.OriginalIndexNf = ADMGrid.CellIndex(1:obj.Nf);
                 
                 % Verteces 
                 obj.Verteces = find(ADMGrid.Verteces(:,level));
+                obj.OriginalIndexVerteces = ADMGrid.Fathers(obj.Verteces, level);
                 
-                % original indexes
-                obj.OriginalIndexVerteces = ;
-                obj.OriginalIndexNc = ;
-                obj.OriginalIndexNf = ;
+                % Coarse nodes that will be prolonged
+                obj.OriginalIndexNc = ADMGrid.CellIndex(obj.Nf+1 : end);
+                
+                % Update ADMGrid
+                if level > 1
+                    ADMGrid.Update(obj.Nx, obj.Nf, obj.Nc, FineGrid);
+                
+                    % New Fine-Grid indeces
+                    obj.OriginalIndexNx = ADMGrid.CellIndex(obj.Nf+1 : end);
+                end
         end
     end
 end

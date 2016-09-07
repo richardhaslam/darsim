@@ -147,12 +147,12 @@ classdef builder < handle
                 x = find(~cellfun('isempty', temp));
                 switch (char(SettingsMatrix(x+1))) 
                     case ('Constant')
-                        operatorshandler = operators_handler_constant(maxLevel);
+                        operatorshandler = operators_handler_constant(maxLevel, cx*cy);
                     case ('Homogeneous')
-                        operatorshandler = operators_handler_MS(maxLevel);
+                        operatorshandler = operators_handler_MS(maxLevel, cx*cy);
                         operatorshandler.BFUpdater = bf_updater_bilin();
                     case ('MS')
-                        operatorshandler = operators_handler_MS(maxLevel);
+                        operatorshandler = operators_handler_MS(maxLevel, cx*cy);
                         operatorshandler.BFUpdater = bf_updater_ms();
                 end
                 gridselector = adm_grid_selector(tol);

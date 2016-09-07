@@ -14,7 +14,7 @@ classdef grid < handle
         Fathers
         Children
         GrandChildren
-        Centers
+        Verteces
         CoarseFactor
     end
     methods

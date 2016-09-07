@@ -60,6 +60,9 @@ classdef ADM_Discretization_model < Discretization_model
                 obj.CoarseGrid(i).BuildCoarseGrid(obj.ReservoirGrid);
                 obj.GridMapper.BuildFamily(obj.CoarseGrid(i), obj.CoarseGrid(i-1), obj.Coarsening(1,:), i);
             end
+            
+            % Fathers and Verteces
+            obj.GridMapper.AssignFathersandVerteces(obj.ReservoirGrid, obj.CoarseGrid, obj.maxLevel)
 
             % Flag coarse blocks with wells
             obj.CoarseWells(Inj, Prod);
@@ -67,7 +70,7 @@ classdef ADM_Discretization_model < Discretization_model
             Nc1 = obj.CoarseGrid(1).N;
             if obj.maxLevel > 1
                for i = 1:Nc1
-                   if obj.CoarseGrid(2).Wells(obj.CoarseGrid(1).Fathers(i)) == 1
+                   if obj.CoarseGrid(2).Wells(obj.CoarseGrid(1).Fathers(i, 2)) == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
@@ -101,8 +104,6 @@ classdef ADM_Discretization_model < Discretization_model
             obj.ADMGridSelector.SelectGrid(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
         end
         function BuildADMOperators(obj)
-            % Update ADM mapper
-            obj.OperatorsHandler.ADMmap.Update(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid);
             % Build ADM R and P operators
             obj.OperatorsHandler.BuildADMOperators(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid);
         end

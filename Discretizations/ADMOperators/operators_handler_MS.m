@@ -11,8 +11,8 @@ classdef operators_handler_MS < operators_handler
         BFUpdater
     end
     methods
-        function obj = operators_handler_MS(n)
-            obj@operators_handler(n)
+        function obj = operators_handler_MS(n, cf)
+            obj@operators_handler(n, cf)
         end
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
             obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
@@ -31,23 +31,27 @@ classdef operators_handler_MS < operators_handler
                 obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
             end
         end
-        function ADMProlongation(obj)
+        function ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid)
             % Pressure prolongation
             obj.ADMProlp = 1;
             
             % Loop over the levels
-            for level = ADMGrid.MaxLevel:-1:1
-               Prolp = LevelProlongation();
+            for level = ADMGrid.MaxLevel:-1:2
+               Prolp = obj.LevelProlongation(ADMGrid, CoarseGrid(level-1), level);
                % Multiply by previous objects
                obj.ADMProlp = Prolp * obj.ADMProlp;
             end
             
+            % Last prolongation is different coz I use fine-scale ordering
+            Prolp = obj.LastProlongation(ADMGrid, FineGrid);
             
+            % Multiply by previous objects
+            obj.ADMProlp = Prolp * obj.ADMProlp;
             
             % Saturation prolongation: transpose(R)
             obj.ADMProls = obj.ADMRest'; 
         end
-        function Prolp = LevelProlongation(obj, level)
+        function Prolp = LevelProlongation(obj, ADMGrid, FineGrid, level)
              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              % For a given level the prolongation operator looks like this             
              %       Nf     Nc
@@ -62,19 +66,53 @@ classdef operators_handler_MS < operators_handler
              
              
              % Update map for the next level
-             obj.ADMmap.update();
+             obj.ADMmap.Update(ADMGrid, FineGrid, level);
              
              % 1. Build the object
              Prolp = zeros(obj.ADMmap.Nf + obj.ADMmap.Nx, obj.ADMmap.Nf + obj.ADMmap.Nc);
              
              % 2. Fill in top left
-             Prolp(Nf, Nf) = eye(Nf);
+             Prolp(1:obj.ADMmap.Nf, 1:obj.ADMmap.Nf) = eye(obj.ADMmap.Nf);
              
              % 3. Fill in Bottom left
              Prolp(obj.ADMmap.Nf + 1 : end,  obj.ADMmap.Verteces) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexVerteces);
              
              % 4. Fill in Bottom right
-             Prolp(obj.ADMmap.Nf + 1 :end, obj.ADMmap.Nf + 1: end) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
+             Prolp(obj.ADMmap.Nf + 1 :end, obj.ADMmap.Nf + 1 : end) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
+             
+             % 5. Make it sparse
+             Prolp = sparse(Prolp);
+        end
+        function Prolp = LastProlongation(obj, ADMGrid, FineGrid, CoarseGrid)
+              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             % For a the firse level level the prolongation operator looks like this             
+             %       Nf     Nl1
+             %    ----       ----
+             %    |      |      |
+             %    |      |   0  | 
+             % Nl0|      |______|           
+             %    |      |      |
+             %    |      |      |
+             %    |      |      |
+             %    ----       ----
+             
+             % Update map
+             obj.ADMmap.Update(ADMGrid, FineGrid, 1);
+           
+             % 1. Build object
+             Prolp = zeros(FineGrid.N, obj.ADMmap.Nf + obj.ADMmap.Nc);
+             
+             % 2. Fill in FS verteces of level 1
+             Prolp(:,  obj.ADMmap.Verteces) = obj.Pp{1}(:, obj.ADMmap.OriginalIndexVerteces);
+             
+             % 3. Fill in coarse-scale nodes
+             Prolp(:, obj.ADMmap.Nf + 1 : end) = obj.Pp{1}(:, obj.ADMmap.OriginalIndexNc);
+             
+             % 4. Fill in fine-scale nodes first
+             rows = obj.ADMmap.OriginalIndexNf';
+             columns = 1:obj.ADMmap.Nf;
+             Prolp(rows,:) = 0; % if it s fine-scale already I get rid of useless fillings
+             Prolp(sub2ind(size(Prolp), rows, columns)) = 1;
              
              % 5. Make it sparse
              Prolp = sparse(Prolp);

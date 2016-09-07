@@ -10,8 +10,8 @@ classdef operators_handler_constant < operators_handler
     properties
     end
     methods
-        function obj = operators_handler_constant(n)
-            obj@operators_handler(n)
+        function obj = operators_handler_constant(n, cf)
+            obj@operators_handler(n, cf)
         end
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, S, FluidModel)
             % Build Restriction and Prolongation operators for static grids
