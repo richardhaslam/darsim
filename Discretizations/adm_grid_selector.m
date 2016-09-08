@@ -118,11 +118,8 @@ classdef adm_grid_selector < handle
             CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
             
             %3. Set to inactive fine block belonging to Active Coarse Blocks
-            for i = 1:Nc
-                if (CoarseGrid.Active(i) == 1)
-                    FineGrid.Active(CoarseGrid.Children(i,:)) = 0;
-                end
-            end
+            %Cindeces = find();
+            FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
         end
         function AddActiveCells(obj, ADMGrid, Grid, level)
             count = 0;

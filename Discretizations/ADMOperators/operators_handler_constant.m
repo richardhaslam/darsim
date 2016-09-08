@@ -22,7 +22,7 @@ classdef operators_handler_constant < operators_handler
                 obj.Pp{x} = obj.R{x}';
             end
         end
-        function ADMProlongation(obj, ADMGrid)
+        function ADMProlongation(obj, ADMGrid, FineGrid, CoarseGridid)
             % Since it s constant interpolation it is just transpose(R)
             obj.ADMProlp = obj.ADMRest';
             obj.ADMProls = obj.ADMRest';

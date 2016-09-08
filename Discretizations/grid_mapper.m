@@ -14,7 +14,7 @@ classdef grid_mapper < handle
         % Assign Children and GrandChildren 
           for c = 1:CoarseGrid.N
               %coordinates of fine cells contained in the coarse block
-              J = ceil(c/CoarseGrid.Ny);
+              J = ceil(c/CoarseGrid.Nx);
               I = c - CoarseGrid.Nx*(J - 1);
               Imin = (I - 1) * CF(2) + 1;
               Imax = Imin + CF(1)-1;
@@ -26,7 +26,7 @@ classdef grid_mapper < handle
               [p,q] = meshgrid(i, j);
               pairs = [p(:), q(:)];
               indexes = pairs(:,1) + (pairs(:,2)-1)*FineGrid.Nx;
-              CoarseGrid.Children(c, :) = indexes;
+              CoarseGrid.Children(c, :) = indexes';
               
               %coordinates of fine cells contained in the coarse block
               Imin = CoarseGrid.I(c) - floor((CF(1)^level - 1)/2);
