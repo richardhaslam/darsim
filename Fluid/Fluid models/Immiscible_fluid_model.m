@@ -38,6 +38,9 @@ classdef Immiscible_fluid_model < fluid_model
             
             % Two phase, two component saturation updater    
             obj.ComputePhaseSaturation(Status, SinglePhase);
+            
+            % Compute initial Pc
+            Status.pc = obj.ComputePc(Status.S);
         end
         function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)

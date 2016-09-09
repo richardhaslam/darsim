@@ -84,11 +84,10 @@ classdef Matlab_Plotter_2D < Plotter
             y = linspace(0, Grid.Ny*Grid.dy-Grid.dy, Grid.Ny);
             [X, Y] = meshgrid(x,y);
             %Use log scale
-            K(:,:) = Perm(1,:,:);
-            K = log10(K);
+            K = log10(Perm(:,1));
             
             figure(4)
-            K = reshape(Perm(:,1), Grid.Nx, Grid.Ny);
+            K = reshape(K, Grid.Nx, Grid.Ny);
             h = pcolor(X,Y,K');
             set(h, 'EdgeColor', 'none');
             title('Log(K)');

@@ -18,7 +18,7 @@ classdef Immiscible_formulation < fim_formulation
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
-            %obj.dPc = FluidModel.CapillaryModel.Derivative(ProductionSystem.Reservoir.State.S);
+            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
         end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             %Create local variables
@@ -97,8 +97,8 @@ classdef Immiscible_formulation < fim_formulation
             JwS = spdiags(DiagVecs,DiagIndx,N,N);
             
             %Add capillarity
-            %CapJwS = Jwp * spdiags(obj.dPc, 0, N, N);
-            %JwS = JwS - CapJwS;
+            CapJwS = Jwp * spdiags(obj.dPc, 0, N, N);
+            JwS = JwS - CapJwS;
             
             % Add Wells
             [Jwp, JwS, Jnwp, JnwS] = obj.AddWellsToJacobian(Jwp, JwS, Jnwp, JnwS, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1));
@@ -125,6 +125,9 @@ classdef Immiscible_formulation < fim_formulation
             
             % Update total density
             Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);  
+            
+            % Update Pc
+            Status.pc = FluidModel.ComputePc(Status.S);
         end
         function T = TransmissibilityMatrix(obj, Grid, UpWind, M, rho)
             Nx = Grid.Nx;

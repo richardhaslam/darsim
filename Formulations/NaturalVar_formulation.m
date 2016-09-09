@@ -232,6 +232,9 @@ classdef NaturalVar_formulation < fim_formulation
             
             % Update total density
             Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);
+            
+            % Update Pc
+            Status.pc = FluidModel.ComputePc(Status.S);
         end
         function  T = TransmissibilityMatrix(obj, Grid, Rho, x)
             %%%Transmissibility matrix construction

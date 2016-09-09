@@ -45,6 +45,9 @@ classdef BO_fluid_model < fluid_model
             
             % 4. Total Density
             Status.rhoT = obj.ComputeTotalDensity(Status.S, Status.rho);
+            
+            % 5. Compute initial Pc
+            Status.pc = obj.ComputePc(Status.S);
         end
         function InitializeInjectors(obj, Inj)
             % Loop over all injectors

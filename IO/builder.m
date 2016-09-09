@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 18 July 2016
+%Last modified: 8 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -117,7 +117,7 @@ classdef builder < handle
             simulation = Reservoir_Simulation();
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
-            simulation.FluidModel = obj.BuildFluidModel(inputMatrix, SettingsMatrix);
+            simulation.FluidModel = obj.BuildFluidModel(inputMatrix, SettingsMatrix, simulation.ProductionSystem);
             simulation.Formulation = obj.BuildFormulation(inputMatrix);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
@@ -221,7 +221,7 @@ classdef builder < handle
             ProductionSystem.AddWells(Wells);
             
         end
-        function FluidModel = BuildFluidModel(obj, inputMatrix, SettingsMatrix)
+        function FluidModel = BuildFluidModel(obj, inputMatrix, SettingsMatrix, ProductionSystem)
             n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
             n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
             switch(char(inputMatrix(obj.Comp_Type+1)))
@@ -250,7 +250,7 @@ classdef builder < handle
                     FlashSettings.TolInner = str2double(SettingsMatrix(obj.flash + 2));
                     FlashSettings.MaxIt = str2double(SettingsMatrix(obj.flash + 3));
                     FlashSettings.TolFlash = str2double(SettingsMatrix(obj.flash + 4));
-                    FluidModel.AddFlash(FlashSettings);
+                    FluidModel.AddFlash(FlashSettings);       
             end
             % Add phases
             for i = 1:FluidModel.NofPhases
@@ -267,19 +267,26 @@ classdef builder < handle
             end
             
             
+            % RelPerm model
             switch(char(inputMatrix(obj.relperm + 1)))
                 case('Linear')
                     FluidModel.RelPermModel = relperm_model_linear();
                 case('Quadratic')
                     FluidModel.RelPermModel = relperm_model_quadratic();
             end
-            switch(char(inputMatrix(obj.capillarity + 1)))
+                    
+            % Capillary pressure model
+            switch (char(inputMatrix(obj.capillarity + 1)))
                 case('JLeverett')
-                    FluidModel.CapillaryModel = capillary_model_leverett();
-                case('BrooksCorey')
-                    FluidModel.CapillaryModel = capillary_model_corey();
+                    FluidModel.CapillaryModel = J_Function_model(ProductionSystem);
                 case('Linear')
-                    FluidModel.CapillaryModel = capillary_model_linear();
+                    FluidModel.CapillaryModel = 'Not implemented';
+                case('BrooksCorey')
+                    FluidModel.CapillaryModel = 'Not implemented';
+                case('Table')
+                    FluidModel.CapillaryModel = 'Not implemented';
+                otherwise
+                    FluidModel.CapillaryModel = No_Pc_model();
             end
             
         end
