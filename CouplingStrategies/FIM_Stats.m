@@ -22,7 +22,7 @@ classdef FIM_Stats < Coupling_Stats
            obj.ConstructTimer = zeros(MaxNTimeSteps, 1);
            obj.SolveTimer = zeros(MaxNTimeSteps, 1);
            obj.FlashTimer = zeros(MaxNTimeSteps, 1);
-           obj.NTimers = 3;
+           obj.NTimers = 4;
            obj.NStats = 2;
         end
         function SaveStats(obj, Ndt, itCount, n_chops)
@@ -36,7 +36,7 @@ classdef FIM_Stats < Coupling_Stats
         end
         function Matrix = TimersMatrix(obj, Ndt)
             timesteps = 1:Ndt;
-            Matrix = [timesteps', obj.ConstructTimer(1:Ndt), obj. SolveTimer(1:Ndt), obj.FlashTimer(1:Ndt)]';
+            Matrix = [timesteps', obj.TotalTimer(1:Ndt), obj.ConstructTimer(1:Ndt), obj. SolveTimer(1:Ndt), obj.FlashTimer(1:Ndt)]';
         end
         function Matrix = StatsMatrix(obj, Ndt)
             timesteps = 1:Ndt;

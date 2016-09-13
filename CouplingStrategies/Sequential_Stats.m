@@ -22,7 +22,7 @@ classdef Sequential_Stats < Coupling_Stats
            obj.PressureTimer = zeros(MaxNTimeSteps, 1);
            obj.BalanceTimer = zeros(MaxNTimeSteps, 1);
            obj.TransportTimer = zeros(MaxNTimeSteps, 1);
-           obj.NTimers = 3;
+           obj.NTimers = 4;
            obj.NStats = 2;
         end
         function SaveTimers(obj, Ndt, t_pressure, t_balance, t_transport)

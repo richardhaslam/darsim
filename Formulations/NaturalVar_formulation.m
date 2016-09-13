@@ -22,7 +22,7 @@ classdef NaturalVar_formulation < fim_formulation
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
             obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
-            %obj.dPc = FluidModel.CapillaryModel.Derivative(ProductionSystem.Reservoir.State.S);
+            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
         end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             
@@ -166,8 +166,8 @@ classdef NaturalVar_formulation < fim_formulation
             J2S = spdiags(DiagVecs, DiagIndx, N, N);
             
             %% 5.Add capillarity
-            %J1S = J1S - TMatrixW * spdiags(x1(:,1).* obj.dPc, 0, N, N);
-            %J2S = J2S - TMatrixW * spdiags(x2(:,1).* obj.dPc, 0, N, N);
+            J1S = J1S - obj.Tw * spdiags(x1(:,1).* obj.dPc, 0, N, N);
+            J2S = J2S - obj.Tw * spdiags(x2(:,1).* obj.dPc, 0, N, N);
             
             %% Add wells to each block
             [J1p, J2p, J1S, J2S] = obj.AddWellsToJacobian(J1p, J2p, J1S, J2S, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K);

@@ -21,7 +21,7 @@ classdef Comp_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*0.5e7;
-            z_init = ones(length(Status.p), 1)*0.0;
+            z_init = ones(length(Status.p), 1)*0.1;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
