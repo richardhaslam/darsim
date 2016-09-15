@@ -235,15 +235,17 @@ classdef builder < handle
                     FluidModel.AddFlash(FlashSettings);
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
+                    FluidModel.KvaluesCalculator = Standing_Kvalues_calculator();
                     % Add components
                     for i = 1:FluidModel.NofComp
                         %Gets all atmospheric bubble points [K]
-                        Tb = str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*5));
+                        Tb = str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*7));
                         %Gets all slopes connecting bubble point and
                         %critical point on 1/T plot [K]
-                        b = str2double(inputMatrix(obj.Comp_Prop + 5*i));
+                        b = str2double(inputMatrix(obj.Comp_Prop + 5 + (i-1)*7));
+                        MM = str2double(inputMatrix(obj.Comp_Prop + 7*i));
                         comp = component();
-                        comp.AddCompProperties(Tb, b);
+                        comp.AddCompProperties(Tb, b, MM);
                         FluidModel.AddComponent(comp, i); 
                     end
                                         
@@ -302,7 +304,7 @@ classdef builder < handle
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
                 case('Natural')
-                    Formulation = NaturalVar_formulation();
+                    Formulation = Full_NaturalVar_formulation();
                 case('Mass')
                     Formulation = Mass_formulation();
                 case('Sequential')
@@ -373,9 +375,9 @@ classdef builder < handle
             switch(obj.plotting)
                 case('Matlab')
                     if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
-                        plotter = Matlab_Plotter_1D();
+                        plotter = Matlab_Plotter_1D(simulation.ProductionSystem.Wells.Prod.p, simulation.ProductionSystem.Wells.Inj.p);
                     else
-                        plotter = Matlab_Plotter_2D();
+                        plotter = Matlab_Plotter_2D(simulation.ProductionSystem.Wells.Prod.p, simulation.ProductionSystem.Wells.Inj.p);
                     end
                 case('VTK')
                     plotter = VTK_Plotter(InputDirectory, obj.ProblemName);

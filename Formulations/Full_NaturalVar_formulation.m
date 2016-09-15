@@ -4,9 +4,9 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 15 September 2016
+%Last modified: 12 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef NaturalVar_formulation < fim_formulation
+classdef Full_NaturalVar_formulation < fim_formulation
     properties
         Tc1
         Tc2
@@ -16,6 +16,8 @@ classdef NaturalVar_formulation < fim_formulation
         dMob
         dPc
         drho
+        K
+        dKdp
     end
     methods
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
@@ -23,9 +25,10 @@ classdef NaturalVar_formulation < fim_formulation
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
             obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
-        end
-        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
-            
+            obj.K = FluidModel.KvaluesCalculator.Compute(ProductionSystem.Reservoir.State.p, ProductionSystem.Reservoir.State.T, FluidModel.Components);
+            obj.dKdp = FluidModel.KvaluesCalculator.DKvalDp(ProductionSystem.Reservoir.State.p);
+         end
+        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)                   
             %Create local variables
             N = DiscretizationModel.ReservoirGrid.N;
             s_old = State0.S;
@@ -42,6 +45,8 @@ classdef NaturalVar_formulation < fim_formulation
             %Density
             rho = ProductionSystem.Reservoir.State.rho;
             rho_old = State0.rho;
+            
+            % 1. MASS CONSERVATION EQUATIONS
             
             %Accumulation term
             A = speye(N)*pv/dt;
@@ -79,8 +84,15 @@ classdef NaturalVar_formulation < fim_formulation
                 + G*p...                          %Gravity
                 - q2;                             %Source terms
             
+            
+           % 2. THERMODYNAMIC EQUILIBRIUM EQUATIONS
+           Req1 = x1(:,1) - obj.K(:,1).*x1(:,2);
+           Req2 = x2(:,1) - obj.K(:,2).*x2(:,2);
+           
+           % .... what do we do if single phase... 
+                     
             %Stick them together
-            Residual = [R1; R2];
+            Residual = [R1; R2; Req1; Req2];
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             %Build FIM Jacobian
@@ -95,11 +107,9 @@ classdef NaturalVar_formulation < fim_formulation
             
             % BUILD FIM JACOBIAN BLOCK BY BLOCK
             
-            %% 1 Component 1 pressure block
-            
+            %% 1. Component 1 pressure block            
             % 1.a: divergence
-            J1p = obj.Tc1;
-            
+            J1p = obj.Tc1; 
             % 1.b: compressibility part
             dMupxPh1 = obj.UpWindPh1.x * (obj.Mob(:, 1) .* x1(:,1) .* obj.drho(:,1));
             dMupyPh1 = obj.UpWindPh1.y * (obj.Mob(:, 1) .* x1(:,1) .* obj.drho(:,1));
@@ -115,11 +125,9 @@ classdef NaturalVar_formulation < fim_formulation
             DiagIndx = [-Nx, -1, 0, 1, Nx];
             J1p = J1p + spdiags(DiagVecs, DiagIndx, N, N);
             
-            %% 2. Component 2 pressure block
-            
+            %% 2. Component 2 pressure block          
             % 2.a divergence
             J2p = obj.Tc2;
-            
             % 2.b: compressibility part
             dMupxPh1 = obj.UpWindPh1.x*(obj.Mob(:, 1) .* x2(:,1) .* obj.drho(:,1));
             dMupyPh1 = obj.UpWindPh1.y*(obj.Mob(:, 1) .* x2(:,1) .* obj.drho(:,1));
@@ -140,7 +148,6 @@ classdef NaturalVar_formulation < fim_formulation
             dMupyPh1 = obj.UpWindPh1.y*(obj.dMob(:,1) .* x1(:,1) .* rho(:,1));
             dMupxPh2 = obj.UpWindPh2.x*(obj.dMob(:,2) .* x1(:,2) .* rho(:,2));
             dMupyPh2 = obj.UpWindPh2.y*(obj.dMob(:,2) .* x1(:,2) .* rho(:,2));
-            
             vecX1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.Uph2.x(1:Nx,:),N,1), 0).*dMupxPh2;
             vecX2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.Uph2.x(2:Nx+1,:),N,1), 0).*dMupxPh2;
             vecY1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.Uph2.y(:,1:Ny),N,1), 0).*dMupyPh2;
@@ -149,13 +156,14 @@ classdef NaturalVar_formulation < fim_formulation
             DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
             DiagIndx = [-Nx, -1, 0, 1, Nx];
             J1S = spdiags(DiagVecs,DiagIndx, N, N);
+            % Capillarity
+            J1S = J1S - obj.Tph1 * spdiags(x1(:,1).* obj.dPc, 0, N, N);
             
             %% 4. Component 2 saturation block
             dMupxPh1 = obj.UpWindPh1.x*(obj.dMob(:, 1) .* x2(:,1) .* rho(:,1));
             dMupyPh1 = obj.UpWindPh1.y*(obj.dMob(:, 1) .* x2(:,1) .* rho(:,1));
             dMupxPh2 = obj.UpWindPh2.x*(obj.dMob(:, 2) .* x2(:,2) .* rho(:,2));
             dMupyPh2 = obj.UpWindPh2.y*(obj.dMob(:, 2) .* x2(:,2) .* rho(:,2));
-            
             vecX1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.Uph2.x(1:Nx,:),N,1), 0).*dMupxPh2;
             vecX2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.Uph2.x(2:Nx+1,:),N,1), 0).*dMupxPh2;
             vecY1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.Uph2.y(:,1:Ny),N,1), 0).*dMupyPh2;
@@ -164,77 +172,69 @@ classdef NaturalVar_formulation < fim_formulation
             DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
             DiagIndx = [-Nx, -1, 0, 1, Nx];
             J2S = spdiags(DiagVecs, DiagIndx, N, N);
+            % Capillarity
+            J2S = J2S - obj.Tph1 * spdiags(x2(:,1).* obj.dPc, 0, N, N);            
             
-            %% 5.Add capillarity
-            J1S = J1S - obj.Tph1 * spdiags(x1(:,1).* obj.dPc, 0, N, N);
-            J2S = J2S - obj.Tph1 * spdiags(x2(:,1).* obj.dPc, 0, N, N);
+            %% 5. Component 1 x1ph1 block
+            dMupxPh1 = obj.UpWindPh1.x * (obj.Mob(:,1) .* rho(:,1));
+            dMupyPh1 = obj.UpWindPh1.y * (obj.Mob(:,1) .* rho(:,1));
+            vecX1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1), 0).*dMupxPh1; 
+            vecX2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1), 0).*dMupxPh1; 
+            vecY1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1), 0).*dMupyPh1; 
+            vecY2 = max(reshape(obj.Uph1.y(:,2:Ny+1),N,1), 0).*dMupyPh1; 
+            acc = pv/dt .* (s .* rho(:,1));
+            DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
+            DiagIndx = [-Nx, -1, 0, 1, Nx];
+            J1x1ph1 = spdiags(DiagVecs,DiagIndx, N, N);
+            
+            %% 6. Component 1 x1ph2  block
+            dMupxPh2 = obj.UpWindPh1.x * (obj.Mob(:,2) .* rho(:,2));
+            dMupyPh2 = obj.UpWindPh1.y * (obj.Mob(:,2) .* rho(:,2));
+            vecX1 = min(reshape(obj.Uph2.x(1:Nx,:),N,1), 0) .* dMupxPh2; 
+            vecX2 = max(reshape(obj.Uph2.x(2:Nx+1,:),N,1), 0) .* dMupxPh2; 
+            vecY1 = min(reshape(obj.Uph2.y(:,1:Ny),N,1), 0) .* dMupyPh2; 
+            vecY2 = max(reshape(obj.Uph2.y(:,2:Ny+1),N,1), 0) .* dMupyPh2; 
+            acc = pv/dt .* ((1 - s) .* rho(:,2));
+            DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
+            DiagIndx = [-Nx, -1, 0, 1, Nx];
+            J1x1ph2 = spdiags(DiagVecs,DiagIndx, N, N);
+            
+            %% 7. Component 2 x1ph1 block
+            J2x1ph1 = -J1x1ph1; 
+            
+            %% 8. Component 2 x1ph2  block
+            J2x1ph2 = -J1x1ph2;
             
             %% Add wells to each block
-            [J1p, J2p, J1S, J2S] = obj.AddWellsToJacobian(J1p, J2p, J1S, J2S, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K);
+            [J1p, J2p, J1S, J2S, ...
+                J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2] = ...
+                obj.AddWellsToJacobian(J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2,...
+                ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K);
             
-            %% Full Jacobean: combine the 4 blocks
-            Jacobian = [ J1p, J1S ;...
-                         J2p, J2S ];
+            %% 9. Equilibrium of component 1
+            Jeq1p = - spdiags(obj.dKdp(:,1) .* x1(:,2), 0, N, N);
+            Jeq1S = speye(N) .* 0;
+            Jeq1_x1ph1 = speye(N);
+            Jeq1_x1ph2 = - spdiags(obj.K(:,1), 0, N, N);
+            
+            %% 10. Equilibrium of component 2
+            Jeq2p = - spdiags(obj.dKdp(:,2) .* x2(:,2), 0, N, N);
+            Jeq2S = speye(N) .* 0;
+            Jeq2_x1ph1 =  - speye(N);
+            Jeq2_x1ph2 = spdiags(obj.K(:,2), 0, N, N);
+            
+            %% Full Jacobian
+            Jacobian = [ J1p, J1S,  J1x1ph1, J1x1ph2;...
+                         J2p, J2S,  J2x1ph1, J2x1ph2;...
+                         Jeq1p, Jeq1S, Jeq1_x1ph1, Jeq1_x1ph2;...
+                         Jeq2p, Jeq2S, Jeq2_x1ph1, Jeq2_x1ph2];
         end
         function delta = UpdateState(obj, delta, Status, FluidModel)
             % Update Solution
-            Status.p = Status.p + delta(1:end/2);
-            Status.S = Status.S + delta(end/2+1:end);
-            
-            % Remove unphysical solutions
-            Status.S = min(Status.S,1);
-            Status.S = max(Status.S,0);
-            
-            % Update density
-            for i=1:FluidModel.NofPhases
-                Status.rho(:, i) = FluidModel.Phases(i).ComputeDensity(Status.p);
-            end
-            
-            % Update z
-            Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
-           
-            %% Composition update loop
-            Converged = 0;
-            itCount = 1;
-            s_0 = Status.S;
-            while Converged == 0 && itCount < FluidModel.FlashSettings.MaxIt
-                
-                % 1. Stores old values
-                s_old = Status.S;
-                x_old = Status.x1;
-                z_old = Status.z;
-                
-                % 2. Update Composition of the phases (Flash)
-                SinglePhase = FluidModel.Flash(Status);
-                
-                % 3. Update x and S based on components mass balance
-                FluidModel.ComputePhaseSaturation(Status, SinglePhase);
-                
-                % 4. Compute new total mass fractions (z)
-                Status.z =  FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
-                
-                % 5.a Compute errors
-                InnerError1 = norm(abs(Status.S(:,1) - s_old(:,1)), inf);   %Checks if this loop is converging
-                InnerError2 = norm(abs(Status.x1(:,2) - x_old(:,2)), inf);
-                InnerError3 = norm(abs(Status.z(:,1) - z_old(:,1)), inf);
-                
-                % 5.b Check convergence
-                if(InnerError1 < FluidModel.FlashSettings.TolInner && InnerError2 < FluidModel.FlashSettings.TolInner && InnerError3 < FluidModel.FlashSettings.TolInner)
-                    Converged = 1;
-                end
-                
-                itCount = itCount + 1;
-            end
-            delta_flash = Status.S - s_0;
-            
-            % Recompute delta
-            delta(end/2+1:end) =  delta(end/2+1:end) + delta_flash;
-            
-            % Update total density
-            Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);
-            
-            % Update Pc
-            Status.pc = FluidModel.ComputePc(Status.S);
+            Status.p = Status.p + delta(1:end/4);
+            Status.S = Status.S + delta(end/4+1:end/2);
+            Status.x1(:,1) = Status.x1(:,1) + delta(end/2 +1:3*end/4);
+            Status.x1(:,2) = Status.x1(:,2) + delta(3*end/4 +1:end);
         end
         function  T = TransmissibilityMatrix(obj, Grid, Rho, x)
             %%%Transmissibility matrix construction
@@ -273,7 +273,8 @@ classdef NaturalVar_formulation < fim_formulation
             q1 = q(:,1);
             q2 = q(:,2);
         end
-        function [J1p, J2p, J1S, J2S] = AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, State, Wells, K)
+        function [J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2] =...
+                AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2, State, Wells, K)
             Inj = Wells.Inj;
             Prod = Wells.Prod;
             %Injectors
@@ -311,12 +312,18 @@ classdef NaturalVar_formulation < fim_formulation
                     J2S(b(j),b(j)) = J2S(b(j),b(j)) ...
                         - Prod(i).PI * K(b(j)) * (obj.dMob(b(j), 1) * State.rho(b(j),1) * (1- State.x1(b(j), 1)) ...
                         + obj.dMob(b(j),2) * State.rho(b(j),2) * (1 - State.x1(b(j),2))) * (Prod(i).p - State.p(b(j)));
+                    % Mole fractions blocks
+                    J1x1ph1(b(j), b(j)) = J1x1ph1(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (Prod(i).p - State.p(b(j))); 
+                    J1x1ph2(b(j), b(j)) = J1x1ph2(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (Prod(i).p - State.p(b(j)));
+                    J2x1ph1(b(j), b(j)) = J2x1ph1(b(j), b(j)) - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (Prod(i).p - State.p(b(j)));
+                    J2x1ph2(b(j), b(j)) = J2x1ph2(b(j), b(j)) - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (Prod(i).p - State.p(b(j)));
+                    
                 end
                 
             end
         end
         function G = ComputeGravityTerm(obj, N)
-            G = zeros(N,N);
+               G = zeros(N);
         end
     end
 end

@@ -51,6 +51,7 @@ methods
             
             % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
             start1 = tic;
+            
             obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
             obj.TimerConstruct(obj.itCount) = toc(start1);
             

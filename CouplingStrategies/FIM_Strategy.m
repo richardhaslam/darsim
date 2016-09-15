@@ -38,6 +38,7 @@ methods
             obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
             
             % NL solver call
+            obj.NLSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
             obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             
             % Chop time-step if it failed to converge

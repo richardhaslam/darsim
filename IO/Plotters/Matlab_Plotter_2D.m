@@ -9,8 +9,17 @@
 classdef Matlab_Plotter_2D < Plotter
     properties (Constant)
         FontSize = 24
+        
+    end
+    properties
+        Pmax
+        Pmin
     end
     methods
+        function obj = Matlab_Plotter_2D(pmin, pmax)
+            obj.Pmax = pmax;
+            obj.Pmin = pmin;
+        end
         function PlotSolution(obj, Status, Grid)
             %Reshape objects for pcolor plots
             P = reshape(Status.p,Grid.Nx,Grid.Ny);
@@ -30,6 +39,7 @@ classdef Matlab_Plotter_2D < Plotter
             %subplot(2,1,1);
             h = pcolor(X,Y,P');
             set(h, 'EdgeColor', 'none');
+            caxis ([obj.Pmin, obj.Pmax]);
             %view([45 45]);
             if Grid.Nx==Grid.Ny
                 axis square;

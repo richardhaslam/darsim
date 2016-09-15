@@ -10,11 +10,16 @@ classdef Matlab_Plotter_1D < Plotter
     properties
         color1
         color2
+        Pmax
+        Pmin
     end
     methods
-        function obj = Matlab_Plotter_1D()
+        function obj = Matlab_Plotter_1D(pmin, pmax)
             obj.color1 = 'green';
             obj.color2 = 'green';
+           
+            obj.Pmax = pmax*1.1;
+            obj.Pmin = pmin*0.9;
         end
         function PlotSolution(obj, Status, Grid)
             % Reshape all objects
@@ -34,7 +39,7 @@ classdef Matlab_Plotter_1D < Plotter
             %title('Pressure [Pa]');
             xlabel('x [m]');
             ylabel('Pressure [Pa]');
-            %axis([0 Grid.dx*Grid.Nx min(P-Pc)-max(P)*0.1 max(P)+max(P)*0.1])
+            axis([0 Grid.dx*Grid.Nx obj.Pmin obj.Pmax])
             %legend('oil','water', 'Location', 'east');
             set(gca,'fontsize',24);
             hold on

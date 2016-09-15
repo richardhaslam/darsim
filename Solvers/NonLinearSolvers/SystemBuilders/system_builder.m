@@ -19,5 +19,8 @@ classdef system_builder < handle
         function SaveInitialState(obj, InitialState)
             obj.State = copy(InitialState);
         end
+        function SetInitalGuess(obj, ProductionSystem)
+            ProductionSystem.Reservoir.State = copy(obj.State);
+        end
     end
 end

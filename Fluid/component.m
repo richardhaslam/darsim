@@ -8,14 +8,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef component < handle
     properties
-        Tb % Reference density
+        Tb % Bubble point temperature
         b  % 
+        MM % Molecular mass
     end
     methods
-        function AddCompProperties(obj, Tb, b)
+        function AddCompProperties(obj, Tb, b, mm)
            obj.Tb = Tb;
            obj.b = b;
+           obj.MM = mm;
         end
-       
     end
 end

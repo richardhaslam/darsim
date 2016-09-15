@@ -9,10 +9,10 @@
 classdef fim_formulation < handle
     properties
         NumOfEquations
-        UpWindW
-        UpWindNw
-        Uw
-        Unw
+        UpWindPh1
+        UpWindPh2
+        Uph1
+        Uph2
     end
     methods (Abstract)
         obj = BuildResidual(obj)
@@ -21,8 +21,8 @@ classdef fim_formulation < handle
     end
     methods
         function UpWindAndPhaseRockFluxes(obj, Grid, Phases, p, pc)
-            [obj.UpWindW, obj.Uw] = Phases(1).UpWindAndRockFluxes(Grid, p - pc);
-            [obj.UpWindNw, obj.Unw] = Phases(2).UpWindAndRockFluxes(Grid, p);
+            [obj.UpWindPh1, obj.Uph1] = Phases(1).UpWindAndRockFluxes(Grid, p - pc);
+            [obj.UpWindPh2, obj.Uph2] = Phases(2).UpWindAndRockFluxes(Grid, p);
         end
     end
 end

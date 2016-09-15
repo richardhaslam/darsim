@@ -10,6 +10,7 @@ classdef Comp_fluid_model < fluid_model
     properties
         name = 'Compositional';
         FlashSettings
+        KvaluesCalculator
     end
     methods
         function obj = Comp_fluid_model(n_phases, n_comp)
@@ -21,7 +22,7 @@ classdef Comp_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*0.5e7;
-            z_init = ones(length(Status.p), 1)*0.1;
+            z_init = ones(length(Status.p), 1)*0.5;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -62,29 +63,18 @@ classdef Comp_fluid_model < fluid_model
             % Define SinglePhase objects
             SinglePhase.onlyliquid = zeros(length(Status.p), 1);
             SinglePhase.onlyvapor = zeros(length(Status.p), 1);
-            
-            %% Compute K values
-            % Convert units to use Standing's correlation for K values
-            T = Status.T*(9/5);                    %From K to R
-            P = Status.p*0.000145037738;       %From Pa to psi
-            Tb = zeros(1,obj.NofComp);
-            b = zeros(1,obj.NofComp);
-            for i=1:obj.NofComp
-                Tb(i) = obj.Components(i).Tb*(9/5);
-                b(i) = obj.Components(i).b*(9/5);
-            end
-           
-            F = b .* ((1./Tb) - (1/T));                         %Finds F factor as per Standing 1979
-            a = 1.2 + 4.5 * 10^-4 * P + 15 * 10^-8 * P.^2;       %a coefficient
-            c = 0.89 - 1.7 * 10^-4 * P - 3.5 * 10^-8 * P.^2;     %c coefficient
-            k(:, 1) = (10.^(a + c * F(1)))./P;                   %K1 as per Standing 1979
-            k(:, 2) = (10.^(a + c * F(2)))./P;                   %K2 as per Standing 1979
-            
+             
+            k = obj.KvaluesCalculator.Compute(Status.p, Status.T, obj.Components);
             
             %% 2 Chek if we are in 2 phase region
             % 2.a: checking if it 's all liquid: checks if mix is below bubble
             % point
-            z = Status.z;
+            % Transform Mass fractions to mol fractions
+            z(:,1) =  Status.z(:,1) .* obj.Components(2).MM  ./ (obj.Components(2).MM * Status.z(:,1) +  obj.Components(1).MM * Status.z(:,2));
+            z(:,2) =  Status.z(:,2) .* obj.Components(1).MM  ./ (obj.Components(2).MM * Status.z(:,1) +  obj.Components(1).MM * Status.z(:,2));
+            %max(abs(z - Status.z))
+            %z = Status.z;
+            
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
             
@@ -133,6 +123,7 @@ classdef Comp_fluid_model < fluid_model
                     
                     fv = fvnew;
                     if norm(h, inf) < obj.FlashSettings.TolFlash
+                        
                         converged = 1;
                     end
                     itCounter = itCounter + 1;
@@ -148,6 +139,13 @@ classdef Comp_fluid_model < fluid_model
             x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1, 1) .* (k(TwoPhase == 1, 1) - 1) + 1);
             % Solves for mole fractions in gas phase
             x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);
+            
+            % Convert x to mass fraction
+            %x_old = x;
+            x (TwoPhase == 1, 1) = x(TwoPhase == 1, 1) .* obj.Components(1).MM  ./ (obj.Components(1).MM * x(TwoPhase == 1,1) +  obj.Components(2).MM * (1 - x(TwoPhase == 1,1)));
+            x (TwoPhase == 1, 2) = x(TwoPhase == 1, 2) .* obj.Components(1).MM  ./ (obj.Components(1).MM * x(TwoPhase == 1,2) +  obj.Components(2).MM * (1 - x(TwoPhase == 1,2)));
+            %max(abs(x - x_old))
+            
             % Copy it into Status object
             Status.x1 = x;
         end

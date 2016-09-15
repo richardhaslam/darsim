@@ -62,6 +62,7 @@ classdef fluid_model < handle
             end
         end
         function drho = DrhoDp(obj, p)
+            drho = zeros(length(p), obj.NofPhases);
             for i=1:obj.NofPhases
                 drho(:, i) = obj.Phases(i).DrhoDp(p);
             end
