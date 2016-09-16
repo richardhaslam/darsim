@@ -235,7 +235,7 @@ classdef builder < handle
                     FluidModel.AddFlash(FlashSettings);
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
-                    FluidModel.KvaluesCalculator = Standing_Kvalues_calculator();
+                    FluidModel.KvaluesCalculator = Constant_Kvalues_calculator();
                     % Add components
                     for i = 1:FluidModel.NofComp
                         %Gets all atmospheric bubble points [K]

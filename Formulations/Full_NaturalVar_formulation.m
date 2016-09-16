@@ -18,6 +18,7 @@ classdef Full_NaturalVar_formulation < fim_formulation
         drho
         K
         dKdp
+        SinglePhase = zeros(5, 1);
     end
     methods
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
@@ -27,6 +28,7 @@ classdef Full_NaturalVar_formulation < fim_formulation
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
             obj.K = FluidModel.KvaluesCalculator.Compute(ProductionSystem.Reservoir.State.p, ProductionSystem.Reservoir.State.T, FluidModel.Components);
             obj.dKdp = FluidModel.KvaluesCalculator.DKvalDp(ProductionSystem.Reservoir.State.p);
+            
          end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)                   
             %Create local variables
@@ -89,8 +91,11 @@ classdef Full_NaturalVar_formulation < fim_formulation
            Req1 = x1(:,1) - obj.K(:,1).*x1(:,2);
            Req2 = x2(:,1) - obj.K(:,2).*x2(:,2);
            
-           % .... what do we do if single phase... 
-                     
+           % If Single phase set residual to be zero
+           R2(obj.SinglePhase > 0) = 0;
+           Req1(obj.SinglePhase > 0) = 0;
+           Req2(obj.SinglePhase > 0) = 0;
+           
             %Stick them together
             Residual = [R1; R2; Req1; Req2];
         end
@@ -173,7 +178,8 @@ classdef Full_NaturalVar_formulation < fim_formulation
             DiagIndx = [-Nx, -1, 0, 1, Nx];
             J2S = spdiags(DiagVecs, DiagIndx, N, N);
             % Capillarity
-            J2S = J2S - obj.Tph1 * spdiags(x2(:,1).* obj.dPc, 0, N, N);            
+            J2S = J2S - obj.Tph1 * spdiags(x2(:,1).* obj.dPc, 0, N, N);
+            
             
             %% 5. Component 1 x1ph1 block
             dMupxPh1 = obj.UpWindPh1.x * (obj.Mob(:,1) .* rho(:,1));
@@ -215,19 +221,39 @@ classdef Full_NaturalVar_formulation < fim_formulation
             Jeq1p = - spdiags(obj.dKdp(:,1) .* x1(:,2), 0, N, N);
             Jeq1S = speye(N) .* 0;
             Jeq1_x1ph1 = speye(N);
-            Jeq1_x1ph2 = - spdiags(obj.K(:,1), 0, N, N);
-            
+            Jeq1_x1ph2 = - spdiags(obj.K(:,1), 0, N, N);            
+                       
             %% 10. Equilibrium of component 2
             Jeq2p = - spdiags(obj.dKdp(:,2) .* x2(:,2), 0, N, N);
             Jeq2S = speye(N) .* 0;
             Jeq2_x1ph1 =  - speye(N);
             Jeq2_x1ph2 = spdiags(obj.K(:,2), 0, N, N);
             
+            
+            %% Single Phase cells: write dummy equations
+            
+            % Force dS to be equal to 0
+            J2p(obj.SinglePhase > 0, :) = 0;
+            J2S(obj.SinglePhase > 0, :) = 0;
+            J2x1ph1(obj.SinglePhase > 0, :) = 0;
+            J2x1ph2(obj.SinglePhase > 0, :) = 0;
+            cells = find(obj.SinglePhase > 0);
+            J2S(sub2ind(size(J2S), cells, cells)) = 1;
+
+            % Force dxs to be equal to zero for the face that s not there
+            Jeq1p(obj.SinglePhase == 2,:) = 0;
+            Jeq1_x1ph2(obj.SinglePhase == 2,:) = 0;
+            Jeq2p(obj.SinglePhase == 1,:) = 0;
+            Jeq2_x1ph1(obj.SinglePhase == 1,:) = 0;
+            cells = find(obj.SinglePhase == 1);
+            Jeq2_x1ph2(sub2ind(size(Jeq2_x1ph2), cells, cells)) = 1;
+            
             %% Full Jacobian
             Jacobian = [ J1p, J1S,  J1x1ph1, J1x1ph2;...
                          J2p, J2S,  J2x1ph1, J2x1ph2;...
                          Jeq1p, Jeq1S, Jeq1_x1ph1, Jeq1_x1ph2;...
                          Jeq2p, Jeq2S, Jeq2_x1ph1, Jeq2_x1ph2];
+            
         end
         function delta = UpdateState(obj, delta, Status, FluidModel)
             % Update Solution
@@ -235,6 +261,26 @@ classdef Full_NaturalVar_formulation < fim_formulation
             Status.S = Status.S + delta(end/4+1:end/2);
             Status.x1(:,1) = Status.x1(:,1) + delta(end/2 +1:3*end/4);
             Status.x1(:,2) = Status.x1(:,2) + delta(3*end/4 +1:end);
+            
+            obj.SinglePhase(Status.S > 1) = 1;
+            obj.SinglePhase(Status.S < 0) = 2;
+            Status.x1(Status.S > 1, 2) = 1;
+            Status.x1(Status.S < 0, 1) = 1;
+            
+            Status.S = min(Status.S, 1);
+            Status.S = max(Status.S, 0);
+            
+            % If Single phase
+            Status.S(obj.SinglePhase == 1) = 1;
+            Status.S(obj.SinglePhase == 2) = 0;
+            
+            % Update density
+            for i=1:FluidModel.NofPhases
+                Status.rho(:, i) = FluidModel.Phases(i).ComputeDensity(Status.p);
+            end
+            
+            % Update z
+            Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
         end
         function  T = TransmissibilityMatrix(obj, Grid, Rho, x)
             %%%Transmissibility matrix construction
