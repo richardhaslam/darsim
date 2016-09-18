@@ -1,10 +1,10 @@
-%  Natural variable Formulation
+%  Full Natural variable Formulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 12 July 2016
-%Last modified: 12 July 2016
+%Created: 12 September 2016
+%Last modified: 18 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Full_NaturalVar_formulation < fim_formulation
     properties
