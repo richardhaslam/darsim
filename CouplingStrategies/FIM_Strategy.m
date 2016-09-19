@@ -26,7 +26,7 @@ methods
         obj.Converged = 0;
         obj.chops = 0;
         % Save initial State
-        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State);
+        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
@@ -37,14 +37,16 @@ methods
             % Linear Solver Setup
             obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
             
-            % NL solver call
-            obj.NLSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
+            % NL solver call  
             obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             
             % Chop time-step if it failed to converge
             if obj.NLSolver.Converged == 0
                 dt = dt/2;
                 obj.chops = obj.chops + 1;
+                Formulation.Reset();
+                obj.NLSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
+                ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
             end
             obj.Converged = obj.NLSolver.Converged;
         end

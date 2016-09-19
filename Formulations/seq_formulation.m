@@ -20,6 +20,10 @@ classdef seq_formulation < handle
         V
     end
     methods
+        function Reset(obj)
+        end
+        function SavePhaseState(obj)
+        end
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
             s = ProductionSystem.Reservoir.State.S;
             obj.Mob = FluidModel.ComputePhaseMobilities(s);

@@ -22,7 +22,7 @@ classdef Comp_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*0.4e7;
-            z_init = ones(length(Status.p), 1)*0.6;
+            z_init = ones(length(Status.p), 1)*0.0;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -149,24 +149,20 @@ classdef Comp_fluid_model < fluid_model
             % Copy it into Status object
             Status.x1 = x;
         end
-        function SinglePhase = FindSinglePhaseCells(obj, Status, k)
+        function SinglePhase = CheckNumberOfPhases(obj, SinglePhase, PreviousSinglePhase, z, k)
             
-            SinglePhase = zeros(length(Status.p), 1);
-            
-            BubCheck = Status.z .* k;
+            BubCheck = zeros(length(z), 2);
+            BubCheck(PreviousSinglePhase == 2, :) = z(PreviousSinglePhase == 2,:) .* k (PreviousSinglePhase == 2, :);
             BubCheck = sum(BubCheck, 2);
+            SinglePhase(BubCheck > 1) = 0;
             
-            Status.x1(BubCheck < 1, 2) = Status.z (BubCheck < 1, 1);
-            Status.x1(BubCheck < 1, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
-            SinglePhase(BubCheck < 1) = 2;
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
             % point
-            DewCheck = Status.z ./ k;
+            DewCheck = zeros(length(z), 2);
+            DewCheck(PreviousSinglePhase == 1,:) = z(PreviousSinglePhase == 1,:) ./ k(PreviousSinglePhase == 1,:);
             DewCheck = sum(DewCheck, 2);
-            Status.x1(DewCheck < 1, 1) = Status.z (DewCheck < 1, 1);
-            Status.x1(DewCheck < 1, 2) = 1;                    % This is to avoid having singular Jacobian matrix.
-            SinglePhase(DewCheck < 1) = 1;
+            SinglePhase(DewCheck(PreviousSinglePhase == 1) > 1) = 0;
         end
     end
 end

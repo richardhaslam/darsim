@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 19 July 2016
+%Last modified: 19 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fim_formulation < handle
     properties
@@ -18,6 +18,7 @@ classdef fim_formulation < handle
         obj = BuildResidual(obj)
         obj = BuildJacobian(obj)
         obj = UpdateState(obj)
+        obj = Reset(obj)
     end
     methods
         function UpWindAndPhaseRockFluxes(obj, Grid, Phases, p, pc)

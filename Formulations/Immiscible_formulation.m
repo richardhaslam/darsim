@@ -16,6 +16,10 @@ classdef Immiscible_formulation < fim_formulation
         drho
     end
     methods
+        function Reset(obj)
+        end
+        function SavePhaseState(obj)
+        end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);

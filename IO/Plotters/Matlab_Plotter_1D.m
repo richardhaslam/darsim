@@ -56,7 +56,7 @@ classdef Matlab_Plotter_1D < Plotter
             figure(2)
             subplot(3,1,1);
             plot(x, x1, obj.color2, 'LineWidth', 1);
-            axis([0 Grid.Nx*Grid.dx .5 1]);
+            axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 1 in Phase 1 [-]');
             xlabel('x [m]');
             ylabel('x1w [-]');
@@ -64,7 +64,7 @@ classdef Matlab_Plotter_1D < Plotter
             set(gca,'fontsize',24);
             subplot(3,1,2);
             plot(x, x2, obj.color2, 'LineWidth', 1);
-            axis([0 Grid.Nx*Grid.dx .5 1]);
+            axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 2 in Phase 2 [-]');
             xlabel('x [m]');
             ylabel('x2nw [-]');

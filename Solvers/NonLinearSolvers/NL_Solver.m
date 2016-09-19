@@ -55,6 +55,13 @@ methods
             obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
             obj.TimerConstruct(obj.itCount) = toc(start1);
             
+            % Show phase state
+%             figure(obj.itCount)
+%             pcolor(reshape(Formulation.SinglePhase, DiscretizationModel.ReservoirGrid.Nx, DiscretizationModel.ReservoirGrid.Nx));
+%             colorbar
+%             caxis([0 2])
+%             drawnow
+            
             % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
             start2 = tic;
             obj.SolveLinearSystem();

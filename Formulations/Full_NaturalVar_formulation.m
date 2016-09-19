@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 September 2016
-%Last modified: 18 September 2016
+%Last modified: 19 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Full_NaturalVar_formulation < fim_formulation
     properties
@@ -18,9 +18,22 @@ classdef Full_NaturalVar_formulation < fim_formulation
         drho
         K
         dKdp
-        SinglePhase = zeros(5, 1);
+        InitialPhaseState
+        PreviousSinglePhase
+        SinglePhase
     end
     methods
+        function obj = Full_NaturalVar_formulation(n_cells)
+            obj.PreviousSinglePhase = zeros(n_cells, 1);
+            obj.SinglePhase = zeros(n_cells, 1);
+        end
+        function SavePhaseState(obj)
+            obj.InitialPhaseState = obj.SinglePhase;
+        end
+        function Reset(obj)
+            obj.SinglePhase = obj.InitialPhaseState;
+            obj.PreviousSinglePhase = obj.InitialPhaseState;
+        end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
@@ -28,7 +41,7 @@ classdef Full_NaturalVar_formulation < fim_formulation
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
             obj.K = FluidModel.KvaluesCalculator.Compute(ProductionSystem.Reservoir.State.p, ProductionSystem.Reservoir.State.T, FluidModel.Components);
             obj.dKdp = FluidModel.KvaluesCalculator.DKvalDp(ProductionSystem.Reservoir.State.p);
-            
+            obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State.z, obj.K);
          end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)                   
             %Create local variables
@@ -92,7 +105,6 @@ classdef Full_NaturalVar_formulation < fim_formulation
            Req2 = x2(:,1) - obj.K(:,2).*x2(:,2);
            
            % If Single phase set residual to be zero
-           R2(obj.SinglePhase > 0) = 0;
            Req1(obj.SinglePhase > 0) = 0;
            Req2(obj.SinglePhase > 0) = 0;
            
@@ -232,21 +244,26 @@ classdef Full_NaturalVar_formulation < fim_formulation
             
             %% Single Phase cells: write dummy equations
             
-            % Force dS to be equal to 0
-            J2p(obj.SinglePhase > 0, :) = 0;
+            % Modify transport equation to only solve for dx
             J2S(obj.SinglePhase > 0, :) = 0;
-            J2x1ph1(obj.SinglePhase > 0, :) = 0;
-            J2x1ph2(obj.SinglePhase > 0, :) = 0;
+            J2x1ph2(obj.SinglePhase == 1,:) = 0;
+            J2x1ph1(obj.SinglePhase == 2,:) = 0;
+            % Force delta S to be equal to zero
             cells = find(obj.SinglePhase > 0);
-            J2S(sub2ind(size(J2S), cells, cells)) = 1;
-
-            % Force dxs to be equal to zero for the face that s not there
-            Jeq1p(obj.SinglePhase == 2,:) = 0;
-            Jeq1_x1ph2(obj.SinglePhase == 2,:) = 0;
-            Jeq2p(obj.SinglePhase == 1,:) = 0;
-            Jeq2_x1ph1(obj.SinglePhase == 1,:) = 0;
+            Jeq1S(sub2ind(size(Jeq1S), cells, cells)) = 1;
+            Jeq1p (obj.SinglePhase > 0, :) = 0;
+            Jeq1_x1ph1 (obj.SinglePhase > 0, :) = 0;
+            Jeq1_x1ph2 (obj.SinglePhase > 0, :) = 0;   
+            % Force the other dx to be equal to zero
+            Jeq2p (obj.SinglePhase > 0, :) = 0;
+            % if only vapor force dx1ph2 to be zero
+            Jeq2_x1ph1(obj.SinglePhase == 1, :) = 0;
             cells = find(obj.SinglePhase == 1);
             Jeq2_x1ph2(sub2ind(size(Jeq2_x1ph2), cells, cells)) = 1;
+            % if only liquid force dx1ph1 to be zero
+            Jeq2_x1ph2(obj.SinglePhase == 2, :) = 0;
+            cells = find(obj.SinglePhase == 2);
+            Jeq2_x1ph1(sub2ind(size(Jeq2_x1ph1), cells, cells)) = 1;
             
             %% Full Jacobian
             Jacobian = [ J1p, J1S,  J1x1ph1, J1x1ph2;...
@@ -262,17 +279,18 @@ classdef Full_NaturalVar_formulation < fim_formulation
             Status.x1(:,1) = Status.x1(:,1) + delta(end/2 +1:3*end/4);
             Status.x1(:,2) = Status.x1(:,2) + delta(3*end/4 +1:end);
             
+            % Single phase from previous solution
+
+            obj.PreviousSinglePhase = obj.SinglePhase;
             obj.SinglePhase(Status.S > 1) = 1;
             obj.SinglePhase(Status.S < 0) = 2;
-            Status.x1(Status.S > 1, 2) = 1;
-            Status.x1(Status.S < 0, 1) = 1;
+            %Status.x1(Status.S > 1, 2) = 0;
+            %Status.x1(Status.S > 1, 1) = 1;
+            %Status.x1(Status.S < 0, 1) = 1;
+            %Status.x1(Status.S < 0, 2) = 0;
             
             Status.S = min(Status.S, 1);
             Status.S = max(Status.S, 0);
-            
-            % If Single phase
-            Status.S(obj.SinglePhase == 1) = 1;
-            Status.S(obj.SinglePhase == 2) = 0;
             
             % Update density
             for i=1:FluidModel.NofPhases
@@ -280,7 +298,7 @@ classdef Full_NaturalVar_formulation < fim_formulation
             end
             
             % Update z
-            Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
+            Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);          
         end
         function  T = TransmissibilityMatrix(obj, Grid, Rho, x)
             %%%Transmissibility matrix construction

@@ -16,8 +16,9 @@ classdef system_builder < handle
         obj = BuildJacobian(obj);
     end
     methods
-        function SaveInitialState(obj, InitialState)
+        function SaveInitialState(obj, InitialState, Formulation)
             obj.State = copy(InitialState);
+            Formulation.SavePhaseState();
         end
         function SetInitalGuess(obj, ProductionSystem)
             ProductionSystem.Reservoir.State = copy(obj.State);

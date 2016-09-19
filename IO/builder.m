@@ -118,7 +118,7 @@ classdef builder < handle
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, SettingsMatrix, simulation.ProductionSystem);
-            simulation.Formulation = obj.BuildFormulation(inputMatrix);
+            simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
         end
@@ -292,7 +292,7 @@ classdef builder < handle
             end
             
         end
-        function Formulation = BuildFormulation(obj, inputMatrix)
+        function Formulation = BuildFormulation(obj, inputMatrix, Discretization)
             formulationtype = 'Natural';
             if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
                 formulationtype = 'Immiscible';
@@ -304,7 +304,7 @@ classdef builder < handle
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
                 case('Natural')
-                    Formulation = Full_NaturalVar_formulation();
+                    Formulation = Full_NaturalVar_formulation(Discretization.ReservoirGrid.N);
                 case('Mass')
                     Formulation = Mass_formulation();
                 case('Sequential')

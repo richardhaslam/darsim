@@ -38,6 +38,13 @@ classdef TimeLoop_Driver < handle
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
 
                 obj.dt = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);
+                              
+%                 % Plot single phase variable
+%                 figure(11)
+%                 pcolor(reshape(Formulation.SinglePhase, DiscretizationModel.ReservoirGrid.Nx, DiscretizationModel.ReservoirGrid.Ny));
+%                 colorbar
+%                 caxis([0 2])
+%                 drawnow
                 
                 % Save Stats
                 obj.Coupling.UpdateSummary(Summary, ProductionSystem.Wells, obj.Ndt, obj.dt);

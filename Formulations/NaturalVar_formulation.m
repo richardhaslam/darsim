@@ -18,6 +18,10 @@ classdef NaturalVar_formulation < fim_formulation
         drho
     end
     methods
+        function Reset(obj)
+        end
+        function SavePhaseState(obj)
+        end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
