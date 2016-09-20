@@ -100,24 +100,24 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
             fprintf(fileID, '\n');
             %x11
-            obj.PrintScalar2VTK(fileID, Status.x1(:,1), ' x1w');
+            obj.PrintScalar2VTK(fileID, Status.x1(:,1), ' x1ph1');
             fprintf(fileID, '\n');
             %x12
-            obj.PrintScalar2VTK(fileID, Status.x1(:,2), ' x1nw');
+            obj.PrintScalar2VTK(fileID, Status.x1(:,2), ' x1ph2');
             fprintf(fileID, '\n');
             %x21
-            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,1), ' x2w');
+            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,1), ' x2ph1');
             fprintf(fileID, '\n');
             %x22
-            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,2), ' x2nw');
+            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,2), ' x2ph2');
             fprintf(fileID, '\n');
             %z1
             obj.PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
             fprintf(fileID, '\n');
             %Density
-            obj.PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoW');
+            obj.PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoPh1');
             fprintf(fileID, '\n');
-            obj.PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoNw');
+            obj.PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoPh2');
             fprintf(fileID, '\n');
             obj.PrintScalar2VTK(fileID, Status.rho(:,1).*Status.S + Status.rho(:,2).*(1 - Status.S), ' rhoT');
             obj.VTKindex = obj.VTKindex + 1;

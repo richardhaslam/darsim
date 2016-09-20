@@ -22,7 +22,7 @@ classdef Comp_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*0.4e7;
-            z_init = ones(length(Status.p), 1)*0.0;
+            z_init = ones(length(Status.p), 1)*0.3;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -70,10 +70,7 @@ classdef Comp_fluid_model < fluid_model
             % 2.a: checking if it 's all liquid: checks if mix is below bubble
             % point
             % Transform Mass fractions to mol fractions
-            z(:,1) =  Status.z(:,1) .* obj.Components(2).MM  ./ (obj.Components(2).MM * Status.z(:,1) +  obj.Components(1).MM * Status.z(:,2));
-            z(:,2) =  Status.z(:,2) .* obj.Components(1).MM  ./ (obj.Components(2).MM * Status.z(:,1) +  obj.Components(1).MM * Status.z(:,2));
-            %max(abs(z - Status.z))
-            %z = Status.z;
+            z = Status.z;
             
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
@@ -150,6 +147,9 @@ classdef Comp_fluid_model < fluid_model
             Status.x1 = x;
         end
         function SinglePhase = CheckNumberOfPhases(obj, SinglePhase, PreviousSinglePhase, z, k)
+            
+            % Transform mass fractions into mole fractions to check phase
+            % state
             
             BubCheck = zeros(length(z), 2);
             BubCheck(PreviousSinglePhase == 2, :) = z(PreviousSinglePhase == 2,:) .* k (PreviousSinglePhase == 2, :);

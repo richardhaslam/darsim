@@ -37,7 +37,7 @@ classdef fluid_model < handle
                 Mob(:,i) = kr(:,i)/obj.Phases(i).mu;
             end
         end
-        function z = ComputeMassFractions(obj, s, x, rho)
+        function z = ComputeTotalFractions(obj, s, x, rho)
             %Two phase, two component total mole fraction updater
             %Based on mass balance equation z_1 * rho_t = x11*rho1*s1 + x12*rho2*s2
             z(:,1) = (x(:,1).*rho(:,1).*s + x(:,2).*...

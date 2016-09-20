@@ -284,10 +284,6 @@ classdef Full_NaturalVar_formulation < fim_formulation
             obj.PreviousSinglePhase = obj.SinglePhase;
             obj.SinglePhase(Status.S > 1) = 1;
             obj.SinglePhase(Status.S < 0) = 2;
-            %Status.x1(Status.S > 1, 2) = 0;
-            %Status.x1(Status.S > 1, 1) = 1;
-            %Status.x1(Status.S < 0, 1) = 1;
-            %Status.x1(Status.S < 0, 2) = 0;
             
             Status.S = min(Status.S, 1);
             Status.S = max(Status.S, 0);
@@ -298,7 +294,10 @@ classdef Full_NaturalVar_formulation < fim_formulation
             end
             
             % Update z
-            Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);          
+            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x1, Status.rho);
+            
+            % Update Pc
+            Status.pc = FluidModel.ComputePc(Status.S);
         end
         function  T = TransmissibilityMatrix(obj, Grid, Rho, x)
             %%%Transmissibility matrix construction
