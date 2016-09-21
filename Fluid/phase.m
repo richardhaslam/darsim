@@ -24,12 +24,12 @@ classdef phase < handle
         function rho = ComputeDensity(obj, p)
             rho = obj.rho0 .* exp(obj.cf.*(p - obj.Pref));
         end
-        function [A, U] = UpWindAndRockFluxes(obj, Grid, p)
+        function [A, U] = UpWindAndRockFluxes(obj, Grid, Pot)
             Nx = Grid.Nx;
             Ny = Grid.Ny;
             N = Grid.N;
             
-            P = reshape(p,Nx, Ny);
+            P = reshape(Pot,Nx, Ny);
             
             %Compute 'rock' fluxes ([m^3/s])
             U.x = zeros(Nx+1,Ny,1);

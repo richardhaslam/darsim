@@ -15,6 +15,7 @@ classdef fluid_model < handle
         RelPermModel
         CapillaryModel
         WettingPhaseIndex
+        GravityModel
     end
     methods
         function obj = fluid_model(n_phases, n_comp)

@@ -13,6 +13,12 @@ classdef fim_formulation < handle
         UpWindPh2
         Uph1
         Uph2
+        Tph1
+        Tph2
+        Mob
+        dMob
+        dPc
+        drho
     end
     methods (Abstract)
         obj = BuildResidual(obj)
@@ -21,9 +27,9 @@ classdef fim_formulation < handle
         obj = Reset(obj)
     end
     methods
-        function UpWindAndPhaseRockFluxes(obj, Grid, Phases, p, pc)
-            [obj.UpWindPh1, obj.Uph1] = Phases(1).UpWindAndRockFluxes(Grid, p - pc);
-            [obj.UpWindPh2, obj.Uph2] = Phases(2).UpWindAndRockFluxes(Grid, p);
+        function UpWindAndPhaseRockFluxes(obj, Grid, Phases, Pot)
+            [obj.UpWindPh1, obj.Uph1] = Phases(1).UpWindAndRockFluxes(Grid, Pot(:,1));
+            [obj.UpWindPh2, obj.Uph2] = Phases(2).UpWindAndRockFluxes(Grid, Pot(:,2));
         end
     end
 end

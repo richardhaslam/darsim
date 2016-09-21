@@ -10,12 +10,6 @@ classdef NaturalVar_formulation < fim_formulation
     properties
         Tc1
         Tc2
-        Tph1
-        Tph2
-        Mob
-        dMob
-        dPc
-        drho
     end
     methods
         function Reset(obj)
