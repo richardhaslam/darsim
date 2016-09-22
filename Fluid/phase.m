@@ -24,18 +24,26 @@ classdef phase < handle
         function rho = ComputeDensity(obj, p)
             rho = obj.rho0 .* exp(obj.cf.*(p - obj.Pref));
         end
-        function [A, U] = UpWindAndRockFluxes(obj, Grid, Pot)
+        function [A, U] = UpWindAndRockFluxes(obj, Grid, P, RhoInt)
             Nx = Grid.Nx;
             Ny = Grid.Ny;
             N = Grid.N;
             
-            P = reshape(Pot,Nx, Ny);
+            % Gravitational velocities
+            depth = reshape(Grid.Depth, Nx, Ny);
             
+            %
+            Ugx = zeros(Nx+1,Ny,1);
+            Ugy = zeros(Nx,Ny+1,1);
+            Ugx(2:Nx,:) = (depth(1:Nx-1,:) - depth(2:Nx,:)) .* RhoInt.x(2:Nx,:); 
+            Ugy(:,2:Ny) = (depth(:,1:Ny-1) - depth(:,2:Ny)) .* RhoInt.y(:,2:Ny);      
+            
+            P = reshape(P, Nx, Ny);
             %Compute 'rock' fluxes ([m^3/s])
             U.x = zeros(Nx+1,Ny,1);
             U.y = zeros(Nx,Ny+1,1);
-            U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)).*Grid.Tx(2:Nx,:);
-            U.y(:,2:Ny)  = (P(:,1:Ny-1)-P(:,2:Ny)).*Grid.Ty(:,2:Ny);
+            U.x(2:Nx,:) = (P(1:Nx-1,:)-P(2:Nx,:)) .* Grid.Tx(2:Nx,:) + Grid.Tx(2:Nx,:) .* Ugx(2:Nx,:);
+            U.y(:,2:Ny) = (P(:,1:Ny-1)-P(:,2:Ny)) .* Grid.Ty(:,2:Ny) + Grid.Ty(:,2:Ny) .* Ugy(:,2:Ny);
             
             %Use velocity to build upwind operator
             R = reshape((U.x(2:Nx+1,:) >= 0), N, 1);

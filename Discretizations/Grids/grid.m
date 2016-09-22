@@ -9,6 +9,7 @@
 classdef grid < handle
     properties
         N
+        Depth
         Connections
         Active
         Fathers

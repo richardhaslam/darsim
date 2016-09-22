@@ -15,7 +15,6 @@ classdef fluid_model < handle
         RelPermModel
         CapillaryModel
         WettingPhaseIndex
-        GravityModel
     end
     methods
         function obj = fluid_model(n_phases, n_comp)
@@ -23,7 +22,7 @@ classdef fluid_model < handle
             obj.NofComp = n_comp;
             obj.Phases = phase();
             obj.Components = component();
-            obj.WettingPhaseIndex = 2;
+            obj.WettingPhaseIndex = 1;
         end
         function AddPhase(obj, Phase, index)
             obj.Phases(index) = Phase;

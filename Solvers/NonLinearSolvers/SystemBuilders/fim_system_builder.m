@@ -13,7 +13,7 @@ classdef fim_system_builder < system_builder
     methods
         function ComputePropertiesAndDerivatives(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
             Formulation.ComputePropertiesAndDerivatives(ProductionSystem, FluidModel);
-            Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel.ReservoirGrid, FluidModel.Phases, ProductionSystem.Reservoir.State.Pot);
+            Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel.ReservoirGrid, FluidModel.Phases, ProductionSystem.Reservoir.State);
         end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
            Residual = Formulation.BuildResidual(ProductionSystem, DiscretizationModel, dt, obj.State);

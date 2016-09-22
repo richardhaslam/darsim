@@ -51,13 +51,15 @@ classdef Full_NaturalVar_formulation < fim_formulation
             s2 = 1 - s;
             s2_old = 1 - s_old;
             % Phase potentials
-            Pot_ph1 = ProductionSystem.Reservoir.State.Pot(:,1);
-            Pot_ph2 = ProductionSystem.Reservoir.State.Pot(:,2);
+            P_ph1 = ProductionSystem.Reservoir.State.p - ProductionSystem.Reservoir.State.pc;
+            P_ph2 = ProductionSystem.Reservoir.State.p;
             % Pore volume
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
             %Density
             rho = ProductionSystem.Reservoir.State.rho;
             rho_old = State0.rho;
+            % Depths
+            depth = DiscretizationModel.ReservoirGrid.Depth;
             
             %Accumulation term
             A = speye(N)*pv/dt;
@@ -73,13 +75,15 @@ classdef Full_NaturalVar_formulation < fim_formulation
                 m = x(:,(i-1)*2+1) .* rho(:,1) .* s + x(:,(i-1)*2+2) .* rho(:,2) .* s2;
                 m_old = x_old(:,(i-1)*2+1) .* rho_old(:,1) .* s_old + x_old(:,(i-1)*2+2) .* rho_old(:,2) .* s2_old;
                 % Phase Transmissibilities
-                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, x(:,(i-1)*2+1:(i-1)*2+2), i);          
+                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt1, obj.GravityModel.RhoInt2, x(:,(i-1)*2+1:(i-1)*2+2), i);          
                 % Residual
                 Rbalance((i-1)*N+1:i*N) = ...
-                    A * m - A * m_old...          %Accumulation term
-                    + obj.Tph1{i} *  Pot_ph1 ...     %Convective term
-                    + obj.Tph2{i} *  Pot_ph2...
-                    - q(:,i);                           %Source terms
+                    A * m - A * m_old...          % Accumulation term
+                    + obj.Tph1{i} *  P_ph1 ...    % Convective term                
+                    + obj.Tph2{i} *  P_ph2...
+                    + obj.Gph1{i} * depth...      % Gravity
+                    + obj.Gph2{i} * depth...
+                    - q(:,i);                     %Source terms
                 
                 % 2. THERMODYNAMIC EQUILIBRIUM EQUATIONS
                 Rcomp = x(:,(i-1)*2 + 1) - obj.K(:,i).*x(:,(i-1)*2 + 2);
@@ -247,13 +251,9 @@ classdef Full_NaturalVar_formulation < fim_formulation
             Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x1, Status.rho);
             
             % Update Pc
-            Status.pc = FluidModel.ComputePc(Status.S);
-            
-            % Compute phase potential
-            h = FluidModel.GravityModel.ComputeBuoyancyTerm(Status.rho);
-            Status.ComputePhasePotential(h);
+            Status.pc = FluidModel.ComputePc(Status.S);            
         end
-        function  TransmissibilityMatrix(obj, Grid, Rho, x, i)
+        function  TransmissibilityMatrix(obj, Grid, Rho, RhoInt1, RhoInt2, x, i)
             %%%Transmissibility matrix construction
             Tx = zeros(Grid.Nx+1, Grid.Ny);
             Ty = zeros(Grid.Nx, Grid.Ny+1);
@@ -276,6 +276,19 @@ classdef Full_NaturalVar_formulation < fim_formulation
             DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
             obj.Tph1{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
+            % Gravity Matrix
+            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt1.x(2:Grid.Nx,:);
+            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt2.y(:,2:Grid.Ny);
+            
+            %Construct matrix
+            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
+            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
+            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
+            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
+            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
+            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+            obj.Gph1{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
+            
             %% PHASE 2 
             %Apply upwind operator
             Mupx = obj.UpWindPh2.x*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
@@ -293,6 +306,21 @@ classdef Full_NaturalVar_formulation < fim_formulation
             DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
             DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
             obj.Tph2{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
+            
+            
+            % Gravity Matrix
+            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt1.x(2:Grid.Nx,:);
+            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt2.y(:,2:Grid.Ny);
+            
+            %Construct matrix
+            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
+            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
+            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
+            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
+            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
+            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+            obj.Gph2{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
+            
         end
         function q = ComputeSourceTerms(obj, N, Wells)
             q = zeros(N, 2);

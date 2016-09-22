@@ -8,7 +8,6 @@
 classdef status < matlab.mixin.Copyable
 properties
     T
-    Pot
     p
     pc
     S
@@ -27,11 +26,6 @@ methods
         obj.x1 = zeros(N, 2);
         obj.rho = zeros(N, 2);
         obj.rhoT = zeros(N, 1); 
-        obj.ComputePhasePotential();
-    end
-    function ComputePhasePotential(obj, h)
-        obj.Pot(:,1) = obj.p - h(:,1) - obj.pc;
-        obj.Pot(:,2) = obj.p - h(:,2);
     end
 end
 end
