@@ -13,7 +13,7 @@ classdef Discretization_model < handle
     end
     methods
         function obj = Discretization_model(nx, ny, nz)
-            obj.ReservoirGrid = grid_cartesian(nx, ny, nz);
+            obj.ReservoirGrid = cartesian_grid(nx, ny, nz);
         end
         function DefinePerforatedCells(obj, Wells)
             % Has to be improved for Diagonal wells (maybe using trajectories)

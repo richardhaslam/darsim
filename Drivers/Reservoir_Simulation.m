@@ -20,6 +20,7 @@ classdef Reservoir_Simulation
             obj.ProductionSystem.Initialize(obj.DiscretizationModel, obj.FluidModel);
             obj.DiscretizationModel.Initialize(obj.ProductionSystem, obj.FluidModel);
             obj.ProductionSystem.InitializeWells(obj.FluidModel);
+            obj.DiscretizationModel.ReservoirGrid.ComputeDepth(obj.Formulation.GravityModel.alpha);
         end
         function Run(obj, Writer)        
             disp('BEGIN TIME-DEPENDENT SIMULATION');

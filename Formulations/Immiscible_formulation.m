@@ -4,12 +4,17 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 15 September 2016
+%Last modified: 26 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < fim_formulation
     properties
     end
     methods
+        function obj = Immiscible_formulation()
+            obj@fim_formulation();
+            obj.Tph = cell(2,1);
+            obj.Gph = cell(2,1);
+        end
         function Reset(obj)
         end
         function SavePhaseState(obj)
@@ -21,39 +26,36 @@ classdef Immiscible_formulation < fim_formulation
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
         end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
-            %Create local variables
+            % Create local variables
             N = DiscretizationModel.ReservoirGrid.N;
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
-            p_old = State0.p;
-            s_old = State0.S;
+            s_old(:,1) = State0.S;
+            s_old(:,2) = 1 - s_old(:,1);
             rho_old = State0.rho;
-            p = ProductionSystem.Reservoir.State.p;
-            s = ProductionSystem.Reservoir.State.S;
+            s(:,1) = ProductionSystem.Reservoir.State.S;
+            s(:,2) = 1 - s(:,1);
             rho = ProductionSystem.Reservoir.State.rho;
-            pc = ProductionSystem.Reservoir.State.pc;
+            P(:,1) = ProductionSystem.Reservoir.State.p - ProductionSystem.Reservoir.State.pc;
+            P(:,2) = ProductionSystem.Reservoir.State.p;
+            depth = DiscretizationModel.ReservoirGrid.Depth;
             
-            %Accumulation Term
-            Ap = speye(N)*0; %It's still incompressible
+            % Accumulation Term
             AS = speye(N)*pv/dt;
             
-            %Transmissibility matrix
-            obj.Tph1 = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWindPh1, obj.Mob(:,1), rho(:, 1));
-            obj.Tph2 = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWindPh2, obj.Mob(:,2), rho(:, 2));
-            
-            %Gravity
-            G = obj.ComputeGravityTerm(N);
-            
-            %Source terms
-            [qw, qnw] = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
+            % Transmissibility matrix
+            obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt);
+                  
+            % Source terms
+            [q(:,1), q(:,2)] = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
             
             %% RESIDUAL
-            %Wetting phase (This one has capillarity)
-            Rw = Ap*(p-p_old) + AS*(rho(:,1) .* s - rho_old(:,1) .* s_old) + obj.Tph1*p - obj.Tph1*pc + G*s - qw;
-            %Non-wetting phase
-            Rnw = Ap*(p-p_old) + AS*(rho(:,2) .* (1 - s) - rho_old(:,2) .* (1 - s_old)) + obj.Tph2*p + G*s - qnw;
-            
-            %Stick them together
-            Residual = [Rw; Rnw];
+            Residual = zeros(2*N,1);
+            for i=1:2
+                Residual((i-1)*N+1:i*N)  = AS*(rho(:,i) .* s(:,i) - rho_old(:,i) .* s_old(:,i))...
+                                           + obj.Tph{i} * P(:, i)...
+                                           + obj.Gph{i} * depth...
+                                           - q(:,i);
+            end   
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             %Build FIM Jacobian
@@ -62,78 +64,50 @@ classdef Immiscible_formulation < fim_formulation
             N = DiscretizationModel.ReservoirGrid.N;
             pv = DiscretizationModel.ReservoirGrid.Volume*ProductionSystem.Reservoir.Por;
             rho = ProductionSystem.Reservoir.State.rho;
-            s = ProductionSystem.Reservoir.State.S;
+            s(:,1) = ProductionSystem.Reservoir.State.S;
+            s(:,2) = 1 - s(:, 1);
             
-            % BUILD FIM JACOBIAN BLOCK BY BLOCK         
-            % 1a. Rnw Pressure Block
-            Jnwp = obj.Tph2;
-            
-            % 1.b: compressibility part
-            dMupxPh2 = obj.UpWindPh2.x * (obj.Mob(:, 2) .* obj.drho(:,2));
-            dMupyPh2 = obj.UpWindPh2.y * (obj.Mob(:, 2) .* obj.drho(:,2));
-            
-            vecX1 = min(reshape(obj.Uph2.x(1:Nx,:),N,1), 0).*dMupxPh2;
-            vecX2 = max(reshape(obj.Uph2.x(2:Nx+1,:),N,1), 0).*dMupxPh2;
-            vecY1 = min(reshape(obj.Uph2.y(:,1:Ny),N,1), 0).*dMupyPh2;
-            vecY2 = max(reshape(obj.Uph2.y(:,2:Ny+1),N,1), 0).*dMupyPh2;
-            acc = pv/dt .* obj.drho(:,2) .* (1-s);
-            DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
-            DiagIndx = [-Nx, -1, 0, 1, Nx];
-            Jnwp = Jnwp + spdiags(DiagVecs, DiagIndx, N, N);
-            
-            
-            % 2a. Rw Pressure Block
-            Jwp = obj.Tph1;
-
-             % 2.b: compressibility part
-            dMupxPh1 = obj.UpWindPh1.x*(obj.Mob(:, 1) .* obj.drho(:,1));
-            dMupyPh1 = obj.UpWindPh1.y*(obj.Mob(:, 1) .* obj.drho(:,1));
-            
-            vecX1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1), 0).*dMupxPh1;
-            vecX2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1), 0).*dMupxPh1;
-            vecY1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1), 0).*dMupyPh1;
-            vecY2 = max(reshape(obj.Uph1.y(:,2:Ny+1),N,1), 0).*dMupyPh1; 
-            acc = pv/dt .* obj.drho(:,1) .* s;
-            DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
-            DiagIndx = [-Nx, -1, 0, 1, Nx];
-            Jwp = Jwp + spdiags(DiagVecs, DiagIndx, N, N);
-            
-            
-            %3. Rnw Saturation Block
-            dMupxPh2 = obj.UpWindPh2.x * (obj.dMob(:,2) .* rho(:, 2));
-            dMupyPh2 = obj.UpWindPh2.y * (obj.dMob(:,2) .* rho(:,2));
-            %Construct Jnws block
-            x1 = min(reshape(obj.Uph2.x(1:Nx,:),N,1),0).*dMupxPh2;
-            x2 = max(reshape(obj.Uph2.x(2:Nx+1,:),N,1),0).*dMupxPh2;
-            y1 = min(reshape(obj.Uph2.y(:,1:Ny),N,1),0).*dMupyPh2;
-            y2 = max(reshape(obj.Uph2.y(:,2:Ny+1),N,1),0).*dMupyPh2;
-            v = ones(N,1)*pv/dt .* rho(:,2);
-            DiagVecs = [-y2, -x2, y2+x2-y1-x1-v, x1, y1];
-            DiagIndx = [-Nx, -1, 0, 1, Nx];
-            JnwS = spdiags(DiagVecs,DiagIndx,N,N);
-            
-            %4. Rw Saturation Block
-            dMupxPh1 = obj.UpWindPh1.x * (obj.dMob(:,1) .* rho(:,1));
-            dMupyPh1 = obj.UpWindPh1.y * (obj.dMob(:,1) .* rho(:,1));
-            %Construct JwS block
-            x1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1),0).*dMupxPh1;
-            x2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1),0).*dMupxPh1;
-            y1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1),0).*dMupyPh1;
-            y2 = max(reshape(obj.Uph1.y(:,2:Ny+1),N,1),0).*dMupyPh1;
-            v = ones(N,1)*pv/dt .* rho(:,1);
-            DiagVecs = [-y2, -x2, y2+x2-y1-x1+v, x1, y1];
-            DiagIndx = [-Nx, -1, 0, 1, Nx];
-            JwS = spdiags(DiagVecs,DiagIndx,N,N);
-            
+            % BUILD FIM JACOBIAN BLOCK BY BLOCK
+            Jp = cell(2,1);
+            JS = cell(2,1);
+            for i=1:2
+                % 1.a Pressure Block
+                Jp{i} = obj.Tph{i};
+                
+                % 1.b: compressibility part
+                dMupx = obj.UpWind(i).x*(obj.Mob(:, i) .* obj.drho(:,i));
+                dMupy = obj.UpWind(i).y*(obj.Mob(:, i) .* obj.drho(:,i));
+                
+                vecX1 = min(reshape(obj.U(i).x(1:Nx,:),N,1), 0).*dMupx;
+                vecX2 = max(reshape(obj.U(i).x(2:Nx+1,:),N,1), 0).*dMupx;
+                vecY1 = min(reshape(obj.U(i).y(:,1:Ny),N,1), 0).*dMupy;
+                vecY2 = max(reshape(obj.U(i).y(:,2:Ny+1),N,1), 0).*dMupy;
+                acc = pv/dt .* obj.drho(:,i) .* s(:,i);
+                DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
+                DiagIndx = [-Nx, -1, 0, 1, Nx];
+                Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
+                
+                % 2. Saturation Block
+                dMupx = obj.UpWind(i).x * (obj.dMob(:,i) .* rho(:,i));
+                dMupy = obj.UpWind(i).y * (obj.dMob(:,i) .* rho(:,i));
+                % Construct JS block
+                x1 = min(reshape(obj.U(i).x(1:Nx,:),N,1),0).*dMupx;
+                x2 = max(reshape(obj.U(i).x(2:Nx+1,:),N,1),0).*dMupx;
+                y1 = min(reshape(obj.U(i).y(:,1:Ny),N,1),0).*dMupy;
+                y2 = max(reshape(obj.U(i).y(:,2:Ny+1),N,1),0).*dMupy;
+                v = (-1)^(i+1) * ones(N,1)*pv/dt .* rho(:,i);
+                DiagVecs = [-y2, -x2, y2+x2-y1-x1+v, x1, y1];
+                DiagIndx = [-Nx, -1, 0, 1, Nx];
+                JS{i} = spdiags(DiagVecs,DiagIndx,N,N);
+            end  
             %Add capillarity
-            CapJwS = Jwp * spdiags(obj.dPc, 0, N, N);
-            JwS = JwS - CapJwS;
+            JS {1}= JS{1} - Jp{1} * spdiags(obj.dPc, 0, N, N);
             
             % Add Wells
-            [Jwp, JwS, Jnwp, JnwS] = obj.AddWellsToJacobian(Jwp, JwS, Jnwp, JnwS, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1));
+            [Jp{1}, JS{1}, Jp{2}, JS{2}] = obj.AddWellsToJacobian(Jp{1}, JS{1}, Jp{2}, JS{2}, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1));
             
             % Full Jacobian: put the 4 blocks together
-            Jacobian = [Jwp, JwS; Jnwp, JnwS];
+            Jacobian = [Jp{1}, JS{1}; Jp{2}, JS{2}];
         end
         function delta = UpdateState(obj, delta, Status, FluidModel)
             % Update Solution
@@ -150,7 +124,7 @@ classdef Immiscible_formulation < fim_formulation
             end
             
             % Update z
-            Status.z = FluidModel.ComputeMassFractions(Status.S, Status.x1, Status.rho);
+            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x1, Status.rho);
             
             % Update total density
             Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);  
@@ -158,29 +132,44 @@ classdef Immiscible_formulation < fim_formulation
             % Update Pc
             Status.pc = FluidModel.ComputePc(Status.S);
         end
-        function T = TransmissibilityMatrix(obj, Grid, UpWind, M, rho)
+        function TransmissibilityMatrix(obj, Grid, rho, RhoInt)
             Nx = Grid.Nx;
             Ny = Grid.Ny;
             N = Grid.N;
             
-            %%%Transmissibility matrix construction
-            Tx = zeros(Nx+1, Ny);
-            Ty = zeros(Nx, Ny+1);
-            %Apply upwind operator
-            Mupx = UpWind.x*(M.*rho);
-            Mupy = UpWind.y*(M.*rho);
-            Mupx = reshape(Mupx, Nx, Ny);
-            Mupy = reshape(Mupy, Nx, Ny);
-            Tx(2:Nx,:)= Grid.Tx(2:Nx,:).*Mupx(1:Nx-1,:);
-            Ty(:,2:Ny)= Grid.Ty(:,2:Ny).*Mupy(:,1:Ny-1);
-            %Construct matrix
-            x1 = reshape(Tx(1:Nx,:),N,1);
-            x2 = reshape(Tx(2:Nx+1,:),N,1);
-            y1 = reshape(Ty(:,1:Ny),N,1);
-            y2 = reshape(Ty(:,2:Ny+1),N,1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Nx,-1,0,1,Nx];
-            T = spdiags(DiagVecs,DiagIndx,N,N);
+            for i=1:2
+                % Transmissibility matrix construction
+                Tx = zeros(Nx+1, Ny);
+                Ty = zeros(Nx, Ny+1);
+                % Apply upwind operator
+                Mupx = obj.UpWind(i).x*(obj.Mob(:,i) .* rho(:,i));
+                Mupy = obj.UpWind(i).y*(obj.Mob(:,i) .* rho(:,i));
+                Mupx = reshape(Mupx, Nx, Ny);
+                Mupy = reshape(Mupy, Nx, Ny);
+                Tx(2:Nx,:)= Grid.Tx(2:Nx,:).*Mupx(1:Nx-1,:);
+                Ty(:,2:Ny)= Grid.Ty(:,2:Ny).*Mupy(:,1:Ny-1);
+                % Construct matrix
+                x1 = reshape(Tx(1:Nx,:),N,1);
+                x2 = reshape(Tx(2:Nx+1,:),N,1);
+                y1 = reshape(Ty(:,1:Ny),N,1);
+                y2 = reshape(Ty(:,2:Ny+1),N,1);
+                DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
+                DiagIndx = [-Nx,-1,0,1,Nx];
+                obj.Tph{i} = spdiags(DiagVecs,DiagIndx,N,N);
+                
+                % Gravity Matrix
+                Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(i).x(2:Grid.Nx,:);
+                Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(i).y(:,2:Grid.Ny);
+                
+                %Construct matrix
+                x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
+                x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
+                y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
+                y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
+                DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
+                DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+                obj.Gph{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);     
+            end    
         end
         function [qw, qnw] = ComputeSourceTerms(obj, N, Wells)
             q = zeros(N, 2);    
@@ -221,9 +210,6 @@ classdef Immiscible_formulation < fim_formulation
                     JnwS(b(j),b(j)) = JnwS(b(j),b(j)) - Prod(i).PI*K(b(j)).* State.rho(b(j), 2) .* (Prod(i).p - State.p(b(j))).*obj.dMob(b(j), 2);
                 end
             end
-        end
-        function G = ComputeGravityTerm(obj, N)
-            G = zeros(N);
         end
     end
 end

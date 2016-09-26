@@ -312,6 +312,9 @@ classdef builder < handle
                 case('Sequential')
                     Formulation = seq_formulation();
             end
+            
+            % Gravity model
+            Formulation.GravityModel = gravity_model(Discretization.ReservoirGrid.Nx, Discretization.ReservoirGrid.Ny);
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
             TimeDriver = TimeLoop_Driver(obj.TotalTime, obj.reports);

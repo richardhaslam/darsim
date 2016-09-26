@@ -48,9 +48,6 @@ classdef ADM_Discretization_model < Discretization_model
             disp(char(2));
         end
         function ConstructCoarseGrids(obj, Inj, Prod)
-            % Add coordinates to fine-scale grid (useful for ADM)
-            obj.ReservoirGrid.AddCoordinates();
-            
             % Construct all coarse grids
             obj.CoarseGrid(1).CoarseFactor = obj.Coarsening(1,:);
             obj.CoarseGrid(1).BuildCoarseGrid(obj.ReservoirGrid);

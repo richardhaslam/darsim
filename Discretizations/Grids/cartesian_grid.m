@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 14 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef grid_cartesian < grid
+classdef cartesian_grid < grid
     properties
         Nx
         Ny
@@ -23,7 +23,7 @@ classdef grid_cartesian < grid
         J
     end
     methods
-        function obj = grid_cartesian(nx, ny, nz)
+        function obj = cartesian_grid(nx, ny, nz)
             obj.Nx = nx;
             obj.Ny = ny;
             obj.Nz = nz;
@@ -43,6 +43,7 @@ classdef grid_cartesian < grid
             obj.CoarseFactor = [0, 0];
             obj.Children = zeros(obj.N, 1);
             obj.GrandChildren = zeros(obj.N, 1);
+            obj.AddCoordinates();
             obj.Depth = zeros(obj.N, 1);
         end
         function ComputeRockTransmissibilities(obj, K)
@@ -69,6 +70,11 @@ classdef grid_cartesian < grid
                 obj.I(a:a+obj.Nx-1) = 1:1:obj.Nx;
                 obj.J(a:a+obj.Nx-1) = Jindexes(i)*ones(obj.Nx,1);
             end
+        end
+        function ComputeDepth(obj, alpha)
+            x_centres = (obj.I - 1/2) * obj.dx;
+            y_centres = (obj.J - 1/2) * obj.dy;
+            obj.Depth = y_centres;
         end
     end
 end

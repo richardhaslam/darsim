@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 September 2016
-%Last modified: 19 September 2016
+%Last modified: 26 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Full_NaturalVar_formulation < fim_formulation
     properties
@@ -17,11 +17,12 @@ classdef Full_NaturalVar_formulation < fim_formulation
     end
     methods
         function obj = Full_NaturalVar_formulation(n_cells, n_components)
+            obj@fim_formulation();
             obj.PreviousSinglePhase = zeros(n_cells, 1);
             obj.SinglePhase = zeros(n_cells, 1);
             obj.NofComponents = n_components;
-            obj.Tph1 = cell(n_components, 1);
-            obj.Tph2 = cell(n_components, 1);
+            obj.Tph = cell(n_components, 2);
+            obj.Gph = cell(n_components, 2);
         end
         function SavePhaseState(obj)
             obj.InitialPhaseState = obj.SinglePhase;
@@ -75,14 +76,14 @@ classdef Full_NaturalVar_formulation < fim_formulation
                 m = x(:,(i-1)*2+1) .* rho(:,1) .* s + x(:,(i-1)*2+2) .* rho(:,2) .* s2;
                 m_old = x_old(:,(i-1)*2+1) .* rho_old(:,1) .* s_old + x_old(:,(i-1)*2+2) .* rho_old(:,2) .* s2_old;
                 % Phase Transmissibilities
-                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt1, obj.GravityModel.RhoInt2, x(:,(i-1)*2+1:(i-1)*2+2), i);          
+                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt, x(:,(i-1)*2+1:(i-1)*2+2), i);          
                 % Residual
                 Rbalance((i-1)*N+1:i*N) = ...
                     A * m - A * m_old...          % Accumulation term
-                    + obj.Tph1{i} *  P_ph1 ...    % Convective term                
-                    + obj.Tph2{i} *  P_ph2...
-                    + obj.Gph1{i} * depth...      % Gravity
-                    + obj.Gph2{i} * depth...
+                    + obj.Tph{i, 1} *  P_ph1 ...    % Convective term                
+                    + obj.Tph{i, 2} *  P_ph2...
+                    + obj.Gph{i,1} * depth...      % Gravity
+                    + obj.Gph{i,2} * depth...
                     - q(:,i);                     %Source terms
                 
                 % 2. THERMODYNAMIC EQUILIBRIUM EQUATIONS
@@ -116,58 +117,58 @@ classdef Full_NaturalVar_formulation < fim_formulation
             for i=1:obj.NofComponents
                 %% 1. Component i pressure block
                 % 1.a: divergence
-                Jp{i} = obj.Tph1{i}  + obj.Tph2{i};
+                Jp{i} = obj.Tph{i,1}  + obj.Tph{i, 2};
                 % 1.b: compressibility part
-                dMupxPh1 = obj.UpWindPh1.x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
-                dMupyPh1 = obj.UpWindPh1.y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
-                dMupxPh2 = obj.UpWindPh2.x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
-                dMupyPh2 = obj.UpWindPh2.y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
+                dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
+                dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
+                dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
+                dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
                 
-                vecX1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.Uph2.x(1:Nx,:),N,1), 0).*dMupxPh2;
-                vecX2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.Uph2.x(2:Nx+1,:),N,1), 0).*dMupxPh2;
-                vecY1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.Uph2.y(:,1:Ny),N,1), 0).*dMupyPh2;
-                vecY2 = max(reshape(obj.Uph1.y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.Uph2.y(:,2:Ny+1),N,1), 0).*dMupyPh2;
+                vecX1 = min(reshape(obj.U(1).x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:),N,1), 0).*dMupxPh2;
+                vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
+                vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny),N,1), 0).*dMupyPh2;
+                vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0).*dMupyPh2;
                 acc = pv/dt .* ( x(:,(i-1)*2+1) .* obj.drho(:,1) .* s + x(:,(i-1)*2+2) .* obj.drho(:,2) .* (1-s));
                 DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
                 
                 %% 2. Component i saturation block
-                dMupxPh1 = obj.UpWindPh1.x*(obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1));
-                dMupyPh1 = obj.UpWindPh1.y*(obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1));
-                dMupxPh2 = obj.UpWindPh2.x*(obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2));
-                dMupyPh2 = obj.UpWindPh2.y*(obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2));
-                vecX1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.Uph2.x(1:Nx,:),N,1), 0).*dMupxPh2;
-                vecX2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.Uph2.x(2:Nx+1,:),N,1), 0).*dMupxPh2;
-                vecY1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.Uph2.y(:,1:Ny),N,1), 0).*dMupyPh2;
-                vecY2 = max(reshape(obj.Uph1.y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.Uph2.y(:,2:Ny+1),N,1), 0).*dMupyPh2;
+                dMupxPh1 = obj.UpWind(1).x*(obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1));
+                dMupyPh1 = obj.UpWind(1).y*(obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1));
+                dMupxPh2 = obj.UpWind(2).x*(obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2));
+                dMupyPh2 = obj.UpWind(2).y*(obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2));
+                vecX1 = min(reshape(obj.U(1).x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:),N,1), 0).*dMupxPh2;
+                vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
+                vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny),N,1), 0).*dMupyPh2;
+                vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0).*dMupyPh2;
                 acc = pv/dt .* (x(:,(i-1)*2+1) .* rho(:,1) - x(:,(i-1)*2+2) .* rho(:,2));
                 DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
                 JS{i} = spdiags(DiagVecs,DiagIndx, N, N);
                 % Capillarity
-                JS{i} = JS{i} - obj.Tph1{i} * spdiags(obj.dPc, 0, N, N);               
+                JS{i} = JS{i} - obj.Tph{i,1} * spdiags(obj.dPc, 0, N, N);               
             end
             
             %% 3. Component 1 x1ph1 block
-            dMupxPh1 = obj.UpWindPh1.x * (obj.Mob(:,1) .* rho(:,1));
-            dMupyPh1 = obj.UpWindPh1.y * (obj.Mob(:,1) .* rho(:,1));
-            vecX1 = min(reshape(obj.Uph1.x(1:Nx,:),N,1), 0).*dMupxPh1; 
-            vecX2 = max(reshape(obj.Uph1.x(2:Nx+1,:),N,1), 0).*dMupxPh1; 
-            vecY1 = min(reshape(obj.Uph1.y(:,1:Ny),N,1), 0).*dMupyPh1; 
-            vecY2 = max(reshape(obj.Uph1.y(:,2:Ny+1),N,1), 0).*dMupyPh1; 
+            dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:,1) .* rho(:,1));
+            dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:,1) .* rho(:,1));
+            vecX1 = min(reshape(obj.U(1).x(1:Nx,:),N,1), 0).*dMupxPh1; 
+            vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1; 
+            vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1; 
+            vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1; 
             acc = pv/dt .* (s .* rho(:,1));
             DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
             DiagIndx = [-Nx, -1, 0, 1, Nx];
             J1x1ph1 = spdiags(DiagVecs,DiagIndx, N, N);
             
             %% 4. Component 1 x1ph2  block
-            dMupxPh2 = obj.UpWindPh1.x * (obj.Mob(:,2) .* rho(:,2));
-            dMupyPh2 = obj.UpWindPh1.y * (obj.Mob(:,2) .* rho(:,2));
-            vecX1 = min(reshape(obj.Uph2.x(1:Nx,:),N,1), 0) .* dMupxPh2; 
-            vecX2 = max(reshape(obj.Uph2.x(2:Nx+1,:),N,1), 0) .* dMupxPh2; 
-            vecY1 = min(reshape(obj.Uph2.y(:,1:Ny),N,1), 0) .* dMupyPh2; 
-            vecY2 = max(reshape(obj.Uph2.y(:,2:Ny+1),N,1), 0) .* dMupyPh2; 
+            dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:,2) .* rho(:,2));
+            dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:,2) .* rho(:,2));
+            vecX1 = min(reshape(obj.U(2).x(1:Nx,:),N,1), 0) .* dMupxPh2; 
+            vecX2 = max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0) .* dMupxPh2; 
+            vecY1 = min(reshape(obj.U(2).y(:,1:Ny),N,1), 0) .* dMupyPh2; 
+            vecY2 = max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0) .* dMupyPh2; 
             acc = pv/dt .* ((1 - s) .* rho(:,2));
             DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
             DiagIndx = [-Nx, -1, 0, 1, Nx];
@@ -253,15 +254,15 @@ classdef Full_NaturalVar_formulation < fim_formulation
             % Update Pc
             Status.pc = FluidModel.ComputePc(Status.S);            
         end
-        function  TransmissibilityMatrix(obj, Grid, Rho, RhoInt1, RhoInt2, x, i)
+        function  TransmissibilityMatrix(obj, Grid, Rho, RhoInt, x, i)
             %%%Transmissibility matrix construction
             Tx = zeros(Grid.Nx+1, Grid.Ny);
             Ty = zeros(Grid.Nx, Grid.Ny+1);
             
             %% PHASE 1 
             %Apply upwind operator
-            Mupx = obj.UpWindPh1.x*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1)); 
-            Mupy = obj.UpWindPh1.y*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
+            Mupx = obj.UpWind(1).x*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1)); 
+            Mupy = obj.UpWind(1).y*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
             Mupx = reshape(Mupx, Grid.Nx, Grid.Ny);
             Mupy = reshape(Mupy, Grid.Nx, Grid.Ny);
             Tx(2:Grid.Nx,:)= Grid.Tx(2:Grid.Nx,:).*Mupx(1:Grid.Nx-1,:);
@@ -274,11 +275,11 @@ classdef Full_NaturalVar_formulation < fim_formulation
             y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
             DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
             DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Tph1{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
+            obj.Tph{i,1} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
             % Gravity Matrix
-            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt1.x(2:Grid.Nx,:);
-            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt2.y(:,2:Grid.Ny);
+            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(1).x(2:Grid.Nx,:);
+            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(1).y(:,2:Grid.Ny);
             
             %Construct matrix
             x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
@@ -287,12 +288,12 @@ classdef Full_NaturalVar_formulation < fim_formulation
             y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
             DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
             DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Gph1{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
+            obj.Gph{i,1} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
             %% PHASE 2 
             %Apply upwind operator
-            Mupx = obj.UpWindPh2.x*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
-            Mupy = obj.UpWindPh2.y*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
+            Mupx = obj.UpWind(2).x*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
+            Mupy = obj.UpWind(2).y*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
             Mupx = reshape(Mupx, Grid.Nx, Grid.Ny);
             Mupy = reshape(Mupy, Grid.Nx, Grid.Ny);
             Tx(2:Grid.Nx,:)= Grid.Tx(2:Grid.Nx,:).*Mupx(1:Grid.Nx-1,:);
@@ -305,12 +306,12 @@ classdef Full_NaturalVar_formulation < fim_formulation
             y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
             DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
             DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Tph2{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
+            obj.Tph{i,2} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
             
             % Gravity Matrix
-            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt1.x(2:Grid.Nx,:);
-            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt2.y(:,2:Grid.Ny);
+            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(2).x(2:Grid.Nx,:);
+            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(2).y(:,2:Grid.Ny);
             
             %Construct matrix
             x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
@@ -319,7 +320,7 @@ classdef Full_NaturalVar_formulation < fim_formulation
             y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
             DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
             DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Gph2{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
+            obj.Gph{i,2} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
         end
         function q = ComputeSourceTerms(obj, N, Wells)
