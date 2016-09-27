@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef gravity_model < handle
     properties (Constant)
-        g = 9.806 % gravitational constant []
+        g = 9.806;  % gravitational constant []
         alpha = 0; % in radiants
     end
     properties

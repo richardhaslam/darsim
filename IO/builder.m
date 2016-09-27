@@ -281,6 +281,7 @@ classdef builder < handle
             switch (char(inputMatrix(obj.capillarity + 1)))
                 case('JLeverett')
                     FluidModel.CapillaryModel = J_Function_model(ProductionSystem);
+                    FluidModel.WettingPhaseIndex = str2double(inputMatrix(obj.capillarity + 2));
                 case('Linear')
                     FluidModel.CapillaryModel = 'Not implemented';
                 case('BrooksCorey')
@@ -303,10 +304,14 @@ classdef builder < handle
             switch(formulationtype)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
+                    if strcmp(obj.ADM, 'active')
+                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
+                    end
                 case('Natural')
                     Formulation = Full_NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
-                    %Formulation = NaturalVar_formulation();
-                    %Formulation = Full_NaturalVar_formulationOld(Discretization.ReservoirGrid.N);
+                    if strcmp(obj.ADM, 'active')
+                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_comp();
+                    end
                 case('Mass')
                     Formulation = Mass_formulation();
                 case('Sequential')

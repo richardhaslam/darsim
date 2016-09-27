@@ -23,7 +23,7 @@ classdef convergence_checker_ADM < handle
             converged = 0;
             
             % Restrict Residual
-            R = blkdiag(DiscretizationModel.OperatorsHandler.ADMRest, DiscretizationModel.OperatorsHandler.ADMRest);
+            [R, ~] = DiscretizationModel.OperatorsHandler.AssembleFullOperators();
             residual_c = R * residual;
             
             % Compute Norms

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 16 August 2016
+%Last modified: 27 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_handler < handle
     properties
@@ -14,6 +14,7 @@ classdef operators_handler < handle
         ADMRest
         ADMProlp
         ADMProls
+        FullOperatorsAssembler
     end
     methods
         function obj = operators_handler(n, CF)
@@ -63,6 +64,9 @@ classdef operators_handler < handle
                 obj.ADMRest(c, ADMGrid.GrandChildren{c}) = 1;
               end
               obj.ADMRest = sparse(obj.ADMRest);
+        end
+        function [Rest, Prol] = AssembleFullOperators(obj)
+            [Rest, Prol] = obj.FullOperatorsAssembler.Assemble(obj.ADMRest, obj.ADMProlp, obj.ADMProls);
         end
     end
     methods (Abstract)

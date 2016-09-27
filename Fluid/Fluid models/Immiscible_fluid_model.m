@@ -17,7 +17,10 @@ classdef Immiscible_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = linspace(1e5, 1e5, length(Status.p));
-            z_init = ones(length(Status.p), 1)*0.0;
+            z_init = zeros(100,100);
+            z_init(:,51:100) = 1;
+            z_init = reshape(z_init, length(Status.p), 1);
+            %z_init = ones(length(Status.p), 1)*0.0;
             
             % Assign initial valus
             Status.p = Status.p .* P_init';

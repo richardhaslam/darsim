@@ -9,7 +9,6 @@
 classdef  J_Function_model < capillary_pressure_model
     properties
         PorPermTerm
-
     end
     properties (Constant)
         alpha = 4.361e-2;
