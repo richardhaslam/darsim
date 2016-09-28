@@ -8,9 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef phase < handle
     properties
-        rho0 % Reference density
         mu % Reference Viscosity
-        cf % Compressibility
         sr % Irriducible saturation
     end
     properties (Constant)
@@ -20,9 +18,6 @@ classdef phase < handle
         function [rho, mu] = UpdatePhaseProperties(obj, Status)
             rho = ComputeDensity(obj, Status);
             mu = obj.mu;
-        end
-        function rho = ComputeDensity(obj, p)
-            rho = obj.rho0 .* exp(obj.cf.*(p - obj.Pref));
         end
         function [A, U] = UpWindAndRockFluxes(obj, Grid, P, RhoInt)
             Nx = Grid.Nx;
@@ -57,8 +52,9 @@ classdef phase < handle
             DiagIndx = [0,Nx];
             A.y = spdiags(DiagVecs,DiagIndx,N,N);
         end
-        function drho = DrhoDp(obj, p)
-            drho = obj.cf .* obj.rho0 .*exp (obj.cf.*(p - obj.Pref));
-        end
+    end
+    methods (Abstract)
+        obj = ComputeDensity(obj, p);
+        obj = DrhoDp(obj);
     end
 end

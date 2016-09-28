@@ -1,4 +1,4 @@
-%  Full Natural variable Formulation
+% Natural variable Formulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -6,7 +6,7 @@
 %Created: 12 September 2016
 %Last modified: 26 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Full_NaturalVar_formulation < fim_formulation
+classdef NaturalVar_formulation < fim_formulation
     properties
         NofComponents
         K
@@ -16,7 +16,7 @@ classdef Full_NaturalVar_formulation < fim_formulation
         SinglePhase
     end
     methods
-        function obj = Full_NaturalVar_formulation(n_cells, n_components)
+        function obj = NaturalVar_formulation(n_cells, n_components)
             obj@fim_formulation();
             obj.PreviousSinglePhase = zeros(n_cells, 1);
             obj.SinglePhase = zeros(n_cells, 1);
@@ -36,8 +36,8 @@ classdef Full_NaturalVar_formulation < fim_formulation
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
             obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
-            obj.K = FluidModel.KvaluesCalculator.Compute(ProductionSystem.Reservoir.State.p, ProductionSystem.Reservoir.State.T, FluidModel.Components);
-            obj.dKdp = FluidModel.KvaluesCalculator.DKvalDp(ProductionSystem.Reservoir.State.p);
+            obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State.p, ProductionSystem.Reservoir.State.T);
+            obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State.p);
             obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State.z, obj.K);
          end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)                   
@@ -244,9 +244,7 @@ classdef Full_NaturalVar_formulation < fim_formulation
             Status.S = max(Status.S, 0);
             
             % Update density
-            for i=1:FluidModel.NofPhases
-                Status.rho(:, i) = FluidModel.Phases(i).ComputeDensity(Status.p);
-            end
+            FluidModel.ComputePhaseDensities(Status);
             
             % Update z
             Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x1, Status.rho);

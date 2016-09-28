@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 18 July 2016
+%Last modified: 28 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_fluid_model < fluid_model
     properties
@@ -55,6 +55,11 @@ classdef Immiscible_fluid_model < fluid_model
                 end
                 Inj(i).x2 = 1 - Inj(i).x1;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
+            end
+        end
+        function ComputePhaseDensities(obj, Status)
+            for i=1:obj.NofPhases
+                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status.p, obj.Components);
             end
         end
     end

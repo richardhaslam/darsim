@@ -8,7 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Comp_fluid_model < fluid_model
     properties
-        name = 'Compositional';
         FlashSettings
         KvaluesCalculator
     end
@@ -33,9 +32,7 @@ classdef Comp_fluid_model < fluid_model
             SinglePhase = obj.Flash(Status);
             
             % 2.a Compute Phase Density
-            for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status.p);
-            end
+            obj.ComputePhaseDensities(Status);
             
             %3. Update S based on components mass balance
             obj.ComputePhaseSaturation(Status, SinglePhase);
@@ -146,16 +143,18 @@ classdef Comp_fluid_model < fluid_model
             % Copy it into Status object
             Status.x1 = x;
         end
+        function ComputePhaseDensities(obj, Status)
+            for i=1:obj.NofPhases
+                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status.p, obj.Components);
+            end
+        end
         function SinglePhase = CheckNumberOfPhases(obj, SinglePhase, PreviousSinglePhase, z, k)
-            
             % Transform mass fractions into mole fractions to check phase
             % state
-            
             BubCheck = zeros(length(z), 2);
             BubCheck(PreviousSinglePhase == 2, :) = z(PreviousSinglePhase == 2,:) .* k (PreviousSinglePhase == 2, :);
             BubCheck = sum(BubCheck, 2);
             SinglePhase(BubCheck > 1) = 0;
-            
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
             % point
@@ -163,6 +162,12 @@ classdef Comp_fluid_model < fluid_model
             DewCheck(PreviousSinglePhase == 1,:) = z(PreviousSinglePhase == 1,:) ./ k(PreviousSinglePhase == 1,:);
             DewCheck = sum(DewCheck, 2);
             SinglePhase(DewCheck(PreviousSinglePhase == 1) > 1) = 0;
+        end
+        function k = ComputeKvalues(obj, p, T)
+            k = obj.KvaluesCalculator.Compute(p, T, obj.Components);
+        end
+        function dkdp = DKvalDp(obj, p)
+            dkdp = obj.DKvalDp(p);
         end
     end
 end
