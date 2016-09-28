@@ -308,7 +308,7 @@ classdef builder < handle
                         Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
                     end
                 case('Natural')
-                    Formulation = Full_NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
+                    Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
                     if strcmp(obj.ADM, 'active')
                         Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_comp();
                     end
