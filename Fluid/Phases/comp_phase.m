@@ -11,6 +11,9 @@ classdef comp_phase < phase
         rho0 % Reference density
         cf % Compressibility
     end
+    properties (Constant)
+        Pref = 1e5; % Atmospheric pressure
+    end
     methods
         function rho = ComputeDensity(obj, Status, Components)
             rho = obj.rho0 .* exp(obj.cf.*(Status.p - obj.Pref));

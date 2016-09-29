@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fluid_model < handle
     properties
+        name
         NofPhases
         NofComp
         Phases
@@ -20,8 +21,8 @@ classdef fluid_model < handle
         function obj = fluid_model(n_phases, n_comp)
             obj.NofPhases = n_phases;
             obj.NofComp = n_comp;
-            obj.Phases = phase();
-            obj.Components = component();
+            obj.Phases = phase.empty;
+            obj.Components = component.empty;
             obj.WettingPhaseIndex = 1;
         end
         function AddPhase(obj, Phase, index)

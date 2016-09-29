@@ -4,24 +4,21 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 18 September 2016
+%Last modified: 28 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Comp_fluid_model < fluid_model
     properties
-        FlashSettings
         KvaluesCalculator
     end
     methods
         function obj = Comp_fluid_model(n_phases, n_comp)
             obj@fluid_model(n_phases, n_comp);
-        end
-        function AddFlash(obj, flash)
-            obj.FlashSettings = flash;
+            obj.name = 'Compositional';
         end
         function InitializeReservoir(obj, Status)
             % Define initial values
-            P_init = ones(length(Status.p), 1)*0.4e7;
-            z_init = ones(length(Status.p), 1)*0.3;
+            P_init = ones(length(Status.p), 1)*0;
+            z_init = ones(length(Status.p), 1)*0.03738;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -47,10 +44,8 @@ classdef Comp_fluid_model < fluid_model
             % Loop over all injectors
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
-                SinglePhase = obj.Flash(Inj(i));
-                for ph=1:obj.NofPhases
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
-                end
+                SinglePhase = obj.Flash(Inj(i));                
+                obj.ComputePhaseDensities(Inj(i));
                 obj.ComputePhaseSaturation(Inj(i), SinglePhase);
                 Inj(i).x2 = 1 - Inj(i).x1;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
@@ -101,7 +96,7 @@ classdef Comp_fluid_model < fluid_model
             converged = 0;
             while ~converged && alpha > 0.1
                 itCounter = 0;
-                while itCounter < 200 && ~converged
+                while itCounter < 300 && ~converged
                     %Finds hi for each component
                     hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
                     hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
@@ -116,7 +111,7 @@ classdef Comp_fluid_model < fluid_model
                     fvnew = alpha * (-h ./ dh) + fv;
                     
                     fv = fvnew;
-                    if norm(h, inf) < obj.FlashSettings.TolFlash
+                    if norm(h, inf) < 1e-6
                         
                         converged = 1;
                     end
@@ -125,7 +120,7 @@ classdef Comp_fluid_model < fluid_model
                 alpha = alpha/2;
             end
             if ~converged
-                disp('Warning: The flash calculator could not converge.');
+                disp('Warning: Initialization failed!');
             end
             
             %5. Solve for x's and y's

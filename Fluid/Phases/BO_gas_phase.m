@@ -4,18 +4,26 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 28 September 2016
-%Last modified: 28 September 2016
+%Last modified: 29 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef BO_gas_phase < phase
     properties
-        Bg
+        Bg = 0.25;
     end
     methods
-        function rho = ComputeDensity(obj, Status, Components)
-            rho = 1;
+        function obj = BO_gas_phase()
+            obj.mu = 1e-4;
+            obj.sr = 0;
         end
-        function drho = DrhoDp(obj, Status, Components)
-            drho = 1;
+        function rho = ComputeDensity(obj, Status, Components, rs)
+            rho = Components(1).rho/obj.Bg;
+        end
+        function drho = DrhoDp(obj, Status, Components, drs)
+            drho = drs;
+        end
+        function [Rs, dRs] = ComputeRs(obj, p)
+            Rs = 0;
+            dRs = 0;
         end
     end    
 end

@@ -4,9 +4,9 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 15 July 2016
-%Last modified: 15 July 2016
+%Last modified: 28 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef component < handle
+classdef component < matlab.mixin.Heterogeneous
     properties
         Tb % Bubble point temperature
         b  % 

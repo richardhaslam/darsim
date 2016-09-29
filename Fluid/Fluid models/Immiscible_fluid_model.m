@@ -8,11 +8,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_fluid_model < fluid_model
     properties
-        name = 'Immiscible';
+        
     end
     methods
         function obj = Immiscible_fluid_model(n_phases)
             obj@fluid_model(n_phases, n_phases);
+            obj.name = 'Immiscible';
         end
         function InitializeReservoir(obj, Status)
             % Define initial values

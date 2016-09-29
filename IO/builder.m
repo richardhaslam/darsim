@@ -117,7 +117,7 @@ classdef builder < handle
             simulation = Reservoir_Simulation();
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
-            simulation.FluidModel = obj.BuildFluidModel(inputMatrix, SettingsMatrix, simulation.ProductionSystem);
+            simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
             simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
@@ -221,18 +221,46 @@ classdef builder < handle
             ProductionSystem.AddWells(Wells);
             
         end
-        function FluidModel = BuildFluidModel(obj, inputMatrix, SettingsMatrix, ProductionSystem)
+        function FluidModel = BuildFluidModel(obj, inputMatrix, ProductionSystem)
             n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
             n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
             switch(char(inputMatrix(obj.Comp_Type+1)))
                 case('Immiscible')
                     FluidModel = Immiscible_fluid_model(n_phases);
+                    % Add phases
+                    for i = 1:FluidModel.NofPhases
+                        Phase = comp_phase();
+                        %Gets all densities [kg/m^3]
+                        Phase.rho0 = str2double(inputMatrix(obj.density + 2*i));
+                        %Gets all viscosities [Pa sec]
+                        Phase.mu = str2double(inputMatrix(obj.viscosity + 2*i));
+                        %Gets all residual saturations [-]
+                        Phase.sr = str2double(inputMatrix(obj.relperm + 1 + 2*i));
+                        FluidModel.AddPhase(Phase, i);
+                    end
                 case('BlackOil')
+                    % Black oil phases
                     FluidModel = BO_fluid_model(n_phases, n_comp);
-                    FlashSettings.TolInner = str2double(SettingsMatrix(obj.flash + 2));
-                    FlashSettings.MaxIt = str2double(SettingsMatrix(obj.flash + 3));
-                    FlashSettings.TolFlash = str2double(SettingsMatrix(obj.flash + 4));
-                    FluidModel.AddFlash(FlashSettings);
+                    % Gas
+                    Gas = BO_gas_phase();
+                    FluidModel.AddPhase(Gas, 1);
+                    gas = BO_gas_component();
+                    FluidModel.AddComponent(gas, 1);
+                    % Oil 
+                    Oil = BO_oil_phase();
+                    FluidModel.AddPhase(Oil, 2);
+                    oil = BO_oil_component();
+                    FluidModel.AddComponent(oil, 2);
+                    if FluidModel.NofPhases == 3
+                        Water = comp_phase();
+                        Water.rho0 = 1000; % kg/m^3
+                        Water.mu = 1e-3; % Pa s
+                        Water.cf = 0; 
+                        FluidModel.AddPhase(Water, 3)
+                        water = component();
+                        FluidModel.AddComponent(water, 3);
+                    end
+                    FluidModel.KvaluesCalculator = BO_Kvalues_calculator();
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
                     FluidModel.KvaluesCalculator = Constant_Kvalues_calculator();
@@ -248,28 +276,9 @@ classdef builder < handle
                         comp.AddCompProperties(Tb, b, MM);
                         FluidModel.AddComponent(comp, i); 
                     end
-                                        
-                    FlashSettings.TolInner = str2double(SettingsMatrix(obj.flash + 2));
-                    FlashSettings.MaxIt = str2double(SettingsMatrix(obj.flash + 3));
-                    FlashSettings.TolFlash = str2double(SettingsMatrix(obj.flash + 4));
-                    FluidModel.AddFlash(FlashSettings);       
             end
-            % Add phases
-            for i = 1:FluidModel.NofPhases
-                Phase = phase();
-                %Gets all densities [kg/m^3]
-                Phase.rho0 = str2double(inputMatrix(obj.density + 2*i));
-                %Gets all viscosities [Pa sec]
-                Phase.mu = str2double(inputMatrix(obj.viscosity + 2*i));
-                %Gets all compressibilities [1/Pa]
-                Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
-                %Gets all residual saturations [-]
-                Phase.sr = str2double(inputMatrix(obj.relperm + 1 + 2*i));
-                FluidModel.AddPhase(Phase, i);
-            end
-            
-            
-            % RelPerm model
+                            
+            %%  RelPerm model
             switch(char(inputMatrix(obj.relperm + 1)))
                 case('Linear')
                     FluidModel.RelPermModel = relperm_model_linear();
@@ -277,7 +286,7 @@ classdef builder < handle
                     FluidModel.RelPermModel = relperm_model_quadratic();
             end
                     
-            % Capillary pressure model
+            %% Capillary pressure model
             switch (char(inputMatrix(obj.capillarity + 1)))
                 case('JLeverett')
                     FluidModel.CapillaryModel = J_Function_model(ProductionSystem);

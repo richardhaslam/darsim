@@ -6,19 +6,13 @@
 %Created: 14 July 2016
 %Last modified: 26 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef phase < handle
+classdef phase < matlab.mixin.Heterogeneous
     properties
         mu % Reference Viscosity
         sr % Irriducible saturation
     end
-    properties (Constant)
-        Pref = 1e5; % Atmospheric pressure
-    end
+    
     methods
-        function [rho, mu] = UpdatePhaseProperties(obj, Status)
-            rho = ComputeDensity(obj, Status);
-            mu = obj.mu;
-        end
         function [A, U] = UpWindAndRockFluxes(obj, Grid, P, RhoInt)
             Nx = Grid.Nx;
             Ny = Grid.Ny;
@@ -54,7 +48,7 @@ classdef phase < handle
         end
     end
     methods (Abstract)
-        obj = ComputeDensity(obj, p);
+        obj = ComputeDensity(obj);
         obj = DrhoDp(obj);
     end
 end

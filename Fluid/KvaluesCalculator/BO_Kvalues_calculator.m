@@ -11,12 +11,12 @@ classdef BO_Kvalues_calculator < Kvalues_calculator
        
     end
     methods
-        function k = Compute(obj, p, T, Components)
-           k(:,1) = 1;
+        function k = Compute(obj, Components, Rs)
+           k(:,1) = (Components(1).rho * Rs(:,2) + Components(2).rho * ones(length(Rs), 1)) ./ (Rs(:,2) * Components(1).rho);
            k(:,2) = 0;
         end
-        function dk = DKvalDp(obj, p)
-            dk(:,1) =  1;
+        function dk = DKvalDp(obj, Components, Rs, dRs)
+            dk(:,1) =  - dRs(:,2) * Components(2).rho ./ (Components(1).rho * Rs(:,2).^2);
             dk(:,2) =  0;
         end
     end
