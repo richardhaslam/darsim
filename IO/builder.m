@@ -13,6 +13,7 @@ classdef builder < handle
         size
         temperature
         grid
+        Gravity
         perm
         pert
         por
@@ -76,7 +77,13 @@ classdef builder < handle
             obj.Comp_Type = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'COMPONENT PROPERTIES');
             obj.Comp_Prop = find(~cellfun('isempty', temp));
-            
+            temp = strfind(inputMatrix{1}, 'GRAVITY');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+               obj.Gravity = 'OFF'; 
+            else
+                obj.Gravity = char(inputMatrix{1}(index + 1));
+            end
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
             temp = regexp(inputMatrix{1}, 'INJ\d', 'match');
             obj.inj = find(~cellfun('isempty', temp));
@@ -234,8 +241,8 @@ classdef builder < handle
                         Phase.rho0 = str2double(inputMatrix(obj.density + 2*i));
                         %Gets all viscosities [Pa sec]
                         Phase.mu = str2double(inputMatrix(obj.viscosity + 2*i));
-                        %Gets all residual saturations [-]
-                        Phase.sr = str2double(inputMatrix(obj.relperm + 1 + 2*i));
+                        % Compressibility
+                        Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
                         FluidModel.AddPhase(Phase, i);
                     end
                 case('BlackOil')
@@ -264,6 +271,17 @@ classdef builder < handle
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
                     FluidModel.KvaluesCalculator = Constant_Kvalues_calculator();
+                    % Add phases
+                    for i = 1:FluidModel.NofPhases
+                        Phase = comp_phase();
+                        %Gets all densities [kg/m^3]
+                        Phase.rho0 = str2double(inputMatrix(obj.density + 2*i));
+                        %Gets all viscosities [Pa sec]
+                        Phase.mu = str2double(inputMatrix(obj.viscosity + 2*i));
+                        % Compressibility
+                        Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
+                        FluidModel.AddPhase(Phase, i);
+                    end
                     % Add components
                     for i = 1:FluidModel.NofComp
                         %Gets all atmospheric bubble points [K]
@@ -285,7 +303,10 @@ classdef builder < handle
                 case('Quadratic')
                     FluidModel.RelPermModel = relperm_model_quadratic();
             end
-                    
+            % Irriducible sat
+            for i=1:FluidModel.NofPhases
+                FluidModel.Phases(i).sr = str2double(inputMatrix(obj.relperm + 1 + 2*i));
+            end
             %% Capillary pressure model
             switch (char(inputMatrix(obj.capillarity + 1)))
                 case('JLeverett')
@@ -329,6 +350,12 @@ classdef builder < handle
             
             % Gravity model
             Formulation.GravityModel = gravity_model(Discretization.ReservoirGrid.Nx, Discretization.ReservoirGrid.Ny);
+            switch (obj.Gravity)
+                case('ON')
+                    Formulation.GravityModel.g = 9.806;
+                case('OFF')
+                    Formulation.GravityModel.g = 0;
+            end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
             TimeDriver = TimeLoop_Driver(obj.TotalTime, obj.reports);

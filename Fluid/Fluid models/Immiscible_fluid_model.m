@@ -18,10 +18,10 @@ classdef Immiscible_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = linspace(1e5, 1e5, length(Status.p));
-            z_init = zeros(100,100);
-            z_init(:,51:100) = 1;
-            z_init = reshape(z_init, length(Status.p), 1);
-            %z_init = ones(length(Status.p), 1)*0.0;
+            %z_init = zeros(100,100);
+            %z_init(:,51:100) = 1;
+            %z_init = reshape(z_init, length(Status.p), 1);
+            z_init = ones(length(Status.p), 1)*0.0;
             
             % Assign initial valus
             Status.p = Status.p .* P_init';
@@ -34,7 +34,7 @@ classdef Immiscible_fluid_model < fluid_model
             
             % Compute Phase Density
             for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status.p);
+                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status);
             end
             
             SinglePhase.onlyvapor (Status.z(:,1) == 1) = 1;
@@ -52,7 +52,7 @@ classdef Immiscible_fluid_model < fluid_model
                 Inj(i).x1 = [1 0];
                 Inj(i).S = 1;
                 for ph=1:obj.NofPhases
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
+                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i));
                 end
                 Inj(i).x2 = 1 - Inj(i).x1;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
@@ -60,7 +60,7 @@ classdef Immiscible_fluid_model < fluid_model
         end
         function ComputePhaseDensities(obj, Status)
             for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status.p, obj.Components);
+                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components);
             end
         end
     end

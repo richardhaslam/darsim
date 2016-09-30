@@ -17,8 +17,8 @@ classdef Comp_fluid_model < fluid_model
         end
         function InitializeReservoir(obj, Status)
             % Define initial values
-            P_init = ones(length(Status.p), 1)*0;
-            z_init = ones(length(Status.p), 1)*0.03738;
+            P_init = ones(length(Status.p), 1)*.1e7;
+            z_init = ones(length(Status.p), 1)*0.037;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -140,7 +140,7 @@ classdef Comp_fluid_model < fluid_model
         end
         function ComputePhaseDensities(obj, Status)
             for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status.p, obj.Components);
+                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components);
             end
         end
         function SinglePhase = CheckNumberOfPhases(obj, SinglePhase, PreviousSinglePhase, z, k)
@@ -162,7 +162,7 @@ classdef Comp_fluid_model < fluid_model
             k = obj.KvaluesCalculator.Compute(p, T, obj.Components);
         end
         function dkdp = DKvalDp(obj, p)
-            dkdp = obj.DKvalDp(p);
+            dkdp = obj.KvaluesCalculator.DKvalDp(p);
         end
     end
 end

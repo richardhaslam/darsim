@@ -6,7 +6,7 @@
 %Created: 14 July 2016
 %Last modified: 26 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef phase < matlab.mixin.Heterogeneous
+classdef phase < matlab.mixin.Heterogeneous & handle
     properties
         mu % Reference Viscosity
         sr % Irriducible saturation

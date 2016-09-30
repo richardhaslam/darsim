@@ -13,7 +13,7 @@ classdef Constant_Kvalues_calculator < Kvalues_calculator
     methods
         function k = Compute(obj, p, T, Components)
            k(:,1) = 1.5 * ones(length(p), 1);
-           k(:,2) = .5 * ones(length(p), 1);
+           k(:,2) = 0.5 * ones(length(p), 1);
         end
         function dk = DKvalDp(obj, p)
             dk(:,1) =  zeros(length(p), 1);

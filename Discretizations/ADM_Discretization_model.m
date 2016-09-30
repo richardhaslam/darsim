@@ -84,15 +84,19 @@ classdef ADM_Discretization_model < Discretization_model
                 % Flag coarse Nodes with wells
                 I = Inj(i).Cells;
                 for x = 1:obj.maxLevel
-                    [r, ~] = find(obj.CoarseGrid(x).GrandChildren == I);
-                    obj.CoarseGrid(x).Wells(r) = 1;
+                    for j =1:length(I)
+                        [r, ~] = find(obj.CoarseGrid(x).GrandChildren == I(j));
+                        obj.CoarseGrid(x).Wells(r) = 1;
+                    end
                 end
             end
             for i =1:length(Prod)
                 P = Prod(i).Cells;
                 for x = 1:obj.maxLevel
-                    [r, ~] = find(obj.CoarseGrid(x).GrandChildren == P);
-                    obj.CoarseGrid(x).Wells(r) = 1;
+                    for j=1:length(P)
+                        [r, ~] = find(obj.CoarseGrid(x).GrandChildren == P(j));
+                        obj.CoarseGrid(x).Wells(r) = 1;
+                    end
                 end
             end
         end
