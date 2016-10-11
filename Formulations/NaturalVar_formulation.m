@@ -36,7 +36,7 @@ classdef NaturalVar_formulation < fim_formulation
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
             obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
-            obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State.p, ProductionSystem.Reservoir.State.T);
+            obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State);
             obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State.p);
             obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State.z, obj.K);
          end

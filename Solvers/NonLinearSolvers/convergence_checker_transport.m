@@ -16,7 +16,7 @@ classdef convergence_checker_transport < convergence_checker
             disp('');
             disp('        ||Residual||   ||delta S||');
         end
-        function converged = Check(obj, iter, residual, delta, DiscretizationModel, State)
+        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State)
             % Initialize
             converged = 0;
             % Compute Norms

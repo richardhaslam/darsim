@@ -52,7 +52,8 @@ classdef BO_fluid_model < Comp_fluid_model
                 Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components, obj.Rs(:,i));
             end
         end
-        function k = ComputeKvalues(obj, p, T)
+        function k = ComputeKvalues(obj, Status)
+            obj.ComputeRs(Status);
             k = obj.KvaluesCalculator.Compute(obj.Components, obj.Rs);
         end
         function dkdp = DKvalDp(obj, p)

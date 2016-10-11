@@ -6,9 +6,8 @@
 %Created: 13 July 2016
 %Last modified: 6 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef convergence_checker_ADM < handle
+classdef convergence_checker_ADM < convergence_checker
     properties
-        Tol
     end
     methods
         function PrintTitles(obj, Residual)

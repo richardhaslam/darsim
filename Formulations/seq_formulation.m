@@ -18,6 +18,7 @@ classdef seq_formulation < handle
         Ty
         Qwells
         V
+        GravityModel
     end
     methods
         function Reset(obj)
