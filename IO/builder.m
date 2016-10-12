@@ -186,7 +186,7 @@ classdef builder < handle
                 % reshape it to specified size
                 field = reshape(field(3:end),[field(1) field(2)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny)*10^(-12), DiscretizationModel.ReservoirGrid.N, 1);
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny), DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
             else
                 value = str2double(inputMatrix(obj.perm +1));
