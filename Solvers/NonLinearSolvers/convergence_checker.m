@@ -9,6 +9,7 @@
 classdef convergence_checker < handle
     properties
         Tol
+        NormCalculator
     end
     methods (Abstract)
         obj = Check(obj)

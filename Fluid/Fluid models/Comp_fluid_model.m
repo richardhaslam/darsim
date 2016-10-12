@@ -17,7 +17,7 @@ classdef Comp_fluid_model < fluid_model
         end
         function InitializeReservoir(obj, Status)
             % Define initial values
-            P_init = ones(length(Status.p), 1)*.1e7;
+            P_init = ones(length(Status.p), 1)*1e6;
             z_init = ones(length(Status.p), 1)*0.037;
             
             % 1. Assign initial valus
@@ -158,8 +158,8 @@ classdef Comp_fluid_model < fluid_model
             DewCheck = sum(DewCheck, 2);
             SinglePhase(DewCheck(PreviousSinglePhase == 1) > 1) = 0;
         end
-        function k = ComputeKvalues(obj, p, T)
-            k = obj.KvaluesCalculator.Compute(p, T, obj.Components);
+        function k = ComputeKvalues(obj, Status)
+            k = obj.KvaluesCalculator.Compute(Status.p, Status.T, obj.Components);
         end
         function dkdp = DKvalDp(obj, p)
             dkdp = obj.KvaluesCalculator.DKvalDp(p);

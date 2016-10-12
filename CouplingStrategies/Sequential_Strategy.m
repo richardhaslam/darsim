@@ -46,7 +46,7 @@ methods
         % Phase Mobilities and total Mobility
         Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
         % Save initial State
-        obj.TransportSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State);
+        obj.TransportSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
         while obj.Converged == 0 && obj.itCount < obj.MaxIter
             % copy state to check outer convergence
             State_old = copy(ProductionSystem.Reservoir.State);

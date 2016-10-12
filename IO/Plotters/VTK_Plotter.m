@@ -94,6 +94,7 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, Status.p, ' PRESSURE');
             fprintf(fileID, '\n');
             %Saturation
+            Status.S(Status.S<1e-7) = 0;
             obj.PrintScalar2VTK(fileID, Status.S, ' SATURATION');
             fprintf(fileID, '\n');
             %Capillary Pressure

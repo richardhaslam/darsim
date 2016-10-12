@@ -61,13 +61,13 @@ classdef builder < handle
             obj.TotalTime = str2double(inputMatrix{1}(xv + 1))*24*3600;
             
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
-            temp = strfind(inputMatrix{1}, 'DENSITY (kg/m^3)'); 
+            temp = strfind(inputMatrix{1}, 'DENSITY'); 
             obj.density = find(~cellfun('isempty', temp));
-            temp = strfind(inputMatrix{1}, 'VISCOSITY (Pa sec)');
+            temp = strfind(inputMatrix{1}, 'VISCOSITY');
             obj.viscosity = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'RELPERM');
             obj.relperm = find(~cellfun('isempty', temp));
-            temp = strfind(inputMatrix{1}, 'COMPRESSIBILITY (1/Pa)');
+            temp = strfind(inputMatrix{1}, 'COMPRESSIBILITY');
             obj.compressibility = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'CAPILLARITY');
             obj.capillarity = find(~cellfun('isempty', temp));
@@ -423,7 +423,7 @@ classdef builder < handle
                     if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
                         plotter = Matlab_Plotter_1D(simulation.ProductionSystem.Wells.Prod.p, simulation.ProductionSystem.Wells.Inj.p);
                     else
-                        plotter = Matlab_Plotter_2D(simulation.ProductionSystem.Wells.Prod.p, simulation.ProductionSystem.Wells.Inj.p);
+                        plotter = Matlab_Plotter_2D(simulation.ProductionSystem.Wells.Prod(1).p, simulation.ProductionSystem.Wells.Inj(1).p);
                     end
                 case('VTK')
                     plotter = VTK_Plotter(InputDirectory, obj.ProblemName);

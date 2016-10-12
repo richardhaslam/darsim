@@ -33,9 +33,7 @@ classdef Immiscible_fluid_model < fluid_model
             Status.x1(:,2) = 0;
             
             % Compute Phase Density
-            for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status);
-            end
+            obj.ComputePhaseDensities(Status)
             
             SinglePhase.onlyvapor (Status.z(:,1) == 1) = 1;
             SinglePhase.onlyliquid (Status.z(:,2) == 1) = 1;

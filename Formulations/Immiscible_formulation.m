@@ -191,8 +191,8 @@ classdef Immiscible_formulation < fim_formulation
             for i=1:length(Inj)
                 a = Inj(i).Cells;
                 for j=1:length(a)
-                    Jnwp(a(j),a(j)) = Jnwp(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mob(:, 2)*Inj.rho(:, 2);
-                    Jwp(a(j),a(j)) = Jwp(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mob(:, 1)*Inj.rho(:, 1);
+                    Jnwp(a(j),a(j)) = Jnwp(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mob(:, 2)*Inj(i).rho(:, 2);
+                    Jwp(a(j),a(j)) = Jwp(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mob(:, 1)*Inj(i).rho(:, 1);
                 end
             end
             %Producers

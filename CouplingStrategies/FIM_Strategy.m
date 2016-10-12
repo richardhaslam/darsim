@@ -19,7 +19,7 @@ methods
         obj@Coupling_Strategy(name);
         obj.NLSolver = NONLinearSolver;
         obj.chops = 0;
-        obj.MaxChops = 10;
+        obj.MaxChops = 5;
     end
     function dt = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
         dt = obj.TimeStepSelector.ChooseTimeStep();
@@ -42,7 +42,7 @@ methods
             
             % Chop time-step if it failed to converge
             if obj.NLSolver.Converged == 0
-                dt = dt/100;
+                dt = dt/10;
                 obj.chops = obj.chops + 1;
                 Formulation.Reset();
                 obj.NLSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
