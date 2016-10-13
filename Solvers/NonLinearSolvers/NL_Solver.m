@@ -51,7 +51,6 @@ methods
             
             % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
             start1 = tic;
-            
             obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
             obj.TimerConstruct(obj.itCount) = toc(start1);           
             
@@ -67,6 +66,7 @@ methods
             
             % 4. Update Derivatives
             obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+            
             % 5. Compute residual
             obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
             

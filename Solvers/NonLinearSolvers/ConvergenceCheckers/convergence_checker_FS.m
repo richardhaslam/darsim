@@ -13,20 +13,20 @@ classdef convergence_checker_FS < convergence_checker
         function PrintTitles(obj, Residual)
             disp(['Initial residual norm: ', num2str(norm(Residual, inf))]);
             disp('');
-            disp('        ||Residual||   ||delta p||   ||delta S||');
+            disp('        ||Residual||   ||Equilibrium||   ||delta p||   ||delta S||');
         end
-        function converged = Check(obj, iter, residual, delta, DiscretizationModel, State)
+        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State)
             
             % Initialize
             converged = 0;
             % Compute Norms
-            [massbalance, equilibrium] =  NormCalculator.ResidualNorm(residual, DiscretizationModel, Formulation);
-            [dp, ds] = NormCalculator.SolutionNorm(delta);
+            [massbalance, equilibrium] =  obj.NormCalculator.ResidualNorm(residual, DiscretizationModel.ReservoirGrid.N, Formulation);
+            [dp, dS] = obj.NormCalculator.SolutionNorm(delta, DiscretizationModel.ReservoirGrid.N, State);
             
-            disp(['Iter ' num2str(iter) '    ' num2str(massbalance, '%5.5e'), '    ', num2str(equilibrium,'%5.5e'), '    ', num2str(dp, '%5.5e'), '    ', num2str(ds, '%5.5e')]);
+            disp(['Iter ' num2str(iter) '    ' num2str(massbalance, '%5.5e'), '    ', num2str(equilibrium,'%5.5e'), '    ', num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
             
             %Check convergence
-            if (massbalance < obj.Tol && equilibrium < obj.Tol && dp < obj.Tol && ds < obj.Tol)
+            if (massbalance < obj.Tol && equilibrium < obj.Tol && dp < obj.Tol * 1e2 && dS < obj.Tol * 1e2)
                 converged = 1;
             end
         end

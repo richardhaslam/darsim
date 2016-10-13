@@ -126,7 +126,7 @@ classdef builder < handle
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
             simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
-            simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
+            simulation.TimeDriver = obj.BuildTimeDriver(simulation.FluidModel, SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
@@ -357,27 +357,34 @@ classdef builder < handle
                     Formulation.GravityModel.g = 0;
             end
         end
-        function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
+        function TimeDriver = BuildTimeDriver(obj, FluidModel, SettingsMatrix)
             TimeDriver = TimeLoop_Driver(obj.TotalTime, obj.reports);
             TimeDriver.MaxNumberOfTimeSteps = obj.MaxNumTimeSteps;
             %% Construct Coupling
             switch(obj.CouplingType)
                 case('FIM')
                     %%%%FIM settings
-                    NLSolver = NL_Solver();
-                    NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
-                    NLSolver.SystemBuilder = fim_system_builder();
                     % Build a different convergence cheker and a proper LS for ADM
                     if (str2double(SettingsMatrix(obj.adm + 1))==0)
+                        NLSolver = NL_Solver_FS();
                         ConvergenceChecker = convergence_checker_FS();
                         NLSolver.LinearSolver = linear_solver();
                     else
+                        NLSolver = NL_Solver_ADM();
                         ConvergenceChecker = convergence_checker_ADM();
                         NLSolver.LinearSolver = linear_solver_ADM();
                     end
-                    ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));                 
-                    NLSolver.AddConvergenceChecker(ConvergenceChecker); 
-                    
+                    NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
+                    NLSolver.SystemBuilder = fim_system_builder();
+                    ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
+                    switch (FluidModel.name)
+                        case('Immiscible')
+                            ConvergenceChecker.NormCalculator = norm_calculator_immiscible();
+                        otherwise
+                            ConvergenceChecker.NormCalculator = norm_calculator_comp();
+                    end
+                    NLSolver.AddConvergenceChecker(ConvergenceChecker);
+                    % Build FIM Coupling strategy
                     Coupling = FIM_Strategy('FIM', NLSolver); 
                 case('Sequential')
                     Coupling = Sequential_Strategy('Sequential');
