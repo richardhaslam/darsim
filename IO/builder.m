@@ -324,7 +324,7 @@ classdef builder < handle
             
         end
         function Formulation = BuildFormulation(obj, inputMatrix, Discretization, FluidModel)
-            formulationtype = 'Natural';
+            formulationtype = 'OverallComposition';
             if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
                 formulationtype = 'Immiscible';
             end
@@ -342,8 +342,11 @@ classdef builder < handle
                     if strcmp(obj.ADM, 'active')
                         Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_comp();
                     end
-                case('Mass')
-                    Formulation = Mass_formulation();
+                case('OverallComposition')
+                    Formulation = Overall_Composition_formulation(FluidModel.NofComp);
+                    if strcmp(obj.ADM, 'active')
+                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
+                    end
                 case('Sequential')
                     Formulation = seq_formulation();
             end
@@ -365,17 +368,17 @@ classdef builder < handle
                 case('FIM')
                     %%%%FIM settings
                     % Build a different convergence cheker and a proper LS for ADM
+                     NLSolver = NL_Solver();
                     if (str2double(SettingsMatrix(obj.adm + 1))==0)
-                        NLSolver = NL_Solver_FS();
+                        NLSolver.SystemBuilder = fim_system_builder();
                         ConvergenceChecker = convergence_checker_FS();
                         NLSolver.LinearSolver = linear_solver();
                     else
-                        NLSolver = NL_Solver_ADM();
+                        NLSolver.SystemBuilder = fim_system_builder_ADM();
                         ConvergenceChecker = convergence_checker_ADM();
                         NLSolver.LinearSolver = linear_solver_ADM();
                     end
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
-                    NLSolver.SystemBuilder = fim_system_builder();
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
                     switch (FluidModel.name)
                         case('Immiscible')

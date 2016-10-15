@@ -61,7 +61,7 @@ methods
             
             % 3. Update Solution
             start3 = tic;
-            obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel);
+            obj.UpdateState(ProductionSystem, Formulation, FluidModel, DiscretizationModel);
             obj.TimerInner(obj.itCount) = toc(start3);
             
             % 4. Update Derivatives
@@ -87,6 +87,9 @@ methods
     end
     function CheckConvergence(obj, Formulation, DiscretizationModel, ProductionSystem)
         obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State);
+    end
+    function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
+        obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
     end
 end
 end

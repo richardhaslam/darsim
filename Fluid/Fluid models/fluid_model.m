@@ -62,6 +62,13 @@ classdef fluid_model < handle
                 dMob(:,i) = dkr(:,i)/obj.Phases(i).mu;
             end
         end
+        function dMob = DMobDz(obj, Status)
+            dMobdS = obj.DMobDS(Status.S);
+            dSdz = obj.DSDz(Status);
+            % Use chain rule
+            dMob(:,1) = dMobdS(:,1) .* dSdz;
+            dMob(:,2) = dMobdS(:,2) .* dSdz;
+        end
         function drho = DrhoDp(obj, p)
             drho = zeros(length(p), obj.NofPhases);
             for i=1:obj.NofPhases
@@ -90,6 +97,17 @@ classdef fluid_model < handle
                     dPc =  - obj.CapillaryModel.dPcdS(S);
             end
             
+        end
+        function dPc = DPcDz(obj, Status)
+            dPc = 0;
+        end
+        function dSdz = DSDz(obj, Status)
+            % Derivative of S with respect to z
+            Num = Status.rho(:,2) .* Status.x1(:,2) - Status.z(:,1);
+            dNum = -1;
+            Den = (Status.rho(:,1) - 1) .* Status.z(:,1) + Status.rho(:,2) .* Status.x1(:,2) -  Status.rho(:,1) .* Status.x1(:,1);
+            dDen = Status.rho(:,1) - 1;
+            dSdz =(Den .* dNum - Num .* dDen) ./ Den.^2;
         end
     end
     methods (Abstract)

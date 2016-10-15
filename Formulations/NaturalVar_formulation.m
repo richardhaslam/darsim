@@ -6,9 +6,8 @@
 %Created: 12 September 2016
 %Last modified: 26 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef NaturalVar_formulation < fim_formulation
+classdef NaturalVar_formulation < Compositional_formulation
     properties
-        NofComponents
         K
         dKdp
         InitialPhaseState
@@ -17,12 +16,9 @@ classdef NaturalVar_formulation < fim_formulation
     end
     methods
         function obj = NaturalVar_formulation(n_cells, n_components)
-            obj@fim_formulation();
+            obj@Compositional_formulation(n_components);
             obj.PreviousSinglePhase = zeros(n_cells, 1);
             obj.SinglePhase = zeros(n_cells, 1);
-            obj.NofComponents = n_components;
-            obj.Tph = cell(n_components, 2);
-            obj.Gph = cell(n_components, 2);
         end
         function SavePhaseState(obj)
             obj.InitialPhaseState = obj.SinglePhase;
@@ -228,12 +224,19 @@ classdef NaturalVar_formulation < fim_formulation
                          Jeq2p, Jeq2S, Jeq2_x1ph1, Jeq2_x1ph2];
             
         end
-        function delta = UpdateState(obj, delta, Status, FluidModel)
+        function UpdateState(obj, delta, Status, FluidModel)
             % Update Solution
             Status.p = Status.p + delta(1:end/4);
             Status.S = Status.S + delta(end/4+1:end/2);
-            Status.x1(:,1) = Status.x1(:,1) + delta(end/2 +1:3*end/4);
-            Status.x1(:,2) = Status.x1(:,2) + delta(3*end/4 +1:end);
+
+            delta1 = delta(end/2 +1:3*end/4);
+            delta2 = delta(3*end/4 +1:end);
+            delta1((Status.S > 1)) = 0;
+            delta2((Status.S > 1)) = 0;
+            delta1((Status.S < 0)) = 0;
+            delta2((Status.S < 0)) = 0;
+            Status.x1(:,1) = Status.x1(:,1) + delta1;
+            Status.x1(:,2) = Status.x1(:,2) + delta2;
             
             % Single phase from previous solution
             obj.PreviousSinglePhase = obj.SinglePhase;
@@ -251,88 +254,6 @@ classdef NaturalVar_formulation < fim_formulation
             
             % Update Pc
             Status.pc = FluidModel.ComputePc(Status.S);            
-        end
-        function  TransmissibilityMatrix(obj, Grid, Rho, RhoInt, x, i)
-            %%%Transmissibility matrix construction
-            Tx = zeros(Grid.Nx+1, Grid.Ny);
-            Ty = zeros(Grid.Nx, Grid.Ny+1);
-            
-            %% PHASE 1 
-            %Apply upwind operator
-            Mupx = obj.UpWind(1).x*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1)); 
-            Mupy = obj.UpWind(1).y*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
-            Mupx = reshape(Mupx, Grid.Nx, Grid.Ny);
-            Mupy = reshape(Mupy, Grid.Nx, Grid.Ny);
-            Tx(2:Grid.Nx,:)= Grid.Tx(2:Grid.Nx,:).*Mupx(1:Grid.Nx-1,:);
-            Ty(:,2:Grid.Ny)= Grid.Ty(:,2:Grid.Ny).*Mupy(:,1:Grid.Ny-1);
-            
-            %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Tph{i,1} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
-            
-            % Gravity Matrix
-            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(1).x(2:Grid.Nx,:);
-            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(1).y(:,2:Grid.Ny);
-            
-            %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Gph{i,1} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
-            
-            %% PHASE 2 
-            %Apply upwind operator
-            Mupx = obj.UpWind(2).x*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
-            Mupy = obj.UpWind(2).y*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
-            Mupx = reshape(Mupx, Grid.Nx, Grid.Ny);
-            Mupy = reshape(Mupy, Grid.Nx, Grid.Ny);
-            Tx(2:Grid.Nx,:)= Grid.Tx(2:Grid.Nx,:).*Mupx(1:Grid.Nx-1,:);
-            Ty(:,2:Grid.Ny)= Grid.Ty(:,2:Grid.Ny).*Mupy(:,1:Grid.Ny-1);
-            
-            %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Tph{i,2} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
-            
-            
-            % Gravity Matrix
-            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(2).x(2:Grid.Nx,:);
-            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(2).y(:,2:Grid.Ny);
-            
-            %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
-            obj.Gph{i,2} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
-            
-        end
-        function q = ComputeSourceTerms(obj, N, Wells)
-            q = zeros(N, 2);
-            %Injectors
-            for i=1:Wells.NofInj
-                c = Wells.Inj(i).Cells;
-                q(c, :) = Wells.Inj(i).QComponents(:,:);
-            end
-            %Producers
-            for i=1:Wells.NofProd
-                c = Wells.Prod(i).Cells;
-                q(c, :) = Wells.Prod(i).QComponents(:,:);
-            end
         end
         function [J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2] =...
                 AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2, State, Wells, K)
@@ -382,6 +303,64 @@ classdef NaturalVar_formulation < fim_formulation
                 end
                 
             end
+        end
+        function UpdatePandS(obj, delta, Status)
+            % Update Solution
+            Status.p = Status.p + delta(1:end/4);
+            Status.S = Status.S + delta(end/4+1:end/2);
+            Status.x1(:,1) = Status.x1(:,1) + delta(end/2 +1:3*end/4);
+            Status.x1(:,2) = Status.x1(:,2) + delta(3*end/4 +1:end);
+            
+            % Single phase from previous solution
+            obj.PreviousSinglePhase = obj.SinglePhase;
+            obj.SinglePhase(Status.S > 1) = 1;
+            obj.SinglePhase(Status.S < 0) = 2;
+            
+            Status.S = min(Status.S, 1);
+            Status.S = max(Status.S, 0);
+        end
+        function UpdateCompositions(obj, Status, FluidModel, N)
+            x(:,1:2) = Status.x1;
+            x(:,3:4) = 1 - x(:,1:2);
+            
+            % THERMODYNAMIC EQUILIBRIUM EQUATIONS
+            Req = zeros(N*obj.NofComponents, 1);
+            for i=1:obj.NofComponents
+                Rcomp = x(:,(i-1)*2 + 1) - obj.K(:,i).*x(:,(i-1)*2 + 2);
+                % If Single phase set residual to be zero
+                Rcomp(obj.PreviousSinglePhase > 0) = 0;
+                Req((i-1)*N+1:i*N) = Rcomp;            
+            end
+            
+            %% 8. Equilibrium of component 1
+            Jeq1_x1ph1 = speye(N);
+            Jeq1_x1ph2 = - spdiags(obj.K(:,1), 0, N, N);            
+                       
+            %% 9. Equilibrium of component 2
+            Jeq2_x1ph1 =  - speye(N);
+            Jeq2_x1ph2 = spdiags(obj.K(:,2), 0, N, N);
+            
+            %% matrix
+            A = [Jeq1_x1ph1, Jeq1_x1ph2;...
+                        Jeq2_x1ph1, Jeq2_x1ph2];
+            
+            delta = A\Req;
+            delta1 = delta(1:N);
+            %delta1(obj.SinglePhase == 2) = 0;
+            delta2 = delta(N+1:end);
+            %delta2(obj.SinglePhase == 1) = 0;
+            
+            Status.x1(:, 1) = Status.x1(:, 1) + delta1;
+            Status.x1(:, 2) = Status.x1(:, 2) + delta2;
+            
+            % Update density
+            FluidModel.ComputePhaseDensities(Status);
+            
+            % Update z
+            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x1, Status.rho);
+            
+            % Update Pc
+            Status.pc = FluidModel.ComputePc(Status.S);
         end
     end
 end
