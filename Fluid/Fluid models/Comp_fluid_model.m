@@ -17,7 +17,7 @@ classdef Comp_fluid_model < fluid_model
         end
         function InitializeReservoir(obj, Status)
             % Define initial values
-            P_init = ones(length(Status.p), 1)*1e6;
+            P_init = ones(length(Status.p), 1)*0;
             z_init = ones(length(Status.p), 1)*0.037;
             
             % 1. Assign initial valus
@@ -26,7 +26,8 @@ classdef Comp_fluid_model < fluid_model
             Status.z(:,2) = 1 - z_init;
             
             % 2. Update Composition of the phases (Flash)
-            SinglePhase = obj.Flash(Status);
+            k = obj.ComputeKvalues(Status);
+            SinglePhase = obj.Flash(Status, k);
             
             % 2.a Compute Phase Density
             obj.ComputePhaseDensities(Status);
@@ -51,13 +52,11 @@ classdef Comp_fluid_model < fluid_model
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end            
         end
-        function SinglePhase = Flash(obj, Status)
+        function SinglePhase = Flash(obj, Status, k)
             % Define SinglePhase objects
             SinglePhase.onlyliquid = zeros(length(Status.p), 1);
             SinglePhase.onlyvapor = zeros(length(Status.p), 1);
-             
-            k = obj.KvaluesCalculator.Compute(Status.p, Status.T, obj.Components);
-            
+                
             %% 2 Chek if we are in 2 phase region
             % 2.a: checking if it 's all liquid: checks if mix is below bubble
             % point
@@ -112,7 +111,6 @@ classdef Comp_fluid_model < fluid_model
                     
                     fv = fvnew;
                     if norm(h, inf) < 1e-6
-                        
                         converged = 1;
                     end
                     itCounter = itCounter + 1;
@@ -131,12 +129,13 @@ classdef Comp_fluid_model < fluid_model
             
             % Convert x to mass fraction
             %x_old = x;
-            x (TwoPhase == 1, 1) = x(TwoPhase == 1, 1) .* obj.Components(1).MM  ./ (obj.Components(1).MM * x(TwoPhase == 1,1) +  obj.Components(2).MM * (1 - x(TwoPhase == 1,1)));
-            x (TwoPhase == 1, 2) = x(TwoPhase == 1, 2) .* obj.Components(1).MM  ./ (obj.Components(1).MM * x(TwoPhase == 1,2) +  obj.Components(2).MM * (1 - x(TwoPhase == 1,2)));
+            x (TwoPhase == 1, 1) = x(TwoPhase == 1, 1)  ./ (x(TwoPhase == 1,1) +  (1 - x(TwoPhase == 1,1)));
+            x (TwoPhase == 1, 2) = x(TwoPhase == 1, 2) ./ (x(TwoPhase == 1,2) +  (1 - x(TwoPhase == 1,2)));
             %max(abs(x - x_old))
             
             % Copy it into Status object
             Status.x1 = x;
+            Status.ni = fv .* sum(z, 2);
         end
         function ComputePhaseDensities(obj, Status)
             for i=1:obj.NofPhases
@@ -163,6 +162,72 @@ classdef Comp_fluid_model < fluid_model
         end
         function dkdp = DKvalDp(obj, p)
             dkdp = obj.KvaluesCalculator.DKvalDp(p);
+        end
+        function [dxdp, dxdz] = DxDpDz(obj, Status)
+            % Find sensitivities
+            % x = x1v, x1l, x2v, x2l, ni
+            % z = p, z1
+            k = obj.ComputeKvalues(Status);
+            dk = obj.DKvalDp(Status.p);
+            ni = Status.ni;
+            x1 = Status.x1(:,1);
+            y1 = Status.x1(:,2);
+            x2 = 1 - x1;
+            y2 = 1 - y1;
+            k1 = k(:,1);
+            k2 = k(:,2);
+            dk1 = dk(:,1);
+            dk2 = dk(:,2);
+            
+            N = length(Status.p);
+            % Loop over all cells and do inversion local inversion
+            dxdp = zeros(N, 5);
+            dxdz = zeros(N, 5);
+            for i = 1:N
+                dFdz = zeros(5,2);
+                dFdx = zeros(5,5);
+                % Equation 1
+                % dF1/dx1v
+                dFdx(1,1) = k1(i);
+                % dF1/dx1l
+                dFdx(1,2) = -1;
+                % Equation 2
+                % dF2/dx2v
+                dFdx(2,3) = k2(i);
+                % dF2/dx2l
+                dFdx(2,4) = -1;
+                % Equation 3
+                % dF3/dx1v
+                dFdx(3,1) = - ni(i);
+                % dF3/dx1l
+                dFdx(3,2) = -(1-ni(i));
+                % dF3dni
+                dFdx(3,5) = y1(i) - x1(i);
+                % Equation 4
+                % dF4/dx2v
+                dFdx(4,3) = - ni(i);
+                % dF4/dx2l
+                dFdx(4,4) = - (1- ni(i));
+                % dF4dni
+                dFdx(4,5) = y2(i) - x2(i);
+                % Equation 5
+                % dF5/dx1v
+                dFdx(5,1) = 1;
+                % dF5/dx1l
+                dFdx(5,2) = -1;
+                % dF5/dx2v
+                dFdx(5,3) = 1;
+                % dF5/dx2l
+                dFdx(5,4) = -1;
+                % dFdz
+                dFdz(1,1) = dk1(i) * x1(i);
+                dFdz(2,1) = dk2(i) * x2(i);
+                dFdz(3,2) = 1;
+                dFdz(4,2) = -1;
+                dFdx = sparse(dFdx);
+                dxdp(i,:) = (dFdx\dFdz(:,1))';
+                dxdz(i,:) = (dFdx\dFdz(:,2))';
+            end
         end
     end
 end

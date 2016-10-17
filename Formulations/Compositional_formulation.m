@@ -9,6 +9,7 @@
 classdef Compositional_formulation < fim_formulation
     properties
         NofComponents
+        DerivativesCalculator
     end
     methods
         function Reset(obj)

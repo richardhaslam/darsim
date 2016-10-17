@@ -9,6 +9,7 @@
 classdef Overall_Composition_formulation < Compositional_formulation
     properties
         dxdz
+        dxdp
     end
     methods
         function obj = Overall_Composition_formulation(n_components)
@@ -16,10 +17,11 @@ classdef Overall_Composition_formulation < Compositional_formulation
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
-            obj.dMob = FluidModel.DMobDz(ProductionSystem.Reservoir.State);
+            [obj.dxdp, obj.dxdz] = FluidModel.DxDpDz(ProductionSystem.Reservoir.State); % This is the bitchy part!! 
             obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
+            obj.drhodz = FluidModel.DrhoDz(Status.z, obj.dxdz);
+            obj.dMob = FluidModel.DMobDz(ProductionSystem.Reservoir.State);
             obj.dPc = FluidModel.DPcDz(ProductionSystem.Reservoir.State);
-            obj.dxdz = FluidModel.DxDz(ProductionSystem.Reservoir.State); % This is the bitchy part!! 
          end
         function Residual = BuildResidual(obj, DiscretizationModel, ProductionSystem)
             %Create local variables
@@ -92,10 +94,10 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 % 1.a: divergence
                 Jp{i} = obj.Tph{i,1}  + obj.Tph{i, 2};
                 % 1.b: compressibility part
-                dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
-                dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
-                dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
-                dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
+                dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1) + obj.Mob(:, 1) .* obj.dx(:,(i-1)*2+1) .* obj.rho(:,1));
+                dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1) + obj.Mob(:, 1) .* obj.dx(:,(i-1)*2+1) .* obj.rho(:,1));
+                dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2) + obj.Mob(:, 1) .* obj.dx(:,(i-1)*2+2) .* obj.rho(:,2));
+                dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2) + obj.Mob(:, 1) .* obj.dx(:,(i-1)*2+2) .* obj.rho(:,2));
                 
                 vecX1 = min(reshape(obj.U(1).x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:),N,1), 0).*dMupxPh2;
                 vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
@@ -143,18 +145,23 @@ classdef Overall_Composition_formulation < Compositional_formulation
             Status.z(:,1) = delta(end/2+1:end);
             
             %% 2. Perform composition update
-            SinglePhase = FluidModel.Flash(Status.z, Status.x1);
+            % Computes Status.ni, Status.x1 knowing Status.p and Status.z - Returns single phase as well 
+            SinglePhase = FluidModel.PhaseEquilibrium(Status);
             
-            %% 3. Compute Saturations
-            FluidModel.ComputePhaseSaturation(Status.z, Status.x, SinglePhase);
-            
-            %% 4. Compute Densities
+            %% 3. Compute Densities
+            % Computes Status.rho knowing Status.p, Status.x1 and Status.T
             FluidModel.ComputePhaseDensities(Status);
             
+            %% 4. Compute Saturations
+            % Computes Status.S
+            FluidModel.ComputePhaseSaturation(Status.z, Status.x, SinglePhase);
+            
             %% 5. Compute Total Density
+            % Computes Status.rhot
             Status.rhot = FluidModel.ComputeTotalDensity(obj, Status.S, Status.rho);
             
             %% 6. Compute Pc
+            % Computes Status.pc
             Status.pc = FluidModel.ComputePc(Status.S);   
         end
     end
