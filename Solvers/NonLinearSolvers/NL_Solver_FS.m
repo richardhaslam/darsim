@@ -8,6 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef NL_Solver_FS < NL_Solver
     methods
-        
+        function UpdateState(obj, ProductionSystem, Formulation, FluidModel)
+            obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel);
+        end
     end
 end
