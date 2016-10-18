@@ -20,7 +20,7 @@ classdef Immiscible_formulation < fim_formulation
         function SavePhaseState(obj)
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
-            obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
@@ -75,14 +75,14 @@ classdef Immiscible_formulation < fim_formulation
                 Jp{i} = obj.Tph{i};
                 
                 % 1.b: compressibility part
-                dMupx = obj.UpWind(i).x*(obj.Mob(:, i) .* obj.drho(:,i));
-                dMupy = obj.UpWind(i).y*(obj.Mob(:, i) .* obj.drho(:,i));
+                dMupx = obj.UpWind(i).x*(obj.Mob(:, i) .* obj.drhodp(:,i));
+                dMupy = obj.UpWind(i).y*(obj.Mob(:, i) .* obj.drhodp(:,i));
                 
                 vecX1 = min(reshape(obj.U(i).x(1:Nx,:),N,1), 0).*dMupx;
                 vecX2 = max(reshape(obj.U(i).x(2:Nx+1,:),N,1), 0).*dMupx;
                 vecY1 = min(reshape(obj.U(i).y(:,1:Ny),N,1), 0).*dMupy;
                 vecY2 = max(reshape(obj.U(i).y(:,2:Ny+1),N,1), 0).*dMupy;
-                acc = pv/dt .* obj.drho(:,i) .* s(:,i);
+                acc = pv/dt .* obj.drhodp(:,i) .* s(:,i);
                 DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
@@ -200,9 +200,9 @@ classdef Immiscible_formulation < fim_formulation
                 b = Prod(i).Cells;
                 for j=1:length(b)
                     Jnwp(b(j),b(j)) = Jnwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), 2) .* State.rho(b(j), 2)...
-                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * obj.drho(b(j),2) * (Prod(i).p - State.p(b(j)));                    
+                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)));                    
                     Jwp(b(j),b(j)) = Jwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), 1) .* State.rho(b(j), 1)...
-                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * obj.drho(b(j),1) * (Prod(i).p - State.p(b(j)));
+                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j)));
                     
                     JwS(b(j),b(j)) = JwS(b(j),b(j)) - Prod(i).PI*K(b(j)).* State.rho(b(j), 1) .* (Prod(i).p - State.p(b(j))).*obj.dMob(b(j), 1);
                     JnwS(b(j),b(j)) = JnwS(b(j),b(j)) - Prod(i).PI*K(b(j)).* State.rho(b(j), 2) .* (Prod(i).p - State.p(b(j))).*obj.dMob(b(j), 2);

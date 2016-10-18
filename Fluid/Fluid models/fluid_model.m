@@ -62,9 +62,8 @@ classdef fluid_model < handle
                 dMob(:,i) = dkr(:,i)/obj.Phases(i).mu;
             end
         end
-        function dMob = DMobDz(obj, Status)
+        function dMob = DMobDz(obj, Status, dSdz)
             dMobdS = obj.DMobDS(Status.S);
-            dSdz = obj.DSDz(Status);
             % Use chain rule
             dMob(:,1) = dMobdS(:,1) .* dSdz;
             dMob(:,2) = dMobdS(:,2) .* dSdz;
@@ -74,6 +73,9 @@ classdef fluid_model < handle
             for i=1:obj.NofPhases
                 drho(:, i) = obj.Phases(i).DrhoDp(p);
             end
+        end
+        function drho = DrhoDz(obj, p, dxdz)
+            drho = zeros(length(p), obj.NofPhases);
         end
         function Pc = ComputePc(obj, S)
             switch(obj.WettingPhaseIndex)
@@ -101,13 +103,37 @@ classdef fluid_model < handle
         function dPc = DPcDz(obj, Status)
             dPc = 0;
         end
-        function dSdz = DSDz(obj, Status)
+        function dSdp = DSDp(obj, Status, drhodp, dni)
+            ni = Status.ni;
+            rhov = Status.rho(:,1);
+            rhol = Status.rho(:,2);
+            drhov = drhodp(:,1);
+            drhol = drhodp(:,2);
+            Num = rhol .* ni;
+            Den = rhol .* ni + (1 - ni) .* rhov ;
+            dNum = drhol .* ni + dni .* rhol;
+            dDen = drhol .* ni + dni .* rhol + drhov - ni .* drhov - rhov .* dni;
+            % final derivative
+            dSdp = (dNum .* Den - dDen .* Num)./Den.^2;
+        end
+        function dSdz = DSDz(obj, Status, dni, dx1v, dx1l)
+            rhov = Status.rho(:,1);
+            rhol = Status.rho(:,2);
+            x1v = Status.x1(:,1);
+            x1l = Status.x1(:,2);
+            ni = Status.ni;
+            z = Status.z(:,1);
             % Derivative of S with respect to z
-            Num = Status.rho(:,2) .* Status.x1(:,2) - Status.z(:,1);
-            dNum = -1;
-            Den = (Status.rho(:,1) - 1) .* Status.z(:,1) + Status.rho(:,2) .* Status.x1(:,2) -  Status.rho(:,1) .* Status.x1(:,1);
-            dDen = Status.rho(:,1) - 1;
+            Num = rhol .* (x1l - z);
+            dNum = rhol .* (dx1l - 1);
+            Den = rhov .* (z - x1v) + rhol .* (x1l - z); 
+            dDen = rhov .* (1 - dx1v) + rhol .* (dx1l - 1);
             dSdz =(Den .* dNum - Num .* dDen) ./ Den.^2;
+            Num1 = rhol .* ni;
+            dNum1 = rhol .* dni;
+            Den1 = rhol .* ni + (1 - ni) .* rhov;
+            dDen1 = rhol .* dni - dni .* rhov;
+            dSdz2 =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
         end
     end
     methods (Abstract)

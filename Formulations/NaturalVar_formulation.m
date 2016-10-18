@@ -1,7 +1,7 @@
 % Natural variable Formulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
+%Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 12 September 2016
 %Last modified: 26 September 2016
@@ -30,11 +30,11 @@ classdef NaturalVar_formulation < Compositional_formulation
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
-            obj.drho = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
             obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State);
             obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State.p);
-            obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State.z, obj.K);
+            obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State, obj.K);
          end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)                   
             %Create local variables
@@ -115,16 +115,16 @@ classdef NaturalVar_formulation < Compositional_formulation
                 % 1.a: divergence
                 Jp{i} = obj.Tph{i,1}  + obj.Tph{i, 2};
                 % 1.b: compressibility part
-                dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
-                dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drho(:,1));
-                dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
-                dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drho(:,2));
+                dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1));
+                dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1));
+                dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2));
+                dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2));
                 
                 vecX1 = min(reshape(obj.U(1).x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:),N,1), 0).*dMupxPh2;
                 vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
                 vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny),N,1), 0).*dMupyPh2;
                 vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0).*dMupyPh2;
-                acc = pv/dt .* ( x(:,(i-1)*2+1) .* obj.drho(:,1) .* s + x(:,(i-1)*2+2) .* obj.drho(:,2) .* (1-s));
+                acc = pv/dt .* ( x(:,(i-1)*2+1) .* obj.drhodp(:,1) .* s + x(:,(i-1)*2+2) .* obj.drhodp(:,2) .* (1-s));
                 DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
@@ -280,13 +280,13 @@ classdef NaturalVar_formulation < Compositional_formulation
                     J1p(b(j),b(j)) = J1p(b(j),b(j))...
                         + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * State.x1(b(j),1) ...
                         + obj.Mob(b(j), 2) * State.rho(b(j),2) * State.x1(b(j),2))...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * State.x1(b(j),1) * obj.drho(b(j),1) * (Prod(i).p - State.p(b(j))) ...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * State.x1(b(j),2) * obj.drho(b(j),2) * (Prod(i).p - State.p(b(j)));
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * State.x1(b(j),1) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j))) ...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * State.x1(b(j),2) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)));
                     J2p(b(j),b(j)) = J2p(b(j),b(j)) ...
                         + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * (1 - State.x1(b(j),1)) ...
                         + obj.Mob(b(j), 2) * State.rho(b(j),2) * (1 - State.x1(b(j),2)))...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (1 - State.x1(b(j),1)) * obj.drho(b(j),1) * (Prod(i).p - State.p(b(j))) ...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (1 - State.x1(b(j),2)) * obj.drho(b(j),2) * (Prod(i).p - State.p(b(j)));
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (1 - State.x1(b(j),1)) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j))) ...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (1 - State.x1(b(j),2)) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)));
                     %Saturation blocks
                     J1S(b(j),b(j)) = J1S(b(j),b(j))...
                         - Prod(i).PI * K(b(j)) * (obj.dMob(b(j),1) * State.rho(b(j),1) * State.x1(b(j),1) ...

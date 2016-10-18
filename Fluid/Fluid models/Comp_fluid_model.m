@@ -1,7 +1,7 @@
 % Compositional fluid model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
+%Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 14 July 2016
 %Last modified: 28 September 2016
@@ -56,13 +56,18 @@ classdef Comp_fluid_model < fluid_model
             % Define SinglePhase objects
             SinglePhase.onlyliquid = zeros(length(Status.p), 1);
             SinglePhase.onlyvapor = zeros(length(Status.p), 1);
-                
-            %% 2 Chek if we are in 2 phase region
-            % 2.a: checking if it 's all liquid: checks if mix is below bubble
-            % point
-            % Transform Mass fractions to mol fractions
             z = Status.z;
             
+            %% 1 Check if there are 2 components
+            x(z(:, 1) == 1, 1) = 1;  
+            x(z(:, 1) == 1, 2) = 1;
+            SinglePhase.onlyvapor(z(:, 1) == 1) = 1;
+            x(z(:, 1) == 0, 1) = 1;  
+            x(z(:, 1) == 0, 2) = 1;
+            SinglePhase.onlyliquid(z(:, 1) == 0) = 1;
+            
+            %% 2 Chek if we are in 2 phase region
+            % 2.a: checking if it 's all liquid: checks if mix is below bubble
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
             
@@ -129,8 +134,8 @@ classdef Comp_fluid_model < fluid_model
             
             % Convert x to mass fraction
             %x_old = x;
-            x (TwoPhase == 1, 1) = x(TwoPhase == 1, 1)  ./ (x(TwoPhase == 1,1) +  (1 - x(TwoPhase == 1,1)));
-            x (TwoPhase == 1, 2) = x(TwoPhase == 1, 2) ./ (x(TwoPhase == 1,2) +  (1 - x(TwoPhase == 1,2)));
+            %x (TwoPhase == 1, 1) = x(TwoPhase == 1, 1)  ./ (x(TwoPhase == 1,1) +  (1 - x(TwoPhase == 1,1)));
+            %x (TwoPhase == 1, 2) = x(TwoPhase == 1, 2) ./ (x(TwoPhase == 1,2) +  (1 - x(TwoPhase == 1,2)));
             %max(abs(x - x_old))
             
             % Copy it into Status object
@@ -142,12 +147,22 @@ classdef Comp_fluid_model < fluid_model
                 Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components);
             end
         end
-        function SinglePhase = CheckNumberOfPhases(obj, SinglePhase, PreviousSinglePhase, z, k)
+        function SinglePhase = CheckNumberOfPhases(obj, SinglePhase, PreviousSinglePhase, Status, k)
+            z = Status.z;
+            % Check if single component
+            SinglePhase(z(:, 1) == 1) = 1;
+            SinglePhase(z(:, 1) == 0) = 2;
+            Status.x1(z(:, 1) == 1, 1) = 1;
+            Status.x1(z(:, 1) == 0, 1) = 1;
+            Status.x1(z(:, 1) == 1, 2) = 1;
+            Status.x1(z(:, 1) == 0, 2) = 1;
+            
             % Transform mass fractions into mole fractions to check phase
             % state
             BubCheck = zeros(length(z), 2);
             BubCheck(PreviousSinglePhase == 2, :) = z(PreviousSinglePhase == 2,:) .* k (PreviousSinglePhase == 2, :);
             BubCheck = sum(BubCheck, 2);
+            
             SinglePhase(BubCheck > 1) = 0;
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
@@ -207,7 +222,7 @@ classdef Comp_fluid_model < fluid_model
                 % dF4/dx2v
                 dFdx(4,3) = - ni(i);
                 % dF4/dx2l
-                dFdx(4,4) = - (1- ni(i));
+                dFdx(4,4) = - (1 - ni(i));
                 % dF4dni
                 dFdx(4,5) = y2(i) - x2(i);
                 % Equation 5
@@ -222,7 +237,7 @@ classdef Comp_fluid_model < fluid_model
                 % dFdz
                 dFdz(1,1) = dk1(i) * x1(i);
                 dFdz(2,1) = dk2(i) * x2(i);
-                dFdz(3,2) = 1;
+                dFdz(3,2) =  1;
                 dFdz(4,2) = -1;
                 dFdx = sparse(dFdx);
                 dxdp(i,:) = (dFdx\dFdz(:,1))';

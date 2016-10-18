@@ -1,7 +1,7 @@
 % Immiscible Fluid model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
+%Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 14 July 2016
 %Last modified: 28 September 2016

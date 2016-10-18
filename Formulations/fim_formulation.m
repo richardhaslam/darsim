@@ -15,7 +15,7 @@ classdef fim_formulation < handle
         Mob
         dMob
         dPc
-        drho
+        drhodp
         GravityModel
     end
     methods (Abstract)
