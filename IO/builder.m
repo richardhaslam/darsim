@@ -324,7 +324,7 @@ classdef builder < handle
             
         end
         function Formulation = BuildFormulation(obj, inputMatrix, Discretization, FluidModel)
-            formulationtype = 'Natural';
+            formulationtype = 'OverallComposition';
             if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
                 formulationtype = 'Immiscible';
             end

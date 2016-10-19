@@ -18,7 +18,7 @@ classdef Comp_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*0;
-            z_init = ones(length(Status.p), 1)*0.037;
+            z_init = ones(length(Status.p), 1)*0.6;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -45,7 +45,8 @@ classdef Comp_fluid_model < fluid_model
             % Loop over all injectors
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
-                SinglePhase = obj.Flash(Inj(i));                
+                k = obj.ComputeKvalues(Inj(i));
+                SinglePhase = obj.Flash(Inj(i), k);                
                 obj.ComputePhaseDensities(Inj(i));
                 obj.ComputePhaseSaturation(Inj(i), SinglePhase);
                 Inj(i).x2 = 1 - Inj(i).x1;
@@ -123,7 +124,7 @@ classdef Comp_fluid_model < fluid_model
                 alpha = alpha/2;
             end
             if ~converged
-                disp('Warning: Initialization failed!');
+                disp('Warning: Flash did not converge!');
             end
             
             %5. Solve for x's and y's

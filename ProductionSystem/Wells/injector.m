@@ -17,6 +17,7 @@ classdef injector < handle
         PI
         z
         S
+        ni
         x1
         x2
         rho
