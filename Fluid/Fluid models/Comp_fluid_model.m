@@ -18,7 +18,7 @@ classdef Comp_fluid_model < fluid_model
         function InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*0;
-            z_init = ones(length(Status.p), 1)*0.6;
+            z_init = ones(length(Status.p), 1)*0.037;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -140,6 +140,7 @@ classdef Comp_fluid_model < fluid_model
             %max(abs(x - x_old))
             
             % Copy it into Status object
+            %% 1 Check if there are 2 components
             Status.x1 = x;
             Status.ni = fv .* sum(z, 2);
         end
@@ -155,8 +156,8 @@ classdef Comp_fluid_model < fluid_model
             SinglePhase(z(:, 1) == 0) = 2;
             Status.x1(z(:, 1) == 1, 1) = 1;
             Status.x1(z(:, 1) == 0, 1) = 1;
-            Status.x1(z(:, 1) == 1, 2) = 1;
-            Status.x1(z(:, 1) == 0, 2) = 1;
+            Status.x1(z(:, 1) == 1, 2) = 0;
+            Status.x1(z(:, 1) == 0, 2) = 0;
             
             % Transform mass fractions into mole fractions to check phase
             % state

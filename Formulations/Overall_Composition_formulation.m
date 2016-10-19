@@ -25,8 +25,10 @@ classdef Overall_Composition_formulation < Compositional_formulation
             [obj.dxdp, obj.dxdz] = FluidModel.DxDpDz(ProductionSystem.Reservoir.State); % This is the bitchy part!! 
             obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.drhodz = FluidModel.DrhoDz(ProductionSystem.Reservoir.State.z, obj.dxdz);
-            %dSdp = FluidModel.DSDp(ProductionSystem.Reservoir.State, obj.drhodp, obj.dxdp(:,5));
+            dSdp = FluidModel.DSDp(ProductionSystem.Reservoir.State, obj.drhodp, obj.dxdp(:,5));
             dSdz = FluidModel.DSDz(ProductionSystem.Reservoir.State, obj.dxdz(:,5), obj.dxdz(:,1), obj.dxdz(:,2));
+            obj.drhoTdz = FluidModel.DrhotDz(ProductionSystem.Reservoir.State, obj.drhodz, dSdz);
+            obj.drhoTdp = FluidModel.DrhotDp(ProductionSystem.Reservoir.State,obj.drhodp, dSdp);
             %obj.dMobdp = FluidModel.DMobDp(ProductionSystem.Reservoir.State, dSdp);
             obj.dMob = FluidModel.DMobDz(ProductionSystem.Reservoir.State, dSdz);
             obj.dPc = FluidModel.DPcDz(ProductionSystem.Reservoir.State);
@@ -111,7 +113,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
                 vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny),N,1), 0).*dMupyPh2;
                 vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0).*dMupyPh2;
-                acc = pv/dt .* (rhoT .* z(:,i) *0);
+                acc = pv/dt .* (obj.drhoTdp .* z(:,i));
                 DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
@@ -138,7 +140,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
                 vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny),N,1), 0).*dMupyPh2;
                 vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0).*dMupyPh2;
-                acc = (-1)^(i + 1) * pv/dt .* rhoT;
+                acc = (-1)^(i + 1) *  pv/dt .* rhoT + pv/dt .* z(:,i) .* obj.drhoTdz;
                 DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
                 Jz{i} = spdiags(DiagVecs,DiagIndx, N, N);
@@ -190,8 +192,8 @@ classdef Overall_Composition_formulation < Compositional_formulation
                         - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * x(b(j),2) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)))...
                         - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * obj.dxdp(b(j),2) * rho(b(j),2) * (Prod(i).p - State.p(b(j)));
                     Jp{2}(b(j),b(j)) = Jp{2}(b(j),b(j)) ...
-                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * rho(b(j),1) * (1 - x(b(j),1)) ...
-                        + obj.Mob(b(j), 2) * rho(b(j),2) * x(b(j), 2))...
+                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * rho(b(j),1) * x(b(j), 3) ...
+                        + obj.Mob(b(j), 2) * rho(b(j),2) * x(b(j), 4))...
                         - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * x(b(j),3) * obj.drhodp(b(j), 1) * (Prod(i).p - State.p(b(j))) ...
                         - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * obj.dxdp(b(j),3) * rho(b(j), 1) * (Prod(i).p - State.p(b(j))) ...
                         - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * x(b(j),3) * obj.drhodp(b(j), 2) * (Prod(i).p - State.p(b(j))) ...
@@ -220,7 +222,8 @@ classdef Overall_Composition_formulation < Compositional_formulation
             Status.p = Status.p + delta(1:end/2);
             Status.z(:,1) = Status.z(:,1) + delta(end/2+1:end);
             Status.z(:,2) = 1 - Status.z(:,1);
-            
+            %disp(Status.z);            
+
             %% 2. Perform composition update
             % Computes Status.ni, Status.x1 knowing Status.p and Status.z - Returns single phase as well
             k = FluidModel.ComputeKvalues(Status);

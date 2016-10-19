@@ -135,6 +135,22 @@ classdef fluid_model < handle
             dDen1 = rhol .* dni - dni .* rhov;
             dSdz2 =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
         end
+        function drhotdz = DrhotDz(obj, Status, drho, dS)
+            rho = Status.rho;
+            S = Status.S;
+            drhotdz = drho(:,1) .* S + rho(:,1) .* dS + drho(:,2) .* (1 - S) - rho(:,2) .* dS;
+            % When it s one phase derivative is zero
+            drhotdz(Status.S == 1) = 0;
+            drhotdz(Status.S == 0) = 0;
+        end
+        function drhotdp = DrhotDp(obj, Status, drho, dS)
+            rho = Status.rho;
+            S = Status.S;
+            drhotdp = drho(:,1) .* S + rho(:,1) .* dS + drho(:,2) .* (1 - S) - rho(:,2) .* dS;
+            % When it s one phase derivative is zero
+            drhotdp(Status.S == 1) = drho(Status.S == 1, 1);
+            drhotdp(Status.S == 0) = drho(Status.S == 0, 2);
+        end
     end
     methods (Abstract)
         obj = InitializeReservoir(obj);

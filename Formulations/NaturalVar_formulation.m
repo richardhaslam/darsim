@@ -43,8 +43,8 @@ classdef NaturalVar_formulation < Compositional_formulation
             x_old(:,1:2) = State0.x1;
             x_old(:,3:4) = 1 - x_old(:,1:2);
             s = ProductionSystem.Reservoir.State.S;
-            x(:,1:2) = ProductionSystem.Reservoir.State.x1;
-            x(:,3:4) = 1 - x(:,1:2);
+            x(:, 1:2) = ProductionSystem.Reservoir.State.x1;
+            x(:, 3:4) = 1 - x(:,1:2);
             s2 = 1 - s;
             s2_old = 1 - s_old;
             % Phase potentials
