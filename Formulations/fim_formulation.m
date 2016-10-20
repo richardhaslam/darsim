@@ -17,6 +17,7 @@ classdef fim_formulation < handle
         dPc
         drhodp
         GravityModel
+        SinglePhase
     end
     methods (Abstract)
         obj = BuildResidual(obj)

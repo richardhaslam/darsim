@@ -12,7 +12,7 @@ classdef BO_oil_phase < phase
     end
     methods
         function obj = BO_oil_phase()
-            obj.mu = 1.5e-3;
+            obj.mu = 1e-3;
             obj.sr = 0;
         end
         function rho = ComputeDensity(obj, Status, Components, Rs)

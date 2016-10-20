@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 19 July 2016
+%Last modified: 20 October 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fluid_model < handle
     properties
@@ -45,15 +45,15 @@ classdef fluid_model < handle
                 rho(:,2).*(1-s))./(rho(:,1).*s + rho(:,2).*(1-s)); 
             z(:,2) = 1 - z(:,1);
         end
-        function rhoT = ComputeTotalDensity(obj, s, rho)
-            % Compute the total density
-            rhoT = rho(:, 1) .* s + rho(:, 2) .* (1 - s);
-        end
         function ComputePhaseSaturation(obj, Status, SinglePhase)
             Status.S = Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1))./(Status.rho(:,1).*(Status.z(:,1)...
                 - Status.x1(:,1)) + Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1)));
-            Status.S(SinglePhase.onlyvapor == 1) = 1;
-            Status.S(SinglePhase.onlyliquid == 1) = 0;
+            Status.S(SinglePhase == 1) = 1;
+            Status.S(SinglePhase == 2) = 0;
+        end
+        function rhoT = ComputeTotalDensity(obj, s, rho)
+            % Compute the total density
+            rhoT = rho(:, 1) .* s + rho(:, 2) .* (1 - s);
         end
         function dMob = DMobDS(obj, s)
             dMob = zeros(length(s), obj.NofPhases);
@@ -134,6 +134,7 @@ classdef fluid_model < handle
             Den1 = rhol .* ni + (1 - ni) .* rhov;
             dDen1 = rhol .* dni - dni .* rhov;
             dSdz2 =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
+            %disp(dSdz2(1) .* dSdz(1).^-1);
         end
         function drhotdz = DrhotDz(obj, Status, drho, dS)
             rho = Status.rho;
@@ -151,6 +152,7 @@ classdef fluid_model < handle
             drhotdp(Status.S == 1) = drho(Status.S == 1, 1);
             drhotdp(Status.S == 0) = drho(Status.S == 0, 2);
         end
+        
     end
     methods (Abstract)
         obj = InitializeReservoir(obj);

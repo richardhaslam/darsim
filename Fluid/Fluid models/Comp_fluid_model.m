@@ -15,10 +15,11 @@ classdef Comp_fluid_model < fluid_model
             obj@fluid_model(n_phases, n_comp);
             obj.name = 'Compositional';
         end
-        function InitializeReservoir(obj, Status)
+        function SinglePhase = InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*0;
-            z_init = ones(length(Status.p), 1)*0.037;
+            z_init = ones(length(Status.p), 1)*0.03738;
+            z_init(1) = 1;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -55,17 +56,16 @@ classdef Comp_fluid_model < fluid_model
         end
         function SinglePhase = Flash(obj, Status, k)
             % Define SinglePhase objects
-            SinglePhase.onlyliquid = zeros(length(Status.p), 1);
-            SinglePhase.onlyvapor = zeros(length(Status.p), 1);
+            SinglePhase = zeros(length(Status.p), 1);
             z = Status.z;
             
             %% 1 Check if there are 2 components
             x(z(:, 1) == 1, 1) = 1;  
             x(z(:, 1) == 1, 2) = 1;
-            SinglePhase.onlyvapor(z(:, 1) == 1) = 1;
+            SinglePhase(z(:, 1) == 1) = 1; % All vapour
             x(z(:, 1) == 0, 1) = 1;  
             x(z(:, 1) == 0, 2) = 1;
-            SinglePhase.onlyliquid(z(:, 1) == 0) = 1;
+            SinglePhase(z(:, 1) == 0) = 2; % All liquid
             
             %% 2 Chek if we are in 2 phase region
             % 2.a: checking if it 's all liquid: checks if mix is below bubble
@@ -74,7 +74,7 @@ classdef Comp_fluid_model < fluid_model
             
             x(BubCheck < 1, 2) = z (BubCheck < 1, 1);
             x(BubCheck < 1, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
-            SinglePhase.onlyliquid(BubCheck < 1) = 1;
+            SinglePhase(BubCheck < 1) = 2; % It s all liquid
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
             % point
@@ -82,26 +82,25 @@ classdef Comp_fluid_model < fluid_model
             DewCheck = sum(DewCheck, 2);
             x(DewCheck < 1, 1) = z (DewCheck < 1, 1);
             x(DewCheck < 1, 2) = 1;                    % This is to avoid having singular Jacobian matrix.
-            SinglePhase.onlyvapor(DewCheck < 1) = 1;
+            SinglePhase(DewCheck < 1) = 1;  % It s all vapour
             
             %% 3. Actual Flash: solves for fv (vapor fraction)
             TwoPhase = ones(length(Status.p), 1);
-            TwoPhase(SinglePhase.onlyliquid == 1) = 0;
-            TwoPhase(SinglePhase.onlyvapor == 1) = 0;
+            TwoPhase(SinglePhase > 0 ) = 0;
             
             alpha = 0.5;
             
             %Initilaize variables
             fv = .5 * ones(length(Status.p),1);   % 50-50 split as inital guess
             %Single phase cells do not need to flash
-            fv(SinglePhase.onlyvapor == 1) = 1;
-            fv(SinglePhase.onlyliquid == 1)= 0;
+            fv(SinglePhase == 1) = 1;
+            fv(SinglePhase == 2)= 0;
             
             % Find fv with the tangent method
             converged = 0;
             while ~converged && alpha > 0.1
                 itCounter = 0;
-                while itCounter < 300 && ~converged
+                while itCounter < 400 && ~converged
                     %Finds hi for each component
                     hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
                     hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
@@ -116,7 +115,7 @@ classdef Comp_fluid_model < fluid_model
                     fvnew = alpha * (-h ./ dh) + fv;
                     
                     fv = fvnew;
-                    if norm(h, inf) < 1e-6
+                    if norm(h, inf) < 1e-10
                         converged = 1;
                     end
                     itCounter = itCounter + 1;
@@ -180,7 +179,7 @@ classdef Comp_fluid_model < fluid_model
         function dkdp = DKvalDp(obj, p)
             dkdp = obj.KvaluesCalculator.DKvalDp(p);
         end
-        function [dxdp, dxdz] = DxDpDz(obj, Status)
+        function [dxdp, dxdz] = DxDpDz(obj, Status, SinglePhase)
             % Find sensitivities
             % x = x1v, x1l, x2v, x2l, ni
             % z = p, z1
@@ -205,46 +204,59 @@ classdef Comp_fluid_model < fluid_model
                 dFdx = zeros(5,5);
                 % Equation 1
                 % dF1/dx1v
-                dFdx(1,1) = k1(i);
+                dFdx(1, 1) = 1;
                 % dF1/dx1l
-                dFdx(1,2) = -1;
+                dFdx(1, 2) = -k1(i);
                 % Equation 2
                 % dF2/dx2v
-                dFdx(2,3) = k2(i);
+                dFdx(2, 3) = 1;
                 % dF2/dx2l
-                dFdx(2,4) = -1;
+                dFdx(2, 4) = -k2(i);
                 % Equation 3
                 % dF3/dx1v
-                dFdx(3,1) = - ni(i);
+                dFdx(3, 1) = - ni(i);
                 % dF3/dx1l
-                dFdx(3,2) = -(1-ni(i));
+                dFdx(3, 2) = -(1 - ni(i));
                 % dF3dni
-                dFdx(3,5) = y1(i) - x1(i);
+                dFdx(3, 5) = y1(i) - x1(i);
                 % Equation 4
                 % dF4/dx2v
-                dFdx(4,3) = - ni(i);
+                dFdx(4, 3) = - ni(i);
                 % dF4/dx2l
-                dFdx(4,4) = - (1 - ni(i));
+                dFdx(4, 4) = - (1 - ni(i));
                 % dF4dni
-                dFdx(4,5) = y2(i) - x2(i);
+                dFdx(4, 5) = y2(i) - x2(i);
                 % Equation 5
                 % dF5/dx1v
-                dFdx(5,1) = 1;
+                dFdx(5, 1) = 1;
                 % dF5/dx1l
-                dFdx(5,2) = -1;
+                dFdx(5, 2) = -1;
                 % dF5/dx2v
-                dFdx(5,3) = 1;
+                dFdx(5, 3) = 1;
                 % dF5/dx2l
-                dFdx(5,4) = -1;
+                dFdx(5, 4) = -1;
                 % dFdz
-                dFdz(1,1) = dk1(i) * x1(i);
-                dFdz(2,1) = dk2(i) * x2(i);
-                dFdz(3,2) =  1;
-                dFdz(4,2) = -1;
+                dFdz(1, 1) = -dk1(i) * y1(i);
+                dFdz(2, 1) = -dk2(i) * y2(i);
+                dFdz(3, 2) =  1;
+                dFdz(4, 2) = -1;
                 dFdx = sparse(dFdx);
                 dxdp(i,:) = (dFdx\dFdz(:,1))';
                 dxdz(i,:) = (dFdx\dFdz(:,2))';
             end
+            dxdz(SinglePhase == 1, 1) = 1;
+            dxdz(SinglePhase == 1, 2) = 0;
+            dxdz(SinglePhase == 1, 3) = -1;
+            dxdz(SinglePhase == 1, 4) = 0;
+            dxdz(SinglePhase == 1, 5) = 0;
+            
+            % 
+            dxdz(SinglePhase == 2, 1) = 0;
+            dxdz(SinglePhase == 2, 2) = 1;
+            dxdz(SinglePhase == 2, 3) = 0;
+            dxdz(SinglePhase == 2, 4) = -1;
+            dxdz(SinglePhase == 2, 5) = 0;
+            
         end
     end
 end

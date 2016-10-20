@@ -4,7 +4,7 @@
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 12 September 2016
-%Last modified: 26 September 2016
+%Last modified: 20 October 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef NaturalVar_formulation < Compositional_formulation
     properties
@@ -12,7 +12,6 @@ classdef NaturalVar_formulation < Compositional_formulation
         dKdp
         InitialPhaseState
         PreviousSinglePhase
-        SinglePhase
     end
     methods
         function obj = NaturalVar_formulation(n_cells, n_components)

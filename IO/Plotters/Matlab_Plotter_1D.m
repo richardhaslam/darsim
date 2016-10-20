@@ -31,8 +31,8 @@ classdef Matlab_Plotter_1D < Plotter
             z = reshape(Status.z(:,1),Grid.Nx,Grid.Ny);
             %Plot for 1D problems
             x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
-            figure(1)
-            subplot(3,1,2);
+            figure(2)
+            %subplot(3,1,2);
             plot(x, P, obj.color1, 'LineWidth',1);
             hold on
             plot(x, P-Pc, obj.color2, 'LineWidth',1);
@@ -43,7 +43,8 @@ classdef Matlab_Plotter_1D < Plotter
             %legend('oil','water', 'Location', 'east');
             set(gca,'fontsize',24);
             hold on
-            subplot(3,1,3);
+            figure(3)
+            %subplot(3,1,3);
             plot(x, S, obj.color2, 'LineWidth', 1);
             axis([0 Grid.Nx*Grid.dx 0 1.1]);
             %title('Saturation of water');
@@ -53,8 +54,8 @@ classdef Matlab_Plotter_1D < Plotter
             set(gca,'fontsize',24);
             drawnow;
             
-            figure(2)
-            subplot(3,1,1);
+            figure(4)
+            %subplot(3,1,1);
             plot(x, x1, '.', 'Color', obj.color2);
             axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 1 in Phase 1 [-]');
@@ -62,7 +63,8 @@ classdef Matlab_Plotter_1D < Plotter
             ylabel('x1w [-]');
             hold on;
             set(gca,'fontsize',24);
-            subplot(3,1,2);
+            figure(5)
+            %subplot(3,1,2);
             plot(x, x2, '.', 'Color', obj.color2);
             axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 2 in Phase 2 [-]');
@@ -70,7 +72,8 @@ classdef Matlab_Plotter_1D < Plotter
             ylabel('x2nw [-]');
             hold on;
             set(gca,'fontsize',24);
-            subplot(3,1,3);
+            %subplot(3,1,3);
+            figure(6)
             plot(x, z, obj.color2, 'LineWidth', 1);
             axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 1 Total Mass Fraction [-]');
@@ -80,7 +83,7 @@ classdef Matlab_Plotter_1D < Plotter
             set(gca,'fontsize',24);
             drawnow;
             obj.color1 = 'red';
-            obj.color2 = 'blue';
+            obj.color2 = 'red';
         end
         function PlotPermeability(obj, Grid, Perm)
             figure(1)

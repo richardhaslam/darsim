@@ -22,10 +22,10 @@ classdef Overall_Composition_formulation < Compositional_formulation
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
-            [obj.dxdp, obj.dxdz] = FluidModel.DxDpDz(ProductionSystem.Reservoir.State); % This is the bitchy part!! 
+            [obj.dxdp, obj.dxdz] = FluidModel.DxDpDz(ProductionSystem.Reservoir.State, obj.SinglePhase); % This is the bitchy part!! 
             obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.drhodz = FluidModel.DrhoDz(ProductionSystem.Reservoir.State.z, obj.dxdz);
-            dSdp = FluidModel.DSDp(ProductionSystem.Reservoir.State, obj.drhodp, obj.dxdp(:,5));
+            dSdp = FluidModel.DSDp(ProductionSystem.Reservoir.State, obj.drhodp, -obj.dxdp(:,5));
             dSdz = FluidModel.DSDz(ProductionSystem.Reservoir.State, obj.dxdz(:,5), obj.dxdz(:,1), obj.dxdz(:,2));
             obj.drhoTdz = FluidModel.DrhotDz(ProductionSystem.Reservoir.State, obj.drhodz, dSdz);
             obj.drhoTdp = FluidModel.DrhotDp(ProductionSystem.Reservoir.State,obj.drhodp, dSdp);
@@ -227,7 +227,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             %% 2. Perform composition update
             % Computes Status.ni, Status.x1 knowing Status.p and Status.z - Returns single phase as well
             k = FluidModel.ComputeKvalues(Status);
-            SinglePhase = FluidModel.Flash(Status, k);
+            obj.SinglePhase = FluidModel.Flash(Status, k);
             
             %% 3. Compute Densities
             % Computes Status.rho knowing Status.p, Status.x1 and Status.T
@@ -235,7 +235,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             
             %% 4. Compute Saturations
             % Computes Status.S
-            FluidModel.ComputePhaseSaturation(Status, SinglePhase);
+            FluidModel.ComputePhaseSaturation(Status, obj.SinglePhase);
             
             %% 5. Compute Total Density
             % Computes Status.rhoT

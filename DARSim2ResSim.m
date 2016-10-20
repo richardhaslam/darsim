@@ -9,6 +9,10 @@
 function ResSimulator = DARSim2ResSim(Directory, File)
 clc;
 
+%Remove some warnings 
+warning('off', 'MATLAB:singularMatrix');
+warning('off', 'MATLAB:nearlySingularMatrix');
+
 %% Set up Diary
 delete(strcat(Directory, '/Output/RunDiary.txt')); 
 diary(strcat(Directory, '/Output/RunDiary.txt'));
