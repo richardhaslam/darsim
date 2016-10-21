@@ -17,9 +17,8 @@ classdef Comp_fluid_model < fluid_model
         end
         function SinglePhase = InitializeReservoir(obj, Status)
             % Define initial values
-            P_init = ones(length(Status.p), 1)*0;
+            P_init = ones(length(Status.p), 1)*1e5;
             z_init = ones(length(Status.p), 1)*0.03738;
-            z_init(1) = 1;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -100,7 +99,7 @@ classdef Comp_fluid_model < fluid_model
             converged = 0;
             while ~converged && alpha > 0.1
                 itCounter = 0;
-                while itCounter < 400 && ~converged
+                while itCounter < 200 && ~converged
                     %Finds hi for each component
                     hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
                     hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
@@ -124,6 +123,7 @@ classdef Comp_fluid_model < fluid_model
             end
             if ~converged
                 disp('Warning: Flash did not converge!');
+                disp(['The residual norm of the equilibrium equation is ', num2str(norm(h, inf))]);
             end
             
             %5. Solve for x's and y's

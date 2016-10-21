@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef BO_fluid_model < Comp_fluid_model
     properties
-        Pref = 1e5; % Pref for Rs computation
+        Pref = 1e7; % Pref for Rs computation
         Rs
         dRs
     end

@@ -36,6 +36,7 @@ classdef builder < handle
         adm
         flash
         ADM
+        Formulation = 'Natural';
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
@@ -99,6 +100,9 @@ classdef builder < handle
             obj.reports = str2double(SettingsMatrix{1}(xv+1));
             temp = strfind(SettingsMatrix{1}, 'FIM'); 
             obj.coupling = find(~cellfun('isempty', temp));
+            temp = strfind(SettingsMatrix{1}, 'FORMULATION'); 
+            xv = find(~cellfun('isempty', temp));
+            obj.Formulation =  char(SettingsMatrix{1}(xv+1));
             if obj.coupling ~= 0
                 obj.CouplingType = 'FIM';
             else
@@ -107,6 +111,7 @@ classdef builder < handle
                 obj.coupling = find(~cellfun('isempty', temp));
                 temp = strfind(SettingsMatrix{1}, 'IMPSAT');
                 obj.transport = find(~cellfun('isempty', temp));
+                obj.Formulation = 'Sequential';
             end
             
             temp = strfind(SettingsMatrix{1}, 'ADM');
@@ -126,7 +131,7 @@ classdef builder < handle
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
             simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
-            simulation.TimeDriver = obj.BuildTimeDriver(simulation.FluidModel, SettingsMatrix);
+            simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
@@ -245,6 +250,7 @@ classdef builder < handle
                         Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
                         FluidModel.AddPhase(Phase, i);
                     end
+                    obj.Formulation = 'Immiscible';
                 case('BlackOil')
                     % Black oil phases
                     FluidModel = BO_fluid_model(n_phases, n_comp);
@@ -324,15 +330,7 @@ classdef builder < handle
             
         end
         function Formulation = BuildFormulation(obj, inputMatrix, Discretization, FluidModel)
-            formulationtype = 'Natural';
-            %formulationtype ='OverallComposition';
-            if (strcmp(char(inputMatrix(obj.Comp_Type+1)), 'Immiscible') == 1)
-                formulationtype = 'Immiscible';
-            end
-            if (strcmp(obj.CouplingType, 'Sequential') == 1)
-                formulationtype = 'Sequential';
-            end
-            switch(formulationtype)
+            switch(obj.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
                     if strcmp(obj.ADM, 'active')
@@ -343,7 +341,7 @@ classdef builder < handle
                     if strcmp(obj.ADM, 'active')
                         Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_comp();
                     end
-                case('OverallComposition')
+                case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
                     if strcmp(obj.ADM, 'active')
                         Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
@@ -361,7 +359,7 @@ classdef builder < handle
                     Formulation.GravityModel.g = 0;
             end
         end
-        function TimeDriver = BuildTimeDriver(obj, FluidModel, SettingsMatrix)
+        function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
             TimeDriver = TimeLoop_Driver(obj.TotalTime, obj.reports);
             TimeDriver.MaxNumberOfTimeSteps = obj.MaxNumTimeSteps;
             %% Construct Coupling
@@ -372,8 +370,13 @@ classdef builder < handle
                      NLSolver = NL_Solver();
                     if (str2double(SettingsMatrix(obj.adm + 1))==0)
                         NLSolver.SystemBuilder = fim_system_builder();
-                        ConvergenceChecker = convergence_checker_FS();
-                        NLSolver.LinearSolver = linear_solver();
+                        switch (obj.Formulation)
+                            case('Molar')
+                                ConvergenceChecker = convergence_checker_FS_molar();
+                            otherwise
+                                ConvergenceChecker = convergence_checker_FS();
+                        end
+                    NLSolver.LinearSolver = linear_solver();
                     else
                         NLSolver.SystemBuilder = fim_system_builder_ADM();
                         ConvergenceChecker = convergence_checker_ADM();
@@ -381,7 +384,7 @@ classdef builder < handle
                     end
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
-                    switch (FluidModel.name)
+                    switch (obj.Formulation)
                         case('Immiscible')
                             ConvergenceChecker.NormCalculator = norm_calculator_immiscible();
                         otherwise

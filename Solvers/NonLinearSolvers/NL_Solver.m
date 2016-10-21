@@ -73,6 +73,10 @@ methods
             % 6. Check NonLinear convergencel
             obj.CheckConvergence(Formulation, DiscretizationModel, ProductionSystem);
             
+            if obj.Converged == -1
+                obj.Converged = 0;
+                return
+            end
             obj.itCount = obj.itCount + 1;
         end
     end

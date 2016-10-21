@@ -17,7 +17,7 @@ classdef timestep_selector < handle
     methods
         function obj = timestep_selector(cfl)
             obj.MinDt = 1; % in s (hard-coded for now)
-            obj.MaxDt = 0.5*24*3600; % max 30 days
+            obj.MaxDt = 30*24*3600; % max 30 days
             obj.NextDt = 10;
             obj.CFL = cfl;
         end

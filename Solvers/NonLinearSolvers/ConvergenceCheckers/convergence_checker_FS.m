@@ -28,6 +28,8 @@ classdef convergence_checker_FS < convergence_checker
             %Check convergence
             if (massbalance < obj.Tol && equilibrium < obj.Tol && dp < obj.Tol * 1e2 && dS < obj.Tol * 1e2)
                 converged = 1;
+            elseif (isnan(massbalance))
+                converged = -1;
             end
         end
     end
