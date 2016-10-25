@@ -348,6 +348,9 @@ classdef builder < handle
                     end
                 case('Sequential')
                     Formulation = seq_formulation();
+                case('Jeremy')
+                    Formulation = OBL_formualtion();
+                    Formulation.CreateTables();
             end
             
             % Gravity model

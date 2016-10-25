@@ -108,5 +108,8 @@ classdef ADM_Discretization_model < Discretization_model
             % Build ADM R and P operators
             obj.OperatorsHandler.BuildADMOperators(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid);
         end
+        function AverageSolOnCoarseBlocks(obj, Status, FluidModel, Formulation)
+            Formulation.AverageHyperbolicUnknown(Status, FluidModel, obj.OperatorsHandler.ADMRest, obj.OperatorsHandler.ADMProlAv);
+        end
     end
 end

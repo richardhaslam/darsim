@@ -19,5 +19,8 @@ classdef FS_Discretization_model < Discretization_model
             % Perforated cells
             obj.DefinePerforatedCells(ProductionSystem.Wells);
         end
+        function AverageSolOnCoarseBlocks(obj, Status, FluidModel, Formulation)
+            % virtual call
+        end
     end
 end

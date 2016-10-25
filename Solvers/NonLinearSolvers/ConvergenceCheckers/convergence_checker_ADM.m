@@ -18,10 +18,11 @@ classdef convergence_checker_ADM < convergence_checker_FS
             % Restrict Residual
             [R, ~] = DiscretizationModel.OperatorsHandler.AssembleFullOperators();
             residual_c = R * residual;
+            [N_adm, Nf] = size(DiscretizationModel.OperatorsHandler.ADMRest);
             
             % Compute Norms
-            [massbalance, equilibrium] =  obj.NormCalculator.ResidualNorm(residual_c, DiscretizationModel.ADMGrid.N, Formulation);
-            [dp, dS] = obj.NormCalculator.SolutionNorm(delta, DiscretizationModel.ADMGrid.N, State);
+            [massbalance, equilibrium] =  obj.NormCalculator.ResidualNorm(residual_c, N_adm, Formulation);
+            [dp, dS] = obj.NormCalculator.SolutionNorm(delta, Nf, State);
             
             disp(['Iter ' num2str(iter) '    ' num2str(massbalance, '%5.5e'), '    ', num2str(equilibrium,'%5.5e'), '    ', num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
             

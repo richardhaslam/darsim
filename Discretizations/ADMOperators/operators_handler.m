@@ -14,6 +14,7 @@ classdef operators_handler < handle
         ADMRest
         ADMProlp
         ADMProls
+        ADMProlAv
         FullOperatorsAssembler
     end
     methods
@@ -33,11 +34,16 @@ classdef operators_handler < handle
             MsR = sparse(MsR);
         end
         function BuildADMOperators(obj, FineGrid, CoarseGrid, ADMGrid)
-             % Restriction
+            start1 = tic; 
+            % Restriction
             obj.ADMRestriction(ADMGrid, FineGrid);
-            
+            restriction = toc(start1);
+            disp(['Restriction built in: ', num2str(restriction), ' s']);
             % Prolongation
+            start2 = tic;
             obj.ADMProlongation(ADMGrid, FineGrid, CoarseGrid);
+            prolongation = toc(start2);
+            disp(['Prolongation built in: ', num2str(prolongation), ' s']);
         end
         function ADMRestriction(obj, ADMGrid, FineGrid)
 %             Rf = speye(obj.ADMmap.Nf);
@@ -55,15 +61,18 @@ classdef operators_handler < handle
               
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               % Fine-scale cells
-              obj.ADMRest = zeros(ADMGrid.Ntot, FineGrid.N);
+              
+              obj.ADMRest = sparse(ADMGrid.Ntot, FineGrid.N);
               rows = 1:ADMGrid.N(1);
               columns = ADMGrid.CellIndex(1:ADMGrid.N(1))';
               obj.ADMRest(sub2ind(size(obj.ADMRest), rows, columns)) = 1;
+              obj.ADMProlAv = obj.ADMRest';              
               % Coarse levels cells
               for c = ADMGrid.N(1) + 1:ADMGrid.Ntot 
-                obj.ADMRest(c, ADMGrid.GrandChildren{c}) = 1;
+                indexes = ADMGrid.GrandChildren{c};
+                obj.ADMRest(c, indexes) = 1;
+                obj.ADMProlAv(indexes, c) = 1/prod(ADMGrid.CoarseFactor(c,:));
               end
-              obj.ADMRest = sparse(obj.ADMRest);
         end
         function [Rest, Prol] = AssembleFullOperators(obj)
             [Rest, Prol] = obj.FullOperatorsAssembler.Assemble(obj.ADMRest, obj.ADMProlp, obj.ADMProls);
