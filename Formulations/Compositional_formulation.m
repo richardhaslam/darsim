@@ -115,7 +115,7 @@ classdef Compositional_formulation < fim_formulation
             %% 2. Perform composition update
             % Computes Status.ni, Status.x1 knowing Status.p and Status.z - Returns single phase as well
             k = FluidModel.ComputeKvalues(Status);
-            obj.SinglePhase = FluidModel.Flash(Status, k);
+            obj.SinglePhase = FluidModel.Flash(Status);
             
             %% 3. Compute Densities
             % Computes Status.rho knowing Status.p, Status.x1 and Status.T

@@ -32,7 +32,7 @@ classdef NaturalVar_formulation < Compositional_formulation
             obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
             obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State);
-            obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State.p);
+            obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State);
             obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State, obj.K);
          end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)                   

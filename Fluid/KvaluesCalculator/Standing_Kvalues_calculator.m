@@ -18,11 +18,11 @@ classdef Standing_Kvalues_calculator < Kvalues_calculator
         Num
     end
     methods
-        function k = Compute(obj, p, T, Components)
+        function k = Compute(obj, Status, Components, Phases)
             %% Compute K values
             % Convert units to use Standing's correlation for K values
-            T = T*obj.Const_T;                    
-            P = p*obj.Const_p;       
+            T = Status.T*obj.Const_T;                    
+            P = Status.p*obj.Const_p;       
             Tb = zeros(1, 2);
             b = zeros(1, 2);
             obj.a = zeros(length(p), 1);
@@ -42,9 +42,9 @@ classdef Standing_Kvalues_calculator < Kvalues_calculator
             k(:, 1) = obj.Num(:,1)./P;                   %K1 as per Standing 1979
             k(:, 2) = obj.Num(:,2)./P;                   %K2 as per Standing 1979
         end
-        function dk = DKvalDp(obj, p)
+        function dk = DKvalDp(obj, Status, Components, Phases)
             % Convert units to use Standing's correlation for K values                    
-            P = p*obj.Const_p;
+            P = Status.p*obj.Const_p;
             da =  4.5 * 10^-4 + 15 * 10^-8 * 2 * P;
             dc = - 1.7 * 10^-4 * P - 3.5 * 10^-8 * 2 * P;
             dexp(:,1) = da + obj.F(1) .* dc;

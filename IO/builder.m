@@ -273,10 +273,14 @@ classdef builder < handle
                         water = component();
                         FluidModel.AddComponent(water, 3);
                     end
-                    FluidModel.KvaluesCalculator = BO_Kvalues_calculator();
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
+                    FluidModel.FlashCalculator = FlashCalculator();
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
-                    FluidModel.KvaluesCalculator = Constant_Kvalues_calculator();
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
+                    FluidModel.FlashCalculator = FlashCalculator();
                     % Add phases
                     for i = 1:FluidModel.NofPhases
                         Phase = comp_phase();
