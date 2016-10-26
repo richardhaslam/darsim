@@ -104,5 +104,34 @@ classdef Compositional_formulation < fim_formulation
                 q(c, :) = Wells.Prod(i).QComponents(:,:);
             end
         end
+        function AverageMassOnCoarseBlocks(obj, Status, FluidModel, R, P)
+            % Perform Average for ADM
+            z_rest = R * Status.z;
+            Status.z = P * z_rest;
+            % Update other unknwons as well 
+            obj.UpdatePhaseCompositions(Status, FluidModel);
+        end
+        function UpdatePhaseCompositions(obj, Status, FluidModel)
+            %% 2. Perform composition update
+            % Computes Status.ni, Status.x1 knowing Status.p and Status.z - Returns single phase as well
+            k = FluidModel.ComputeKvalues(Status);
+            obj.SinglePhase = FluidModel.Flash(Status, k);
+            
+            %% 3. Compute Densities
+            % Computes Status.rho knowing Status.p, Status.x1 and Status.T
+            FluidModel.ComputePhaseDensities(Status);
+            
+            %% 4. Compute Saturations
+            % Computes Status.S
+            FluidModel.ComputePhaseSaturation(Status, obj.SinglePhase);
+            
+            %% 5. Compute Total Density
+            % Computes Status.rhoT
+            Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);
+            
+            %% 6. Compute Pc
+            % Computes Status.pc
+            Status.pc = FluidModel.ComputePc(Status.S);
+        end
     end
 end

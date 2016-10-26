@@ -31,5 +31,8 @@ classdef Discretization_model < handle
                 Wells.Prod(i).Cells = I + (Y-1)*obj.ReservoirGrid.Nx;
             end
         end
+        function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)
+            % virtual call
+        end
     end
 end
