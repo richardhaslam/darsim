@@ -47,19 +47,22 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             TwoPhase = ones(length(Status.p), 1);
             TwoPhase(SinglePhase > 0 ) = 0;
             
-            alpha = 0.5;
             
             %Initilaize variables
-            fv = .5 * ones(length(Status.p),1);   % 50-50 split as inital guess
+            alpha = 1;
+            fv = 0.5 * ones(length(Status.p),1);
+            
             %Single phase cells do not need to flash
             fv(SinglePhase == 1) = 1;
             fv(SinglePhase == 2)= 0;
             
             % Find fv with the tangent method
             converged = 0;
-            while ~converged && alpha > 0.1
+            while ~converged && min(alpha) > 0.01
+                fv (fv > 1)  = 0.5;   % 50-50 split as inital guess
+                fv (fv < 0) = 0.5;
                 itCounter = 0;
-                while itCounter < 200 && ~converged
+                while itCounter < 1000 && ~converged
                     %Finds hi for each component
                     hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
                     hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
@@ -71,7 +74,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                     
                     %Update fv
                     h(TwoPhase == 0) = 0;
-                    fvnew = alpha * (-h ./ dh) + fv;
+                    fvnew = alpha .* (-h ./ dh) + fv;
                     
                     fv = fvnew;
                     if norm(h, inf) < 1e-10

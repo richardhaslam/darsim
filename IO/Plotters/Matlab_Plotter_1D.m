@@ -82,8 +82,8 @@ classdef Matlab_Plotter_1D < Plotter
             hold on;
             set(gca,'fontsize',24);
             drawnow;
-            obj.color1 = 'red';
-            obj.color2 = 'red';
+            obj.color1 = 'blue';
+            obj.color2 = 'blue';
         end
         function PlotPermeability(obj, Grid, Perm)
             figure(1)

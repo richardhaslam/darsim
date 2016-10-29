@@ -18,7 +18,7 @@ classdef Comp_fluid_model < fluid_model
         function SinglePhase = InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*1e5;
-            z_init = ones(length(Status.p), 1)*0.03738;
+            z_init = ones(length(Status.p), 1)*0.037;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -85,7 +85,7 @@ classdef Comp_fluid_model < fluid_model
             SinglePhase(DewCheck(PreviousSinglePhase == 1) > 1) = 0;
         end
         function k = ComputeKvalues(obj, Status)
-            k = obj.FlashCalculator.KvaluesCalculator.Compute(Status.p, Status.T, obj.Components);
+            k = obj.FlashCalculator.KvaluesCalculator.Compute(Status, obj.Components, obj.Phases);
         end
         function dkdp = DKvalDp(obj, p)
             dkdp = obj.FlashCalculator.KvaluesCalculator.DKvalDp(p);
