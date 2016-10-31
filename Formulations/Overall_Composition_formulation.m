@@ -31,7 +31,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             obj.drhoTdp = FluidModel.DrhotDp(ProductionSystem.Reservoir.State,obj.drhodp, dSdp);
             %obj.dMobdp = FluidModel.DMobDp(ProductionSystem.Reservoir.State, dSdp);
             obj.dMob = FluidModel.DMobDz(ProductionSystem.Reservoir.State, dSdz);
-            obj.dPc = FluidModel.DPcDz(ProductionSystem.Reservoir.State);
+            obj.dPc = FluidModel.DPcDz(ProductionSystem.Reservoir.State, dSdz);
          end
         function Residual = BuildResidual(obj,ProductionSystem, DiscretizationModel, dt, State0)
             %Create local variables
@@ -145,7 +145,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
                 Jz{i} = spdiags(DiagVecs,DiagIndx, N, N);
                 % Capillarity
-                % Jz{i} = Jz{i} - obj.Tph{i,1} * spdiags(obj.dPc, 0, N, N);               
+                Jz{i} = Jz{i} - obj.Tph{i,1} * spdiags(obj.dPc, 0, N, N);               
             end
             
             %% 3. Add wells to each block

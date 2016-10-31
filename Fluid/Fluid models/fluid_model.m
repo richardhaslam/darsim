@@ -100,8 +100,9 @@ classdef fluid_model < handle
             end
             
         end
-        function dPc = DPcDz(obj, Status)
-            dPc = 0;
+        function dPc = DPcDz(obj, Status, dSdz)
+            dPcdS = obj.DPcDS(Status.S);
+            dPc = dPcdS .* dSdz;
         end
         function dSdp = DSDp(obj, Status, drhodp, dni)
             ni = Status.ni;
