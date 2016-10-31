@@ -23,5 +23,9 @@ classdef Run_Summary < handle
             obj.WellsData.UpdateInjectionCurve(Ndt, Inj, dt);
             obj.WellsData.UpdateProductionCurve(Ndt, Prod, dt);
         end 
+        function SaveGridStats(obj, Ndt, DiscretizationModel)
+            % virtual call
+            
+        end
     end
 end

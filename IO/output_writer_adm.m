@@ -21,9 +21,13 @@ classdef output_writer_adm < output_writer
         function WriteSummary(obj, Summary)
             obj.WriteWellsData(Summary.Time, Summary.WellsData, Summary.NumberTimeSteps);
             obj.WriteCouplingStats(Summary.CouplingStats, Summary.NumberTimeSteps);
-            obj.WriteADMStats();
+            obj.WriteADMStats(Summary.ADMStats, Summary.NumberTimeSteps);
         end
-        function WriteADMStats(obj)
+        function WriteADMStats(obj, ADMStats, Ndt)
+             %Stats
+            fileID = fopen(strcat(obj.Directory,'ADMStats.txt'),'w');
+            fprintf(fileID, '%8d %8d %8d %8.2f\n', ADMStats(1:Ndt, :)');
+            fclose(fileID);
         end
     end
 end

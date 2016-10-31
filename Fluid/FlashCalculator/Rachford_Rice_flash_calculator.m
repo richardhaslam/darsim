@@ -49,7 +49,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             
             
             %Initilaize variables
-            alpha = 1;
+            alpha = ones(length(Status.p),1);
             fv = 0.5 * ones(length(Status.p),1);
             
             %Single phase cells do not need to flash
@@ -59,8 +59,8 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             % Find fv with the tangent method
             converged = 0;
             while ~converged && min(alpha) > 0.01
-                fv (fv > 1)  = 0.5;   % 50-50 split as inital guess
-                fv (fv < 0) = 0.5;
+                fv (fv > 1)  = 0.8;   % 50-50 split as inital guess
+                fv (fv < 0) = 0.3;
                 itCounter = 0;
                 while itCounter < 1000 && ~converged
                     %Finds hi for each component
@@ -82,12 +82,14 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                     end
                     itCounter = itCounter + 1;
                 end
-                alpha = alpha/2;
+                alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
             end
             if ~converged
                 [~, cellIndex] = max(abs(h));
                 disp('Warning: Flash did not fully converge!');
                 disp(['The residual norm of the equilibrium equation is ', num2str(norm(h, inf)), ' in cell ', num2str(cellIndex)]);
+                fv (fv > 1) = 1;
+                fv(fv < 0 ) = 0;
             end
             
             %5. Solve for x's and y's

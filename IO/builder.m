@@ -435,7 +435,12 @@ classdef builder < handle
                     CouplingStats = Sequential_Stats(obj.MaxNumTimeSteps);
             end
             wellsData = wells_data(obj.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
-            Summary = Run_Summary(obj.MaxNumTimeSteps, CouplingStats, wellsData);
+            switch (obj.ADM)
+                case('inactive')
+                    Summary = Run_Summary(obj.MaxNumTimeSteps, CouplingStats, wellsData);
+                case('active')
+                    Summary = Run_Summary_ADM(obj.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel);
+            end
         end
         function Writer = BuildWriter(obj, InputDirectory, simulation)
             % Build Plotter

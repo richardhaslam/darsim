@@ -64,6 +64,7 @@ classdef TimeLoop_Driver < handle
                 Summary.Time(obj.Ndt-1) = obj.Time/(24*3600);
                 Summary.NumberTimeSteps = obj.Ndt - 1;
                 Summary.CouplingStats.SaveTimeStepTimer(obj.Ndt - 1, toc(tstart));
+                Summary.SaveGridStats(obj.Ndt - 1, DiscretizationModel);
                 
                 %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
                 if (obj.Time == obj.TStops(index))
