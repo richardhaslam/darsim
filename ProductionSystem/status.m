@@ -24,7 +24,7 @@ methods
         obj.pc = zeros(N, 1);
         obj.z = ones(N, 2);
         obj.S = zeros(N, 1);
-        obj.ni = zeros(N, 1);
+        obj.ni = 0.5*ones(N, 1);
         obj.x1 = zeros(N, 2);
         obj.rho = zeros(N, 2);
         obj.rhoT = zeros(N, 1); 

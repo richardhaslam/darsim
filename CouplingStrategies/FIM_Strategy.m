@@ -27,15 +27,14 @@ methods
         obj.chops = 0;
         % Save initial State
         obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
+        % Linear Solver Setup
+        obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
                 disp('Maximum number of iterations was reached: time-step was chopped');
                 disp(['Restart Newton loop dt = ', num2str(dt)]);
             end
-            
-            % Linear Solver Setup
-            obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
             
             % NL solver call  
             obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);

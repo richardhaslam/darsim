@@ -60,7 +60,7 @@ classdef Matlab_Plotter_1D < Plotter
             axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 1 in Phase 1 [-]');
             xlabel('x [m]');
-            ylabel('x1w [-]');
+            ylabel('x1v [-]');
             hold on;
             set(gca,'fontsize',24);
             figure(5)
@@ -69,7 +69,7 @@ classdef Matlab_Plotter_1D < Plotter
             axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 2 in Phase 2 [-]');
             xlabel('x [m]');
-            ylabel('x2nw [-]');
+            ylabel('x2l [-]');
             hold on;
             set(gca,'fontsize',24);
             %subplot(3,1,3);
@@ -82,8 +82,8 @@ classdef Matlab_Plotter_1D < Plotter
             hold on;
             set(gca,'fontsize',24);
             drawnow;
-            obj.color1 = 'blue';
-            obj.color2 = 'blue';
+            obj.color1 = 'red';
+            obj.color2 = 'red';
         end
         function PlotPermeability(obj, Grid, Perm)
             figure(1)

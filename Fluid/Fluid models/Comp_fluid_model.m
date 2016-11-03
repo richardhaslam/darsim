@@ -18,7 +18,7 @@ classdef Comp_fluid_model < fluid_model
         function SinglePhase = InitializeReservoir(obj, Status)
             % Define initial values
             P_init = ones(length(Status.p), 1)*1e5;
-            z_init = ones(length(Status.p), 1)*0.037;
+            z_init = ones(length(Status.p), 1)*0.05;
             
             % 1. Assign initial valus
             Status.p = Status.p .* P_init;
@@ -43,7 +43,7 @@ classdef Comp_fluid_model < fluid_model
         function InitializeInjectors(obj, Inj)
             % Loop over all injectors
             for i=1:length(Inj)
-                Inj(i).z = [1 0];
+                Inj(i).z = [0.95 0.05];
                 SinglePhase = obj.Flash(Inj(i));                
                 obj.ComputePhaseDensities(Inj(i));
                 obj.ComputePhaseSaturation(Inj(i), SinglePhase);

@@ -17,6 +17,8 @@ classdef gravity_model < handle
     methods
         function obj = gravity_model(nx, ny)
             obj.RhoInt = struct('x', zeros(nx+1, ny), 'y', zeros(nx, ny+1));
+            obj.RhoInt(2).x = zeros(nx+1, ny);
+            obj.RhoInt(2).y = zeros(nx, ny+1);
         end
         function ComputeInterfaceDensities(obj, Nx, Ny, rho)
             

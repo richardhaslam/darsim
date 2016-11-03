@@ -31,9 +31,9 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
             
-            x(BubCheck < 1, 2) = z (BubCheck < 1, 1);
-            x(BubCheck < 1, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
-            SinglePhase(BubCheck < 1) = 2; % It s all liquid
+            x(BubCheck <= 1, 2) = z (BubCheck < 1, 1);
+            x(BubCheck <= 1, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
+            SinglePhase(BubCheck <= 1) = 2; % It s all liquid
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
             % point
@@ -49,8 +49,8 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             
             
             %Initilaize variables
-            alpha = ones(length(Status.p),1);
-            fv = 0.5 * ones(length(Status.p),1);
+            alpha = ones(length(Status.p),1)*1;
+            fv = Status.ni;
             
             %Single phase cells do not need to flash
             fv(SinglePhase == 1) = 1;
@@ -58,11 +58,11 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             
             % Find fv with the tangent method
             converged = 0;
+            itLimit = 10000;
             while ~converged && min(alpha) > 0.01
-                fv (fv > 1)  = 0.8;   % 50-50 split as inital guess
-                fv (fv < 0) = 0.3;
+                fv = Status.ni;
                 itCounter = 0;
-                while itCounter < 1000 && ~converged
+                while itCounter < itLimit && ~converged
                     %Finds hi for each component
                     hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
                     hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
@@ -74,11 +74,13 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                     
                     %Update fv
                     h(TwoPhase == 0) = 0;
+                    dh(TwoPhase == 0) = 1;
                     fvnew = alpha .* (-h ./ dh) + fv;
                     
                     fv = fvnew;
                     if norm(h, inf) < 1e-10
                         converged = 1;
+                        disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations'])
                     end
                     itCounter = itCounter + 1;
                 end
@@ -98,16 +100,10 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             % Solves for mole fractions in gas phase
             x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);
             
-            % Convert x to mass fraction
-            %x_old = x;
-            %x (TwoPhase == 1, 1) = x(TwoPhase == 1, 1)  ./ (x(TwoPhase == 1,1) +  (1 - x(TwoPhase == 1,1)));
-            %x (TwoPhase == 1, 2) = x(TwoPhase == 1, 2) ./ (x(TwoPhase == 1,2) +  (1 - x(TwoPhase == 1,2)));
-            %max(abs(x - x_old))
-            
             % Copy it into Status object
             %% 1 Check if there are 2 components
             Status.x1 = x;
-            Status.ni = fv .* sum(z, 2);
+            Status.ni = fv;
         end
     end
 end
