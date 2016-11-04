@@ -39,11 +39,9 @@ classdef NaturalVar_formulation < Compositional_formulation
             %Create local variables
             N = DiscretizationModel.ReservoirGrid.N;
             s_old = State0.S;
-            x_old(:,1:2) = State0.x1;
-            x_old(:,3:4) = 1 - x_old(:,1:2);
+            x_old = State0.x;
             s = ProductionSystem.Reservoir.State.S;
-            x(:, 1:2) = ProductionSystem.Reservoir.State.x1;
-            x(:, 3:4) = 1 - x(:,1:2);
+            x = ProductionSystem.Reservoir.State.x;
             s2 = 1 - s;
             s2_old = 1 - s_old;
             % Phase potentials
@@ -99,9 +97,8 @@ classdef NaturalVar_formulation < Compositional_formulation
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             N = DiscretizationModel.ReservoirGrid.N;
             pv = DiscretizationModel.ReservoirGrid.Volume*ProductionSystem.Reservoir.Por;
-            x(:,1:2) = ProductionSystem.Reservoir.State.x1;
-            x(:,3:4) = 1 - x(:,1:2);
-            x1 = ProductionSystem.Reservoir.State.x1;
+            x = ProductionSystem.Reservoir.State.x;
+            x1 = x(:,1:2);
             x2 = 1 - x1;
             s = ProductionSystem.Reservoir.State.S;
             rho = ProductionSystem.Reservoir.State.rho;
@@ -234,8 +231,8 @@ classdef NaturalVar_formulation < Compositional_formulation
             delta2((Status.S > 1)) = 0;
             delta1((Status.S < 0)) = 0;
             delta2((Status.S < 0)) = 0;
-            Status.x1(:,1) = Status.x1(:,1) + delta1;
-            Status.x1(:,2) = Status.x1(:,2) + delta2;
+            Status.x(:,1) = Status.x(:,1) + delta1;
+            Status.x(:,2) = Status.x(:,2) + delta2;
             
             % Single phase from previous solution
             obj.PreviousSinglePhase = obj.SinglePhase;
@@ -249,7 +246,7 @@ classdef NaturalVar_formulation < Compositional_formulation
             FluidModel.ComputePhaseDensities(Status);
             
             % Update z
-            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x1, Status.rho);
+            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x, Status.rho);
             
             % Update Pc
             Status.pc = FluidModel.ComputePc(Status.S);            
@@ -263,11 +260,11 @@ classdef NaturalVar_formulation < Compositional_formulation
                 a = Inj(i).Cells;
                     for j=1:length(a)
                         J1p(a(j),a(j)) = J1p(a(j),a(j)) ...
-                            + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x1(:,1) ...
-                            + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x1(:,2));
+                            + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x(:,1) ...
+                            + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x(:,2));
                         J2p(a(j),a(j)) = J2p(a(j),a(j)) ...
-                            + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x2(:,1) ...
-                            + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x2(:,2));
+                            + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x(:,3) ...
+                            + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x(:,4));
                     end
             end
             
@@ -277,22 +274,22 @@ classdef NaturalVar_formulation < Compositional_formulation
                 for j=1:length(b)
                     %Pressure blocks
                     J1p(b(j),b(j)) = J1p(b(j),b(j))...
-                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * State.x1(b(j),1) ...
-                        + obj.Mob(b(j), 2) * State.rho(b(j),2) * State.x1(b(j),2))...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * State.x1(b(j),1) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j))) ...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * State.x1(b(j),2) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)));
+                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * State.x(b(j),1) ...
+                        + obj.Mob(b(j), 2) * State.rho(b(j),2) * State.x(b(j),2))...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * State.x(b(j),1) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j))) ...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * State.x(b(j),2) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)));
                     J2p(b(j),b(j)) = J2p(b(j),b(j)) ...
-                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * (1 - State.x1(b(j),1)) ...
-                        + obj.Mob(b(j), 2) * State.rho(b(j),2) * (1 - State.x1(b(j),2)))...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (1 - State.x1(b(j),1)) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j))) ...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (1 - State.x1(b(j),2)) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)));
+                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * State.x(b(j),3) ...
+                        + obj.Mob(b(j), 2) * State.rho(b(j),2) * State.x(b(j),4))...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * State.x(b(j),3) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j))) ...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * State.x(b(j),4) * obj.drhodp(b(j),2) * (Prod(i).p - State.p(b(j)));
                     %Saturation blocks
                     J1S(b(j),b(j)) = J1S(b(j),b(j))...
-                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j),1) * State.rho(b(j),1) * State.x1(b(j),1) ...
-                        + obj.dMob(b(j), 2) * State.rho(b(j), 2) * State.x1(b(j),2)) * (Prod(i).p - State.p(b(j)));
+                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j),1) * State.rho(b(j),1) * State.x(b(j),1) ...
+                        + obj.dMob(b(j), 2) * State.rho(b(j), 2) * State.x(b(j),2)) * (Prod(i).p - State.p(b(j)));
                     J2S(b(j),b(j)) = J2S(b(j),b(j)) ...
-                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j), 1) * State.rho(b(j),1) * (1- State.x1(b(j), 1)) ...
-                        + obj.dMob(b(j),2) * State.rho(b(j),2) * (1 - State.x1(b(j),2))) * (Prod(i).p - State.p(b(j)));
+                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j), 1) * State.rho(b(j),1) * State.x(b(j), 3) ...
+                        + obj.dMob(b(j),2) * State.rho(b(j),2) * State.x(b(j),4)) * (Prod(i).p - State.p(b(j)));
                     % Mole fractions blocks
                     J1x1ph1(b(j), b(j)) = J1x1ph1(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (Prod(i).p - State.p(b(j))); 
                     J1x1ph2(b(j), b(j)) = J1x1ph2(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (Prod(i).p - State.p(b(j)));

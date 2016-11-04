@@ -22,7 +22,7 @@ classdef Production_System < handle
         function SinglePhase = Initialize(obj, DiscretizationModel, FluidModel)
             %% Initialize Reservoir state           
             % 1. Initialize State object
-            obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N);
+            obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N, FluidModel.NofPhases, FluidModel.NofComp);
             % 2. Compute initial phase and component distribution
             obj.Reservoir.State.T = obj.Reservoir.Temp; % For now it's fine like this
             SinglePhase = FluidModel.InitializeReservoir(obj.Reservoir.State);

@@ -46,8 +46,8 @@ classdef fluid_model < handle
             z(:,2) = 1 - z(:,1);
         end
         function ComputePhaseSaturation(obj, Status, SinglePhase)
-            Status.S = Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1))./(Status.rho(:,1).*(Status.z(:,1)...
-                - Status.x1(:,1)) + Status.rho(:,2).*(Status.x1(:,2) - Status.z(:,1)));
+            Status.S = Status.rho(:,2).*(Status.x(:,2) - Status.z(:,1))./(Status.rho(:,1).*(Status.z(:,1)...
+                - Status.x(:,1)) + Status.rho(:,2).*(Status.x(:,2) - Status.z(:,1)));
             Status.S(SinglePhase == 1) = 1;
             Status.S(SinglePhase == 2) = 0;
         end
@@ -120,8 +120,8 @@ classdef fluid_model < handle
         function dSdz = DSDz(obj, Status, dni, dx1v, dx1l)
             rhov = Status.rho(:,1);
             rhol = Status.rho(:,2);
-            x1v = Status.x1(:,1);
-            x1l = Status.x1(:,2);
+            x1v = Status.x(:,1);
+            x1l = Status.x(:,2);
             ni = Status.ni;
             z = Status.z(:,1);
             % Derivative of S with respect to z

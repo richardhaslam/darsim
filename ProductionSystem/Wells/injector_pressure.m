@@ -19,8 +19,9 @@ classdef injector_pressure < injector
             for i = 1:n_phases
                 obj.QPhases(:,i) = obj.rho(i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - State.p(obj.Cells));
             end
-            obj.QComponents(:, 1) = obj.x1(1) .* obj.QPhases(:,1) + obj.x1(2) .* obj.QPhases(:,2);
-            obj.QComponents(:, 2) = obj.x2(1) .* obj.QPhases(:,1) + obj.x2(2) .* obj.QPhases(:,2);
+            for j=1:n_components
+                obj.QComponents(:, j) = obj.x((j-1)*2 + 1) .* obj.QPhases(:,1) + obj.x((j-1)*2 + 2) .* obj.QPhases(:,2);
+            end
         end
         function [A, rhs] = AddToPressureSystem(obj, K, A, rhs)
             a = obj.Cells;

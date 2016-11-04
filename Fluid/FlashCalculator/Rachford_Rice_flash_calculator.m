@@ -101,8 +101,8 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);
             
             % Copy it into Status object
-            %% 1 Check if there are 2 components
-            Status.x1 = x;
+            Status.x(:,1:2) = x;
+            Status.x(:,3:4) = 1 - x;
             Status.ni = fv;
         end
     end

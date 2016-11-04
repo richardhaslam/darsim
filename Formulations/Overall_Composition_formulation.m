@@ -48,8 +48,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             z = ProductionSystem.Reservoir.State.z;
             
             % Compositions 
-            x(:,1:2) = ProductionSystem.Reservoir.State.x1;
-            x(:,3:4) = 1 - x(:,1:2);
+            x = ProductionSystem.Reservoir.State.x;
             
             % Density
             rho = ProductionSystem.Reservoir.State.rho;
@@ -91,8 +90,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             %
             pv = DiscretizationModel.ReservoirGrid.Volume*ProductionSystem.Reservoir.Por;
             z = ProductionSystem.Reservoir.State.z;
-            x(:,1:2) = ProductionSystem.Reservoir.State.x1;
-            x(:,3:4) = 1 - x(:,1:2);
+            x = ProductionSystem.Reservoir.State.x;
             rho = ProductionSystem.Reservoir.State.rho;
             rhoT = ProductionSystem.Reservoir.State.rhoT;
             
@@ -163,17 +161,16 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 a = Inj(i).Cells;
                 for j=1:length(a)
                     Jp{1}(a(j),a(j)) = Jp{1}(a(j),a(j)) ...
-                                       + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x1(:,1) ...
-                                       + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x1(:,2));
+                                       + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x(:,1) ...
+                                       + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x(:,2));
                     Jp{2}(a(j),a(j)) = Jp{2}(a(j),a(j)) ...
-                                       + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x2(:,1) ...
-                                       + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x2(:,2));
+                                       + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(:,1) * Inj(i).x(:,3) ...
+                                       + Inj(i).Mob(:,2) *  Inj(i).rho(:,2) * Inj(i).x(:,4));
                 end
             end
             
             % Compositions 
-            x(:,1:2) = State.x1;
-            x(:,3:4) = 1 - x(:,1:2);
+            x = State.x;
             % Density
             rho = State.rho;
             
@@ -184,7 +181,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
                     %Pressure blocks
                     Jp{1}(b(j),b(j)) = Jp{1}(b(j),b(j))...
                         + Prod(i).PI * K(b(j)) *...
-                        ( obj.Mob(b(j), 1) * State.rho(b(j),1) * State.x1(b(j),1) ...
+                        ( obj.Mob(b(j), 1) * State.rho(b(j),1) * x(b(j),1) ...
                         + obj.Mob(b(j), 2) * rho(b(j),2) * x(b(j),2)...
                         )...
                         - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * x(b(j),1) * obj.drhodp(b(j),1) * (Prod(i).p - State.p(b(j))) ...

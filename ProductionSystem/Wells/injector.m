@@ -18,7 +18,7 @@ classdef injector < handle
         z
         S
         ni
-        x1
+        x
         x2
         rho
         Mob

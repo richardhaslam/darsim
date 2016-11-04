@@ -11,22 +11,22 @@ properties
     p
     pc
     S
-    x1
+    x
     z
     rho
     rhoT
     ni
 end
 methods
-    function Initialize(obj, N)
+    function Initialize(obj, N, nf, ncomp)
         % Create objects
         obj.p = ones(N, 1);
         obj.pc = zeros(N, 1);
-        obj.z = ones(N, 2);
+        obj.z = ones(N, ncomp);
         obj.S = zeros(N, 1);
         obj.ni = 0.5*ones(N, 1);
-        obj.x1 = zeros(N, 2);
-        obj.rho = zeros(N, 2);
+        obj.x = zeros(N, nf*ncomp);
+        obj.rho = zeros(N, nf);
         obj.rhoT = zeros(N, 1); 
     end
 end

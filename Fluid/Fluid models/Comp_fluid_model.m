@@ -44,10 +44,11 @@ classdef Comp_fluid_model < fluid_model
             % Loop over all injectors
             for i=1:length(Inj)
                 Inj(i).z = [0.95 0.05];
+                Inj(i).ni = 0.5;
                 SinglePhase = obj.Flash(Inj(i));                
                 obj.ComputePhaseDensities(Inj(i));
                 obj.ComputePhaseSaturation(Inj(i), SinglePhase);
-                Inj(i).x2 = 1 - Inj(i).x1;
+                Inj(i).x2 = 1 - Inj(i).x;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end            
         end
@@ -64,10 +65,11 @@ classdef Comp_fluid_model < fluid_model
             % Check if single component
             SinglePhase(z(:, 1) == 1) = 1;
             SinglePhase(z(:, 1) == 0) = 2;
-            Status.x1(z(:, 1) == 1, 1) = 1;
-            Status.x1(z(:, 1) == 0, 1) = 1;
-            Status.x1(z(:, 1) == 1, 2) = 0;
-            Status.x1(z(:, 1) == 0, 2) = 0;
+            Status.x(z(:, 1) == 1, 1) = 1;
+            Status.x(z(:, 1) == 0, 1) = 1;
+            Status.x(z(:, 1) == 1, 2) = 0;
+            Status.x(z(:, 1) == 0, 2) = 0;
+            Status.x(:,3:4) = 1 - Status.x(:,1:2);
             
             % Transform mass fractions into mole fractions to check phase
             % state
@@ -97,8 +99,8 @@ classdef Comp_fluid_model < fluid_model
             k = obj.ComputeKvalues(Status);
             dk = obj.DKvalDp(Status);
             ni = Status.ni;
-            x1 = Status.x1(:,1);
-            y1 = Status.x1(:,2);
+            x1 = Status.x(:,1);
+            y1 = Status.x(:,2);
             x2 = 1 - x1;
             y2 = 1 - y1;
             k1 = k(:,1);

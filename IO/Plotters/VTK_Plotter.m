@@ -101,16 +101,16 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
             fprintf(fileID, '\n');
             %x11
-            obj.PrintScalar2VTK(fileID, Status.x1(:,1), ' x1ph1');
+            obj.PrintScalar2VTK(fileID, Status.x(:,1), ' x1ph1');
             fprintf(fileID, '\n');
             %x12
-            obj.PrintScalar2VTK(fileID, Status.x1(:,2), ' x1ph2');
+            obj.PrintScalar2VTK(fileID, Status.x(:,2), ' x1ph2');
             fprintf(fileID, '\n');
             %x21
-            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,1), ' x2ph1');
+            obj.PrintScalar2VTK(fileID, Status.x(:,3), ' x2ph1');
             fprintf(fileID, '\n');
             %x22
-            obj.PrintScalar2VTK(fileID, 1-Status.x1(:,2), ' x2ph2');
+            obj.PrintScalar2VTK(fileID, Status.x(:,4), ' x2ph2');
             fprintf(fileID, '\n');
             %z1
             obj.PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
