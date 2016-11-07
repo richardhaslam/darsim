@@ -6,7 +6,7 @@
 %Created: 26 July 2016
 %Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef coarse_grid < grid
+classdef coarse_grid < grid_darsim
     properties
         Nx
         Ny

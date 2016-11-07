@@ -16,14 +16,13 @@ classdef Plotter < handle
        obj = PlotADMGrid(obj)
     end
     methods
-        function PlotInitialStatus(obj, ProductionSystem, DiscretizationModel)
-            % Plot reservoir Solution
-            obj.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
-            obj.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
-            % Plot Fractures
-            
-            % Plot Wells
-            obj.PlotWells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod, DiscretizationModel.ReservoirGrid);
-        end
+%         function PlotInitialStatus(obj, ProductionSystem, DiscretizationModel)
+%             % Plot reservoir Solution
+%             obj.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+%             obj.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
+%             % Plot Fractures
+%             
+%             
+%         end
     end
 end

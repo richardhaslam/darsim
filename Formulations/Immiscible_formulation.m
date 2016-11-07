@@ -122,7 +122,7 @@ classdef Immiscible_formulation < fim_formulation
             FluidModel.ComputePhaseDensities(Status);
             
             % Update z
-            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x1, Status.rho);
+            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x, Status.rho);
             
             % Update total density
             Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);  

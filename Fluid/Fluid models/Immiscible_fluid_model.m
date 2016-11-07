@@ -29,8 +29,8 @@ classdef Immiscible_fluid_model < fluid_model
             Status.z(:,2) = 1 - z_init;
             
             % Composition in this case is fixed to be 1 and 0
-            Status.x1(:,1) = 1;
-            Status.x1(:,2) = 0;
+            Status.x(:,1) = 1;
+            Status.x(:,2) = 0;
             
             % Compute Phase Density
             obj.ComputePhaseDensities(Status)
@@ -47,12 +47,12 @@ classdef Immiscible_fluid_model < fluid_model
         function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
-                Inj(i).x1 = [1 0];
+                Inj(i).x = [1 0 0 1];
                 Inj(i).S = 1;
                 for ph=1:obj.NofPhases
                     Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i));
                 end
-                Inj(i).x2 = 1 - Inj(i).x1;
+                Inj(i).x2 = 1 - Inj(i).x;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end
         end

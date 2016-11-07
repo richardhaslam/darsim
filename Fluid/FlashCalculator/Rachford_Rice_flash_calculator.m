@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
     properties
+        tol = 1e-5;
     end
     methods
         function SinglePhase = Flash(obj, Status, Components, Phases)
@@ -31,17 +32,17 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
             
-            x(BubCheck <= 1, 2) = z (BubCheck < 1, 1);
-            x(BubCheck <= 1, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
-            SinglePhase(BubCheck <= 1) = 2; % It s all liquid
+            x(BubCheck - 1 <= obj.tol, 2) = z (BubCheck - 1 < obj.tol, 1);
+            x(BubCheck - 1 <= obj.tol, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
+            SinglePhase(BubCheck - 1 <= obj.tol) = 2; % It s all liquid
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
             % point
             DewCheck = z ./ k;
             DewCheck = sum(DewCheck, 2);
-            x(DewCheck < 1, 1) = z (DewCheck < 1, 1);
-            x(DewCheck < 1, 2) = 1;                    % This is to avoid having singular Jacobian matrix.
-            SinglePhase(DewCheck < 1) = 1;  % It s all vapour
+            x(DewCheck - 1 < obj.tol, 1) = z (DewCheck - 1 < obj.tol, 1);
+            x(DewCheck - 1 < obj.tol, 2) = 1;                    % This is to avoid having singular Jacobian matrix.
+            SinglePhase(DewCheck - 1 < obj.tol) = 1;  % It s all vapour
             
             %% 3. Actual Flash: solves for fv (vapor fraction)
             TwoPhase = ones(length(Status.p), 1);
@@ -49,7 +50,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             
             
             %Initilaize variables
-            alpha = ones(length(Status.p),1)*1;
+            alpha = ones(length(Status.p),1);
             fv = Status.ni;
             
             %Single phase cells do not need to flash
@@ -60,7 +61,6 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             converged = 0;
             itLimit = 10000;
             while ~converged && min(alpha) > 0.01
-                fv = Status.ni;
                 itCounter = 0;
                 while itCounter < itLimit && ~converged
                     %Finds hi for each component
@@ -80,11 +80,13 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                     fv = fvnew;
                     if norm(h, inf) < 1e-10
                         converged = 1;
-                        disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations'])
+                        disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations, with alpha ', num2str(min(alpha))])
                     end
                     itCounter = itCounter + 1;
                 end
-                alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
+                alpha (norm(h, inf) > 1e-10) = alpha (norm(h, inf) > 1e-10)/2;
+                fv (fv > 1) = 0.9;
+                fv (fv < 0) = 0.1;
             end
             if ~converged
                 [~, cellIndex] = max(abs(h));

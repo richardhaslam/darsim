@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 14 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef cartesian_grid < grid
+classdef cartesian_grid < grid_darsim
     properties
         Nx
         Ny

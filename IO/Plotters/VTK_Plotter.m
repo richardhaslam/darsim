@@ -19,7 +19,7 @@ classdef VTK_Plotter < Plotter
                 delete(strcat(Directory,'/Output/VTK/*.vtk'));
             end
             obj.FileName = strcat(Directory, '/Output/VTK/', Problem);
-            obj.VTKindex = 0;
+            obj.VTKindex = 1;
         end
         function PlotWells(obj, Inj, Prod, Grid)
             %InJectors
@@ -125,7 +125,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotPermeability(obj, Grid, K)
             %Permeability
-            fileID = fopen(strcat(obj.FileName, num2str(0),'.vtk'), 'a');
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex - 1),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
             fprintf(fileID, '\n');
         end
@@ -134,6 +134,7 @@ classdef VTK_Plotter < Plotter
         function PlotBasisFunctions(obj)
         end
         function PlotADMGrid(obj, Grid, CoarseGrid)
+            obj.VTKindex = obj.VTKindex - 1;
             for i=1:length(CoarseGrid)
                 fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -158,6 +159,7 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fclose(fileID);
             end
+            obj.VTKindex = obj.VTKindex + 1;
         end
     end
     methods (Access = private)

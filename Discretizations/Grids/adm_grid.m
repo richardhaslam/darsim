@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 12 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef adm_grid < grid
+classdef adm_grid < grid_darsim
     properties
         Ntot
         I

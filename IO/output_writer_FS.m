@@ -15,6 +15,7 @@ classdef output_writer_FS < output_writer
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+            obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
         end
         function WriteSummary(obj, Summary)
             obj.WriteWellsData(Summary.Time, Summary.WellsData, Summary.NumberTimeSteps);

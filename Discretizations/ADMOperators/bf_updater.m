@@ -132,6 +132,19 @@ classdef bf_updater < handle
                 end
             end
         end
-
+        function TransformIntoTPFA(obj, Nx)
+            [N, ~] = size(obj.A);
+            x1 = [0; diag(obj.A, 1)];
+            x2 = [diag(obj.A, -1); 0];
+            diagy1 = diag(obj.A, Nx);
+            diagy2 = diag(obj.A, -Nx);
+            y1 = zeros(N, 1);
+            y2 = zeros(N, 1);
+            y1(N - length(diagy1) + 1:end) = diagy1;
+            y2(1:length(diagy1)) = diagy2;
+            DiagVecs = [y2,x2,-y2-x2-y1-x1,x1,y1];
+            DiagIndx = [-Nx,-1,0,1,Nx];
+            obj.A = spdiags(DiagVecs,DiagIndx,N,N);
+        end
     end
 end
