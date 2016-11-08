@@ -84,7 +84,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                     end
                     itCounter = itCounter + 1;
                 end
-                alpha (norm(h, inf) > 1e-10) = alpha (norm(h, inf) > 1e-10)/2;
+                alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
                 fv (fv > 1) = 0.9;
                 fv (fv < 0) = 0.1;
             end

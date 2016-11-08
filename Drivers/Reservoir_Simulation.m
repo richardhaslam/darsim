@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Reservoir_Simulation
     properties
+        Initializer
         ProductionSystem
         FluidModel
         DiscretizationModel
@@ -17,10 +18,9 @@ classdef Reservoir_Simulation
     end
     methods
         function Initialize(obj)
-            obj.Formulation.SinglePhase = obj.ProductionSystem.Initialize(obj.DiscretizationModel, obj.FluidModel);
+            obj.Initializer.InitializeProductionSystem(obj.ProductionSystem, obj.FluidModel, obj.Formulation, obj.DiscretizationModel);
             obj.DiscretizationModel.Initialize(obj.ProductionSystem, obj.FluidModel);
             obj.ProductionSystem.InitializeWells(obj.FluidModel);
-            obj.DiscretizationModel.ReservoirGrid.ComputeDepth(obj.Formulation.GravityModel.alpha);
         end
         function Run(obj, Writer)        
             disp('BEGIN TIME-DEPENDENT SIMULATION');

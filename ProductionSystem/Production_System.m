@@ -19,23 +19,6 @@ classdef Production_System < handle
         function AddWells(obj, Wells)
             obj.Wells = Wells;
         end
-        function SinglePhase = Initialize(obj, DiscretizationModel, FluidModel)
-            %% Initialize Reservoir state           
-            % 1. Initialize State object
-            obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N, FluidModel.NofPhases, FluidModel.NofComp);
-            % 2. Compute initial phase and component distribution
-            obj.Reservoir.State.T = obj.Reservoir.Temp; % For now it's fine like this
-            SinglePhase = FluidModel.InitializeReservoir(obj.Reservoir.State);
-            
-            % Output initial status:      
-            disp('Initial conditions:')
-            disp(['reservoir pressure:' num2str(max(obj.Reservoir.State.p/1e6)), ' MPa']);
-            disp(['reservoir saturation:' num2str(max(obj.Reservoir.State.S))]);
-            disp(['reservoir z1: ', num2str(max(obj.Reservoir.State.z(:,1)))])
-            disp(['reservoir temperature: ', num2str(obj.Reservoir.Temp)]);
-            disp('---------------------------------------------------------');
-            disp(char(5));
-        end
         function InitializeWells(obj, FluidModel)
             %% Initialize Wells: 
             % 1. Create objects

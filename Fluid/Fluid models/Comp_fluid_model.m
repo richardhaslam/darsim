@@ -15,31 +15,6 @@ classdef Comp_fluid_model < fluid_model
             obj@fluid_model(n_phases, n_comp);
             obj.name = 'Compositional';
         end
-        function SinglePhase = InitializeReservoir(obj, Status)
-            % Define initial values
-            P_init = ones(length(Status.p), 1)*1e5;
-            z_init = ones(length(Status.p), 1)*0.05;
-            
-            % 1. Assign initial valus
-            Status.p = Status.p .* P_init;
-            Status.z(:,1) = z_init;
-            Status.z(:,2) = 1 - z_init;
-            
-            % 2. Update Composition of the phases (Flash)
-            SinglePhase = obj.Flash(Status);
-            
-            % 2.a Compute Phase Density
-            obj.ComputePhaseDensities(Status);
-            
-            %3. Update S based on components mass balance
-            obj.ComputePhaseSaturation(Status, SinglePhase);
-            
-            % 4. Total Density
-            Status.rhoT = obj.ComputeTotalDensity(Status.S, Status.rho);
-            
-            % 5. Compute initial Pc
-            Status.pc = obj.ComputePc(Status.S);
-        end
         function InitializeInjectors(obj, Inj)
             % Loop over all injectors
             for i=1:length(Inj)
@@ -48,7 +23,7 @@ classdef Comp_fluid_model < fluid_model
                 SinglePhase = obj.Flash(Inj(i));                
                 obj.ComputePhaseDensities(Inj(i));
                 obj.ComputePhaseSaturation(Inj(i), SinglePhase);
-                Inj(i).x2 = 1 - Inj(i).x;
+                %Inj(i).x2 = 1 - Inj(i).x;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end            
         end

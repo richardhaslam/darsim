@@ -133,6 +133,7 @@ classdef builder < handle
             simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
+            simulation.Initializer = initializer();
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
             %Gridding

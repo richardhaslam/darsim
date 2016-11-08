@@ -15,34 +15,14 @@ classdef Immiscible_fluid_model < fluid_model
             obj@fluid_model(n_phases, n_phases);
             obj.name = 'Immiscible';
         end
-        function SinglePhase = InitializeReservoir(obj, Status)
-            % Define initial values
-            P_init = linspace(1e5, 1e5, length(Status.p));
-            %z_init = zeros(100,100);
-            %z_init(:,51:100) = 1;
-            %z_init = reshape(z_init, length(Status.p), 1);
-            z_init = ones(length(Status.p), 1)*0.1;
-            
-            % Assign initial valus
-            Status.p = Status.p .* P_init';
-            Status.z(:,1) = z_init;
-            Status.z(:,2) = 1 - z_init;
-            
+        function SinglePhase = Flash(obj, Status)
             % Composition in this case is fixed to be 1 and 0
             Status.x(:,1) = 1;
             Status.x(:,2) = 0;
             
-            % Compute Phase Density
-            obj.ComputePhaseDensities(Status)
-            
             SinglePhase (Status.z(:,1) == 1) = 1;
             SinglePhase (Status.z(:,2) == 1) = 2;
             
-            % Two phase, two component saturation updater    
-            obj.ComputePhaseSaturation(Status, SinglePhase);
-            
-            % Compute initial Pc
-            Status.pc = obj.ComputePc(Status.S);
         end
         function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)

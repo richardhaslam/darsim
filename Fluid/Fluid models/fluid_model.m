@@ -156,7 +156,7 @@ classdef fluid_model < handle
         
     end
     methods (Abstract)
-        obj = InitializeReservoir(obj);
+        obj = Flash(obj);
         obj = InitializeInjectors(obj);
     end
 end

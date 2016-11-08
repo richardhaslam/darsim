@@ -35,12 +35,11 @@ classdef BO_fluid_model < Comp_fluid_model
             % Loop over all injectors
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
-                Inj(i).x1 = [1 0 ];                
+                Inj(i).x = [1 0 0 1];        
                 for ph=1:obj.NofPhases
                     Inj(i).rho(:, ph) = obj.Phases(ph).ComputeDensity(Inj(i), obj.Components, 0);
                 end
                 Inj(i).S = 1;
-                Inj(i).x2 = 1 - Inj(i).x1;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end            
         end
