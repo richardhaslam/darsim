@@ -18,9 +18,10 @@ classdef Reservoir_Simulation
     end
     methods
         function Initialize(obj)
+            obj.DiscretizationModel.Initialize(obj.ProductionSystem, obj.Formulation);
             obj.Initializer.InitializeProductionSystem(obj.ProductionSystem, obj.FluidModel, obj.Formulation, obj.DiscretizationModel);
-            obj.DiscretizationModel.Initialize(obj.ProductionSystem, obj.FluidModel);
             obj.ProductionSystem.InitializeWells(obj.FluidModel);
+            obj.DiscretizationModel.InitializeMapping(obj.ProductionSystem, obj.FluidModel)
         end
         function Run(obj, Writer)        
             disp('BEGIN TIME-DEPENDENT SIMULATION');

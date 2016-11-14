@@ -1,4 +1,4 @@
-%  ADM discretization model
+%  FS discretization model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -14,10 +14,8 @@ classdef FS_Discretization_model < Discretization_model
         function obj = FS_Discretization_model(nx, ny, nz)
             obj@Discretization_model(nx, ny, nz);
         end
-        function Initialize(obj, ProductionSystem, FluidModel)
-            obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
-            % Perforated cells
-            obj.DefinePerforatedCells(ProductionSystem.Wells);
+        function InitializeMapping(obj, ProductionSystem, FluidModel)
+            % virtual call
         end
         function AverageSolOnCoarseBlocks(obj, Status, FluidModel, Formulation)
             % virtual call

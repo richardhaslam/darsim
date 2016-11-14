@@ -77,11 +77,14 @@ classdef Immiscible_formulation < fim_formulation
                 % 1.b: compressibility part
                 dMupx = obj.UpWind(i).x*(obj.Mob(:, i) .* obj.drhodp(:,i));
                 dMupy = obj.UpWind(i).y*(obj.Mob(:, i) .* obj.drhodp(:,i));
+                %dMupz = obj.UpWind(i).z*(obj.Mob(:, i) .* obj.drhodp(:,i));
                 
                 vecX1 = min(reshape(obj.U(i).x(1:Nx,:),N,1), 0).*dMupx;
                 vecX2 = max(reshape(obj.U(i).x(2:Nx+1,:),N,1), 0).*dMupx;
                 vecY1 = min(reshape(obj.U(i).y(:,1:Ny),N,1), 0).*dMupy;
                 vecY2 = max(reshape(obj.U(i).y(:,2:Ny+1),N,1), 0).*dMupy;
+                %vecZ1 = min(reshape(obj.U(i).z(:,:,1:Nz),N,1), 0).*dMupz;
+                %vecZ2 = max(reshape(obj.U(i).z(:,:,2:Nz+1),N,1), 0).*dMupz; 
                 acc = pv/dt .* obj.drhodp(:,i) .* s(:,i);
                 DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];
@@ -90,11 +93,14 @@ classdef Immiscible_formulation < fim_formulation
                 % 2. Saturation Block
                 dMupx = obj.UpWind(i).x * (obj.dMob(:,i) .* rho(:,i));
                 dMupy = obj.UpWind(i).y * (obj.dMob(:,i) .* rho(:,i));
+                %dMupz = obj.UpWind(i).z * (obj.dMob(:,i) .* rho(:,i));
                 % Construct JS block
                 x1 = min(reshape(obj.U(i).x(1:Nx,:),N,1),0).*dMupx;
                 x2 = max(reshape(obj.U(i).x(2:Nx+1,:),N,1),0).*dMupx;
                 y1 = min(reshape(obj.U(i).y(:,1:Ny),N,1),0).*dMupy;
                 y2 = max(reshape(obj.U(i).y(:,2:Ny+1),N,1),0).*dMupy;
+                %z1 = min(reshape(obj.U(i).z(:,:,1:Nz),N,1),0).*dMupz;
+                %z2 = max(reshape(obj.U(i).z(:,:,2:Nz+1),N,1),0).*dMupz;
                 v = (-1)^(i+1) * ones(N,1)*pv/dt .* rho(:,i);
                 DiagVecs = [-y2, -x2, y2+x2-y1-x1+v, x1, y1];
                 DiagIndx = [-Nx, -1, 0, 1, Nx];

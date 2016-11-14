@@ -32,12 +32,8 @@ classdef ADM_Discretization_model < Discretization_model
         function AddADMGridSelector(obj, gridselector)
             obj.ADMGridSelector = gridselector;
         end
-        function Initialize(obj, ProductionSystem, FluidModel)
-            disp('Algebraic Dynamic Multilevel (ADM) method run')
-            obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
-            % Perforated cells
-            obj.DefinePerforatedCells(ProductionSystem.Wells);
-            
+       function InitializeMapping(obj, ProductionSystem, FluidModel)
+            disp('Algebraic Dynamic Multilevel (ADM) method run') 
             % Construct Coarse Grids
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             

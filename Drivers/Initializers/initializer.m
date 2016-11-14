@@ -15,14 +15,15 @@ classdef initializer < handle
             % 1. Initialize State object
             ProductionSystem.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N, FluidModel.NofPhases, FluidModel.NofComp);
             
-            % 2. Assign Depth
-            DiscretizationModel.ReservoirGrid.ComputeDepth(Formulation.GravityModel.alpha);
-            
-            % 3. Compute initial phase and component distribution
+            % 2. Compute initial phase and component distribution
             ProductionSystem.Reservoir.State.T = ProductionSystem.Reservoir.Temp; % For now it's fine like this
             
-            % 4. Define initial state
-            Formulation.SinglePhase = obj.ComputeInitialState(ProductionSystem, FluidModel, Formulation.GravityModel, DiscretizationModel.ReservoirGrid);
+            % 3. Define initial state
+            start = tic;
+            obj.ComputeInitialState(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
+            initialization = toc(start);
+            disp(['Initialization took ', num2str(initialization), ' s']);
+            disp(char(5));
             
             % Output initial status:      
             disp('Initial conditions:')
@@ -33,10 +34,12 @@ classdef initializer < handle
             disp('---------------------------------------------------------');
             disp(char(5));
         end
-        function SinglePhase = ComputeInitialState(obj, ProductionSystem, FluidModel, GravityModel, ReservoirGrid)
+        function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
+            disp('Started simple initialization');
+            
              % Define initial values
-            P_init = ones(ReservoirGrid.N, 1)*1e5;
-            z_init = ones(ReservoirGrid.N, 1)*0.037;
+            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.5e7;
+            z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.037;
                         
             % 1. Assign initial valus
             ProductionSystem.Reservoir.State.p = P_init;
@@ -44,7 +47,7 @@ classdef initializer < handle
             ProductionSystem.Reservoir.State.z(:,2) = 1 - z_init;
            
             % 2. Update Composition of the phases (Flash)
-            SinglePhase = FluidModel.Flash(ProductionSystem.Reservoir.State);
+            Formulation.SinglePhase = FluidModel.Flash(ProductionSystem.Reservoir.State);
             
             % 3 Compute Phase Density
             FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
