@@ -19,6 +19,8 @@ classdef Immiscible_fluid_model < fluid_model
             % Composition in this case is fixed to be 1 and 0
             Status.x(:,1) = 1;
             Status.x(:,2) = 0;
+            Status.x(:,3) = 0;
+            Status.x(:,4) = 1;
             
             SinglePhase (Status.z(:,1) == 1) = 1;
             SinglePhase (Status.z(:,2) == 1) = 2;

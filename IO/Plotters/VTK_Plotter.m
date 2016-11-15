@@ -73,7 +73,7 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'ASCII\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
-            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, 2);
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, Grid.Nz+1);
             fprintf(fileID, '\n');
             fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
             fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
@@ -81,8 +81,8 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
             fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
             fprintf(fileID, '\n');
-            fprintf(fileID, 'Z_COORDINATES 2 float\n');
-            fprintf(fileID, '%d ', [0 1]);
+            fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
+            fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);

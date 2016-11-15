@@ -198,8 +198,9 @@ classdef builder < handle
                 value = str2double(inputMatrix(obj.perm +1));
                 Kx = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
                 Ky = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
+                Kz = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
             end
-            K = [Kx, Ky];
+            K = [Kx, Ky, Kz];
             Reservoir.AddPermeabilityPorosity(K, phi);
             ProductionSystem.AddReservoir(Reservoir);
             
@@ -213,9 +214,11 @@ classdef builder < handle
                 i_final = str2double(inputMatrix(obj.inj(i) + 2));
                 j_init = str2double(inputMatrix(obj.inj(i) + 3));
                 j_final = str2double(inputMatrix(obj.inj(i) + 4));
-                coord = [i_init, i_final; j_init, j_final];
+                k_init = str2double(inputMatrix(obj.inj(i) + 5));
+                k_final = str2double(inputMatrix(obj.inj(i) + 6));
+                coord = [i_init, i_final; j_init, j_final; k_init, k_final];
                 PI = 2000;
-                pressure = str2double(inputMatrix(obj.inj(i) + 6));
+                pressure = str2double(inputMatrix(obj.inj(i) + 8));
                 Injector = injector_pressure(PI, coord, pressure, Tres);
                 Wells.AddInjector(Injector);
             end
@@ -225,9 +228,11 @@ classdef builder < handle
                 i_final = str2double(inputMatrix(obj.prod(i) + 2));
                 j_init = str2double(inputMatrix(obj.prod(i) + 3));
                 j_final = str2double(inputMatrix(obj.prod(i) + 4));
-                coord = [i_init, i_final; j_init, j_final];
+                k_init = str2double(inputMatrix(obj.prod(i) + 5));
+                k_final = str2double(inputMatrix(obj.prod(i) + 6));
+                coord = [i_init, i_final; j_init, j_final; k_init, k_final];
                 PI = 2000;
-                pressure = str2double(inputMatrix(obj.prod(i) + 6));
+                pressure = str2double(inputMatrix(obj.prod(i) + 8));
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
             end
@@ -359,7 +364,7 @@ classdef builder < handle
             end
             
             % Gravity model
-            Formulation.GravityModel = gravity_model(Discretization.ReservoirGrid.Nx, Discretization.ReservoirGrid.Ny);
+            Formulation.GravityModel = gravity_model(Discretization.ReservoirGrid.Nx, Discretization.ReservoirGrid.Ny, Discretization.ReservoirGrid.Nz);
             switch (obj.Gravity)
                 case('ON')
                     Formulation.GravityModel.g = 9.806;

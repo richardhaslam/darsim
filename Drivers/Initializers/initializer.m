@@ -38,7 +38,7 @@ classdef initializer < handle
             disp('Started simple initialization');
             
              % Define initial values
-            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.5e7;
+            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e6;
             z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.037;
                         
             % 1. Assign initial valus
@@ -53,7 +53,7 @@ classdef initializer < handle
             FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
             
             % 4. Update S based on components mass balance
-            FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, SinglePhase);
+            FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, Formulation.SinglePhase);
             
             % 5. Total Density
             ProductionSystem.Reservoir.State.rhoT = FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State.S, ProductionSystem.Reservoir.State.rho);

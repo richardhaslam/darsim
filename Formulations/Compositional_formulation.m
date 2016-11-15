@@ -24,70 +24,93 @@ classdef Compositional_formulation < fim_formulation
         end
         function  TransmissibilityMatrix(obj, Grid, Rho, RhoInt, x, i)
             %%%Transmissibility matrix construction
-            Tx = zeros(Grid.Nx+1, Grid.Ny);
-            Ty = zeros(Grid.Nx, Grid.Ny+1);
+            Tx = zeros(Grid.Nx+1, Grid.Ny, Grid.Nz);
+            Ty = zeros(Grid.Nx, Grid.Ny+1, Grid.Nz);
+            Tz = zeros(Grid.Nx, Grid.Ny, Grid.Nz+1);
             
             %% PHASE 1 
             %Apply upwind operator
             Mupx = obj.UpWind(1).x*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1)); 
             Mupy = obj.UpWind(1).y*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
-            Mupx = reshape(Mupx, Grid.Nx, Grid.Ny);
-            Mupy = reshape(Mupy, Grid.Nx, Grid.Ny);
-            Tx(2:Grid.Nx,:)= Grid.Tx(2:Grid.Nx,:).*Mupx(1:Grid.Nx-1,:);
-            Ty(:,2:Grid.Ny)= Grid.Ty(:,2:Grid.Ny).*Mupy(:,1:Grid.Ny-1);
+            Mupz = obj.UpWind(1).z*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
+            Mupx = reshape(Mupx, Grid.Nx, Grid.Ny, Grid.Nz);
+            Mupy = reshape(Mupy, Grid.Nx, Grid.Ny, Grid.Nz);
+            Mupz = reshape(Mupz, Grid.Nx, Grid.Ny, Grid.Nz);
+            
+            Tx(2:Grid.Nx,:,:)= Grid.Tx(2:Grid.Nx,:,:).*Mupx(1:Grid.Nx-1,:,:);
+            Ty(:,2:Grid.Ny,:)= Grid.Ty(:,2:Grid.Ny,:).*Mupy(:,1:Grid.Ny-1,:);
+            Tz(:,:,2:Grid.Nz)= Grid.Tz(:,:,2:Grid.Nz).*Mupz(:,:,1:Grid.Nz-1);
             
             %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+            x1 = reshape(Tx(1:Grid.Nx,:,:), Grid.N, 1);
+            x2 = reshape(Tx(2:Grid.Nx+1,:,:), Grid.N, 1);
+            y1 = reshape(Ty(:,1:Grid.Ny,:), Grid.N, 1);
+            y2 = reshape(Ty(:,2:Grid.Ny+1,:), Grid.N, 1);
+            z1 = reshape(Tz(:,:,1:Grid.Nz), Grid.N, 1);
+            z2 = reshape(Tz(:,:,2:Grid.Nz+1), Grid.N, 1);
+            
+            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
+            DiagIndx = [-Grid.Nx*Grid.Ny, -Grid.Nx, -1, 0, 1, Grid.Nx, Grid.Nx*Grid.Ny];
             obj.Tph{i,1} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
             % Gravity Matrix
-            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(1).x(2:Grid.Nx,:);
-            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(1).y(:,2:Grid.Ny);
+            Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt(1).x(2:Grid.Nx,:,:);
+            Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt(1).y(:,2:Grid.Ny,:);
+            Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt(1).z(:,:,2:Grid.Nz);
             
             %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+            x1 = reshape(Tx(1:Grid.Nx,:,:), Grid.N, 1);
+            x2 = reshape(Tx(2:Grid.Nx+1,:,:), Grid.N, 1);
+            y1 = reshape(Ty(:,1:Grid.Ny,:), Grid.N, 1);
+            y2 = reshape(Ty(:,2:Grid.Ny+1,:), Grid.N, 1);
+            z1 = reshape(Tz(:,:,1:Grid.Nz), Grid.N, 1);
+            z2 = reshape(Tz(:,:,2:Grid.Nz+1), Grid.N, 1);
+            
+            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
+            DiagIndx = [-Grid.Nx*Grid.Ny, -Grid.Nx, -1, 0, 1, Grid.Nx, Grid.Nx*Grid.Ny];
             obj.Gph{i,1} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
             %% PHASE 2 
             %Apply upwind operator
             Mupx = obj.UpWind(2).x*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
             Mupy = obj.UpWind(2).y*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
-            Mupx = reshape(Mupx, Grid.Nx, Grid.Ny);
-            Mupy = reshape(Mupy, Grid.Nx, Grid.Ny);
-            Tx(2:Grid.Nx,:)= Grid.Tx(2:Grid.Nx,:).*Mupx(1:Grid.Nx-1,:);
-            Ty(:,2:Grid.Ny)= Grid.Ty(:,2:Grid.Ny).*Mupy(:,1:Grid.Ny-1);
+            Mupz = obj.UpWind(2).z*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
+            Mupx = reshape(Mupx, Grid.Nx, Grid.Ny, Grid.Nz);
+            Mupy = reshape(Mupy, Grid.Nx, Grid.Ny, Grid.Nz);
+            Mupz = reshape(Mupz, Grid.Nx, Grid.Ny, Grid.Nz);
+            
+            Tx(2:Grid.Nx,:,:) = Grid.Tx(2:Grid.Nx,:,:).*Mupx(1:Grid.Nx-1,:,:);
+            Ty(:,2:Grid.Ny,:) = Grid.Ty(:,2:Grid.Ny,:).*Mupy(:,1:Grid.Ny-1,:);
+            Tz(:,:,2:Grid.Nz) = Grid.Tz(:,:,2:Grid.Nz).*Mupz(:,:,1:Grid.Nz-1);
             
             %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+            x1 = reshape(Tx(1:Grid.Nx,:,:), Grid.N, 1);
+            x2 = reshape(Tx(2:Grid.Nx+1,:,:), Grid.N, 1);
+            y1 = reshape(Ty(:,1:Grid.Ny,:), Grid.N, 1);
+            y2 = reshape(Ty(:,2:Grid.Ny+1,:), Grid.N, 1);
+            z1 = reshape(Tz(:,:,1:Grid.Nz), Grid.N, 1);
+            z2 = reshape(Tz(:,:,2:Grid.Nz+1), Grid.N, 1);
+            
+            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
+            DiagIndx = [-Grid.Nx*Grid.Ny, -Grid.Nx, -1, 0, 1, Grid.Nx, Grid.Nx*Grid.Ny];
             obj.Tph{i,2} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
             
             % Gravity Matrix
-            Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(2).x(2:Grid.Nx,:);
-            Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(2).y(:,2:Grid.Ny);
+            Tx(2:Grid.Nx,:,:) = Tx(2:Grid.Nx,:,:) .* RhoInt(2).x(2:Grid.Nx,:,:);
+            Ty(:,2:Grid.Ny,:) = Ty(:,2:Grid.Ny,:) .* RhoInt(2).y(:,2:Grid.Ny,:);
+            Tz(:,:,2:Grid.Nz) = Tz(:,:,2:Grid.Nz) .* RhoInt(2).z(:,:,2:Grid.Nz);
             
             %Construct matrix
-            x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-            x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-            y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-            y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-            DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-            DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+            x1 = reshape(Tx(1:Grid.Nx,:,:), Grid.N, 1);
+            x2 = reshape(Tx(2:Grid.Nx+1,:,:), Grid.N, 1);
+            y1 = reshape(Ty(:,1:Grid.Ny,:), Grid.N, 1);
+            y2 = reshape(Ty(:,2:Grid.Ny+1,:), Grid.N, 1);
+            z1 = reshape(Tz(:,:,1:Grid.Nz), Grid.N, 1);
+            z2 = reshape(Tz(:,:,2:Grid.Nz+1), Grid.N, 1);
+            
+            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
+            DiagIndx = [-Grid.Nx*Grid.Ny, -Grid.Nx, -1, 0, 1, Grid.Nx, Grid.Nx*Grid.Ny];
             obj.Gph{i,2} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
         end

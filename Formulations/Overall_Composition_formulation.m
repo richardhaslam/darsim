@@ -86,6 +86,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             % Initialise local variables
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
+            Nz = DiscretizationModel.ReservoirGrid.Nz;
             N = DiscretizationModel.ReservoirGrid.N;
             %
             pv = DiscretizationModel.ReservoirGrid.Volume*ProductionSystem.Reservoir.Por;
@@ -104,43 +105,58 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 % 1.b: compressibility part
                 dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));
                 dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));
+                dMupzPh1 = obj.UpWind(1).z * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));
                 dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));
                 dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));
+                dMupzPh2 = obj.UpWind(2).z * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));
                 
-                vecX1 = min(reshape(obj.U(1).x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:),N,1), 0).*dMupxPh2;
-                vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
-                vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny),N,1), 0).*dMupyPh2;
-                vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0).*dMupyPh2;
+                vecX1 = min(reshape(obj.U(1).x(1:Nx,:,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:,:),N,1), 0).*dMupxPh2;
+                vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:,:),N,1), 0).*dMupxPh2;
+                vecY1 = min(reshape(obj.U(1).y(:,1:Ny,:),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny,:),N,1), 0).*dMupyPh2;
+                vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1,:),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1,:),N,1), 0).*dMupyPh2;
+                vecZ1 = min(reshape(obj.U(1).z(:,:,1:Nz),N,1), 0).*dMupzPh1 + min(reshape(obj.U(2).z(:,:,1:Nz),N,1), 0).*dMupzPh2;
+                vecZ2 = max(reshape(obj.U(1).z(:,:,2:Nz+1),N,1), 0).*dMupzPh1 + max(reshape(obj.U(2).z(:,:,2:Nz+1),N,1), 0).*dMupzPh2;
                 acc = pv/dt .* (obj.drhoTdp .* z(:,i));
-                DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
-                DiagIndx = [-Nx, -1, 0, 1, Nx];
+                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2 + vecY2+vecX2-vecY1-vecX1-vecZ1+acc, vecX1, vecY1, vecZ1];
+                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
                 
                 %% 2. Component i composition block
                 dMupxPh1 = obj.UpWind(1).x*...
-                           ( obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1)...
-                           + obj.Mob(:,1) .* obj.dxdz(:,(i-1)*2+1) .* rho(:,1)...
-                           + obj.Mob(:,1) .* x(:,(i-1)*2+1) .* obj.drhodz(:,1));
+                    ( obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1)...
+                    + obj.Mob(:,1) .* obj.dxdz(:,(i-1)*2+1) .* rho(:,1)...
+                    + obj.Mob(:,1) .* x(:,(i-1)*2+1) .* obj.drhodz(:,1));
                 dMupyPh1 = obj.UpWind(1).y*...
-                           ( obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1)...
-                           + obj.Mob(:,1) .* obj.dxdz(:,(i-1)*2+1) .* rho(:,1)...
-                           + obj.Mob(:,1) .* x(:,(i-1)*2+1) .* obj.drhodz(:,1));
+                    ( obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1)...
+                    + obj.Mob(:,1) .* obj.dxdz(:,(i-1)*2+1) .* rho(:,1)...
+                    + obj.Mob(:,1) .* x(:,(i-1)*2+1) .* obj.drhodz(:,1));
+                dMupzPh1 = obj.UpWind(1).z*...
+                    ( obj.dMob(:,1) .* x(:,(i-1)*2+1) .* rho(:,1)...
+                    + obj.Mob(:,1) .* obj.dxdz(:,(i-1)*2+1) .* rho(:,1)...
+                    + obj.Mob(:,1) .* x(:,(i-1)*2+1) .* obj.drhodz(:,1));
                 dMupxPh2 = obj.UpWind(2).x*...
-                           ( obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2)...
-                           + obj.Mob(:,2) .* obj.dxdz(:,(i-1)*2+2) .* rho(:,2)...
-                           + obj.Mob(:,2) .* x(:,(i-1)*2+2) .* obj.drhodz(:,2));
+                    ( obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2)...
+                    + obj.Mob(:,2) .* obj.dxdz(:,(i-1)*2+2) .* rho(:,2)...
+                    + obj.Mob(:,2) .* x(:,(i-1)*2+2) .* obj.drhodz(:,2));
                 dMupyPh2 = obj.UpWind(2).y*...
-                           ( obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2)...
-                           + obj.Mob(:,2) .* obj.dxdz(:,(i-1)*2+2) .* rho(:,2)...
-                           + obj.Mob(:,2) .* x(:,(i-1)*2+2) .* obj.drhodz(:,2));
+                    ( obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2)...
+                    + obj.Mob(:,2) .* obj.dxdz(:,(i-1)*2+2) .* rho(:,2)...
+                    + obj.Mob(:,2) .* x(:,(i-1)*2+2) .* obj.drhodz(:,2));
+                dMupzPh2 = obj.UpWind(2).z*...
+                    ( obj.dMob(:,2) .* x(:,(i-1)*2+2) .* rho(:,2)...
+                    + obj.Mob(:,2) .* obj.dxdz(:,(i-1)*2+2) .* rho(:,2)...
+                    + obj.Mob(:,2) .* x(:,(i-1)*2+2) .* obj.drhodz(:,2));
                 
-                vecX1 = min(reshape(obj.U(1).x(1:Nx,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:),N,1), 0).*dMupxPh2;
-                vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:),N,1), 0).*dMupxPh2;
-                vecY1 = min(reshape(obj.U(1).y(:,1:Ny),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny),N,1), 0).*dMupyPh2;
-                vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1),N,1), 0).*dMupyPh2;
+                vecX1 = min(reshape(obj.U(1).x(1:Nx,:,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:,:),N,1), 0).*dMupxPh2;
+                vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:,:),N,1), 0).*dMupxPh2;
+                vecY1 = min(reshape(obj.U(1).y(:,1:Ny,:),N,1), 0).*dMupyPh1 + min(reshape(obj.U(2).y(:,1:Ny,:),N,1), 0).*dMupyPh2;
+                vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1,:),N,1), 0).*dMupyPh1 + max(reshape(obj.U(2).y(:,2:Ny+1,:),N,1), 0).*dMupyPh2;
+                vecZ1 = min(reshape(obj.U(1).z(:,:,1:Nz),N,1), 0).*dMupzPh1 + min(reshape(obj.U(2).z(:,:,1:Nz),N,1), 0).*dMupzPh2;
+                vecZ2 = max(reshape(obj.U(1).z(:,:,2:Nz+1),N,1), 0).*dMupzPh1 + max(reshape(obj.U(2).z(:,:,2:Nz+1),N,1), 0).*dMupzPh2;
+                
                 acc = (-1)^(i + 1) *  pv/dt .* rhoT + pv/dt .* z(:,i) .* obj.drhoTdz;
-                DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
-                DiagIndx = [-Nx, -1, 0, 1, Nx];
+                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
+                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 Jz{i} = spdiags(DiagVecs,DiagIndx, N, N);
                 % Capillarity
                 Jz{i} = Jz{i} - obj.Tph{i,1} * spdiags(obj.dPc, 0, N, N);               

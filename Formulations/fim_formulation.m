@@ -27,11 +27,11 @@ classdef fim_formulation < handle
     end
     methods
         function obj = fim_formulation()
-            obj.UpWind =  struct('x',{},'y',{});
-            obj.U =  struct('x',{},'y',{});
+            obj.UpWind =  struct('x',{},'y',{},'z',{});
+            obj.U =  struct('x',{},'y',{},'z',{});
         end
         function UpWindAndPhaseRockFluxes(obj, Grid, Phases, Status)            
-            obj.GravityModel.ComputeInterfaceDensities(Grid.Nx, Grid.Ny, Status.rho);
+            obj.GravityModel.ComputeInterfaceDensities(Grid.Nx, Grid.Ny, Grid.Nz, Status.rho);
             % Compute phase rock velocities and Upwind operators
             P(:, 2) = Status.p;
             P(:, 1) = Status.p - Status.pc;

@@ -61,6 +61,7 @@ classdef Immiscible_formulation < fim_formulation
             %Build FIM Jacobian
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
+            Nz = DiscretizationModel.ReservoirGrid.Nz;
             N = DiscretizationModel.ReservoirGrid.N;
             pv = DiscretizationModel.ReservoirGrid.Volume*ProductionSystem.Reservoir.Por;
             rho = ProductionSystem.Reservoir.State.rho;
@@ -77,33 +78,33 @@ classdef Immiscible_formulation < fim_formulation
                 % 1.b: compressibility part
                 dMupx = obj.UpWind(i).x*(obj.Mob(:, i) .* obj.drhodp(:,i));
                 dMupy = obj.UpWind(i).y*(obj.Mob(:, i) .* obj.drhodp(:,i));
-                %dMupz = obj.UpWind(i).z*(obj.Mob(:, i) .* obj.drhodp(:,i));
+                dMupz = obj.UpWind(i).z*(obj.Mob(:, i) .* obj.drhodp(:,i));
                 
-                vecX1 = min(reshape(obj.U(i).x(1:Nx,:),N,1), 0).*dMupx;
-                vecX2 = max(reshape(obj.U(i).x(2:Nx+1,:),N,1), 0).*dMupx;
-                vecY1 = min(reshape(obj.U(i).y(:,1:Ny),N,1), 0).*dMupy;
-                vecY2 = max(reshape(obj.U(i).y(:,2:Ny+1),N,1), 0).*dMupy;
-                %vecZ1 = min(reshape(obj.U(i).z(:,:,1:Nz),N,1), 0).*dMupz;
-                %vecZ2 = max(reshape(obj.U(i).z(:,:,2:Nz+1),N,1), 0).*dMupz; 
+                vecX1 = min(reshape(obj.U(i).x(1:Nx,:,:), N, 1), 0).*dMupx;
+                vecX2 = max(reshape(obj.U(i).x(2:Nx+1,:,:), N, 1), 0).*dMupx;
+                vecY1 = min(reshape(obj.U(i).y(:,1:Ny,:), N, 1), 0).*dMupy;
+                vecY2 = max(reshape(obj.U(i).y(:,2:Ny+1,:), N, 1), 0).*dMupy;
+                vecZ1 = min(reshape(obj.U(i).z(:,:,1:Nz), N, 1), 0).*dMupz;
+                vecZ2 = max(reshape(obj.U(i).z(:,:,2:Nz+1), N, 1), 0).*dMupz; 
                 acc = pv/dt .* obj.drhodp(:,i) .* s(:,i);
-                DiagVecs = [-vecY2, -vecX2, vecY2+vecX2-vecY1-vecX1+acc, vecX1, vecY1];
-                DiagIndx = [-Nx, -1, 0, 1, Nx];
+                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
+                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
                 
                 % 2. Saturation Block
                 dMupx = obj.UpWind(i).x * (obj.dMob(:,i) .* rho(:,i));
                 dMupy = obj.UpWind(i).y * (obj.dMob(:,i) .* rho(:,i));
-                %dMupz = obj.UpWind(i).z * (obj.dMob(:,i) .* rho(:,i));
+                dMupz = obj.UpWind(i).z * (obj.dMob(:,i) .* rho(:,i));
                 % Construct JS block
-                x1 = min(reshape(obj.U(i).x(1:Nx,:),N,1),0).*dMupx;
-                x2 = max(reshape(obj.U(i).x(2:Nx+1,:),N,1),0).*dMupx;
-                y1 = min(reshape(obj.U(i).y(:,1:Ny),N,1),0).*dMupy;
-                y2 = max(reshape(obj.U(i).y(:,2:Ny+1),N,1),0).*dMupy;
-                %z1 = min(reshape(obj.U(i).z(:,:,1:Nz),N,1),0).*dMupz;
-                %z2 = max(reshape(obj.U(i).z(:,:,2:Nz+1),N,1),0).*dMupz;
+                x1 = min(reshape(obj.U(i).x(1:Nx,:,:), N, 1),0).*dMupx;
+                x2 = max(reshape(obj.U(i).x(2:Nx+1,:,:), N, 1),0).*dMupx;
+                y1 = min(reshape(obj.U(i).y(:,1:Ny,:), N, 1),0).*dMupy;
+                y2 = max(reshape(obj.U(i).y(:,2:Ny+1,:), N, 1),0).*dMupy;
+                z1 = min(reshape(obj.U(i).z(:,:,1:Nz), N, 1),0).*dMupz;
+                z2 = max(reshape(obj.U(i).z(:,:,2:Nz+1), N, 1),0).*dMupz;
                 v = (-1)^(i+1) * ones(N,1)*pv/dt .* rho(:,i);
-                DiagVecs = [-y2, -x2, y2+x2-y1-x1+v, x1, y1];
-                DiagIndx = [-Nx, -1, 0, 1, Nx];
+                DiagVecs = [-z2, -y2, -x2, z2+y2+x2-z1-y1-x1+v, x1, y1, z1];
+                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 JS{i} = spdiags(DiagVecs,DiagIndx,N,N);
             end  
             %Add capillarity
@@ -139,39 +140,50 @@ classdef Immiscible_formulation < fim_formulation
         function TransmissibilityMatrix(obj, Grid, rho, RhoInt)
             Nx = Grid.Nx;
             Ny = Grid.Ny;
+            Nz = Grid.Nz;
             N = Grid.N;
             
             for i=1:2
                 % Transmissibility matrix construction
-                Tx = zeros(Nx+1, Ny);
-                Ty = zeros(Nx, Ny+1);
+                Tx = zeros(Nx+1, Ny, Nz);
+                Ty = zeros(Nx, Ny+1, Nz);
+                Tz = zeros(Nx, Ny, Nz+1);
+                
                 % Apply upwind operator
                 Mupx = obj.UpWind(i).x*(obj.Mob(:,i) .* rho(:,i));
                 Mupy = obj.UpWind(i).y*(obj.Mob(:,i) .* rho(:,i));
-                Mupx = reshape(Mupx, Nx, Ny);
-                Mupy = reshape(Mupy, Nx, Ny);
-                Tx(2:Nx,:)= Grid.Tx(2:Nx,:).*Mupx(1:Nx-1,:);
-                Ty(:,2:Ny)= Grid.Ty(:,2:Ny).*Mupy(:,1:Ny-1);
+                Mupz = obj.UpWind(i).z*(obj.Mob(:,i) .* rho(:,i));
+                Mupx = reshape(Mupx, Nx, Ny, Nz);
+                Mupy = reshape(Mupy, Nx, Ny, Nz);
+                Mupz = reshape(Mupz, Nx, Ny, Nz);
+                Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
+                Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
+                Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
                 % Construct matrix
-                x1 = reshape(Tx(1:Nx,:),N,1);
-                x2 = reshape(Tx(2:Nx+1,:),N,1);
-                y1 = reshape(Ty(:,1:Ny),N,1);
-                y2 = reshape(Ty(:,2:Ny+1),N,1);
-                DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-                DiagIndx = [-Nx,-1,0,1,Nx];
+                x1 = reshape(Tx(1:Nx,:,:), N, 1);
+                x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
+                y1 = reshape(Ty(:,1:Ny,:), N, 1);
+                y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
+                z1 = reshape(Tz(:,:,1:Nz), N, 1);
+                z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
+                DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
+                DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
                 obj.Tph{i} = spdiags(DiagVecs,DiagIndx,N,N);
                 
                 % Gravity Matrix
-                Tx(2:Grid.Nx,:)= Tx(2:Grid.Nx,:) .* RhoInt(i).x(2:Grid.Nx,:);
-                Ty(:,2:Grid.Ny)= Ty(:,2:Grid.Ny) .* RhoInt(i).y(:,2:Grid.Ny);
+                Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt(i).x(2:Grid.Nx,:,:);
+                Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt(i).y(:,2:Grid.Ny,:);
+                Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt(i).z(:,:,2:Grid.Nz);
                 
-                %Construct matrix
-                x1 = reshape(Tx(1:Grid.Nx,:), Grid.N, 1);
-                x2 = reshape(Tx(2:Grid.Nx+1,:), Grid.N, 1);
-                y1 = reshape(Ty(:,1:Grid.Ny), Grid.N, 1);
-                y2 = reshape(Ty(:,2:Grid.Ny+1), Grid.N, 1);
-                DiagVecs = [-y2,-x2,y2+x2+y1+x1,-x1,-y1];
-                DiagIndx = [-Grid.Nx, -1, 0, 1, Grid.Nx];
+               % Construct matrix
+                x1 = reshape(Tx(1:Nx,:,:), N, 1);
+                x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
+                y1 = reshape(Ty(:,1:Ny,:), N, 1);
+                y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
+                z1 = reshape(Tz(:,:,1:Nz), N, 1);
+                z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
+                DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
+                DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
                 obj.Gph{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);     
             end    
         end
