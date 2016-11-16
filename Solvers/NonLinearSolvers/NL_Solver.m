@@ -58,6 +58,7 @@ methods
             start2 = tic;
             obj.SolveLinearSystem();
             obj.TimerSolve(obj.itCount) = toc(start2);
+            %disp(obj.TimerSolve(obj.itCount))
             
             % 3. Update Solution
             start3 = tic;

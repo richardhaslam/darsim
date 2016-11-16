@@ -36,6 +36,7 @@ classdef builder < handle
         adm
         flash
         ADM
+        LinearSolver = 'direct';
         Formulation = 'Natural';
     end
     methods
@@ -103,6 +104,9 @@ classdef builder < handle
             temp = strfind(SettingsMatrix{1}, 'FORMULATION'); 
             xv = find(~cellfun('isempty', temp));
             obj.Formulation =  char(SettingsMatrix{1}(xv+1));
+            temp = strfind(SettingsMatrix{1}, 'LINEARSOLVER'); 
+            xv = find(~cellfun('isempty', temp));
+            obj.LinearSolver =  char(SettingsMatrix{1}(xv+1));
             if obj.coupling ~= 0
                 obj.CouplingType = 'FIM';
             else
@@ -381,7 +385,8 @@ classdef builder < handle
                     %%%%FIM settings
                     % Build a different convergence cheker and a proper LS for ADM
                      NLSolver = NL_Solver();
-                    if (str2double(SettingsMatrix(obj.adm + 1))==0)
+                switch obj.ADM
+                    case('inactive')
                         NLSolver.SystemBuilder = fim_system_builder();
                         switch (obj.Formulation)
                             case('Molar')
@@ -389,12 +394,19 @@ classdef builder < handle
                             otherwise
                                 ConvergenceChecker = convergence_checker_FS();
                         end
-                    NLSolver.LinearSolver = linear_solver();
-                    else
+                        switch (obj.LinearSolver)
+                            case ('direct')
+                                NLSolver.LinearSolver = linear_solver();
+                            case ('gmres')
+                                NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 100);
+                            case ('bicg')
+                                NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 100);
+                        end
+                    case ('active')
                         NLSolver.SystemBuilder = fim_system_builder_ADM();
                         ConvergenceChecker = convergence_checker_ADM();
                         NLSolver.LinearSolver = linear_solver_ADM();
-                    end
+                end
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
                     switch (obj.Formulation)

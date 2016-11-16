@@ -18,4 +18,4 @@
 %      DARSim2ResSim(Directory{i}, File{i});
 %  end
 
-DARSim2ResSim('../Input/BOHomo', 'BOHomo.txt');
+DARSim2ResSim('../Input/ImmHomo', 'ImmHomo.txt');

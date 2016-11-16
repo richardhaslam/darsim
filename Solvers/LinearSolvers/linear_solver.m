@@ -15,7 +15,8 @@ classdef linear_solver < handle
         end
         function x = Solve(obj, A, rhs)
             % Use Matlab direct solver
-            obj.CondNumber = condest(A);
+            %obj.CondNumber = condest(A);
+            obj.CondNumber = 1;
             x = A\rhs;
         end
     end
