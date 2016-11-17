@@ -80,17 +80,21 @@ classdef adm_grid_selector < handle
         function SelectCoarseFine(obj, FineGrid, CoarseGrid, level, S)
             %Given a Fine and a Coarse Grids chooses the cells that have to be active
             %1. Select Active Coarse Blocks
-            Nc = CoarseGrid.Nx*CoarseGrid.Ny;
+            Nc = CoarseGrid.Nx*CoarseGrid.Ny*CoarseGrid.Nz;
             for c = 1:Nc
                 I = CoarseGrid.I(c);
                 J = CoarseGrid.J(c);
+                K = CoarseGrid.K(c);
                 Imin = I - floor((CoarseGrid.CoarseFactor(1) - 1)/2);
                 Imax = I + ceil((CoarseGrid.CoarseFactor(1) - 1)/2);
                 Jmin = J - floor((CoarseGrid.CoarseFactor(2) - 1)/2);
                 Jmax = J + ceil((CoarseGrid.CoarseFactor(2) - 1)/2);
+                Kmin = K - floor((CoarseGrid.CoarseFactor(3) - 1)/2);
+                Kmax = K + ceil((CoarseGrid.CoarseFactor(3) - 1)/2);
+                
                 % Max e Min saturation
-                Smax = max(max(S(Imin:Imax, Jmin:Jmax)));
-                Smin = min(min(S(Imin:Imax, Jmin:Jmax)));
+                Smax = max(max(max(S(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
+                Smin = min(min(min(S(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
                 if CoarseGrid.Active(c) == 1
                     n = CoarseGrid.Neighbours(c).indexes;
                     Nn = length(n);
@@ -128,8 +132,10 @@ classdef adm_grid_selector < handle
                     h = ADMGrid.Ntot + count + 1;
                     ADMGrid.I(h) = Grid.I(i);
                     ADMGrid.J(h) = Grid.J(i);
+                    ADMGrid.K(h) = Grid.K(i);
                     ADMGrid.CoarseFactor(h, 1) = Grid.CoarseFactor(1);
                     ADMGrid.CoarseFactor(h, 2) = Grid.CoarseFactor(2);
+                    ADMGrid.CoarseFactor(h, 3) = Grid.CoarseFactor(3);
                     ADMGrid.CellIndex(h) = i;
                     ADMGrid.level(h) = level;
                     ADMGrid.Fathers(h, :) = Grid.Fathers(i, :);

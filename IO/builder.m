@@ -159,7 +159,8 @@ classdef builder < handle
                 x = find(~cellfun('isempty', temp));
                 cx = str2double(SettingsMatrix(x+1));
                 cy = str2double(SettingsMatrix(x+2));
-                Coarsening = [cx, cy; cx^2, cy^2; cx^3, cy^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                cz = str2double(SettingsMatrix(x+3));
+                Coarsening = [cx, cy, cz; cx^2, cy^2, cz^2; cx^3, cy^3, cz^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
                 switch (char(SettingsMatrix(x+1))) 
@@ -196,8 +197,9 @@ classdef builder < handle
                 % reshape it to specified size
                 field = reshape(field(3:end),[field(1) field(2)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny)*1e-13, DiscretizationModel.ReservoirGrid.N, 1);
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-13, DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
+                Kz = Kx;
             else
                 value = str2double(inputMatrix(obj.perm +1));
                 Kx = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
@@ -260,7 +262,11 @@ classdef builder < handle
                         Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
                         FluidModel.AddPhase(Phase, i);
                     end
-                    obj.Formulation = 'Immiscible';
+                    switch (obj.Formulation)
+                        case('Sequential')
+                        otherwise
+                            obj.Formulation = 'Immiscible';
+                    end
                 case('BlackOil')
                     % Black oil phases
                     FluidModel = BO_fluid_model(n_phases, n_comp);

@@ -32,15 +32,18 @@ classdef timestep_selector < handle
             dMob = FluidModel.DMobDS(s);
             df = (dMob(:,1) .* sum(Mob, 2) - sum(dMob, 2) .* Mob(:,1)) ./ sum(Mob, 2).^2;
             dfmax = max(df);
-            Uxmax = max(max(abs(U.x)));
-            Uymax = max(max(abs(U.y)));
+            Uxmax = max(max(max(abs(U.x))));
+            Uymax = max(max(max(abs(U.y))));
+            Uzmax = max(max(max(abs(U.z))));
             Lambdax = dfmax * Uxmax;
             Lambday = dfmax * Uymax;
+            Lambdaz = dfmax * Uzmax;
             
             %Compute timestep size
             dtx = obj.CFL*pv/Lambdax;
             dty = obj.CFL*pv/Lambday;
-            dt = min([dtx, dty, obj.ReportDt, obj.MaxDt]);
+            dtz = obj.CFL*pv/Lambdaz;
+            dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt]);
         end
         function dt = ChooseTimeStep(obj)
             dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);

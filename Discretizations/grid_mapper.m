@@ -14,18 +14,23 @@ classdef grid_mapper < handle
         % Assign Children and GrandChildren 
           for c = 1:CoarseGrid.N
               %coordinates of fine cells contained in the coarse block
-              J = ceil(c/CoarseGrid.Nx);
-              I = c - CoarseGrid.Nx*(J - 1);
-              Imin = (I - 1) * CF(2) + 1;
-              Imax = Imin + CF(1)-1;
-              Jmin = (J - 1) * CF(1) + 1;
-              Jmax = Jmin + CF(2)-1;
+              K = ceil(c/(CoarseGrid.Nx*CoarseGrid.Ny));
+              Q = mod(c, CoarseGrid.Nx*CoarseGrid.Ny);
+              J = ceil(Q/CoarseGrid.Nx); 
+              I = mod(Q, CoarseGrid.Nx);
+              Imin = (I - 1) * CF(1) + 1;
+              Imax = Imin + CF(1) - 1;
+              Jmin = (J - 1) * CF(2) + 1;
+              Jmax = Jmin + CF(2) - 1;
+              Kmin = (K - 1) * CF(3) + 1; 
+              Kmax = Kmin + CF(3) - 1;
               %indexes of the fine cells
               i = Imin:Imax;
               j = Jmin:Jmax;
-              [p,q] = meshgrid(i, j);
-              pairs = [p(:), q(:)];
-              indexes = pairs(:,1) + (pairs(:,2)-1)*FineGrid.Nx;
+              k = Kmin:Kmax;
+              [p,q, v] = meshgrid(i, j, k);
+              pairs = [p(:), q(:), v(:)];
+              indexes = pairs(:,1) + (pairs(:,2)-1)*FineGrid.Nx + (pairs(:,3) - 1)*FineGrid.Nx*FineGrid.Ny;
               CoarseGrid.Children(c, :) = indexes';
               
               %coordinates of fine cells contained in the coarse block
@@ -33,12 +38,15 @@ classdef grid_mapper < handle
               Imax = CoarseGrid.I(c) + ceil((CF(1)^level - 1)/2);
               Jmin = CoarseGrid.J(c) - floor((CF(2)^level - 1)/2);
               Jmax = CoarseGrid.J(c) + ceil((CF(2)^level - 1)/2);
+              Kmin = CoarseGrid.K(c) - floor((CF(3)^level - 1)/2);
+              Kmax = CoarseGrid.K(c) + ceil((CF(3)^level - 1)/2);
               i = Imin:Imax;
               j = Jmin:Jmax;
-              [p,q] = meshgrid(i, j);
-              pairs = [p(:), q(:)];
+              k = Kmin:Kmax;
+              [p, q, v] = meshgrid(i, j, k);
+              pairs = [p(:), q(:), v(:)];
               %indexes of the fine cells
-              indexes = pairs(:,1) + (pairs(:,2)-1)*CoarseGrid.Nx*CF(1)^level;
+              indexes = pairs(:,1) + (pairs(:,2)-1)*CoarseGrid.Nx*CF(1)^level + (pairs(:,3)-1)*CoarseGrid.Nx*CF(1)^level * CoarseGrid.Ny*CF(2)^level;
               CoarseGrid.GrandChildren(c, :) = indexes;
           end          
         end

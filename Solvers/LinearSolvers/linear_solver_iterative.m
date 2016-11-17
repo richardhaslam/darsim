@@ -11,6 +11,7 @@ classdef linear_solver_iterative < linear_solver
         Name
         Tol
         Maxit
+        Iter
     end
     methods
         function obj = linear_solver_iterative(name, tol, maxit)
@@ -33,9 +34,9 @@ classdef linear_solver_iterative < linear_solver
             switch (obj.Name)
                 case('gmres')
                     restart = 3;
-                    [x, flag, relres] = gmres(A, rhs, restart, obj.Tol, obj.Maxit, L, U);
+                    [x, flag, relres, obj.Iter] = gmres(A, rhs, restart, obj.Tol, obj.Maxit, L, U);
                 case('bicg')
-                    [x, flag, relres] = bicg(A, rhs, obj.Tol, obj.Maxit, L, U);
+                    [x, flag, relres, obj.Iter] = bicg(A, rhs, obj.Tol, obj.Maxit, L, U);
             end
             if flag ~= 0
                 disp(['Linear solver did not converge. The residual norm is ', num2str(relres)]);

@@ -12,7 +12,7 @@ classdef convergence_checker_outer < convergence_checker
     methods 
         function Converged = Check(obj, State, State_old)
             Converged = 0;
-            Norm1 = norm(State.p - State_old.p, inf);
+            Norm1 = norm((State.p - State_old.p)/max(State.p), inf);
             Norm2 = norm(State.S - State_old.S, inf);
             
             if (Norm1 < obj.Tol && Norm2 < obj.Tol)

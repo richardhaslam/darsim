@@ -71,9 +71,11 @@ classdef Immiscible_formulation < fim_formulation
             % BUILD FIM JACOBIAN BLOCK BY BLOCK
             Jp = cell(2,1);
             JS = cell(2,1);
+            
             for i=1:2
                 % 1.a Pressure Block
                 Jp{i} = obj.Tph{i};
+                
                 
                 % 1.b: compressibility part
                 dMupx = obj.UpWind(i).x*(obj.Mob(:, i) .* obj.drhodp(:,i));
@@ -87,6 +89,7 @@ classdef Immiscible_formulation < fim_formulation
                 vecZ1 = min(reshape(obj.U(i).z(:,:,1:Nz), N, 1), 0).*dMupz;
                 vecZ2 = max(reshape(obj.U(i).z(:,:,2:Nz+1), N, 1), 0).*dMupz; 
                 acc = pv/dt .* obj.drhodp(:,i) .* s(:,i);
+                
                 DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
@@ -107,6 +110,7 @@ classdef Immiscible_formulation < fim_formulation
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 JS{i} = spdiags(DiagVecs,DiagIndx,N,N);
             end  
+            
             %Add capillarity
             JS {1}= JS{1} - Jp{1} * spdiags(obj.dPc, 0, N, N);
             
