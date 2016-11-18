@@ -20,7 +20,7 @@ classdef adm_grid_selector < handle
             FineGrid.Active = ones(FineGrid.N, 1);
             
             % Coarsen the grid where resolution is not necessary
-            S = reshape(ProductionSystem.Reservoir.State.z(:,1), FineGrid.Nx, FineGrid.Ny); % it's useful in this form for selecting the grid.
+            S = reshape(ProductionSystem.Reservoir.State.z(:,1), FineGrid.Nx, FineGrid.Ny, FineGrid.Nz); % it's useful in this form for selecting the grid.
             
             %1. Choose Active Coarse cells and Flag fine ones  
             CoarseGrid(1).Active = obj.NoWellsCoarseCells;
@@ -54,9 +54,9 @@ classdef adm_grid_selector < handle
         function DefinePossibleActive(obj, CoarseGrid, FineGrid, level)
             % For a given level defines possible active cells
             
-            CoarseGrid.Active = ones(CoarseGrid.Nx*CoarseGrid.Ny, 1);
+            CoarseGrid.Active = ones(CoarseGrid.N, 1);
             % If a cell inside the block is refined the whole block cannot be coarsened
-            Nf = FineGrid.Nx*FineGrid.Ny;
+            Nf = FineGrid.N;
             for i=1:Nf
                 if FineGrid.Active(i) == 0
                     CoarseGrid.Active(FineGrid.Fathers(i, level)) = 0;
@@ -65,7 +65,7 @@ classdef adm_grid_selector < handle
             end
             
             % Force the jump between two neighbouring cells to be max 1 level!
-            Nc = CoarseGrid.Nx*CoarseGrid.Ny;
+            Nc = CoarseGrid.N;
             temp = 1 - CoarseGrid.Active;
             for j=1:Nc
                 if CoarseGrid.Active(j) == 1
@@ -80,11 +80,11 @@ classdef adm_grid_selector < handle
         function SelectCoarseFine(obj, FineGrid, CoarseGrid, level, S)
             %Given a Fine and a Coarse Grids chooses the cells that have to be active
             %1. Select Active Coarse Blocks
-            Nc = CoarseGrid.Nx*CoarseGrid.Ny*CoarseGrid.Nz;
+            Nc = CoarseGrid.N;
             for c = 1:Nc
-                I = CoarseGrid.I(c);
-                J = CoarseGrid.J(c);
-                K = CoarseGrid.K(c);
+                I = CoarseGrid.I(c,2);
+                J = CoarseGrid.J(c,2);
+                K = CoarseGrid.K(c,2);
                 Imin = I - floor((CoarseGrid.CoarseFactor(1) - 1)/2);
                 Imax = I + ceil((CoarseGrid.CoarseFactor(1) - 1)/2);
                 Jmin = J - floor((CoarseGrid.CoarseFactor(2) - 1)/2);
@@ -100,8 +100,8 @@ classdef adm_grid_selector < handle
                     Nn = length(n);
                     i = 1;
                     while i <= Nn
-                        if (abs(Smax-S(CoarseGrid.I(n(i)),CoarseGrid.J(n(i))))...
-                                > obj.tol || abs(Smin-S(CoarseGrid.I(n(i)),CoarseGrid.J(n(i)))) > obj.tol)
+                        if (abs(Smax-S(CoarseGrid.I(n(i), 2), CoarseGrid.J(n(i), 2), CoarseGrid.K(n(i), 2)))...
+                                > obj.tol || abs(Smin-S(CoarseGrid.I(n(i),2),CoarseGrid.J(n(i),2), CoarseGrid.K(n(i), 2))) > obj.tol)
                             CoarseGrid.Active(c) = 0;
                             %CoarseGrid.Active(i) = 0;
                             i = Nn + 1;

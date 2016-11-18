@@ -11,6 +11,7 @@ classdef adm_grid < grid_darsim
         Ntot
         I
         J
+        K
         level
         CellIndex
         MaxLevel
@@ -22,6 +23,7 @@ classdef adm_grid < grid_darsim
             obj.Ntot = 0;
             obj.I = zeros(Ntotal, 1);
             obj.J = zeros(Ntotal, 1);
+            obj.K = zeros(Ntotal, 1);
             obj.level = zeros(Ntotal, 1);
             obj.CoarseFactor = zeros(Ntotal, 1);
             obj.CellIndex = zeros(Ntotal, 1);

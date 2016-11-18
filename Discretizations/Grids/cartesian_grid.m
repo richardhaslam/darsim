@@ -45,7 +45,7 @@ classdef cartesian_grid < grid_darsim
             obj.Az = obj.dx * obj.dy;
             obj.Volume = obj.dx * obj.dy * obj.dz;
             obj.ComputeRockTransmissibilities(Reservoir.K);
-            obj.CoarseFactor = [0, 0];
+            obj.CoarseFactor = [0, 0, 0];
             obj.Children = zeros(obj.N, 1);
             obj.GrandChildren = zeros(obj.N, 1);
             obj.AddCoordinates();
@@ -75,10 +75,12 @@ classdef cartesian_grid < grid_darsim
             obj.J = ones(obj.N, 1);
             obj.K = ones(obj.N, 1);
             Jindexes = 1:1:obj.Ny;
-            for i=1:obj.Ny
-                a = obj.Nx*(i-1)+1;
-                obj.I(a:a+obj.Nx-1) = 1:1:obj.Nx;
-                obj.J(a:a+obj.Nx-1) = Jindexes(i)*ones(obj.Nx, 1);
+            for k=1:obj.Nz
+                for i=1:obj.Ny
+                    a = obj.Nx*(i-1)+ (k-1)*obj.Nx*obj.Ny + 1;
+                    obj.I(a:a+obj.Nx-1) = 1:1:obj.Nx;
+                    obj.J(a:a+obj.Nx-1) = Jindexes(i)*ones(obj.Nx, 1);
+                end
             end
             for i=1:obj.Nz
                 obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny) = i*ones(obj.Nx*obj.Ny, 1);

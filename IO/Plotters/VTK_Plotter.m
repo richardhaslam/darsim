@@ -142,7 +142,7 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, 'ASCII\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
-                fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx +1, CoarseGrid(i).Ny+1, 2);
+                fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx +1, CoarseGrid(i).Ny+1, CoarseGrid(i).Nz+1);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i).Nx+1) ' float\n']);
                 fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i).CoarseFactor(1) : Grid.dx * Grid.Nx);
@@ -150,8 +150,8 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i).Ny+1) ' float\n']);
                 fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i).CoarseFactor(2) : Grid.dy * Grid.Ny);
                 fprintf(fileID, '\n');
-                fprintf(fileID, 'Z_COORDINATES 2 float\n');
-                fprintf(fileID, '%d ', [0 1]);
+                fprintf(fileID, ['Z_COORDINATES ' num2str(CoarseGrid(i).Nz+1) ' float\n']);
+                fprintf(fileID, '%f ', 0 : Grid.dz * CoarseGrid(i).CoarseFactor(3) : Grid.dz * Grid.Nz);
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
