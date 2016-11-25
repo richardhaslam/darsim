@@ -188,7 +188,7 @@ classdef Immiscible_formulation < fim_formulation
                 z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
                 DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
                 DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-                obj.Gph{i} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);     
+                obj.Gph{i} = spdiags(DiagVecs, DiagIndx, N, N);     
             end    
         end
         function [qw, qnw] = ComputeSourceTerms(obj, N, Wells)

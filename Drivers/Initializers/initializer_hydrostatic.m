@@ -15,7 +15,7 @@ classdef initializer_hydrostatic < initializer
             disp('Started Hydrostatic initialization');
             
              % Define initial values
-            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e5;
+            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e6;
             z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.05;
             
             
@@ -24,18 +24,36 @@ classdef initializer_hydrostatic < initializer
             ProductionSystem.Reservoir.State.z(:,1) = z_init;
             ProductionSystem.Reservoir.State.z(:,2) = 1 - z_init;
            
-            Formulation.SinglePhase = FluidModel.InitializeReservoir(ProductionSystem.Reservoir.State);
-            
             obj.Equilibrate(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
         end
         function Equilibrate(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             equilibrium = 0;
             % Save initial State
-            obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
+            %obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
+            P_init = ProductionSystem.Reservoir.State.p;
             while (~equilibrium)
-                % do nn-linear solve
-                obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
-                if (delta < 1e-6) % If solution doesn t change I am at equilibrium
+                p0 = ProductionSystem.Reservoir.State.p;
+                
+                % 1. Update Composition of the phases (Flash)
+                Formulation.SinglePhase = FluidModel.Flash(ProductionSystem.Reservoir.State);
+                
+                % 2 Compute Phase Density
+                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
+                
+                % 3. Update S based on components mass balance
+                FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, Formulation.SinglePhase);
+                
+                % 4. Total Density
+                ProductionSystem.Reservoir.State.rhoT = FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State.S, ProductionSystem.Reservoir.State.rho);
+                
+                % 5. Compute initial Pc
+                ProductionSystem.Reservoir.State.pc = FluidModel.ComputePc(ProductionSystem.Reservoir.State.S);
+                
+                % 6. Compute pressure 
+                ProductionSystem.Reservoir.State.p = P_init + ProductionSystem.Reservoir.State.rhoT .* Formulation.GravityModel.g .* (ProductionSystem.Reservoir.Depth - DiscretizationModel.ReservoirGrid.Depth);
+                delta = ProductionSystem.Reservoir.State.p - p0;
+                
+                if (delta < 1e-3) % If solution doesn t change I am at equilibrium
                     equilibrium = 1;
                 end
             end
