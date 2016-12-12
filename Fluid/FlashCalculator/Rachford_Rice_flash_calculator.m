@@ -33,7 +33,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             BubCheck = sum(BubCheck, 2);
             
             x(BubCheck - 1 <= obj.tol, 2) = z (BubCheck - 1 < obj.tol, 1);
-            x(BubCheck - 1 <= obj.tol, 1) = 1;                     % This is to avoid having singular Jacobian matrix.
+            x(BubCheck - 1 <= obj.tol, 1) = 1; % This is to avoid having singular Jacobian matrix.
             SinglePhase(BubCheck - 1 <= obj.tol) = 2; % It s all liquid
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
@@ -41,7 +41,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             DewCheck = z ./ k;
             DewCheck = sum(DewCheck, 2);
             x(DewCheck - 1 < obj.tol, 1) = z (DewCheck - 1 < obj.tol, 1);
-            x(DewCheck - 1 < obj.tol, 2) = 1;                    % This is to avoid having singular Jacobian matrix.
+            x(DewCheck - 1 < obj.tol, 2) = 1; % This is to avoid having singular Jacobian matrix.
             SinglePhase(DewCheck - 1 < obj.tol) = 1;  % It s all vapour
             
             %% 3. Actual Flash: solves for fv (vapor fraction)
@@ -49,11 +49,11 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             TwoPhase(SinglePhase > 0 ) = 0;
             
             
-            %Initilaize variables
+            % Initilaize variables
             alpha = ones(length(Status.p),1);
             fv = Status.ni;
             
-            %Single phase cells do not need to flash
+            % Single phase cells do not need to flash
             fv(SinglePhase == 1) = 1;
             fv(SinglePhase == 2)= 0;
             
@@ -63,16 +63,16 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             while ~converged && min(alpha) > 0.01
                 itCounter = 0;
                 while itCounter < itLimit && ~converged
-                    %Finds hi for each component
+                    % Finds hi for each component
                     hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
                     hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
-                    %Finds the derivative of hi for each component
+                    % Finds the derivative of hi for each component
                     dhi(:, 1) = (z(:,1) .* (k(:,1) - 1).^2) ./ ((fv .* (k(:,1) - 1) + 1).^2);
                     dhi(:, 2) = (z(:,2) .* (k(:,2) - 1).^2) ./ ((fv .* (k(:,2) - 1) + 1).^2);
                     h = sum(hi, 2) - 1;
                     dh = - sum(dhi, 2);
                     
-                    %Update fv
+                    % Update fv
                     h(TwoPhase == 0) = 0;
                     dh(TwoPhase == 0) = 1;
                     fvnew = alpha .* (-h ./ dh) + fv;

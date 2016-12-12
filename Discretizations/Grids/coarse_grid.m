@@ -50,7 +50,13 @@ classdef coarse_grid < grid_darsim
             obj.Active = zeros(obj.N, 1);
             obj.Wells = zeros(obj.N, 1);
             obj.Fathers = zeros(obj.N, 1);
-            obj.AssignNeighbours();
+            if obj.Nz == 1 && obj.Ny == 1
+                obj.AssignNeighbours1D();
+            elseif obj.Nz == 1 && obj.Ny > 1
+                obj.AssignNeighbours2D();
+            else
+                obj.AssignNeighbours();
+            end
         end
         function AssignNeighbours(obj)
             % Let s do the 8 corners separetely
@@ -156,6 +162,59 @@ classdef coarse_grid < grid_darsim
                     end
                 end
             end
+        end
+        function AssignNeighbours2D(obj)
+            i = 1;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx;
+                if j~=1 && j~= obj.Ny
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx];
+                elseif j == 1
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx];
+                elseif j == obj.Ny
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx];
+                end
+            end
+            i = obj.Nx;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx;
+                if j~=1 && j~=obj.Ny
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx];
+                elseif j == 1
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx];
+                elseif j == obj.Ny
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx];
+                end
+            end
+            j = 1;
+            for i=2:obj.Nx-1
+                g = i + (j-1)*obj.Nx;
+                obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx];
+            end
+            j = obj.Ny;
+            for i = 2:obj.Nx-1
+                g = i + (j-1)*obj.Nx;
+                obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx];
+            end
+            
+            for i = 2:obj.Nx-1
+                for j=2:obj.Ny-1
+                    g = i + (j-1)*obj.Nx;
+                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx];
+                end
+            end
+        end
+        function AssignNeighbours1D(obj)
+            i = 1;
+            g = i;
+            obj.Neighbours(g).indexes = g+1;
+            i = obj.Nx;
+            g = i;
+            obj.Neighbours(g).indexes = g-1;
+            for i = 2:obj.Nx-1
+                g = i;
+                obj.Neighbours(g).indexes = [g-1, g+1];
+            end  
         end
     end
 end

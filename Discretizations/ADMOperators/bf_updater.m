@@ -13,53 +13,45 @@ classdef bf_updater < handle
     methods 
         function MsP = MsProlongation(obj, FineGrid, CoarseGrid, cf)
             %Permutation Matrix
-            [G, Ni, Ne, Nn] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
-
+            [G, Ni, Nf, Ne, Nn] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
             % 1. Reorder finescale system
             tildeA   = G * obj.A * G';
-            %tildeA_tpfa = G*A_tpfa*G';
             % 2. Define interior-interior (ii) block
             Mii = tildeA(1:Ni, 1:Ni);
-            % 3. define interior-edge (ie) block
-            Mie = tildeA(1:Ni, Ni+1:Ni+Ne);
-            % 4.Define interior-node (in) block
-            Min = tildeA(1:Ni, Ni+Ne+1:end);
+            % 3. define interior-face (if) block
+            Mif = tildeA(1:Ni, Ni+1:Ni+Nf);
+            % 4. Define face-face block
+            Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf) + diag(sum(Mif,1));
+            % Define edge-face (fe) block
+            Mfe = tildeA(Ni+1:Ni+Nf, Ni+Nf+1:Ni+Nf+Ne);
             % 5. Define edge-edge (ee) block
-            Mee = tildeA(Ni+1:Ni+Ne,Ni+1:Ni+Ne) + diag(sum(Mie,1));
-            %Mee = RemoveOffDiag(Mee);
+            Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
             % 6. Define edge-node (en) block
-            Men = tildeA(Ni+1:Ni+Ne,Ni+Ne+1:Ni+Ne+Nn);
-            % 7. Compute inverse of (ii) and (ee) blocks
-            Mii_inv = Mii^-1;
+            Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
+            % 7. Compute inverse of (ii), (ff) and (ee) blocks
+            Mii_inv = Mii^-1;      
+            Mff_inv = Mff^-1;
             Mee_inv = Mee^-1;
             
             % 8. Assemble Prolongation operator: columns are the basis functions
-            MsP = [Mii_inv*(Mie*Mee_inv*Men-Min);                                       ...
-                -Mee_inv*Men;                                       ...
-                speye(Nn,Nn)];
-            
+            switch (Ni)
+                case(0)
+                    % 2D
+                    % when 2D there are no interiors. 
+                    MsP = [Mff_inv*(Mfe*Mee_inv*Men);...
+                          -Mee_inv*Men;...
+                          speye(Nn,Nn)];
+                otherwise
+                    % 3D
+                    MsP = [-Mii_inv*(Mif*Mff_inv*Mfe*Mee_inv*Men);...
+                          Mff_inv*(Mfe*Mee_inv*Men);...
+                          -Mee_inv*Men;...
+                          speye(Nn,Nn)];
+            end
             MsP = G'*MsP;
         end
         %% Permutation Matrix
-        function [P, nii, nee, nnn] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)
-            nxf  = FineGrid.Nx;
-            nyf  = FineGrid.Ny;
-            nf   = FineGrid.N;
-            nxcf = cf(1);
-            nycf = cf(2);
-            nxc  = CoarseGrid.Nx;
-            nyc  = CoarseGrid.Ny;
-            
-            nii = (nxcf-1)*(nycf-1)*nxc*nyc;
-            nee = ((nxcf-1) + (nycf -1)) * nxc *nyc;
-            nnn = nxc *nyc;
-            
-            % DUALPERMUTATIONOPERATOR Permutation operator for reordering based on the dual grid
-            %
-            %  [P,nii,nee,nnn] = dualPermutationOperator(Nc,NfperC,type)
-            %
-            % -------------------------------------------------------------------------
-            % TYPE = 1 (Default option)
+        function [P, nii, nff, nee, nnn] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)
             % The ordering is done based on the dual coarse scale internal data
             %
             %     Non overlappig dual grid
@@ -69,7 +61,6 @@ classdef bf_updater < handle
             %                 e iiii
             %                 e iiii
             %
-            %
             %     1  2  [1]   5  6  .....          7  8  [3]   13  14
             %     3  4  [2]   9 10  ....          11 12  [4]   15  16
             %    [5][6] (1)  [7] [8]           [9] [10]  (2)   [15] [16]
@@ -78,7 +69,6 @@ classdef bf_updater < handle
             %
             %     iyc = 1 ixc =1                       iyc = 1   ixc =2
             %
-            %
             %    21  22  [13]  33 34  .....     35 36   [19]  45 46
             %    23  24  [14]  37 38  ...       39 40   [20]  47  4850
             % [21][22]   (3) [ 23][24]        [25] [26]  (4)   [xx7] [xx8]
@@ -86,45 +76,82 @@ classdef bf_updater < handle
             %            [28]                            [yy4]
             %
             %     iyc = 2 ixc =1                       iyc = 2   ixc =2
-            %
             
-            P = sparse(nf,nf);
+            %% 0. Define local variables 
+            nxf = FineGrid.Nx;
+            nyf = FineGrid.Ny;
+            nzf = FineGrid.Nz;
+            nf  = FineGrid.N;
+            nxcf = cf(1);
+            nycf = cf(2);
+            nzcf = cf(3);
             
-            %% Construct matrix and vector
-            % !!! No flow boundary condition everywhere !!!
-            %   we also assume nxcf and nycf are odd numbers
-            %
+            nxc = CoarseGrid.Nx;
+            nyc = CoarseGrid.Ny;
+            nzc = CoarseGrid.Nz;
             
+            %% 1. Define number of cells of each block
+            nii =  ((nxcf-1) * (nycf-1) * (nzcf-1)) * (nxc * nyc * nzc);% interiors
+            nff = ((nxcf-1)*(nycf-1) + (nycf-1)*(nzcf-1) + (nxcf-1)*(nzcf-1)) * nxc * nyc * nzc; % faces
+            nee = ((nxcf-1) + (nycf-1) + (nzcf-1)) * nxc * nyc * nzc; % edges
+            nnn = nxc *nyc*nzc; % verteces
+            
+            P = sparse(nf);
+            
+            %% 2. Construct matrix and vector
+            % Coarsening factors are assumed to be odd numbers. 
             iii0 = 0;
-            iee0 = nii;
-            inn0 = nii+nee;
-
-            nyd  = nyc+1;
-            nxd  = nxc+1;
-            icen = ceil(nycf/2);
-            jcen = ceil(nxcf/2);
-            for i = 1:nyd
-                for j = 1:nxd
-                    for iy= 1:nycf
-                        for jx= 1:nxcf
-                            
-                            %  calculate  the cell index in the original matrix
-                            ii=  (i-1) *nycf  -icen + iy;
-                            jj=  (j-1)* nxcf  -jcen + jx;
-                            if ( ii >=1 && ii <=nyf && jj >=1 && jj <=nxf)
-                                ij = (ii-1)*nxf + jj;
-                                %%%             internal point
-                                if ( iy  ~= 1 && jx ~= 1)
-                                    iii0= iii0+1;
-                                    P(iii0,ij ) =1;
-                                    %%%            node points
-                                elseif  ( iy == 1 && jx == 1)
-                                    inn0=inn0+1;
-                                    P(inn0, ij) =1;
-                                    %%%            edge points
-                                else
-                                    iee0=iee0+1;
-                                    P(iee0, ij) =1;
+            iff0 = nii;
+            iee0 = nii + nff;
+            inn0 = nii + nff + nee;
+            
+            nxd = nxc + 1;
+            nyd = nyc + 1;
+            nzd = nzc + 1;
+            icen = ceil(nxcf/2);
+            jcen = ceil(nycf/2);
+            kcen = ceil(nzcf/2);
+            % Now fill in entries of permutation matrix 
+            for i = 1:nxd
+                for j = 1:nyd
+                    for k = 1:nzd
+                        for ix= 1:nxcf
+                            for jy= 1:nycf
+                                for kz = 1:nzcf
+                                    % calculate the cell index in the original matrix
+                                    ii = (i-1) * nxcf - icen + ix;
+                                    jj = (j-1) * nycf - jcen + jy;
+                                    kk = (k-1) * nzcf - kcen + kz;
+                                    if ( ii >= 1 && ii <= nxf && jj >= 1 && jj <= nyf && kk >=1 && kk<=nzf)
+                                        % There are dual domains that are
+                                        % not withing the domain
+                                        ijk = ii + (jj-1)*nxf + (kk-1)*nxf*nyf; % global index
+                                        if (ix  ~= 1 && jy ~= 1 && kz ~=1)
+                                            % internal point
+                                            iii0 = iii0 + 1;
+                                            P(iii0, ijk) = 1;  
+                                        elseif  (ix == 1 && jy == 1 && kz==1)
+                                            % node points
+                                            inn0 = inn0 + 1;
+                                            P(inn0, ijk) = 1;
+                                        elseif (ix == 1 && jy == 1 && (kz ~=1 || kz~=nzcf))
+                                            % edge xy points
+                                            iee0 = iee0 + 1;
+                                            P(iee0, ijk) = 1;
+                                        elseif (ix == 1 && kz == 1 && (jy ~=1 || jy~=nycf))
+                                            % edge xz points
+                                            iee0 = iee0 + 1;
+                                            P(iee0, ijk) = 1;
+                                        elseif (jy == 1 && kz == 1 && (ix ~=1 || ix~=nxcf))
+                                            % edge yz points
+                                            iee0 = iee0 + 1;
+                                            P(iee0, ijk) = 1;
+                                        else
+                                            % face points
+                                            iff0 = iff0 + 1;
+                                            P(iff0, ijk) = 1;
+                                        end
+                                    end
                                 end
                             end
                         end
@@ -132,7 +159,7 @@ classdef bf_updater < handle
                 end
             end
         end
-        function TransformIntoTPFA(obj, Nx)
+        function TransformIntoTPFA(obj, Nx, Ny)
             [N, ~] = size(obj.A);
             x1 = [0; diag(obj.A, 1)];
             x2 = [diag(obj.A, -1); 0];
@@ -142,8 +169,14 @@ classdef bf_updater < handle
             y2 = zeros(N, 1);
             y1(N - length(diagy1) + 1:end) = diagy1;
             y2(1:length(diagy1)) = diagy2;
-            DiagVecs = [y2,x2,-y2-x2-y1-x1,x1,y1];
-            DiagIndx = [-Nx,-1,0,1,Nx];
+            diagz1 = diag(obj.A, Nx*Ny);
+            diagz2 = diag(obj.A, -Nx*Ny);
+            z1 = zeros(N, 1);
+            z2 = zeros(N, 1);
+            z1(N - length(diagz1) + 1:end) = diagz1;
+            z2(1:length(diagz1)) = diagz2;
+            DiagVecs = [z2, y2,x2, -z2-y2-x2--z1-y1-x1,x1,y1,z1];
+            DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
             obj.A = spdiags(DiagVecs,DiagIndx,N,N);
         end
     end

@@ -19,6 +19,7 @@ classdef operators_handler_MS < operators_handler
             lambdaMax = max(K(:,1));
             K(K(:,1)./lambdaMax < 10^-1, 1) = 10^-1*lambdaMax;
             K(K(:,2)./lambdaMax < 10^-1, 2) = 10^-1*lambdaMax;
+            K(K(:,3)./lambdaMax < 10^-1, 3) = 10^-1*lambdaMax;
             % Build Pressure system
             obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
             %Build static restriction operator (FV)
@@ -27,7 +28,7 @@ classdef operators_handler_MS < operators_handler
             obj.Pp{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor);
             %Build first coarse system (with MsFE)
             obj.BFUpdater.A = obj.Pp{1}' * obj.BFUpdater.A * obj.Pp{1};
-            obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx);
+            obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx, CoarseGrid(1).Ny);
             for x = 2:maxLevel
                 % Build static restriction operator (FV)
                 obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x));
@@ -35,7 +36,7 @@ classdef operators_handler_MS < operators_handler
                 obj.Pp{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor);
                 %Build coarse system (with MsFE)
                 obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
-                obj.BFUpdater.TransformIntoTPFA(CoarseGrid(x).Nx);
+                obj.BFUpdater.TransformIntoTPFA(CoarseGrid(x).Nx, CoarseGrid(x).Ny);
             end
         end
         function ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid)

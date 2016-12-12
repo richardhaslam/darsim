@@ -69,6 +69,7 @@ classdef TimeLoop_Driver < handle
                 %%%%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
                 if (obj.Time == obj.TStops(index))
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
+                    disp(char(5));
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
                     index = index + 1;
                 end

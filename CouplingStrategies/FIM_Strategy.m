@@ -32,7 +32,8 @@ methods
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
-                disp('Maximum number of iterations was reached: time-step was chopped');
+                disp('Max num. of iterations reached or stagnation detected: Time-step was chopped');
+                disp(char(5));
                 disp(['Restart Newton loop dt = ', num2str(dt)]);
             end
             

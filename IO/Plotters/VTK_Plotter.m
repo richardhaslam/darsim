@@ -132,6 +132,7 @@ classdef VTK_Plotter < Plotter
         function PlotResidual(obj)
         end
         function PlotBasisFunctions(obj)
+            
         end
         function PlotADMGrid(obj, Grid, CoarseGrid)
             obj.VTKindex = obj.VTKindex - 1;
@@ -171,7 +172,3 @@ classdef VTK_Plotter < Plotter
         end
     end
 end
-
-%% Notes: 
-% I have to change the spacing for coarse grids. CoarseGrid should be aware
-% of the deltaX and deltaY of each grid.

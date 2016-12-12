@@ -23,7 +23,6 @@ classdef Comp_fluid_model < fluid_model
                 SinglePhase = obj.Flash(Inj(i));                
                 obj.ComputePhaseDensities(Inj(i));
                 obj.ComputePhaseSaturation(Inj(i), SinglePhase);
-                %Inj(i).x2 = 1 - Inj(i).x;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end            
         end

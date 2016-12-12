@@ -26,9 +26,14 @@ classdef convergence_checker_ADM < convergence_checker_FS
             
             disp(['Iter ' num2str(iter) '    ' num2str(massbalance, '%5.5e'), '    ', num2str(equilibrium,'%5.5e'), '    ', num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
             
+            % check if is stagnating
+            stagnating = obj.Stagnating(massbalance);
+            
             %Check convergence
             if (massbalance < obj.Tol && equilibrium < obj.Tol && dp < obj.Tol * 1e2 && dS < obj.Tol * 1e2)
                 converged = 1;
+            elseif (isnan(massbalance) || stagnating)
+                converged = -1;
             end
         end
     end

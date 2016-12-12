@@ -10,8 +10,19 @@ classdef convergence_checker < handle
     properties
         Tol
         NormCalculator
+        OldResidual
     end
     methods (Abstract)
         obj = Check(obj)
+    end
+    methods
+        function output = Stagnating(obj, residual)
+            output = 0;
+            diff = abs(residual - obj.OldResidual)/abs(residual);
+            obj.OldResidual = residual;
+            if  diff < 1e-2
+                output = 1;
+            end
+        end
     end
 end

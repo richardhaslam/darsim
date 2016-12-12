@@ -40,8 +40,6 @@ classdef adm_grid < grid_darsim
             
             obj.I = [obj.I(1:Nf); zeros(Nx, 1)];
             obj.J = [obj.J(1:Nf); zeros(Nx, 1)];
-            %obj.CoarseFactor(obj.Ntot, 1) = [obj.CoarseFactor(1:Nf, 1); zeros(Nx, 1)];
-            %obj.CoarseFactor(obj.Ntot, 2) = [obj.CoarseFactor(1:Nf, 2); zeros(Nx, 1)];
             obj.CellIndex = [obj.CellIndex(1:Nf); zeros(Nx, 1)];
             obj.Fathers = [obj.Fathers(1:Nf,:); zeros(Nx, 2)];
             obj.Verteces = [obj.Verteces(1:Nf,:); zeros(Nx, 2)];
@@ -51,14 +49,13 @@ classdef adm_grid < grid_darsim
             h = Nf + 1;
             for CoarseNode = Nf+1 : Nf+Nc;
                 FineNodes = obj.Children{CoarseNode};
-                obj.I(h:h + 8) = FineGrid.I(FineNodes);
-                obj.J(h:h + 8) = FineGrid.J(FineNodes);
-                %obj.CoarseFactor(CoarseNode:CoarseNode + 9, 1) = FineGrid.CoarseFactor(1);
-                %obj.CoarseFactor(CoarseNode:CoarseNode + 9, 2) = FineGrid.CoarseFactor(2);
-                obj.CellIndex(h:h + 8) = FineNodes;
-                obj.Fathers(h:h + 8,:) = FineGrid.Fathers(FineNodes,:);
-                obj.Verteces(h:h + 8,:) = FineGrid.Verteces(FineNodes,:);
-                h = h + 9;
+                n_children = length(FineNodes);
+                obj.I(h:h + n_children-1) = FineGrid.I(FineNodes);
+                obj.J(h:h + n_children-1) = FineGrid.J(FineNodes);
+                obj.CellIndex(h:h + n_children-1) = FineNodes;
+                obj.Fathers(h:h + n_children-1,:) = FineGrid.Fathers(FineNodes,:);
+                obj.Verteces(h:h + n_children-1,:) = FineGrid.Verteces(FineNodes,:);
+                h = h + n_children;
             end
         end
     end

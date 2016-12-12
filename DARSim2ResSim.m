@@ -22,7 +22,7 @@ diary(strcat(Directory, '/Output/RunDiary.txt'));
 
 %% Print title
 disp('******************************************************************');
-disp('********************DARSIM 2 RESERVOIR SIMULATOR********************');
+disp('********************DARSIM 2 RESERVOIR SIMULATOR******************');
 disp('******************************************************************');
 disp(char(5));
 disp(['Reading input file ', File, ' from ', Directory]);
