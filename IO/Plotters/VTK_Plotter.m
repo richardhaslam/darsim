@@ -129,10 +129,90 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
             fprintf(fileID, '\n');
         end
-        function PlotResidual(obj)
+        function PlotBasisFunctions(obj, Grid, CoarseGrid, Prolp)
+            %% 1. Level 1
+            fileID = fopen(strcat(obj.FileName,'_BF_Level1.vtk'), 'w');
+            fprintf(fileID, '# vtk DataFile Version 2.0\n');
+            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            fprintf(fileID, 'ASCII\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, Grid.Nz+1);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
+            fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
+            fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
+            fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
+            fprintf(fileID, '\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
+            fprintf(fileID, '\n');
+            for j = 1:CoarseGrid(1).N
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(:,j)),strcat(' BF',num2str(j)));
+                fprintf(fileID, '\n');
+            end
+            fclose(fileID);
+            %% 2. Levels > 1
+            for i=2:length(CoarseGrid)
+                fileID = fopen(strcat(obj.FileName,'_BF_Level',num2str(i),'.vtk'), 'w');
+                fprintf(fileID, '# vtk DataFile Version 2.0\n');
+                fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+                fprintf(fileID, 'ASCII\n');
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
+                fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i-1).Nx +1, CoarseGrid(i-1).Ny+1, CoarseGrid(i-1).Nz+1);
+                fprintf(fileID, '\n');
+                fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i-1).Nx+1) ' float\n']);
+                fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i-1).CoarseFactor(1) : Grid.dx * Grid.Nx);
+                fprintf(fileID, '\n');
+                fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i-1).Ny+1) ' float\n']);
+                fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i-1).CoarseFactor(2) : Grid.dy * Grid.Ny);
+                fprintf(fileID, '\n');
+                fprintf(fileID, ['Z_COORDINATES ' num2str(CoarseGrid(i-1).Nz+1) ' float\n']);
+                fprintf(fileID, '%f ', 0 : Grid.dz * CoarseGrid(i-1).CoarseFactor(3) : Grid.dz * Grid.Nz);
+                fprintf(fileID, '\n');
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i-1).N);
+                for j = 1:CoarseGrid(i).N
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(:,j)), strcat(' BF',num2str(j)));
+                    fprintf(fileID, '\n');
+                end
+                fclose(fileID);
+            end
         end
-        function PlotBasisFunctions(obj)
-            
+        function PlotDynamicBasisFunctions(obj, Grid, Prolp)
+            fileID = fopen(strcat(obj.FileName,'Dynamic_BF_', num2str(obj.VTKindex - 1),'.vtk'), 'w');
+            fprintf(fileID, '# vtk DataFile Version 2.0\n');
+            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            fprintf(fileID, 'ASCII\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, Grid.Nz+1);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
+            fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
+            fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
+            fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
+            fprintf(fileID, '\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
+            fprintf(fileID, '\n');
+            if obj.VTKindex > 2
+                [~, col] = size(Prolp);
+                for j = 1:col
+                    obj.PrintScalar2VTK(fileID, full(Prolp(:,j)),strcat(' DynamicBF',num2str(j)));
+                    fprintf(fileID, '\n');
+                end
+                fclose(fileID);
+            end
         end
         function PlotADMGrid(obj, Grid, CoarseGrid)
             obj.VTKindex = obj.VTKindex - 1;

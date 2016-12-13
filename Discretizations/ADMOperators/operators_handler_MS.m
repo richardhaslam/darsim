@@ -51,7 +51,7 @@ classdef operators_handler_MS < operators_handler
             end
             
             % Last prolongation is different coz I use fine-scale ordering
-            Prolp = obj.LastProlongation(ADMGrid, FineGrid);
+            Prolp = obj.LastProlongation(ADMGrid, FineGrid, CoarseGrid(1));
             
             % Multiply by previous objects
             obj.ADMProlp = Prolp * obj.ADMProlp;
@@ -119,7 +119,7 @@ classdef operators_handler_MS < operators_handler
              % 4. Fill in fine-scale nodes first
              rows = obj.ADMmap.OriginalIndexNf';
              columns = 1:obj.ADMmap.Nf;
-             Prolp(rows,:) = 0; % if it s fine-scale already I get rid of useless fillings
+             Prolp(rows, :) = 0; % if it s fine-scale already I get rid of useless fillings
              Prolp(sub2ind(size(Prolp), rows, columns)) = 1;
              
              % 5. Make it sparse

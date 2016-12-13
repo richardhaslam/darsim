@@ -112,12 +112,12 @@ classdef bf_updater < handle
             jcen = ceil(nycf/2);
             kcen = ceil(nzcf/2);
             % Now fill in entries of permutation matrix 
-            for i = 1:nxd
+            for k = 1:nzd
                 for j = 1:nyd
-                    for k = 1:nzd
-                        for ix= 1:nxcf
+                    for i = 1:nxd
+                        for kz= 1:nzcf
                             for jy= 1:nycf
-                                for kz = 1:nzcf
+                                for ix = 1:nxcf
                                     % calculate the cell index in the original matrix
                                     ii = (i-1) * nxcf - icen + ix;
                                     jj = (j-1) * nycf - jcen + jy;
@@ -176,7 +176,7 @@ classdef bf_updater < handle
             z1(N - length(diagz1) + 1:end) = diagz1;
             z2(1:length(diagz1)) = diagz2;
             DiagVecs = [z2, y2,x2, -z2-y2-x2--z1-y1-x1,x1,y1,z1];
-            DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
+            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             obj.A = spdiags(DiagVecs,DiagIndx,N,N);
         end
     end
