@@ -15,7 +15,7 @@ classdef initializer_hydrostatic < initializer
             disp('Started Hydrostatic initialization');
             
              % Define initial values
-            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e6;
+            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*.5e7;
             z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.05;
             
             
