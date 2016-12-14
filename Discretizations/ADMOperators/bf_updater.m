@@ -175,7 +175,7 @@ classdef bf_updater < handle
             z2 = zeros(N, 1);
             z1(N - length(diagz1) + 1:end) = diagz1;
             z2(1:length(diagz1)) = diagz2;
-            DiagVecs = [z2, y2,x2, -z2-y2-x2--z1-y1-x1,x1,y1,z1];
+            DiagVecs = [z2, y2, x2, -z2-y2-x2-z1-y1-x1, x1, y1, z1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             obj.A = spdiags(DiagVecs,DiagIndx,N,N);
         end
