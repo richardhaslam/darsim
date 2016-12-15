@@ -77,19 +77,16 @@ classdef operators_handler_MS < operators_handler
              obj.ADMmap.Update(ADMGrid, FineGrid, level);
              
              % 1. Build the object
-             Prolp = zeros(obj.ADMmap.Nf + obj.ADMmap.Nx, obj.ADMmap.Nf + obj.ADMmap.Nc);
+             Prolp = sparse(obj.ADMmap.Nf + obj.ADMmap.Nx, obj.ADMmap.Nf + obj.ADMmap.Nc);
              
              % 2. Fill in top left
-             Prolp(1:obj.ADMmap.Nf, 1:obj.ADMmap.Nf) = eye(obj.ADMmap.Nf);
+             Prolp(1:obj.ADMmap.Nf, 1:obj.ADMmap.Nf) = speye(obj.ADMmap.Nf);
              
              % 3. Fill in Bottom left
              Prolp(obj.ADMmap.Nf + 1 : end,  obj.ADMmap.Verteces) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexVerteces);
              
              % 4. Fill in Bottom right
              Prolp(obj.ADMmap.Nf + 1 :end, obj.ADMmap.Nf + 1 : end) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
-             
-             % 5. Make it sparse
-             Prolp = sparse(Prolp);
         end
         function Prolp = LastProlongation(obj, ADMGrid, FineGrid, CoarseGrid)
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,7 +105,7 @@ classdef operators_handler_MS < operators_handler
              obj.ADMmap.Update(ADMGrid, FineGrid, 1);
            
              % 1. Build object
-             Prolp = zeros(FineGrid.N, obj.ADMmap.Nf + obj.ADMmap.Nc);
+             Prolp = sparse(FineGrid.N, obj.ADMmap.Nf + obj.ADMmap.Nc);
              
              % 2. Fill in FS verteces of level 1
              Prolp(:,  obj.ADMmap.Verteces) = obj.Pp{1}(:, obj.ADMmap.OriginalIndexVerteces);
@@ -121,9 +118,6 @@ classdef operators_handler_MS < operators_handler
              columns = 1:obj.ADMmap.Nf;
              Prolp(rows, :) = 0; % if it s fine-scale already I get rid of useless fillings
              Prolp(sub2ind(size(Prolp), rows, columns)) = 1;
-             
-             % 5. Make it sparse
-             Prolp = sparse(Prolp);
         end
     end
 end
