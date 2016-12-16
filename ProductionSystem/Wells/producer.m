@@ -20,6 +20,8 @@ classdef producer < handle
             obj.Coord = coord;
             obj.PI = PI;
         end
-        
+        function ResizeObjects(obj, n)
+            obj.p =  ones(n,1) * obj.p;
+        end
     end
 end

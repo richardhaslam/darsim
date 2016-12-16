@@ -30,6 +30,7 @@ classdef Discretization_model < handle
                 J = Wells.Inj(i).Coord(2,1):1:Wells.Inj(i).Coord(2,2);
                 K = Wells.Inj(i).Coord(3,1):1:Wells.Inj(i).Coord(3,2);
                 Wells.Inj(i).Cells = I + (J-1)*obj.ReservoirGrid.Nx + (K-1)*obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny;
+                Wells.Inj(i).ResizeObjects(length(Wells.Inj(i).Cells));
             end
             
             % Producers
@@ -38,6 +39,7 @@ classdef Discretization_model < handle
                 J = Wells.Prod(i).Coord(2,1):1:Wells.Prod(i).Coord(2,2);
                 K = Wells.Prod(i).Coord(3,1):1:Wells.Prod(i).Coord(3,2);
                 Wells.Prod(i).Cells = I + (J-1)*obj.ReservoirGrid.Nx + (K-1)*obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny;
+                Wells.Prod(i).ResizeObjects(length(Wells.Prod(i).Cells));
             end
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)

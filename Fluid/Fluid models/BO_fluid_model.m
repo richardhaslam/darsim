@@ -37,7 +37,7 @@ classdef BO_fluid_model < Comp_fluid_model
                 Inj(i).z = [1 0];
                 Inj(i).x = [1 0 0 1];        
                 for ph=1:obj.NofPhases
-                    Inj(i).rho(:, ph) = obj.Phases(ph).ComputeDensity(Inj(i), obj.Components, 0);
+                    Inj(i).rho(:, ph) = obj.Phases(ph).ComputeDensity(Inj(i), obj.Components, zeros(length(Inj(i).Cells), 1));
                 end
                 Inj(i).S = 1;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 13 July 2016
+%Last modified: 16 December 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef producer_pressure < producer
     properties
@@ -14,6 +14,10 @@ classdef producer_pressure < producer
         function obj = producer_pressure(PI, coord, pressure)
             obj@producer(PI, coord)
             obj.p = pressure;
+        end
+        function AdjustConstraint(obj, GravityModel, rhoT, h)
+            rho = rhoT(obj.Cells);
+            obj.p = obj.p - rho .*GravityModel.g .* h;
         end
         function UpdateState(obj, State, K, Mob, n_phases, n_components)
             for i = 1:n_phases

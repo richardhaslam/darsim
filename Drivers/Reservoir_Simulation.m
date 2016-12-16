@@ -20,7 +20,7 @@ classdef Reservoir_Simulation
         function Initialize(obj)
             obj.DiscretizationModel.Initialize(obj.ProductionSystem, obj.Formulation);
             obj.Initializer.InitializeProductionSystem(obj.ProductionSystem, obj.FluidModel, obj.Formulation, obj.DiscretizationModel);
-            obj.ProductionSystem.InitializeWells(obj.FluidModel);
+            obj.ProductionSystem.InitializeWells(obj.FluidModel, obj.Formulation.GravityModel, obj.DiscretizationModel);
             obj.DiscretizationModel.InitializeMapping(obj.ProductionSystem, obj.FluidModel)
         end
         function Run(obj, Writer)        
