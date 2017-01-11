@@ -91,11 +91,13 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             %Pressure
-            obj.PrintScalar2VTK(fileID, Status.p, ' PRESSURE');
+            obj.PrintScalar2VTK(fileID, Status.p - Status.pc, ' Pph1');
+            fprintf(fileID, '\n');
+            obj.PrintScalar2VTK(fileID, Status.p, ' Pph2');
             fprintf(fileID, '\n');
             %Saturation
             Status.S(Status.S<1e-7) = 0;
-            obj.PrintScalar2VTK(fileID, Status.S, ' SATURATION');
+            obj.PrintScalar2VTK(fileID, Status.S, ' Sph1');
             fprintf(fileID, '\n');
             %Capillary Pressure
             obj.PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');

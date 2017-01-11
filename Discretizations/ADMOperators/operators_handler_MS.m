@@ -17,9 +17,9 @@ classdef operators_handler_MS < operators_handler
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
             % Remove high contrast to avoid spikes
             lambdaMax = max(K(:,1));
-            K(K(:,1)./lambdaMax < 10^-1, 1) = 10^-1*lambdaMax;
-            K(K(:,2)./lambdaMax < 10^-1, 2) = 10^-1*lambdaMax;
-            K(K(:,3)./lambdaMax < 10^-1, 3) = 10^-1*lambdaMax;
+            K(K(:,1)./lambdaMax < 10^-2, 1) = 10^-2*lambdaMax;
+            K(K(:,2)./lambdaMax < 10^-2, 2) = 10^-2*lambdaMax;
+            K(K(:,3)./lambdaMax < 10^-2, 3) = 10^-2*lambdaMax;
             % Build Pressure system
             obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
             %Build static restriction operator (FV)

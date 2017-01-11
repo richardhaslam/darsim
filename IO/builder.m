@@ -195,9 +195,9 @@ classdef builder < handle
                 %load the file in a vector
                 field = load(file);
                 % reshape it to specified size
-                field = reshape(field(3:end),[field(1) field(2)]);
+                field = reshape(field(4:end),[field(1) field(2) field(3)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-13, DiscretizationModel.ReservoirGrid.N, 1);
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz), DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
                 Kz = Kx;
             else

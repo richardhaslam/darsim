@@ -18,4 +18,4 @@
 %      DARSim2ResSim(Directory{i}, File{i});
 %  end
 
-DARSim2ResSim('../Input/SPE10T', 'SPE10T.txt');
+DARSim2ResSim('../Input/Swej', 'Swej.txt');

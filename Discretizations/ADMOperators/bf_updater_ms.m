@@ -14,11 +14,14 @@ classdef bf_updater_ms < bf_updater
             % Initialize local variables
             Nx = FineGrid.Nx;
             Ny = FineGrid.Ny;
+            Nz = FineGrid.Nz;
             N = FineGrid.N;
             dx = FineGrid.dx;
             dy = FineGrid.dy;
+            dz = FineGrid.dz;
             Ax = FineGrid.Ax;
             Ay = FineGrid.Ay;
+            Az = FineGrid.Az;
             Mob = FluidModel.ComputePhaseMobilities(s);
             Mobt = sum(Mob,2);
             

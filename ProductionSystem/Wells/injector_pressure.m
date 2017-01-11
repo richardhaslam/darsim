@@ -21,7 +21,7 @@ classdef injector_pressure < injector
         end
         function UpdateState(obj, State, K, n_phases, n_components)
             for i = 1:n_phases
-                obj.QPhases(:,i) = obj.rho(i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - State.p(obj.Cells));
+                obj.QPhases(:,i) = obj.rho(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - State.p(obj.Cells) + (i - 3) * (1-i) * State.pc(obj.Cells));
             end
             for j=1:n_components
                 obj.QComponents(:, j) = obj.x((j-1)*2 + 1) .* obj.QPhases(:,1) + obj.x((j-1)*2 + 2) .* obj.QPhases(:,2);
