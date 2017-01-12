@@ -289,12 +289,14 @@ classdef builder < handle
                         water = component();
                         FluidModel.AddComponent(water, 3);
                     end
-                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    %FlashCalculator = Rachford_Rice_flash_calculator();
+                    FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                 case('Compositional')
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
-                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    %FlashCalculator = Rachford_Rice_flash_calculator();
+                    FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                     % Add phases
@@ -309,6 +311,7 @@ classdef builder < handle
                         FluidModel.AddPhase(Phase, i);
                     end
                     % Add components
+                    kval = [1.5 0.5 0.1];
                     for i = 1:FluidModel.NofComp
                         %Gets all atmospheric bubble points [K]
                         Tb = str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*7));
@@ -317,7 +320,7 @@ classdef builder < handle
                         b = str2double(inputMatrix(obj.Comp_Prop + 5 + (i-1)*7));
                         MM = str2double(inputMatrix(obj.Comp_Prop + 7*i));
                         comp = component();
-                        comp.AddCompProperties(Tb, b, MM);
+                        comp.AddCompProperties(Tb, b, MM, kval(i));
                         FluidModel.AddComponent(comp, i); 
                     end
             end

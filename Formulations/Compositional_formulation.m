@@ -115,7 +115,7 @@ classdef Compositional_formulation < fim_formulation
             
         end
         function q = ComputeSourceTerms(obj, N, Wells)
-            q = zeros(N, 2);
+            q = zeros(N, obj.NofComponents);
             %Injectors
             for i=1:Wells.NofInj
                 c = Wells.Inj(i).Cells;

@@ -16,10 +16,15 @@ classdef Comp_fluid_model < fluid_model
             obj.name = 'Compositional';
         end
         function InitializeInjectors(obj, Inj)
+            injvector = zeros(1, obj.NofComp);
+            injvector(1) = 0.95;
+            injvector(2) = 0.05;
+            injxvector = 0.5*ones(1, obj.NofComp);
             % Loop over all injectors
             for i=1:length(Inj)
-                Inj(i).z = [0.95 0.05];
+                Inj(i).z = injvector;
                 Inj(i).ni = 0.5;
+                Inj(i).x = injxvector;
                 SinglePhase = obj.Flash(Inj(i));                
                 obj.ComputePhaseDensities(Inj(i));
                 obj.ComputePhaseSaturation(Inj(i), SinglePhase);
@@ -64,72 +69,38 @@ classdef Comp_fluid_model < fluid_model
             k = obj.FlashCalculator.KvaluesCalculator.Compute(Status, obj.Components, obj.Phases);
         end
         function dkdp = DKvalDp(obj, p)
-            dkdp = obj.FlashCalculator.KvaluesCalculator.DKvalDp(p);
+            dkdp = obj.FlashCalculator.KvaluesCalculator.DKvalDp(p, obj.Components, obj.Phases);
         end
         function [dxdp, dxdz] = DxDpDz(obj, Status, SinglePhase)
-            % Find sensitivities
             % x = x1v, x1l, x2v, x2l, ni
             % z = p, z1
+            x = Status.x;
             k = obj.ComputeKvalues(Status);
             dk = obj.DKvalDp(Status);
             ni = Status.ni;
-            x1 = Status.x(:,1);
-            y1 = Status.x(:,2);
-            x2 = 1 - x1;
-            y2 = 1 - y1;
-            k1 = k(:,1);
-            k2 = k(:,2);
-            dk1 = dk(:,1);
-            dk2 = dk(:,2);
-            
             N = length(Status.p);
-            % Loop over all cells and do inversion local inversion
-            dxdp = zeros(N, 5);
-            dxdz = zeros(N, 5);
+            % Loop over all cells and do local inversion
+            dxdp = zeros(N, 2*obj.NofComp+1);
+            dxdz = zeros(N, 2*obj.NofComp+1, obj.NofComp-1);
             for i = 1:N
-                dFdz = zeros(5,2);
-                dFdx = zeros(5,5);
-                % Equation 1
-                % dF1/dx1v
-                dFdx(1, 1) = 1;
-                % dF1/dx1l
-                dFdx(1, 2) = -k1(i);
-                % Equation 2
-                % dF2/dx2v
-                dFdx(2, 3) = 1;
-                % dF2/dx2l
-                dFdx(2, 4) = -k2(i);
-                % Equation 3
-                % dF3/dx1v
-                dFdx(3, 1) = - ni(i);
-                % dF3/dx1l
-                dFdx(3, 2) = -(1 - ni(i));
-                % dF3dni
-                dFdx(3, 5) = y1(i) - x1(i);
-                % Equation 4
-                % dF4/dx2v
-                dFdx(4, 3) = - ni(i);
-                % dF4/dx2l
-                dFdx(4, 4) = - (1 - ni(i));
-                % dF4dni
-                dFdx(4, 5) = y2(i) - x2(i);
-                % Equation 5
-                % dF5/dx1v
-                dFdx(5, 1) = 1;
-                % dF5/dx1l
-                dFdx(5, 2) = -1;
-                % dF5/dx2v
-                dFdx(5, 3) = 1;
-                % dF5/dx2l
-                dFdx(5, 4) = -1;
-                % dFdz
-                dFdz(1, 1) = -dk1(i) * y1(i);
-                dFdz(2, 1) = -dk2(i) * y2(i);
-                dFdz(3, 2) =  1;
-                dFdz(4, 2) = -1;
-                dFdx = sparse(dFdx);
+                dFdx = zeros(2*obj.NofComp + 1);
+                dFdz = zeros(2*obj.NofComp + 1, obj.NofComp);
+                for c=1:obj.NofComp
+                    % x_cv - k_c x_cl = 0
+                    dFdx (c, (c-1)*2+1:(c-1)*2+2) = [1, -k(i,c)];
+                    dFdz (c, 1) = -dk(i,c) * x(i, (c-1)*2+2);
+                    % z_c - ni*x_cv - (1-ni)*x_cl = 0
+                    dFdx (obj.NofComp + c, (c-1)*2+1:(c-1)*2+2) = [-ni(i), ni(i)-1];
+                    dFdx (obj.NofComp + c, end) = x(i, (c-1)*2+2) - x(i, (c-1)*2+1); 
+                    dFdz (obj.NofComp + c, 2:obj.NofComp) = 1;
+                    % Sum x_cv-x_cl = 0
+                    dFdx (2*obj.NofComp + 1, (c-1)*2+1:(c-1)*2+2) = [1, -1]; 
+                end
+                dFdz (2*obj.NofComp, 2:obj.NofComp) = -1;
                 dxdp(i,:) = (dFdx\dFdz(:,1))';
-                dxdz(i,:) = (dFdx\dFdz(:,2))';
+                for j=1:obj.NofComp-1
+                    dxdz(i,:,j) = (dFdx\dFdz(:,j+1))';
+                end
             end
             dxdz(SinglePhase == 1, 1) = 1;
             dxdz(SinglePhase == 1, 2) = 0;

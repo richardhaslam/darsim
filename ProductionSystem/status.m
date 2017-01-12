@@ -22,7 +22,7 @@ methods
         % Create objects
         obj.p = ones(N, 1);
         obj.pc = zeros(N, 1);
-        obj.z = ones(N, ncomp);
+        obj.z = zeros(N, ncomp);
         obj.S = zeros(N, 1);
         obj.ni = 0.5*ones(N, 1);
         obj.x = zeros(N, nf*ncomp);

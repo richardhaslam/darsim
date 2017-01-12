@@ -64,9 +64,12 @@ classdef fluid_model < handle
         end
         function dMob = DMobDz(obj, Status, dSdz)
             dMobdS = obj.DMobDS(Status.S);
-            % Use chain rule
-            dMob(:,1) = dMobdS(:,1) .* dSdz;
-            dMob(:,2) = dMobdS(:,2) .* dSdz;
+            dMob = zeros(length(Status.S), obj.NofComp-1);
+            for j=1:obj.NofComp-1
+                % Use chain rule
+                dMob(:,1,j) = dMobdS(:,1) .* dSdz(:,j);
+                dMob(:,2,j) = dMobdS(:,2) .* dSdz(:,j);
+            end
         end
         function drho = DrhoDp(obj, p)
             drho = zeros(length(p), obj.NofPhases);
@@ -102,7 +105,11 @@ classdef fluid_model < handle
         end
         function dPc = DPcDz(obj, Status, dSdz)
             dPcdS = obj.DPcDS(Status.S);
-            dPc = dPcdS .* dSdz;
+            dPc = zeros(length(Status.S), obj.NofComp-1);
+            for j=1:obj.NofComp-1
+                % Use chain rule
+                dPc(:,j) = dPcdS(:,1) .* dSdz(:,j);
+            end
         end
         function dSdp = DSDp(obj, Status, drhodp, dni)
             ni = Status.ni;
@@ -120,30 +127,35 @@ classdef fluid_model < handle
         function dSdz = DSDz(obj, Status, dni, dx1v, dx1l)
             rhov = Status.rho(:,1);
             rhol = Status.rho(:,2);
-            x1v = Status.x(:,1);
-            x1l = Status.x(:,2);
+            %x1v = Status.x(:,1);
+            %x1l = Status.x(:,2);
             ni = Status.ni;
-            z = Status.z(:,1);
+            %z = Status.z(:,1);
             % Derivative of S with respect to z
-            Num = rhol .* (x1l - z);
-            dNum = rhol .* (dx1l - 1);
-            Den = rhov .* (z - x1v) + rhol .* (x1l - z); 
-            dDen = rhov .* (1 - dx1v) + rhol .* (dx1l - 1);
-            dSdz =(Den .* dNum - Num .* dDen) ./ Den.^2;
-            Num1 = rhol .* ni;
-            dNum1 = rhol .* dni;
-            Den1 = rhol .* ni + (1 - ni) .* rhov;
-            dDen1 = rhol .* dni - dni .* rhov;
-            dSdz2 =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
-            %disp(dSdz2(1) .* dSdz(1).^-1);
+            % Num = rhol .* (x1l - z);
+            % dNum = rhol .* (dx1l - 1);
+            % Den = rhov .* (z - x1v) + rhol .* (x1l - z);
+            % dDen = rhov .* (1 - dx1v) + rhol .* (dx1l - 1);
+            % dSdz =(Den .* dNum - Num .* dDen) ./ Den.^2;
+            dSdz = zeros(length(ni), obj.NofComp - 1);
+            for j = 1:obj.NofComp-1
+                Num1 = rhol .* ni;
+                dNum1 = rhol .* dni(:,j);
+                Den1 = rhol .* ni + (1 - ni) .* rhov;
+                dDen1 = rhol .* dni(:,j) - dni(:,j) .* rhov;
+                dSdz(:, j) =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
+            end
         end
         function drhotdz = DrhotDz(obj, Status, drho, dS)
             rho = Status.rho;
             S = Status.S;
-            drhotdz = drho(:,1) .* S + rho(:,1) .* dS + drho(:,2) .* (1 - S) - rho(:,2) .* dS;
+            drhotdz = zeros(length(S), obj.NofComp-1);
+            for j=1:obj.NofComp-1
+                drhotdz(:,j) = drho(:,1) .* S + rho(:,1) .* dS(:,j) + drho(:,2) .* (1 - S) - rho(:,2) .* dS(:,j);
+            end
             % When it s one phase derivative is zero
-            drhotdz(Status.S == 1) = 0;
-            drhotdz(Status.S == 0) = 0;
+            drhotdz(Status.S == 1,:) = 0;
+            drhotdz(Status.S == 0,:) = 0;
         end
         function drhotdp = DrhotDp(obj, Status, drho, dS)
             rho = Status.rho;

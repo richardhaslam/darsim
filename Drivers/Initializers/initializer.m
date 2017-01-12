@@ -29,7 +29,7 @@ classdef initializer < handle
             disp('Initial conditions:')
             disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.p/1e6)), ' MPa']);
             disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.S))]);
-            disp(['reservoir z1: ', num2str(max(ProductionSystem.Reservoir.State.z(:,1)))])
+            disp(['reservoir initial z: ', num2str(ProductionSystem.Reservoir.State.z(1,:))]);
             disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
             disp('---------------------------------------------------------');
             disp(char(5));
