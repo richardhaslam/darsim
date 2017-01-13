@@ -21,9 +21,10 @@ classdef initializer_hydrostatic < initializer
             
             % 1. Assign initial valus
             ProductionSystem.Reservoir.State.p = P_init;
-            ProductionSystem.Reservoir.State.z(:,1) = z_init;
-            ProductionSystem.Reservoir.State.z(:,2) = 1 - z_init;
-           
+            ProductionSystem.Reservoir.State.z(:,1) = 0.6;
+            ProductionSystem.Reservoir.State.z(:,2) = 0.2;
+            ProductionSystem.Reservoir.State.z(:,3) = 0.2;
+            
             obj.Equilibrate(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
         end
         function Equilibrate(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)

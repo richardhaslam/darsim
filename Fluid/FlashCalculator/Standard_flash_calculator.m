@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Standard_flash_calculator < Kvalues_flash_calculator
     properties
-        tol = 1e-5;
+        tol = 1e-7;
         itMax = 1000;
     end
     methods
@@ -28,13 +28,13 @@ classdef Standard_flash_calculator < Kvalues_flash_calculator
             % 2.a: checking if it 's all liquid: checks if mix is below bubble
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
-            SinglePhase(BubCheck - 1 <= obj.tol) = 2; % It s all liquid
+            SinglePhase(BubCheck - 1 <= 0) = 2; % It s all liquid
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
             % point
             DewCheck = z ./ k;
             DewCheck = sum(DewCheck, 2);
-            SinglePhase(DewCheck - 1 < obj.tol) = 1;  % It s all vapour
+            SinglePhase(DewCheck - 1 < 0) = 1;  % It s all vapour
             
             % Solve with Newton
             for i=1:N

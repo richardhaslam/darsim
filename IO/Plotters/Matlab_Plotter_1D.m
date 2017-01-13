@@ -26,9 +26,9 @@ classdef Matlab_Plotter_1D < Plotter
             P = reshape(Status.p,Grid.Nx,Grid.Ny);
             S = reshape(Status.S,Grid.Nx,Grid.Ny);
             Pc = reshape(Status.pc,Grid.Nx,Grid.Ny);
-            x1 = reshape(Status.x(:,1),Grid.Nx,Grid.Ny);
-            x2 = reshape(1-Status.x(:,2),Grid.Nx,Grid.Ny);
-            z = reshape(Status.z(:,1),Grid.Nx,Grid.Ny);
+            x1 = Status.x(:,1);
+            x2 = 1-Status.x(:,2);
+            z =  Status.z;
             %Plot for 1D problems
             x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
             figure(2)
@@ -54,31 +54,35 @@ classdef Matlab_Plotter_1D < Plotter
             set(gca,'fontsize',24);
             drawnow;
             
-            figure(4)
-            %subplot(3,1,1);
-            plot(x, x1, '.', 'Color', obj.color2);
-            axis([0 Grid.Nx*Grid.dx 0 1]);
-            %title('Component 1 in Phase 1 [-]');
-            xlabel('x [m]');
-            ylabel('x1v [-]');
-            hold on;
-            set(gca,'fontsize',24);
-            figure(5)
-            %subplot(3,1,2);
-            plot(x, x2, '.', 'Color', obj.color2);
-            axis([0 Grid.Nx*Grid.dx 0 1]);
-            %title('Component 2 in Phase 2 [-]');
-            xlabel('x [m]');
-            ylabel('x2l [-]');
-            hold on;
-            set(gca,'fontsize',24);
+%             figure(4)
+%             %subplot(3,1,1);
+%             plot(x, x1, '.', 'Color', obj.color2);
+%             axis([0 Grid.Nx*Grid.dx 0 1]);
+%             %title('Component 1 in Phase 1 [-]');
+%             xlabel('x [m]');
+%             ylabel('x1v [-]');
+%             hold on;
+%             set(gca,'fontsize',24);
+%             figure(5)
+%             %subplot(3,1,2);
+%             plot(x, x2, '.', 'Color', obj.color2);
+%             axis([0 Grid.Nx*Grid.dx 0 1]);
+%             %title('Component 2 in Phase 2 [-]');
+%             xlabel('x [m]');
+%             ylabel('x2l [-]');
+%             hold on;
+%             set(gca,'fontsize',24);
             %subplot(3,1,3);
             figure(6)
-            plot(x, z, obj.color2, 'LineWidth', 1);
+            plot(x, z(:,1), 'red', 'LineWidth', 1);
+            hold on
+            plot(x, z(:,2), 'green', 'LineWidth', 1);
+            hold on
+            plot(x, z(:,3), 'blue', 'LineWidth', 1);
             axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 1 Total Mass Fraction [-]');
             xlabel('x [m]');
-            ylabel('z1 [-]');
+            ylabel('z [-]');
             hold on;
             set(gca,'fontsize',24);
             drawnow;

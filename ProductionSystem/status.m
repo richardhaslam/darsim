@@ -26,6 +26,8 @@ methods
         obj.S = zeros(N, 1);
         obj.ni = 0.5*ones(N, 1);
         obj.x = zeros(N, nf*ncomp);
+        obj.x(:,1) = 1;
+        obj.x(:,end) = 1;
         obj.rho = zeros(N, nf);
         obj.rhoT = zeros(N, 1); 
     end

@@ -145,6 +145,7 @@ classdef fluid_model < handle
                 dDen1 = rhol .* dni(:,j) - dni(:,j) .* rhov;
                 dSdz(:, j) =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
             end
+            dSdz(:,2) = dSdz(:,2)*-1;
         end
         function drhotdz = DrhotDz(obj, Status, drho, dS)
             rho = Status.rho;

@@ -102,21 +102,18 @@ classdef VTK_Plotter < Plotter
             %Capillary Pressure
             obj.PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
             fprintf(fileID, '\n');
-            %x11
-            obj.PrintScalar2VTK(fileID, Status.x(:,1), ' x1ph1');
-            fprintf(fileID, '\n');
-            %x12
-            obj.PrintScalar2VTK(fileID, Status.x(:,2), ' x1ph2');
-            fprintf(fileID, '\n');
-            %x21
-            obj.PrintScalar2VTK(fileID, Status.x(:,3), ' x2ph1');
-            fprintf(fileID, '\n');
-            %x22
-            obj.PrintScalar2VTK(fileID, Status.x(:,4), ' x2ph2');
-            fprintf(fileID, '\n');
-            %z1
-            obj.PrintScalar2VTK(fileID, Status.z(:,1), ' z1');
-            fprintf(fileID, '\n');
+            [~, nc] = size(Status.z);
+            for c=1:nc
+                %xcv
+                obj.PrintScalar2VTK(fileID, Status.x(:,(c-1)*2+1), [' x',num2str(c),'ph1']);
+                fprintf(fileID, '\n');
+                %xcl
+                obj.PrintScalar2VTK(fileID, Status.x(:,(c-1)*2+2), [' x',num2str(c),'ph2']);
+                fprintf(fileID, '\n');
+                %zc
+                obj.PrintScalar2VTK(fileID, Status.z(:,c), [' z',num2str(c)]);
+                fprintf(fileID, '\n');
+            end
             %Density
             obj.PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoPh1');
             fprintf(fileID, '\n');

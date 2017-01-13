@@ -21,7 +21,7 @@ classdef convergence_checker < handle
             diff = abs(residual - obj.OldResidual)/abs(residual);
             obj.OldResidual = residual;
             if  diff < 1e-2
-                output = 1;
+                output = 0;
             end
         end
     end

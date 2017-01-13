@@ -17,9 +17,10 @@ classdef Comp_fluid_model < fluid_model
         end
         function InitializeInjectors(obj, Inj)
             injvector = zeros(1, obj.NofComp);
-            injvector(1) = 0.95;
-            injvector(2) = 0.05;
-            injxvector = 0.5*ones(1, obj.NofComp);
+            injvector(1) = 0.8;
+            injvector(2) = 0.2;
+            injvector(3) = 0.1;
+            injxvector = [1 0 0 1 0 1];
             % Loop over all injectors
             for i=1:length(Inj)
                 Inj(i).z = injvector;
@@ -91,8 +92,10 @@ classdef Comp_fluid_model < fluid_model
                     dFdz (c, 1) = -dk(i,c) * x(i, (c-1)*2+2);
                     % z_c - ni*x_cv - (1-ni)*x_cl = 0
                     dFdx (obj.NofComp + c, (c-1)*2+1:(c-1)*2+2) = [-ni(i), ni(i)-1];
-                    dFdx (obj.NofComp + c, end) = x(i, (c-1)*2+2) - x(i, (c-1)*2+1); 
-                    dFdz (obj.NofComp + c, 2:obj.NofComp) = 1;
+                    dFdx (obj.NofComp + c, end) = x(i, (c-1)*2+2) - x(i, (c-1)*2+1);
+                    if c<obj.NofComp
+                        dFdz (obj.NofComp + c, c+1) = 1;
+                    end
                     % Sum x_cv-x_cl = 0
                     dFdx (2*obj.NofComp + 1, (c-1)*2+1:(c-1)*2+2) = [1, -1]; 
                 end
@@ -102,18 +105,48 @@ classdef Comp_fluid_model < fluid_model
                     dxdz(i,:,j) = (dFdx\dFdz(:,j+1))';
                 end
             end
-            dxdz(SinglePhase == 1, 1) = 1;
-            dxdz(SinglePhase == 1, 2) = 0;
-            dxdz(SinglePhase == 1, 3) = -1;
-            dxdz(SinglePhase == 1, 4) = 0;
-            dxdz(SinglePhase == 1, 5) = 0;
+%             dxdz(:,5,1) = -dxdz(:,5,1);
+%             dxdz(:,6,1) = -dxdz(:,6,1);
+%             
+%             dxdz(:,1,2) = -dxdz(:,1,2);
+%             dxdz(:,2,2) = -dxdz(:,2,2);
+%             dxdz(:,3,2) = -dxdz(:,3,2);
+%             dxdz(:,4,2) = -dxdz(:,4,2);
+%             dxdz(:,5,2) = -dxdz(:,5,2);
+%             dxdz(:,6,2) = -dxdz(:,6,2);
+%             dxdz(:,7,2) = -dxdz(:,7,2);
             
+            dxdz(SinglePhase == 1, 1, 1) = 1;
+            dxdz(SinglePhase == 1, 2, 1) = 0;
+            dxdz(SinglePhase == 1, 3, 1) = 0;
+            dxdz(SinglePhase == 1, 4, 1) = 0;
+            dxdz(SinglePhase == 1, 5, 1) = -1;
+            dxdz(SinglePhase == 1, 6, 1) = 0;
+            dxdz(SinglePhase == 1, 7, 1) = 0;
+            
+            dxdz(SinglePhase == 1, 1, 2) = 0;
+            dxdz(SinglePhase == 1, 2, 2) = 0;
+            dxdz(SinglePhase == 1, 3, 2) = 1;
+            dxdz(SinglePhase == 1, 4, 2) = 0;
+            dxdz(SinglePhase == 1, 5, 2) = -1;
+            dxdz(SinglePhase == 1, 6, 1) = 0;
+            dxdz(SinglePhase == 1, 7, 1) = 0;
             % 
-            dxdz(SinglePhase == 2, 1) = 0;
-            dxdz(SinglePhase == 2, 2) = 1;
-            dxdz(SinglePhase == 2, 3) = 0;
-            dxdz(SinglePhase == 2, 4) = -1;
-            dxdz(SinglePhase == 2, 5) = 0;
+            dxdz(SinglePhase == 2, 1, 1) = 0;
+            dxdz(SinglePhase == 2, 2, 1) = 1;
+            dxdz(SinglePhase == 2, 3, 1) = 0;
+            dxdz(SinglePhase == 2, 4, 1) = 0;
+            dxdz(SinglePhase == 2, 5, 1) = 0;
+            dxdz(SinglePhase == 2, 6, 1) = -1;
+            dxdz(SinglePhase == 2, 7, 1) = 0;
+            
+            dxdz(SinglePhase == 2, 1, 2) = 0;
+            dxdz(SinglePhase == 2, 2, 2) = 0;
+            dxdz(SinglePhase == 2, 3, 2) = 0;
+            dxdz(SinglePhase == 2, 4, 2) = 1;
+            dxdz(SinglePhase == 2, 5, 2) = 0;
+            dxdz(SinglePhase == 2, 6, 2) = -1;
+            dxdz(SinglePhase == 2, 7, 2) = 0;
             
         end
     end
