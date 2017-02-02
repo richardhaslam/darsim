@@ -17,7 +17,12 @@ warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
 
 %% Set up Diary
-delete(strcat(Directory, '/Output/RunDiary.txt')); 
+if ~exist(strcat(Directory, '/Output/'), 'dir')
+    mkdir(Directory);
+else
+    delete(strcat(Directory, '/Output/*.txt'));
+end
+delete(strcat(Directory, '/Output/RunDiary.txt'));
 diary(strcat(Directory, '/Output/RunDiary.txt'));
 
 %% Print title

@@ -16,14 +16,13 @@ classdef initializer_hydrostatic < initializer
             
              % Define initial values
             P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e6;
-            z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.037;
+            z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.03973;
             
             
             % 1. Assign initial valus
             ProductionSystem.Reservoir.State.p = P_init;
-            ProductionSystem.Reservoir.State.z(:,1) = 0.6;
-            ProductionSystem.Reservoir.State.z(:,2) = 0.2;
-            ProductionSystem.Reservoir.State.z(:,3) = 0.2;
+            ProductionSystem.Reservoir.State.z(:,1) = z_init;
+            ProductionSystem.Reservoir.State.z(:,2) = 1-z_init;
             
             obj.Equilibrate(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
         end

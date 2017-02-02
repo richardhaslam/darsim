@@ -46,6 +46,8 @@ classdef Reservoir_Simulator < handle
             obj.Simulation.Initialize();
             % Plot initial state of the reservoir
             obj.Writer.PlotSolution(obj.Simulation.ProductionSystem, obj.Simulation.DiscretizationModel);
+            % Write initial state on a file
+            obj.Writer.WriteSolutionOnFile(obj.Simulation.ProductionSystem, 0)
             % Plot Wells
             obj.Writer.Plotter.PlotWells(obj.Simulation.ProductionSystem.Wells.Inj, obj.Simulation.ProductionSystem.Wells.Prod, obj.Simulation.DiscretizationModel.ReservoirGrid);
             % Run simulation

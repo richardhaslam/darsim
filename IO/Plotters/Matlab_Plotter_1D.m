@@ -49,7 +49,7 @@ classdef Matlab_Plotter_1D < Plotter
             axis([0 Grid.Nx*Grid.dx 0 1.1]);
             %title('Saturation of water');
             xlabel('x [m]');
-            ylabel('Saturation');
+            ylabel('Sv');
             hold on;
             set(gca,'fontsize',24);
             drawnow;
@@ -76,10 +76,10 @@ classdef Matlab_Plotter_1D < Plotter
             figure(6)
             plot(x, z(:,1), 'red', 'LineWidth', 1);
             hold on
-            plot(x, z(:,2), 'green', 'LineWidth', 1);
-            hold on
-            plot(x, z(:,3), 'blue', 'LineWidth', 1);
-            axis([0 Grid.Nx*Grid.dx 0 1]);
+            %plot(x, z(:,2), 'green', 'LineWidth', 1);
+            %hold on
+            %plot(x, z(:,3), 'blue', 'LineWidth', 1);
+            %axis([0 Grid.Nx*Grid.dx 0 1]);
             %title('Component 1 Total Mass Fraction [-]');
             xlabel('x [m]');
             ylabel('z [-]');

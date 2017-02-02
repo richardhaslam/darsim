@@ -11,15 +11,22 @@ classdef output_writer < handle
         Directory
         ProblemName
         Plotter
+        FormatSol
         FormatInj
         FormatProd
         FormatStats
         FormatTimers
     end
     methods
-        function obj = output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats)
+        function obj = output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_components)
             obj.Directory = strcat(dir, '/Output/');
             obj.ProblemName = problem;
+            
+            if ~exist(strcat(obj.Directory,'Solution/'), 'dir')
+                mkdir(obj.Directory,'Solution/');
+            else
+                delete(strcat(obj.Directory,'Solution/*.txt'));
+            end
             
             %Format for production output
             obj.FormatInj = '%10.2f';
@@ -50,9 +57,22 @@ classdef output_writer < handle
                 obj.FormatStats = [obj.FormatStats, ' %10.0f'];
             end
             obj.FormatStats = [obj.FormatStats, ' %10.0f\n'];
+            
+            %Format for Solution
+            obj.FormatSol = '%10.2f';
+            for i = 2:n_components+2 
+                obj.FormatSol = [obj.FormatSol, ' %10.5f'];
+            end
+            obj.FormatSol = [obj.FormatSol, ' %10.5f\n'];
         end
         function AddPlotter(obj, plotter)
             obj.Plotter = plotter;
+        end
+        function WriteSolutionOnFile(obj, ProductionSystem, index)
+            cells = 1:length(ProductionSystem.Reservoir.State.p);
+            fileID = fopen(strcat(obj.Directory, 'Solution/', obj.ProblemName,'_Sol',num2str(index),'.txt'),'w');
+            fprintf(fileID, obj.FormatSol, [cells', ProductionSystem.Reservoir.State.p/1e5, ProductionSystem.Reservoir.State.S, ProductionSystem.Reservoir.State.z]');
+            fclose(fileID);
         end
         function WriteWellsData(obj, Time, WellsData, Ndt)
             fileIDI(1) = fopen(strcat(obj.Directory,'Inj_Phase1.txt'),'w');

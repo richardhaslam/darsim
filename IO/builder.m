@@ -223,7 +223,7 @@ classdef builder < handle
                 k_init = str2double(inputMatrix(obj.inj(i) + 5));
                 k_final = str2double(inputMatrix(obj.inj(i) + 6));
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 2000;
+                PI = 1e10;
                 pressure = str2double(inputMatrix(obj.inj(i) + 8));
                 Injector = injector_pressure(PI, coord, pressure, Tres);
                 Wells.AddInjector(Injector);
@@ -237,7 +237,7 @@ classdef builder < handle
                 k_init = str2double(inputMatrix(obj.prod(i) + 5));
                 k_final = str2double(inputMatrix(obj.prod(i) + 6));
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 2000;
+                PI = 1e10;
                 pressure = str2double(inputMatrix(obj.prod(i) + 8));
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
@@ -486,9 +486,9 @@ classdef builder < handle
             
             switch(obj.ADM)
                 case ('inactive')
-                    Writer = output_writer_FS(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats);
+                    Writer = output_writer_FS(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats, simulation.FluidModel.NofComp);
                 case ('active')
-                    Writer = output_writer_adm(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats);
+                    Writer = output_writer_adm(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats, simulation.FluidModel.NofComp);
             end
             Writer.AddPlotter(plotter);
         end

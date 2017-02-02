@@ -19,8 +19,8 @@ classdef TimeLoop_Driver < handle
     methods
         function obj = TimeLoop_Driver(total_time, n_reports)
             obj.TotalTime = total_time;
-            obj.TStops = linspace(obj.TotalTime/n_reports, obj.TotalTime, n_reports);
-            % obj.TStops = [1.9602e+06*0.051; 1.9602e+06*0.51; 1.9602e+06*2.55; 1.9602e+06*5.1; obj.TotalTime];
+            %obj.TStops = linspace(obj.TotalTime/n_reports, obj.TotalTime, n_reports);
+            obj.TStops = [0.5*24*3600; 50*24*3600; 500*24*3600; 1000*24*3600; obj.TotalTime];
         end
         function AddCouplingStrategy(obj, coupling)
             obj.Coupling = coupling;
@@ -71,6 +71,7 @@ classdef TimeLoop_Driver < handle
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
                     disp(char(5));
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
+                    Writer.WriteSolutionOnFile(ProductionSystem, index);
                     index = index + 1;
                 end
             end

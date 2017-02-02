@@ -105,48 +105,18 @@ classdef Comp_fluid_model < fluid_model
                     dxdz(i,:,j) = (dFdx\dFdz(:,j+1))';
                 end
             end
-%             dxdz(:,5,1) = -dxdz(:,5,1);
-%             dxdz(:,6,1) = -dxdz(:,6,1);
-%             
-%             dxdz(:,1,2) = -dxdz(:,1,2);
-%             dxdz(:,2,2) = -dxdz(:,2,2);
-%             dxdz(:,3,2) = -dxdz(:,3,2);
-%             dxdz(:,4,2) = -dxdz(:,4,2);
-%             dxdz(:,5,2) = -dxdz(:,5,2);
-%             dxdz(:,6,2) = -dxdz(:,6,2);
-%             dxdz(:,7,2) = -dxdz(:,7,2);
+            dxdz(SinglePhase == 1, 1) = 1;
+            dxdz(SinglePhase == 1, 2) = 0;
+            dxdz(SinglePhase == 1, 3) = -1;
+            dxdz(SinglePhase == 1, 4) = 0;
+            dxdz(SinglePhase == 1, 5) = 0;
             
-            dxdz(SinglePhase == 1, 1, 1) = 1;
-            dxdz(SinglePhase == 1, 2, 1) = 0;
-            dxdz(SinglePhase == 1, 3, 1) = 0;
-            dxdz(SinglePhase == 1, 4, 1) = 0;
-            dxdz(SinglePhase == 1, 5, 1) = -1;
-            dxdz(SinglePhase == 1, 6, 1) = 0;
-            dxdz(SinglePhase == 1, 7, 1) = 0;
-            
-            dxdz(SinglePhase == 1, 1, 2) = 0;
-            dxdz(SinglePhase == 1, 2, 2) = 0;
-            dxdz(SinglePhase == 1, 3, 2) = 1;
-            dxdz(SinglePhase == 1, 4, 2) = 0;
-            dxdz(SinglePhase == 1, 5, 2) = -1;
-            dxdz(SinglePhase == 1, 6, 1) = 0;
-            dxdz(SinglePhase == 1, 7, 1) = 0;
             % 
-            dxdz(SinglePhase == 2, 1, 1) = 0;
-            dxdz(SinglePhase == 2, 2, 1) = 1;
-            dxdz(SinglePhase == 2, 3, 1) = 0;
-            dxdz(SinglePhase == 2, 4, 1) = 0;
-            dxdz(SinglePhase == 2, 5, 1) = 0;
-            dxdz(SinglePhase == 2, 6, 1) = -1;
-            dxdz(SinglePhase == 2, 7, 1) = 0;
-            
-            dxdz(SinglePhase == 2, 1, 2) = 0;
-            dxdz(SinglePhase == 2, 2, 2) = 0;
-            dxdz(SinglePhase == 2, 3, 2) = 0;
-            dxdz(SinglePhase == 2, 4, 2) = 1;
-            dxdz(SinglePhase == 2, 5, 2) = 0;
-            dxdz(SinglePhase == 2, 6, 2) = -1;
-            dxdz(SinglePhase == 2, 7, 2) = 0;
+            dxdz(SinglePhase == 2, 1) = 0;
+            dxdz(SinglePhase == 2, 2) = 1;
+            dxdz(SinglePhase == 2, 3) = 0;
+            dxdz(SinglePhase == 2, 4) = -1;
+            dxdz(SinglePhase == 2, 5) = 0;
             
         end
     end
