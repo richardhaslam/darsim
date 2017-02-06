@@ -18,7 +18,7 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 
 %% Set up Diary
 if ~exist(strcat(Directory, '/Output/'), 'dir')
-    mkdir(Directory);
+    mkdir(strcat(Directory,'/'), 'Output');
 else
     delete(strcat(Directory, '/Output/*.txt'));
 end

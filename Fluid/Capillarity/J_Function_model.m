@@ -23,7 +23,6 @@ classdef  J_Function_model < capillary_pressure_model
             % Capillary Pressure
             
             %J-leverett curve
-            
             J = 0.1.*(S).^(-0.5);
             
             %Compute Pc and dPc analytically

@@ -83,22 +83,25 @@ classdef fluid_model < handle
         function Pc = ComputePc(obj, S)
             switch(obj.WettingPhaseIndex)
                 case(1)
-                    S = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr) + 0.1;
+                    S = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr) + 0.1;
+                    S (S < obj.Phases(1).sr) = 0.1;
                     Pc = obj.CapillaryModel.ComputePc(S);
                 case(2)
                     S = 1 - S;
-                    S = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr) + 0.1;
+                    S = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr) + 0.1;
                     Pc = -obj.CapillaryModel.ComputePc(S);
+                   
             end   
         end
         function dPc = DPcDS(obj, S)
             switch(obj.WettingPhaseIndex)
                 case(1)
-                    S = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr) + 0.1;
+                    S = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr) + 0.1;
                     dPc = obj.CapillaryModel.dPcdS(S);
+                    dPc (S < obj.Phases(1).sr) = 0.0;
                 case(2)
                     S = 1 - S;
-                    S = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr) + 0.1;
+                    S = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr) + 0.1;
                     dPc =  - obj.CapillaryModel.dPcdS(S);
             end
             

@@ -197,7 +197,7 @@ classdef builder < handle
                 % reshape it to specified size
                 field = reshape(field(4:end),[field(1) field(2) field(3)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz), DiscretizationModel.ReservoirGrid.N, 1);
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
                 Kz = Kx;
             else
@@ -289,8 +289,8 @@ classdef builder < handle
                         water = component();
                         FluidModel.AddComponent(water, 3);
                     end
-                    %FlashCalculator = Rachford_Rice_flash_calculator();
-                    FlashCalculator = Standard_flash_calculator();
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    %FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                 case('Compositional')

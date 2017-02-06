@@ -1,21 +1,12 @@
 %%% Run simulations %%%
-% nf = 4;
-% Directory = cell(nf, 1);
-% File = cell(nf, 1);
-% Choose directories and files
-% Directory{3} = '../ResultsAndImages/4_Papers_Results/RSC_CompPaper/TestCase3/BOHetero_FS';
-% File{3} = 'BOHetero.txt';
-% Directory{4} = '../ResultsAndImages/4_Papers_Results/RSC_CompPaper/TestCase3/BOHetero_ADM';
-% File{4} = 'BOHetero.txt';
-% 
-% Directory{1} = '../ResultsAndImages/4_Papers_Results/RSC_CompPaper/TestCase2/BOHomo_FS';
-% File{1} = 'BOHomo.txt';
-% Directory{2} = '../ResultsAndImages/4_Papers_Results/RSC_CompPaper/TestCase2/BOHomo_ADM';
-% File{2} = 'BOHomo.txt';
-% 
-% run simulations
-% for i = 1:nf
-%      DARSim2ResSim(Directory{i}, File{i});
-%  end
+Directory = '../ResultsAndImages/4_Papers_Results/AWR_paper/Case1/AWR_Case1_FS/';
+Angle = ['00deg'; '15deg'; '30deg'; '45deg'; '98deg'];
 
-DARSim2ResSim('../Input/BOHomo', 'BOHomo.txt');
+% run simulations
+for j = 1:20
+    for i=1:5
+        Dir = strcat(Directory, Angle(i,:),'/',Angle(i,:),'_',num2str(j));
+        File = 'BOHetero.txt';
+        DARSim2ResSim(Dir, File);
+    end
+ end
