@@ -38,6 +38,7 @@ classdef builder < handle
         ADM
         LinearSolver = 'direct';
         Formulation = 'Natural';
+        StopCriterion = 'COMPONENT CUT'
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
@@ -386,8 +387,7 @@ classdef builder < handle
             end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
-            TimeDriver = TimeLoop_Driver(obj.TotalTime, obj.reports);
-            TimeDriver.MaxNumberOfTimeSteps = obj.MaxNumTimeSteps;
+            TimeDriver = TimeLoop_Driver(obj.reports);
             %% Construct Coupling
             switch(obj.CouplingType)
                 case('FIM')
@@ -452,6 +452,13 @@ classdef builder < handle
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
             TimeDriver.AddCouplingStrategy(Coupling);
+            switch(obj.StopCriterion)
+                case('MAX TIME')
+                    end_of_sim_eval = end_of_sim_evaluator_totaltime(obj.TotalTime, obj.MaxNumTimeSteps);
+                case('COMPONENT CUT')
+                    end_of_sim_eval = end_of_sim_evaluator_gascut(0.2);
+            end
+            TimeDriver.AddEndOfSimEvaluator(end_of_sim_eval);
         end
         function Summary = BuildSummary(obj, simulation)
             %%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
