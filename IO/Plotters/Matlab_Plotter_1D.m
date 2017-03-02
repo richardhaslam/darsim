@@ -26,8 +26,7 @@ classdef Matlab_Plotter_1D < Plotter
             P = reshape(Status.p,Grid.Nx,Grid.Ny);
             S = reshape(Status.S,Grid.Nx,Grid.Ny);
             Pc = reshape(Status.pc,Grid.Nx,Grid.Ny);
-            x1 = Status.x(:,1);
-            x2 = 1-Status.x(:,2);
+            
             z =  Status.z;
             %Plot for 1D problems
             x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);

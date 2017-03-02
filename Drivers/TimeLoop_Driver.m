@@ -37,13 +37,13 @@ classdef TimeLoop_Driver < handle
                 disp(['Time-step ' num2str(obj.Ndt) ': Initial time: ' num2str(obj.Time/(3600*24),4) ' days']);
                 tstart = tic;
                 
-                %% Non-linear Solver
+                %% Solve Coupled problem at time-step n
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
 
-                obj.dt = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
+                [obj.dt, EndOfSimCriterion] = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
                 
                 % Average for ADM
-                DiscretizationModel.AverageMassOnCoarseBlocks(ProductionSystem.Reservoir.State, FluidModel, Formulation);
+                %DiscretizationModel.AverageMassOnCoarseBlocks(ProductionSystem.Reservoir.State, FluidModel, Formulation);
                 
                 % Save Stats
                 obj.Coupling.UpdateSummary(Summary, ProductionSystem.Wells, obj.Ndt, obj.dt);
@@ -69,7 +69,7 @@ classdef TimeLoop_Driver < handle
                 Summary.SaveGridStats(obj.Ndt - 1, DiscretizationModel);
                 
                 %% Has simulation ended?
-                EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(ProductionSystem, obj.Time, obj.Ndt);
+                EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, obj.Time, obj.Ndt-1);
                 
                 %% %%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
                 if (obj.Time == obj.TStops(index) || EndOfSimCriterion==1)
@@ -79,8 +79,6 @@ classdef TimeLoop_Driver < handle
                     Writer.WriteSolutionOnFile(ProductionSystem, index);
                     index = index + 1;
                 end
-                
-                
             end
         end
     end

@@ -87,6 +87,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                 alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
                 fv (fv > 1) = 0.9;
                 fv (fv < 0) = 0.1;
+                fv (isnan(fv)) = Status.ni(isnan(fv));
             end
             if ~converged
                 [~, cellIndex] = max(abs(h));

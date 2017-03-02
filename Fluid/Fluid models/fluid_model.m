@@ -169,7 +169,6 @@ classdef fluid_model < handle
             drhotdp(Status.S == 1) = drho(Status.S == 1, 1);
             drhotdp(Status.S == 0) = drho(Status.S == 0, 2);
         end
-        
     end
     methods (Abstract)
         obj = Flash(obj);

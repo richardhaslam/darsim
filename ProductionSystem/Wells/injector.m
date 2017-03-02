@@ -24,13 +24,15 @@ classdef injector < handle
         Mob
     end
     methods
-        function obj = injector(PI, coord)
+        function obj = injector(PI, coord, n_phases)
             obj.PI = PI;
             obj.Coord = coord;
+            obj.rho = ones(1, n_phases);
         end
         function ResizeObjects(obj, n)
             obj.p =  ones(n,1) * obj.p;
-            obj.rho = ones(n, 2);
+            n_phases = length(obj.rho);
+            obj.rho = ones(n, n_phases);
         end
     end
 end

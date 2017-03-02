@@ -16,9 +16,9 @@ classdef end_of_sim_evaluator_totaltime < end_of_sim_evaluator
             obj.TotalTime = total_time;
             obj.MaxNumberOfTimeSteps = max_n_tsteps;
         end
-        function End = HasSimulationEnded(obj, ProductionSystem, Time, Ndt)
-            End = 0;
-            if Time < obj.TotalTime || Ndt == obj.MaxNumberOfTimeSteps
+        function End = HasSimulationEnded(obj, End, ProductionSystem, Time, Ndt)
+            if Time >= obj.TotalTime || Ndt == obj.MaxNumberOfTimeSteps
+                End = 1;
             end
         end
     end

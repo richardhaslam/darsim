@@ -31,7 +31,7 @@ classdef phase < matlab.mixin.Heterogeneous & handle
             Ugz(:,:,2:Nz) = (depth(:,:,1:Nz-1) - depth(:,:,2:Nz)) .* RhoInt.z(:,:,2:Nz);
             
             P = reshape(P, Nx, Ny, Nz);
-            %Compute 'rock' fluxes ([m^3/s])
+            %% Compute 'rock' fluxes ([m^3/s])
             U.x = zeros(Nx+1,Ny,Nz);
             U.y = zeros(Nx,Ny+1,Nz);
             U.z = zeros(Nx,Ny,Nz+1);
@@ -39,7 +39,7 @@ classdef phase < matlab.mixin.Heterogeneous & handle
             U.y(:,2:Ny,:) = (P(:,1:Ny-1,:)-P(:,2:Ny,:)) .* Grid.Ty(:,2:Ny,:) + Grid.Ty(:,2:Ny,:) .* Ugy(:,2:Ny,:);
             U.z(:,:,2:Nz) = (P(:,:,1:Nz-1)-P(:,:,2:Nz)) .* Grid.Tz(:,:,2:Nz) + Grid.Tz(:,:,2:Nz) .* Ugz(:,:,2:Nz);
             
-            %Use velocity to build upwind operator
+            %% Use velocity to build upwind operator
             L = reshape((U.x(2:Nx+1,:,:) >= 0), N, 1);
             R = reshape((U.x(1:Nx,:,:) < 0), N, 1);
             B = reshape((U.y(:,2:Ny+1,:) >= 0), N, 1);

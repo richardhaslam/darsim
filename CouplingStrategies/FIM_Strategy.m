@@ -9,10 +9,8 @@
 classdef FIM_Strategy < Coupling_Strategy
 properties
     NLSolver
-    TimeStepSelector
     chops
     MaxChops
-    Converged
 end
 methods
     function obj = FIM_Strategy(name, NONLinearSolver)
@@ -21,10 +19,11 @@ methods
         obj.chops = 0;
         obj.MaxChops = 10;
     end
-    function dt = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
+    function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
         dt = obj.TimeStepSelector.ChooseTimeStep();
         obj.Converged = 0;
         obj.chops = 0;
+        End = 0;
         % Save initial State
         obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
         % Linear Solver Setup

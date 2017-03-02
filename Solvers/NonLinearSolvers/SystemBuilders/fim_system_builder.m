@@ -23,7 +23,7 @@ classdef fim_system_builder < system_builder
         end
         function UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
             % Update Reservoir State
-            Formulation.UpdateState(delta, ProductionSystem.Reservoir.State, FluidModel);
+            Formulation.UpdatePressureState(delta, ProductionSystem.Reservoir.State, FluidModel);
             % UpdateWells
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end

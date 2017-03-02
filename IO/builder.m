@@ -76,7 +76,7 @@ classdef builder < handle
             obj.capillarity = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'FOAM');
             obj.foam = find(~cellfun('isempty', temp));
-            temp = strfind(inputMatrix{1}, 'COMPOSITION TYPE');
+            temp = strfind(inputMatrix{1}, 'FLUID MODEL');
             obj.Comp_Type = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'COMPONENT PROPERTIES');
             obj.Comp_Prop = find(~cellfun('isempty', temp));
@@ -138,7 +138,11 @@ classdef builder < handle
             simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
-            simulation.Initializer = initializer_hydrostatic();
+            if simulation.FluidModel.NofPhases == 1
+                simulation.Initializer = initializer_singlephase();
+            else
+                simulation.Initializer = initializer_hydrostatic();
+            end
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
             %Gridding
@@ -215,6 +219,7 @@ classdef builder < handle
             Wells = wells();
             Wells.NofInj = length(obj.inj);
             Wells.NofProd = length(obj.prod);
+            n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
             %Injectors
             for i=1:Wells.NofInj
                 i_init = str2double(inputMatrix(obj.inj(i) + 1));
@@ -224,9 +229,9 @@ classdef builder < handle
                 k_init = str2double(inputMatrix(obj.inj(i) + 5));
                 k_final = str2double(inputMatrix(obj.inj(i) + 6));
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 1e10;
+                PI = 2000;
                 pressure = str2double(inputMatrix(obj.inj(i) + 8));
-                Injector = injector_pressure(PI, coord, pressure, Tres);
+                Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
                 Wells.AddInjector(Injector);
             end
             %Producers
@@ -238,18 +243,34 @@ classdef builder < handle
                 k_init = str2double(inputMatrix(obj.prod(i) + 5));
                 k_final = str2double(inputMatrix(obj.prod(i) + 6));
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 1e10;
+                PI = 2000;
                 pressure = str2double(inputMatrix(obj.prod(i) + 8));
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
             end
-            ProductionSystem.AddWells(Wells);
-            
+            ProductionSystem.AddWells(Wells); 
         end
         function FluidModel = BuildFluidModel(obj, inputMatrix, ProductionSystem)
             n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
-            n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
-            switch(char(inputMatrix(obj.Comp_Type+1)))
+            if n_phases == 1
+                fluidmodel = 'SinglePhase';
+                obj.CouplingType = 'SinglePhase';
+            else
+                fluidmodel = char(inputMatrix(obj.Comp_Type+1));
+            end
+            switch(fluidmodel)
+                case('SinglePhase')
+                    FluidModel = single_phase_fluid_model();
+                    % Add phase
+                    Phase = comp_phase();
+                    %Gets all densities [kg/m^3]
+                    Phase.rho0 = str2double(inputMatrix(obj.density + 2));
+                    %Gets all viscosities [Pa sec]
+                    Phase.mu = str2double(inputMatrix(obj.viscosity + 2));
+                    % Compressibility
+                    Phase.cf = str2double(inputMatrix(obj.compressibility + 2));
+                    FluidModel.AddPhase(Phase, 1);
+                    obj.Formulation = 'Immiscible';
                 case('Immiscible')
                     FluidModel = Immiscible_fluid_model(n_phases);
                     % Add phases
@@ -263,12 +284,9 @@ classdef builder < handle
                         Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
                         FluidModel.AddPhase(Phase, i);
                     end
-                    switch (obj.Formulation)
-                        case('Sequential')
-                        otherwise
-                            obj.Formulation = 'Immiscible';
-                    end
+                    obj.Formulation = 'Immiscible';
                 case('BlackOil')
+                    n_comp = n_phases;
                     % Black oil phases
                     FluidModel = BO_fluid_model(n_phases, n_comp);
                     % Gas
@@ -276,7 +294,7 @@ classdef builder < handle
                     FluidModel.AddPhase(Gas, 1);
                     gas = BO_gas_component();
                     FluidModel.AddComponent(gas, 1);
-                    % Oil 
+                    % Oil
                     Oil = BO_oil_phase();
                     FluidModel.AddPhase(Oil, 2);
                     oil = BO_oil_component();
@@ -285,16 +303,17 @@ classdef builder < handle
                         Water = comp_phase();
                         Water.rho0 = 1000; % kg/m^3
                         Water.mu = 1e-3; % Pa s
-                        Water.cf = 0; 
+                        Water.cf = 0;
                         FluidModel.AddPhase(Water, 3)
                         water = component();
                         FluidModel.AddComponent(water, 3);
                     end
-                    FlashCalculator = Rachford_Rice_flash_calculator();
-                    %FlashCalculator = Standard_flash_calculator();
+                    %FlashCalculator = Rachford_Rice_flash_calculator();
+                    FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                 case('Compositional')
+                    n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
                     %FlashCalculator = Rachford_Rice_flash_calculator();
                     FlashCalculator = Standard_flash_calculator();
@@ -322,10 +341,10 @@ classdef builder < handle
                         MM = str2double(inputMatrix(obj.Comp_Prop + 7*i));
                         comp = component();
                         comp.AddCompProperties(Tb, b, MM, kval(i));
-                        FluidModel.AddComponent(comp, i); 
+                        FluidModel.AddComponent(comp, i);
                     end
             end
-                            
+            
             %%  RelPerm model
             switch(char(inputMatrix(obj.relperm + 1)))
                 case('Linear')
@@ -370,15 +389,14 @@ classdef builder < handle
                     if strcmp(obj.ADM, 'active')
                         Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
                     end
-                case('Sequential')
-                    Formulation = seq_formulation();
                 case('Jeremy')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
             end
+            Formulation.NofPhases = FluidModel.NofPhases;
             
             % Gravity model
-            Formulation.GravityModel = gravity_model(Discretization.ReservoirGrid.Nx, Discretization.ReservoirGrid.Ny, Discretization.ReservoirGrid.Nz);
+            Formulation.GravityModel = gravity_model(Discretization.ReservoirGrid.Nx, Discretization.ReservoirGrid.Ny, Discretization.ReservoirGrid.Nz, FluidModel.NofPhases);
             switch (obj.Gravity)
                 case('ON')
                     Formulation.GravityModel.g = 9.806;
@@ -430,7 +448,13 @@ classdef builder < handle
                 case('Sequential')
                     Coupling = Sequential_Strategy('Sequential');
                     Coupling.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
-                    pressuresolver = incompressible_pressure_solver();
+                    %pressuresolver = incompressible_pressure_solver();
+                    pressuresolver = NL_Solver();
+                    pressuresolver.MaxIter = 10;
+                    ConvergenceChecker = convergence_checker_pressure();
+                    ConvergenceChecker.Tol = 1e-6;
+                    pressuresolver.AddConvergenceChecker(ConvergenceChecker);
+                    pressuresolver.SystemBuilder = pressure_system_builder();    
                     pressuresolver.LinearSolver = linear_solver();
                     Coupling.AddPressureSolver(pressuresolver);
                     if (~isempty(obj.transport))
@@ -449,6 +473,16 @@ classdef builder < handle
                         Coupling.ConvergenceChecker = convergence_checker_impes();
                     end
                     Coupling.AddTransportSolver(transportsolver);
+                case('SinglePhase')
+                    Coupling = SinglePhase_Strategy('SinglePhase');
+                    pressuresolver = NL_Solver();
+                    pressuresolver.MaxIter = 10;
+                    ConvergenceChecker = convergence_checker_pressure();
+                    ConvergenceChecker.Tol = 1e-6;
+                    pressuresolver.AddConvergenceChecker(ConvergenceChecker);
+                    pressuresolver.SystemBuilder = pressure_system_builder();    
+                    pressuresolver.LinearSolver = linear_solver();
+                    Coupling.AddPressureSolver(pressuresolver);
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
             TimeDriver.AddCouplingStrategy(Coupling);
@@ -467,6 +501,8 @@ classdef builder < handle
                     CouplingStats = FIM_Stats(obj.MaxNumTimeSteps);
                 case('Sequential')
                     CouplingStats = Sequential_Stats(obj.MaxNumTimeSteps);
+                case('SinglePhase')
+                    CouplingStats = SinglePhase_Stats(obj.MaxNumTimeSteps);
             end
             wellsData = wells_data(obj.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
             switch (obj.ADM)

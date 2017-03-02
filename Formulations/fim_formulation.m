@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fim_formulation < handle
     properties
+        NofPhases
         UpWind
         U
         Tph
@@ -35,7 +36,7 @@ classdef fim_formulation < handle
             % Compute phase rock velocities and Upwind operators
             P(:, 2) = Status.p;
             P(:, 1) = Status.p - Status.pc;
-            for i=1:2
+            for i=1:obj.NofPhases
                 [obj.UpWind(i), obj.U(i)] = Phases(i).UpWindAndRockFluxes(Grid, P(:,i), obj.GravityModel.RhoInt(i));
             end
         end

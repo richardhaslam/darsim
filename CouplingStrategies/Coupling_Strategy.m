@@ -9,6 +9,8 @@
 classdef Coupling_Strategy < handle
 properties
     Name
+    TimeStepSelector
+    Converged
 end
 methods
     function obj = Coupling_Strategy(name)

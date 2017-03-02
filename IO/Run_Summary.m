@@ -12,6 +12,8 @@ classdef Run_Summary < handle
         CouplingStats
         NumberTimeSteps
         Time
+        NofPhases
+        NofComponents
     end
     methods
         function obj = Run_Summary(MaxNTimeSteps, couplingstats, wellsData)

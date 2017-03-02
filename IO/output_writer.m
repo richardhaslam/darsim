@@ -75,25 +75,25 @@ classdef output_writer < handle
             fclose(fileID);
         end
         function WriteWellsData(obj, Time, WellsData, Ndt)
-            fileIDI(1) = fopen(strcat(obj.Directory,'Inj_Phase1.txt'),'w');
-            fileIDI(2) = fopen(strcat(obj.Directory,'Inj_Phase2.txt'),'w');
-            fileIDI(3) = fopen(strcat(obj.Directory,'Inj_Comp1.txt'),'w');
-            fileIDI(4) = fopen(strcat(obj.Directory,'Inj_Comp2.txt'),'w');
-            fileIDP(1) = fopen(strcat(obj.Directory,'Prod_Phase1.txt'),'w');
-            fileIDP(2) = fopen(strcat(obj.Directory,'Prod_Phase2.txt'),'w');
-            fileIDP(3) = fopen(strcat(obj.Directory,'Prod_Comp1.txt'),'w');
-            fileIDP(4) = fopen(strcat(obj.Directory,'Prod_Comp2.txt'),'w');
-            for i = 1:2
+            for i = 1:WellsData.NofPhases
                 %Injection
-                fprintf(fileIDI(i), obj.FormatInj, [Time(1:Ndt), WellsData.Injection.Phases(2:Ndt+1,:,i), sum(WellsData.Injection.Phases(2:Ndt+1,:,i), 2)]');
-                fclose(fileIDI(i));
-                fprintf(fileIDI(i+2), obj.FormatInj, [Time(1:Ndt), WellsData.Injection.Components(2:Ndt+1,:,i), sum(WellsData.Injection.Components(2:Ndt+1,:,i), 2)]');
-                fclose(fileIDI(i+2));
+                fileIDI = fopen(strcat(obj.Directory,'Inj_Phase',num2str(i),'.txt'),'w');
+                fprintf(fileIDI, obj.FormatInj, [Time(1:Ndt), WellsData.Injection.Phases(2:Ndt+1,:,i), sum(WellsData.Injection.Phases(2:Ndt+1,:,i), 2)]');
+                fclose(fileIDI);
                 %Production
-                fprintf(fileIDP(i), obj.FormatProd, [Time(1:Ndt), WellsData.Production.Phases(2:Ndt+1,:,i), sum(WellsData.Production.Phases(2:Ndt+1,:,i), 2)]');
-                fclose(fileIDP(i));
-                fprintf(fileIDP(i+2), obj.FormatProd, [Time(1:Ndt), WellsData.Production.Components(2:Ndt+1,:,i), sum(WellsData.Production.Components(2:Ndt+1,:,i), 2)]');
-                fclose(fileIDP(i+2));
+                fileIDP = fopen(strcat(obj.Directory,'Prod_Phase',num2str(i),'.txt'),'w');
+                fprintf(fileIDP, obj.FormatProd, [Time(1:Ndt), WellsData.Production.Phases(2:Ndt+1,:,i), sum(WellsData.Production.Phases(2:Ndt+1,:,i), 2)]');
+                fclose(fileIDP);
+            end
+            for i=1:WellsData.NofComp
+                %Injection
+                fileIDI = fopen(strcat(obj.Directory,'Inj_Comp',num2str(i),'.txt'),'w');
+                fprintf(fileIDI, obj.FormatInj, [Time(1:Ndt), WellsData.Injection.Components(2:Ndt+1,:,i), sum(WellsData.Injection.Components(2:Ndt+1,:,i), 2)]');
+                fclose(fileIDI);
+                %Production
+                fileIDP = fopen(strcat(obj.Directory,'Prod_Comp',num2str(i),'.txt'),'w');
+                fprintf(fileIDP, obj.FormatProd, [Time(1:Ndt), WellsData.Production.Components(2:Ndt+1,:,i), sum(WellsData.Production.Components(2:Ndt+1,:,i), 2)]');
+                fclose(fileIDP);
             end
         end
         function WriteCouplingStats(obj, CouplingStats, Ndt)

@@ -236,6 +236,9 @@ classdef Overall_Composition_formulation < Compositional_formulation
             Status.p = Status.p + delta(1:end/obj.NofComponents);
             for i=1:obj.NofComponents - 1 
                 Status.z(:,i) = Status.z(:,i) + delta(end/obj.NofComponents*i+1:end*(i+1)/obj.NofComponents);
+                %Remove non-physical values
+                Status.z(:,i) = min(Status.z(:,i), 1);
+                Status.z(:,i) = max(Status.z(:,i), 0);
             end
             Status.z(:,obj.NofComponents) = 1 - sum(Status.z(:,1:obj.NofComponents-1), 2);           
             % Update remaining variables 

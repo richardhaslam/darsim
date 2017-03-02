@@ -23,8 +23,11 @@ classdef producer_pressure < producer
             for i = 1:n_phases
                 obj.QPhases(:,i) = State.rho(obj.Cells, i) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - State.p(obj.Cells));
             end
+            obj.QComponents = obj.QComponents* 0;
             for j=1:n_components
-                obj.QComponents(:, j) = State.x(obj.Cells, (j-1)*2+1) .* obj.QPhases(:,1) + State.x(obj.Cells, (j-1)*2+2) .* obj.QPhases(:,2);
+                for phase=1:n_phases
+                    obj.QComponents(:, j) = obj.QComponents(:, j) + State.x(obj.Cells, (j-1)*2+phase) .* obj.QPhases(:,phase);
+                end
             end
         end
         function [A, rhs] = AddToPressureSystem(obj, Mob, K, A, rhs)
