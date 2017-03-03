@@ -1,4 +1,4 @@
-%  FIM Formulation base class
+% Formulation base class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 26 September 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef fim_formulation < handle
+classdef formulation < handle
     properties
         NofPhases
         UpWind
@@ -24,14 +24,17 @@ classdef fim_formulation < handle
         obj = BuildResidual(obj)
         obj = BuildJacobian(obj)
         obj = UpdateState(obj)
-        obj = Reset(obj)
     end
     methods
-        function obj = fim_formulation()
+        function obj = formulation()
             obj.UpWind =  struct('x',{},'y',{},'z',{});
             obj.U =  struct('x',{},'y',{},'z',{});
         end
-        function UpWindAndPhaseRockFluxes(obj, Grid, Phases, Status)            
+        function SavePhaseState(obj)
+        end
+        function Reset(obj)    
+        end
+        function UpWindAndPhaseRockFluxes(obj, Grid, Phases, Status)
             obj.GravityModel.ComputeInterfaceDensities(Grid.Nx, Grid.Ny, Grid.Nz, Status.rho);
             % Compute phase rock velocities and Upwind operators
             P(:, 2) = Status.p;

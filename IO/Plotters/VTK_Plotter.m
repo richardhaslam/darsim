@@ -117,9 +117,11 @@ classdef VTK_Plotter < Plotter
             %Density
             obj.PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoPh1');
             fprintf(fileID, '\n');
-            obj.PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoPh2');
-            fprintf(fileID, '\n');
-            obj.PrintScalar2VTK(fileID, Status.rho(:,1).*Status.S + Status.rho(:,2).*(1 - Status.S), ' rhoT');
+            if nc > 1
+                obj.PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoPh2');
+                fprintf(fileID, '\n');
+                obj.PrintScalar2VTK(fileID, Status.rho(:,1).*Status.S + Status.rho(:,2).*(1 - Status.S), ' rhoT');
+            end
             obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotPermeability(obj, Grid, K)

@@ -8,8 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fracture_system < handle
     properties
-        NumberOfFractures
+        Active = 0;
+        NumOfFrac
         Fractures
-        Discretization
     end
 end

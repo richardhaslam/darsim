@@ -6,18 +6,14 @@
 %Created: 12 July 2016
 %Last modified: 16 December 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Immiscible_formulation < fim_formulation
+classdef Immiscible_formulation < formulation
     properties
     end
     methods
         function obj = Immiscible_formulation()
-            obj@fim_formulation();
+            obj@formulation();
             obj.Tph = cell(2,1);
             obj.Gph = cell(2,1);
-        end
-        function Reset(obj)
-        end
-        function SavePhaseState(obj)
         end
         %% Methods for FIM Coupling
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
@@ -352,6 +348,36 @@ classdef Immiscible_formulation < fim_formulation
                 end
             end
         end
+        function ViscousMatrix(obj, Grid, Utot)
+            %Builds Upwind Flux matrix
+            Nx = Grid.Nx;
+            Ny = Grid.Ny;
+            Nz = Grid.Nz;
+            N = Grid.N;                                   
+            q = min(obj.Qwells, 0);                        
+            % right to left and top to bottom (negative x, y, z)
+            Xneg = min(Utot.x, 0); 
+            Yneg = min(Utot.y, 0);
+            Zneg = min(Utot.z, 0);
+            % make them vectors 
+            x1 = reshape(Xneg(1:Nx,:,:),N,1);
+            y1 = reshape(Yneg(:,1:Ny,:),N,1);
+            z1 = reshape(Zneg(:,:,1:Nz),N,1);
+            
+            % left to right and bottom to top (positive x, y, z)
+            Xpos = max(Utot.x, 0); 
+            Ypos = max(Utot.y, 0); 
+            Zpos = max(Utot.z, 0);
+            % make them vectors
+            x2 = reshape(Xpos(2:Nx+1,:,:), N, 1);
+            y2 = reshape(Ypos(:,2:Ny+1,:), N, 1);
+            z2 = reshape(Zpos(:,:,2:Nz+1), N, 1);
+            
+            % Assemble matrix
+            DiagVecs = [z2, y2, x2, q+x1-x2+y1-y2+z1-z2, -x1, -y1, -z1]; % diagonal vectors
+            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny]; % diagonal index
+            obj.V = spdiags(DiagVecs, DiagIndx, N, N);
+        end
         function Residual = BuildTransportResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Initialise local objects
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
@@ -362,27 +388,11 @@ classdef Immiscible_formulation < fim_formulation
             Residual = pv/dt * (s - s_old)  - max(obj.Qwells, 0) - obj.V * obj.f;
         end
         function Jacobian = BuildTransportJacobian(obj, ProductionSystem, DiscretizationModel, dt)
-            rho = ProductionSystem.State.rho;
-            
-            JS = cell(obj.NofPhases-1, 1);
-            for i=1:obj.NofPhases-1
-                % 2. Saturation Block
-                dMupx = obj.UpWind(i).x * (obj.df(:,i) .* rho(:,i));
-                dMupy = obj.UpWind(i).y * (obj.df(:,i) .* rho(:,i));
-                dMupz = obj.UpWind(i).z * (obj.df(:,i) .* rho(:,i));
-                % Construct JS block
-                x1 = min(reshape(obj.U(i).x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-                x2 = max(reshape(obj.U(i).x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-                y1 = min(reshape(obj.U(i).y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-                y2 = max(reshape(obj.U(i).y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-                z1 = min(reshape(obj.U(i).z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-                z2 = max(reshape(obj.U(i).z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-                v = (-1)^(i+1) * ones(N,1)*pv/dt .* rho(:,i);
-                DiagVecs = [-z2, -y2, -x2, z2+y2+x2-z1-y1-x1+v, x1, y1, z1];
-                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-                JS{i} = spdiags(DiagVecs,DiagIndx,N,N);
-            end
-            Jacobian = JS{1};
+            % Build Transport Jacobian
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            N = DiscretizationModel.ReservoirGrid.N;
+            D = spdiags(pv/dt*ones(N,1),0,N,N);
+            Jacobian = D - obj.V * spdiags(obj.df,0,N,N); %+ CapJac;
         end
         function UpdateSaturation(obj, State, delta, FluidModel)
             State.S = State.S + delta;

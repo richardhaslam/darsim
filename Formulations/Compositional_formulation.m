@@ -6,17 +6,13 @@
 %Created: 15 October 2016
 %Last modified: 15 October 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Compositional_formulation < fim_formulation
+classdef Compositional_formulation < formulation
     properties
         NofComponents
     end
     methods
-        function Reset(obj)
-        end
-        function SavePhaseState(obj)
-        end
         function obj = Compositional_formulation(n_components)
-            obj@fim_formulation();
+            obj@formulation();
             obj.NofComponents = n_components;
             obj.Tph = cell(n_components, 2);
             obj.Gph = cell(n_components, 2);

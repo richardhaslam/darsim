@@ -12,5 +12,6 @@ classdef fracture < handle
         Height
         Aperture
         K
+        State
     end
 end

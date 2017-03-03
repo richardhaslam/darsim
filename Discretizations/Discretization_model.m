@@ -8,12 +8,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Discretization_model < handle
     properties
+        N
         ReservoirGrid
-        FracturesGrid
     end
     methods
         function obj = Discretization_model(nx, ny, nz)
             obj.ReservoirGrid = cartesian_grid(nx, ny, nz);
+            obj.N = obj.ReservoirGrid.N;
         end
         function Initialize(obj, ProductionSystem, Formulation)
             obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);

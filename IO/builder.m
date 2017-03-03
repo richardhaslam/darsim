@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 8 September 2016
+%Last modified: 7 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -38,7 +38,8 @@ classdef builder < handle
         ADM
         LinearSolver = 'direct';
         Formulation = 'Natural';
-        StopCriterion = 'COMPONENT CUT'
+        StopCriterion = 'COMPONENT CUT';
+        Fractured = 'No';
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
@@ -138,10 +139,24 @@ classdef builder < handle
             simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
-            if simulation.FluidModel.NofPhases == 1
-                simulation.Initializer = initializer_singlephase();
-            else
-                simulation.Initializer = initializer_hydrostatic();
+            
+            % Define Properties
+            obj.DefineProperties(simulation.ProductionSystem, simulation.FluidModel, simulation.DiscretizationModel);
+            
+            %% Define Initialization procedure
+            switch(simulation.FluidModel.name)
+                case('SinglePhase') 
+                    VarNames = {'Pressure'};
+                    VarValues = 1;
+                    simulation.Initializer = initializer_singlephase(VarNames, VarValues);
+                case('Immiscible')
+                    VarNames = {'Pressure', 'S_1', 'S_2'};
+                    VarValues = [1, 0.1, 0.9];
+                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                otherwise
+                    VarNames = {'Pressure', 'z_1', 'z_2'};
+                    VarValues = [1, 0.1, 0.9];
+                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
@@ -534,6 +549,15 @@ classdef builder < handle
                     Writer = output_writer_adm(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats, simulation.FluidModel.NofComp);
             end
             Writer.AddPlotter(plotter);
+        end
+        function DefineProperties(obj, ProductionSystem, FluidModel, DiscretizationModel)
+            switch(obj.Fractured)
+                case('No')
+                    ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
+                case('Yes')
+                    ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
+                    ProductionSystem.FracturesNetwork.State.AddProperties(FluidModel, DiscretizationModel.FractureGrid.N);
+            end
         end
     end
 end

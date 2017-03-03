@@ -1,4 +1,4 @@
-% Initializer base class
+% Initializer hydrostatic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -11,6 +11,9 @@ classdef initializer_hydrostatic < initializer
         NLSolver
     end
     methods
+        function obj = initializer_hydrostatic(names, values)
+            obj@initializer(names, values);
+        end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started Hydrostatic initialization');
             
@@ -25,6 +28,15 @@ classdef initializer_hydrostatic < initializer
             ProductionSystem.Reservoir.State.z(:,2) = 1-z_init;
             
             obj.Equilibrate(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
+            
+             % Output initial status:      
+            disp('Initial conditions:')
+            disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('Pressure').Value/1e5)), ' bar']);
+            disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
+            disp(['reservoir initial z: ', num2str(ProductionSystem.Reservoir.State.Properties('z_1').Value)]);
+            disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
+            disp('---------------------------------------------------------');
+            disp(char(5));
         end
         function Equilibrate(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             equilibrium = 0;

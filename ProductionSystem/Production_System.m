@@ -4,12 +4,13 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 16 December 2016
+%Last modified: 3 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 classdef Production_System < handle
     properties
         Reservoir
+        FracturesNetwork = fracture_system();
         Wells
     end
     methods
@@ -18,6 +19,23 @@ classdef Production_System < handle
         end
         function AddWells(obj, Wells)
             obj.Wells = Wells;
+        end
+        function InitializeStates(obj, DiscretizationModel, n_phases, n_comp)
+            % This is temporary coz prop map is not ready
+            obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N, n_phases, n_comp);
+            if obj.FracturesNetwork.Active
+                for i=1:obj.FracturesNetwork.N
+                    obj.FracturesNetwork.Fractures.State.Initialize(DiscretizationModel.FracturesGrid.N(i), n_phases, n_comp);
+                end
+            end
+        end
+        function AssignInitialState(obj, VarNames, VarValues)
+            obj.Reservoir.State.AssignInitialValues(VarNames, VarValues);
+            if obj.FracturesNetwork.Active
+                for i=1:obj.FracturesNetwork.N
+                    obj.FracturesNetwork.Fractures.State.AssignInitialValues(VarNames, VarValues);
+                end
+            end
         end
         function InitializeWells(obj, FluidModel, GravityModel, DiscretizationModel)
             %% Initialize Wells: 
