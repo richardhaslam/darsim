@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef system_builder < handle
     properties
-       State
+        State
     end
     methods (Abstract)
         obj = ComputePropertiesAndDerivatives(obj);
@@ -16,12 +16,15 @@ classdef system_builder < handle
         obj = BuildJacobian(obj);
     end
     methods
-        function SaveInitialState(obj, InitialState, Formulation)
-            obj.State = copy(InitialState);
+        function obj = system_builder()
+            obj.State = status();
+        end
+        function SaveInitialState(obj, InitialState, Formulation)            
+            obj.State.CopyProperties(InitialState);
             Formulation.SavePhaseState();
         end
         function SetInitalGuess(obj, ProductionSystem)
-            ProductionSystem.Reservoir.State = copy(obj.State);
+            ProductionSystem.Reservoir.State.CopyProperties(obj.State);
         end
     end
 end

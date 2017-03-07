@@ -1,12 +1,26 @@
-classdef property < handle
+classdef property < matlab.mixin.Copyable
     % This is a generic Property
     properties
         Value
+        Valmin
+        Valmax
     end
     methods
-        function obj = property(row, col)
+        function obj = property(row, col, minValue, maxValue, init)
             % Creates matrix with property values
             obj.Value = zeros(row, col);
+            switch (nargin)
+                case(4)
+                    obj.Valmin = minValue;
+                    obj.Valmax = maxValue;
+                case(5)
+                    obj.Valmin = minValue;
+                    obj.Valmax = maxValue;
+                    obj.Value = init * ones(row, col);
+            end
+        end
+        function update(obj, delta)
+            obj.Value = obj.Value + delta;
         end
     end
 end

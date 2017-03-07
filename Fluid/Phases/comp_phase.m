@@ -15,8 +15,8 @@ classdef comp_phase < phase
         Pref = 1e5; % Atmospheric pressure
     end
     methods
-        function rho = ComputeDensity(obj, Status, Components)
-            rho = obj.rho0 .* exp(obj.cf.*(Status.p - obj.Pref));
+        function rho = ComputeDensity(obj, p, Components)
+            rho = obj.rho0 .* exp(obj.cf.*(p - obj.Pref));
         end
         function drho = DrhoDp(obj, p, Components)
             drho = obj.cf .* obj.rho0 .*exp (obj.cf.*(p - obj.Pref));

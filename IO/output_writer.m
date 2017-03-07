@@ -60,7 +60,7 @@ classdef output_writer < handle
             
             %Format for Solution
             obj.FormatSol = '%10.2f';
-            for i = 2:n_components+2 
+            for i = 2:n_components+1 
                 obj.FormatSol = [obj.FormatSol, ' %10.5f'];
             end
             obj.FormatSol = [obj.FormatSol, ' %10.5f\n'];
@@ -69,9 +69,9 @@ classdef output_writer < handle
             obj.Plotter = plotter;
         end
         function WriteSolutionOnFile(obj, ProductionSystem, index)
-            cells = 1:length(ProductionSystem.Reservoir.State.p);
+            cells = 1:length(ProductionSystem.Reservoir.State.Properties('P_1').Value);
             fileID = fopen(strcat(obj.Directory, 'Solution/', obj.ProblemName,'_Sol',num2str(index),'.txt'),'w');
-            fprintf(fileID, obj.FormatSol, [cells', ProductionSystem.Reservoir.State.p/1e5, ProductionSystem.Reservoir.State.S, ProductionSystem.Reservoir.State.z]');
+            fprintf(fileID, obj.FormatSol, [cells', ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5, ProductionSystem.Reservoir.State.Properties('S_1').Value]');
             fclose(fileID);
         end
         function WriteWellsData(obj, Time, WellsData, Ndt)

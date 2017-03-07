@@ -4,7 +4,7 @@
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 28 September 2016
+%Last modified: 7 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef BO_fluid_model < Comp_fluid_model
     properties
@@ -17,7 +17,7 @@ classdef BO_fluid_model < Comp_fluid_model
             obj.name = 'Black Oil';
         end
         function SinglePhase = Flash(obj, Status)
-           Status.x(:, 1) = 1; % It s useful for the beginning. 
+           % Status.x(:, 1) = 1; % It s useful for the beginning. 
            SinglePhase = obj.FlashCalculator.Flash(Status, obj.Components, obj.Phases);
         end
         function InitializeInjectors(obj, Inj)
@@ -35,7 +35,8 @@ classdef BO_fluid_model < Comp_fluid_model
         function ComputePhaseDensities(obj, Status)
             [obj.Rs, obj.dRs] = obj.FlashCalculator.KvaluesCalculator.ComputeRs(Status, obj.Phases);            
             for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components, obj.Rs(:,i));
+                rho = Status.Properties(['rho_', num2str(i)]);
+                rho.Value = obj.Phases(i).ComputeDensity(Status.Properties('P_2').Value, obj.Components, obj.Rs(:,i));
             end
         end
         function k = ComputeKvalues(obj, Status)            

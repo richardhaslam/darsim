@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 20 October 2016
+%Last modified: 7 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fluid_model < handle
     properties
@@ -45,15 +45,18 @@ classdef fluid_model < handle
                 rho(:,2).*(1-s))./(rho(:,1).*s + rho(:,2).*(1-s)); 
             z(:,2) = 1 - z(:,1);
         end
-        function ComputePhaseSaturation(obj, Status, SinglePhase)
-            Status.S = Status.rho(:,2).*(Status.x(:,2) - Status.z(:,1))./(Status.rho(:,1).*(Status.z(:,1)...
-                - Status.x(:,1)) + Status.rho(:,2).*(Status.x(:,2) - Status.z(:,1)));
-            Status.S(SinglePhase == 1) = 1;
-            Status.S(SinglePhase == 2) = 0;
-        end
-        function rhoT = ComputeTotalDensity(obj, s, rho)
+        function ComputeTotalDensity(obj, State)
             % Compute the total density
-            rhoT = rho(:, 1) .* s + rho(:, 2) .* (1 - s);
+            s = State.Properties('S_1');
+            rho = State.Properties('rho_1');
+            rhoT = rho.Value .* s.Value;
+            for i=2:obj.NofPhases
+                s = State.Properties(['S_', num2str(i)]);
+                rho = State.Properties(['rho_', num2str(i)]);
+                rhoT = rhoT + rho.Value .* s.Value;
+            end
+            RhoT = State.Properties('rhoT');
+            RhoT.Value = rhoT;
         end
         function dMob = DMobDS(obj, s)
             dMob = zeros(length(s), obj.NofPhases);
@@ -63,8 +66,8 @@ classdef fluid_model < handle
             end
         end
         function dMob = DMobDz(obj, Status, dSdz)
-            dMobdS = obj.DMobDS(Status.S);
-            dMob = zeros(length(Status.S), obj.NofComp-1);
+            dMobdS = obj.DMobDS(Status.Properties('S_1').Value);
+            dMob = zeros(length(dMobdS), obj.NofComp-1);
             for j=1:obj.NofComp-1
                 % Use chain rule
                 dMob(:,1,j) = dMobdS(:,1) .* dSdz(:,j);
@@ -77,21 +80,25 @@ classdef fluid_model < handle
                 drho(:, i) = obj.Phases(i).DrhoDp(p);
             end
         end
-        function drho = DrhoDz(obj, p, dxdz)
-            drho = zeros(length(p), obj.NofPhases);
-        end
-        function Pc = ComputePc(obj, S)
+        function ComputePc(obj, Status)
+            % Define local handles
+            S = Status.Properties('S_1').Value;
+            P1 = Status.Properties('P_1');
+            P2 = Status.Properties('P_2');
+            Pc = Status.Properties('Pc');
+            % Compute Pc as a function of S_1
             switch(obj.WettingPhaseIndex)
                 case(1)
                     S = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr) + 0.1;
                     S (S < obj.Phases(1).sr) = 0.1;
-                    Pc = obj.CapillaryModel.ComputePc(S);
+                    Pc.Value = obj.CapillaryModel.ComputePc(S);
                 case(2)
                     S = 1 - S;
                     S = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr) + 0.1;
-                    Pc = -obj.CapillaryModel.ComputePc(S);
-                   
-            end   
+                    Pc.Value = -obj.CapillaryModel.ComputePc(S);
+            end
+            % Update P_1
+            P1.Value = P2.Value - Pc.Value;
         end
         function dPc = DPcDS(obj, S)
             switch(obj.WettingPhaseIndex)
@@ -106,68 +113,18 @@ classdef fluid_model < handle
             end
             
         end
-        function dPc = DPcDz(obj, Status, dSdz)
-            dPcdS = obj.DPcDS(Status.S);
-            dPc = zeros(length(Status.S), obj.NofComp-1);
-            for j=1:obj.NofComp-1
-                % Use chain rule
-                dPc(:,j) = dPcdS(:,1) .* dSdz(:,j);
-            end
-        end
-        function dSdp = DSDp(obj, Status, drhodp, dni)
-            ni = Status.ni;
-            rhov = Status.rho(:,1);
-            rhol = Status.rho(:,2);
-            drhov = drhodp(:,1);
-            drhol = drhodp(:,2);
-            Num = rhol .* ni;
-            Den = rhol .* ni + (1 - ni) .* rhov ;
-            dNum = drhol .* ni + dni .* rhol;
-            dDen = drhol .* ni + dni .* rhol + drhov - ni .* drhov - rhov .* dni;
-            % final derivative
-            dSdp = (dNum .* Den - dDen .* Num)./Den.^2;
-        end
-        function dSdz = DSDz(obj, Status, dni, dx1v, dx1l)
-            rhov = Status.rho(:,1);
-            rhol = Status.rho(:,2);
-            %x1v = Status.x(:,1);
-            %x1l = Status.x(:,2);
-            ni = Status.ni;
-            %z = Status.z(:,1);
-            % Derivative of S with respect to z
-            % Num = rhol .* (x1l - z);
-            % dNum = rhol .* (dx1l - 1);
-            % Den = rhov .* (z - x1v) + rhol .* (x1l - z);
-            % dDen = rhov .* (1 - dx1v) + rhol .* (dx1l - 1);
-            % dSdz =(Den .* dNum - Num .* dDen) ./ Den.^2;
-            dSdz = zeros(length(ni), obj.NofComp - 1);
-            for j = 1:obj.NofComp-1
-                Num1 = rhol .* ni;
-                dNum1 = rhol .* dni(:,j);
-                Den1 = rhol .* ni + (1 - ni) .* rhov;
-                dDen1 = rhol .* dni(:,j) - dni(:,j) .* rhov;
-                dSdz(:, j) =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
-            end
-            %dSdz(:,2) = dSdz(:,2)*-1;
-        end
-        function drhotdz = DrhotDz(obj, Status, drho, dS)
-            rho = Status.rho;
-            S = Status.S;
-            drhotdz = zeros(length(S), obj.NofComp-1);
-            for j=1:obj.NofComp-1
-                drhotdz(:,j) = drho(:,1) .* S + rho(:,1) .* dS(:,j) + drho(:,2) .* (1 - S) - rho(:,2) .* dS(:,j);
-            end
-            % When it s one phase derivative is zero
-            drhotdz(Status.S == 1,:) = 0;
-            drhotdz(Status.S == 0,:) = 0;
-        end
         function drhotdp = DrhotDp(obj, Status, drho, dS)
-            rho = Status.rho;
-            S = Status.S;
-            drhotdp = drho(:,1) .* S + rho(:,1) .* dS + drho(:,2) .* (1 - S) - rho(:,2) .* dS;
+            N = length(Status.Properties('rho_1').Value);
+            rho = zeros(N, obj.NofPhases);
+            S = zeros(N, obj.NofPhases);
+            for i=1:obj.NofPhases
+                rho(:,i) = Status.Properties(['rho_',num2str(i)]).Value;
+                S(:,i) = Status.Properties(['S_',num2str(i)]).Value;
+            end
+            drhotdp = drho(:,1) .* S(:,1) + rho(:,1) .* dS + drho(:,2) .* S(:,2) - rho(:,2) .* dS;
             % When it s one phase derivative is zero
-            drhotdp(Status.S == 1) = drho(Status.S == 1, 1);
-            drhotdp(Status.S == 0) = drho(Status.S == 0, 2);
+            drhotdp(S(:,1) == 1) = drho(S(:,1) == 1, 1);
+            drhotdp(S(:,1) == 0) = drho(S(:,1) == 0, 2);
         end
     end
     methods (Abstract)

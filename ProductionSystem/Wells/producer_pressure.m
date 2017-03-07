@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 16 December 2016
+%Last modified: 6 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef producer_pressure < producer
     properties
@@ -19,15 +19,23 @@ classdef producer_pressure < producer
             rho = rhoT(obj.Cells);
             obj.p = obj.p - rho .*GravityModel.g .* h;
         end
-        function UpdateState(obj, State, K, Mob, n_phases, n_components)
-            for i = 1:n_phases
-                obj.QPhases(:,i) = State.rho(obj.Cells, i) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - State.p(obj.Cells));
+        function UpdateState(obj, State, K, Mob, FluidModel)
+            p = State.Properties(['P_',num2str(FluidModel.NofPhases)]);
+            for i = 1:FluidModel.NofPhases
+                rho = State.Properties(['rho_', num2str(i)]);
+                obj.QPhases(:,i) = rho.Value(obj.Cells) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
             obj.QComponents = obj.QComponents* 0;
-            for j=1:n_components
-                for phase=1:n_phases
-                    obj.QComponents(:, j) = obj.QComponents(:, j) + State.x(obj.Cells, (j-1)*2+phase) .* obj.QPhases(:,phase);
-                end
+            switch(FluidModel.name)
+                case('SinglePhase')
+                case('Immiscible')
+                otherwise
+                    for j=1:FluidModel.NofComp
+                        for phase=1:FluidModel.NofPhases
+                            x = State.Properties(['x_', num2str(j), 'ph', num2str(phase)]);
+                            obj.QComponents(:, j) = obj.QComponents(:, j) + x.Value(obj.Cells) .* obj.QPhases(:,phase);
+                        end
+                    end
             end
         end
         function [A, rhs] = AddToPressureSystem(obj, Mob, K, A, rhs)

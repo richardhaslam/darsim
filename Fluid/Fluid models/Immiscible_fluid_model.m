@@ -17,13 +17,8 @@ classdef Immiscible_fluid_model < fluid_model
         end
         function SinglePhase = Flash(obj, Status)
             % Composition in this case is fixed to be 1 and 0
-            Status.x(:,1) = 1;
-            Status.x(:,2) = 0;
-            Status.x(:,3) = 0;
-            Status.x(:,4) = 1;
-            
-            SinglePhase (Status.z(:,1) == 1) = 1;
-            SinglePhase (Status.z(:,2) == 1) = 2;
+            SinglePhase (Status.Properties('S_1').Value == 1) = 1;
+            SinglePhase (Status.Properties('S_2').Value == 1) = 2;
             
         end
         function InitializeInjectors(obj, Inj)
@@ -32,7 +27,7 @@ classdef Immiscible_fluid_model < fluid_model
                 Inj(i).x = [1 0 0 1];
                 Inj(i).S = 1;
                 for ph=1:obj.NofPhases
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i));
+                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
                 end
                 Inj(i).x2 = 1 - Inj(i).x;
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
@@ -40,8 +35,11 @@ classdef Immiscible_fluid_model < fluid_model
         end
         function ComputePhaseDensities(obj, Status)
             for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components);
+                rho = Status.Properties(['rho_', num2str(i)]);
+                rho.Value = obj.Phases(i).ComputeDensity(Status.Properties('P_2').Value, obj.Components);
             end
+        end
+        function ComputePhaseSaturation(obj, Status, SinglePhase)
         end
     end
 end

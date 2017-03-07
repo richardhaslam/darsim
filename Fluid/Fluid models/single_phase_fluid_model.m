@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 2 March 2017
-%Last modified: 2 March 2017
+%Last modified: 4 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef single_phase_fluid_model < fluid_model
     properties
@@ -28,21 +28,23 @@ classdef single_phase_fluid_model < fluid_model
                 Inj(i).x = [1 0];
                 Inj(i).S = 1;
                 for ph=1:obj.NofPhases
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i));
+                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
                 end
                 Inj(i).Mob = 1;   
             end
         end
         function ComputePhaseDensities(obj, Status)
-            Status.rho(:, 1) = obj.Phases(1).ComputeDensity(Status, obj.Components);
+            rho = Status.Properties('rho_1'); 
+            rho.Value = obj.Phases(1).ComputeDensity(Status.Properties('P_1').Value, obj.Components);
         end
-         function rhoT = ComputeTotalDensity(obj, s, rho)
+         function ComputeTotalDensity(obj, Status)
             % Compute the total density
-            rhoT = rho(:, 1) .* s; 
+            rhoT = Status.Properties('rhoT');
+            rhoT.Value = Status.Properties('rho_1').Value; 
+            % For 1 phase rhoT is rho1
          end
         function Mob = ComputePhaseMobilities(obj, s)
             Mob = ones(length(s), obj.NofPhases);
-            %kr = obj.RelPermModel.ComputeRelPerm(obj.Phases, s);
             Mob(:,1) = 1/obj.Phases(1).mu;
         end
          function dMob = DMobDS(obj, S)

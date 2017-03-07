@@ -14,12 +14,25 @@ classdef Standard_flash_calculator < Kvalues_flash_calculator
     methods
         function SinglePhase = Flash(obj, Status, Components, Phases)
             % Define SinglePhase objects
-            SinglePhase = zeros(length(Status.p), 1);
-            z = Status.z;
-            x = Status.x;
-            ni = Status.ni;
-            N = length(ni);
             nc = length(Components);
+            nph = length(Phases);
+            N = length(Status.Properties('z_1').Value);
+            z = zeros(N, nc);
+            Ni = zeros(N, nph);
+            x = zeros(N, nc*nph);
+            SinglePhase = zeros(N, 1);
+            
+            % Copy values in local variables
+            for i=1:nc
+                z(:, i) = Status.Properties(['z_', num2str(i)]).Value;
+                for j=1:nph
+                    x(:,(i-1)*nph + j) = Status.Properties(['x_', num2str(i),'ph',num2str(j)]).Value;
+                end
+            end
+            for j=1:nph
+                Ni(:,i) = Status.Properties(['ni_', num2str(i)]).Value;
+            end
+            ni = Ni(:,1);
             
             %% 1. Compute K-values
             k = obj.KvaluesCalculator.Compute(Status, Components, Phases);
@@ -84,10 +97,17 @@ classdef Standard_flash_calculator < Kvalues_flash_calculator
                         ni(i) = 0;
                 end
             end
-            
+            Ni(:,1) = ni;
+            Ni(:,2) = 1-ni;
             % Copy it into Status object
-            Status.x = x;
-            Status.ni = ni;
+            for j=1:nph
+                NI = Status.Properties(['ni_', num2str(j)]);
+                NI.Value = Ni(:,j);
+                for i=1:nc
+                    X = Status.Properties(['x_', num2str(i),'ph',num2str(j)]);
+                    X.Value = x(:,(i-1)*nph + j);
+                end
+            end
         end
     end
 end

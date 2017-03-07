@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 19 July 2016
-%Last modified: 2 March 2017
+%Last modified: 4 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef pressure_system_builder < system_builder
     properties
@@ -22,7 +22,7 @@ classdef pressure_system_builder < system_builder
         end
         function UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
             % Update Reservoir State
-            Formulation.UpdatePressure(delta, ProductionSystem.Reservoir.State, FluidModel);
+            Formulation.UpdatePressure(delta, ProductionSystem, FluidModel, DiscretizationModel);
             % UpdateWells
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end
