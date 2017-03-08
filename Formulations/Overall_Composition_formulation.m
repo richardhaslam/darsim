@@ -35,14 +35,14 @@ classdef Overall_Composition_formulation < Compositional_formulation
             obj.dMob = FluidModel.DMobDz(ProductionSystem.Reservoir.State, dSdz);
             obj.dPc = FluidModel.DPcDz(ProductionSystem.Reservoir.State, dSdz);
          end
-        function Residual = BuildResidual(obj,ProductionSystem, DiscretizationModel, dt, State0)
+        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             %Create local variables
             N = DiscretizationModel.ReservoirGrid.N;          
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
-            z_old = zeros(N, obj.NofPhases);
+            z_old = zeros(N, obj.NofComponents);
             rho_old = zeros(N, obj.NofPhases);
             P = zeros(N, obj.NofPhases);
-            z = zeros(N, obj.NofPhases);
+            z = zeros(N, obj.NofComponents);
             rho = zeros(N, obj.NofPhases);
             x = zeros(N, obj.NofComponents*obj.NofPhases);
             
