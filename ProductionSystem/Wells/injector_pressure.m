@@ -21,9 +21,8 @@ classdef injector_pressure < injector
         end
         function UpdateState(obj, State, K, FluidModel)
             p = State.Properties(['P_',num2str(FluidModel.NofPhases)]);
-            pc = State.Properties('Pc');
             for i = 1:FluidModel.NofPhases
-                obj.QPhases(:,i) = obj.rho(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells) + (i - 3) * (1-i) * pc.Value(obj.Cells));
+                obj.QPhases(:,i) = obj.rho(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
             obj.QComponents = obj.QComponents*0;
             switch(FluidModel.name)

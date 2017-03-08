@@ -16,10 +16,6 @@ classdef single_phase_fluid_model < fluid_model
             obj.name = 'SinglePhase';
         end
         function SinglePhase = Flash(obj, Status)
-            % Composition in this case is fixed to be 1 and 0
-            Status.x(:,1) = 1;
-            Status.x(:,2) = 0;
-            
             SinglePhase (:) = 1;
         end
         function InitializeInjectors(obj, Inj)
