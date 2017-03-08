@@ -18,8 +18,8 @@ classdef initializer_hydrostatic < initializer
             disp('Started Hydrostatic initialization');
             
              % Define initial values
-            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1;
-            z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0;
+            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e6;
+            z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.1;
             
             
             % 1. Assign initial valus
@@ -33,7 +33,7 @@ classdef initializer_hydrostatic < initializer
             disp('Initial conditions:')
             disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('Pressure').Value/1e5)), ' bar']);
             disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
-            disp(['reservoir initial z: ', num2str(ProductionSystem.Reservoir.State.Properties('z_1').Value)]);
+            %disp(['reservoir initial z: ', num2str(ProductionSystem.Reservoir.State.Properties('z_1').Value)]);
             disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
             disp('---------------------------------------------------------');
             disp(char(5));

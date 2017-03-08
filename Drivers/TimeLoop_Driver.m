@@ -16,9 +16,9 @@ classdef TimeLoop_Driver < handle
         EndOfSimEvaluator
     end
     methods
-        function obj = TimeLoop_Driver(n_reports)
-            %obj.TStops = linspace(obj.TotalTime/n_reports, obj.TotalTime, n_reports);
-            obj.TStops = [365*24*3600:365*24*3600:1000*365*24*3600];
+        function obj = TimeLoop_Driver(n_reports, TotalTime)
+            obj.TStops = linspace(TotalTime/n_reports, TotalTime, n_reports);
+            %obj.TStops = [365*24*3600:365*24*3600:1000*365*24*3600];
         end
         function AddCouplingStrategy(obj, coupling)
             obj.Coupling = coupling;

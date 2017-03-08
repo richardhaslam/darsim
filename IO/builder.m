@@ -38,7 +38,7 @@ classdef builder < handle
         ADM
         LinearSolver = 'direct';
         Formulation = 'Natural';
-        StopCriterion = 'COMPONENT CUT';
+        StopCriterion = 'MAX TIME';
         Fractured = 'No';
     end
     methods
@@ -202,7 +202,7 @@ classdef builder < handle
         end
         function ProductionSystem = BuildProductionSystem (obj, inputMatrix, DiscretizationModel)
             ProductionSystem = Production_System();
-            %Reservoir
+            %% Reservoir
             Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x−direction [m]
             Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y−direction [m]
             h = str2double(inputMatrix(obj.size + 3));  %Reservoir thickness [m]
@@ -230,7 +230,7 @@ classdef builder < handle
             Reservoir.AddPermeabilityPorosity(K, phi);
             ProductionSystem.AddReservoir(Reservoir);
             
-            % Wells
+            %% Wells
             Wells = wells();
             Wells.NofInj = length(obj.inj);
             Wells.NofProd = length(obj.prod);
@@ -420,7 +420,7 @@ classdef builder < handle
             end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
-            TimeDriver = TimeLoop_Driver(obj.reports);
+            TimeDriver = TimeLoop_Driver(obj.reports, obj.TotalTime);
             %% Construct Coupling
             switch(obj.CouplingType)
                 case('FIM')

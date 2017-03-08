@@ -25,7 +25,7 @@ classdef Production_System < handle
             obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N, n_phases, n_comp);
             if obj.FracturesNetwork.Active
                 for i=1:obj.FracturesNetwork.N
-                    obj.FracturesNetwork.Fractures.State.Initialize(DiscretizationModel.FracturesGrid.N(i), n_phases, n_comp);
+                    obj.FracturesNetwork.Fractures(i).State.Initialize(DiscretizationModel.FracturesGrid.N(i), n_phases, n_comp);
                 end
             end
         end
