@@ -15,8 +15,9 @@ classdef BO_gas_phase < phase
             obj.mu = 1e-4;
             obj.sr = 0;
         end
-        function rho = ComputeDensity(obj, Status, Components, rs)
-            rho = Components(1).rho/obj.Bg;
+        function rho = ComputeDensity(obj, p, Components, rs)
+            N = length(p);
+            rho = Components(1).rho/obj.Bg * ones(N,1);
         end
         function drho = DrhoDp(obj, Status, Components, drs)
             drho = drs;

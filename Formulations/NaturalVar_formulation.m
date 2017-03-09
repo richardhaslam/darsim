@@ -4,7 +4,7 @@
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 12 September 2016
-%Last modified: 16 December 2016
+%Last modified: 8 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef NaturalVar_formulation < Compositional_formulation
     properties
@@ -27,31 +27,39 @@ classdef NaturalVar_formulation < Compositional_formulation
             obj.PreviousSinglePhase = obj.InitialPhaseState;
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
-            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
-            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
-            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
+            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]).Value);
+            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State);
             obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State);
             obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State, obj.K);
          end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)                   
             %Create local variables
-            N = DiscretizationModel.ReservoirGrid.N;
-            s_old = State0.S;
-            x_old = State0.x;
-            s = ProductionSystem.Reservoir.State.S;
-            x = ProductionSystem.Reservoir.State.x;
-            s2 = 1 - s;
-            s2_old = 1 - s_old;
-            % Phase potentials
-            P_ph1 = ProductionSystem.Reservoir.State.p - ProductionSystem.Reservoir.State.pc;
-            P_ph2 = ProductionSystem.Reservoir.State.p;
-            % Pore volume
+            N = DiscretizationModel.ReservoirGrid.N;          
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
-            %Density
-            rho = ProductionSystem.Reservoir.State.rho;
-            rho_old = State0.rho;
+            S_old = zeros(N, obj.NofPhases);
+            rho_old = zeros(N, obj.NofPhases);
+            x_old = zeros(N, obj.NofComponents*obj.NofPhases);
+            P = zeros(N, obj.NofPhases);
+            S = zeros(N, obj.NofPhases);
+            rho = zeros(N, obj.NofPhases);
+            x = zeros(N, obj.NofComponents*obj.NofPhases);
+            
+            % Copy values in local variables
+            for j=1:obj.NofPhases
+                rho_old(:,j) = State0.Properties(['rho_', num2str(j)]).Value;
+                P(:, j) = ProductionSystem.Reservoir.State.Properties(['P_', num2str(j)]).Value;
+                rho(:, j) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(j)]).Value;
+                S_old(:,j) = State0.Properties(['S_', num2str(j)]).Value;
+                S(:, j) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(j)]).Value;
+                for i=1:obj.NofComponents
+                    x_old(:,(i-1)*obj.NofPhases + j) = State0.Properties(['x_', num2str(i),'ph',num2str(j)]).Value;
+                    x(:,(i-1)*obj.NofPhases + j) = ProductionSystem.Reservoir.State.Properties(['x_', num2str(i),'ph',num2str(j)]).Value;
+                end
+            end
+            
             % Depths
             depth = DiscretizationModel.ReservoirGrid.Depth;
             
@@ -66,18 +74,18 @@ classdef NaturalVar_formulation < Compositional_formulation
             Req = zeros(N*obj.NofComponents, 1);
             for i=1:obj.NofComponents
                 % 1. MASS CONSERVATION EQUATIONS                 
-                m = x(:,(i-1)*2+1) .* rho(:,1) .* s + x(:,(i-1)*2+2) .* rho(:,2) .* s2;
-                m_old = x_old(:,(i-1)*2+1) .* rho_old(:,1) .* s_old + x_old(:,(i-1)*2+2) .* rho_old(:,2) .* s2_old;
+                m = x(:,(i-1)*2+1) .* rho(:,1) .* S(:,1) + x(:,(i-1)*2+2) .* rho(:,2) .* S(:,2);
+                m_old = x_old(:,(i-1)*2+1) .* rho_old(:,1) .* S_old(:,1) + x_old(:,(i-1)*2+2) .* rho_old(:,2) .* S_old(:,2);
                 % Phase Transmissibilities
                 obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt, x(:,(i-1)*2+1:(i-1)*2+2), i);          
                 % Residual
                 Rbalance((i-1)*N+1:i*N) = ...
                     A * m - A * m_old...          % Accumulation term
-                    + obj.Tph{i, 1} *  P_ph1 ...    % Convective term                
-                    + obj.Tph{i, 2} *  P_ph2...
-                    + obj.Gph{i,1} * depth...      % Gravity
+                    + obj.Tph{i, 1} *  P(:,1) ... % Convective term                
+                    + obj.Tph{i, 2} *  P(:,2)...
+                    + obj.Gph{i,1} * depth...     % Gravity
                     + obj.Gph{i,2} * depth...
-                    - q(:,i);                     %Source terms
+                    - q(:,i);                     % Source terms
                 
                 % 2. THERMODYNAMIC EQUILIBRIUM EQUATIONS
                 Rcomp = x(:,(i-1)*2 + 1) - obj.K(:,i).*x(:,(i-1)*2 + 2);
@@ -98,11 +106,21 @@ classdef NaturalVar_formulation < Compositional_formulation
             Nz = DiscretizationModel.ReservoirGrid.Nz;
             N = DiscretizationModel.ReservoirGrid.N;
             pv = DiscretizationModel.ReservoirGrid.Volume*ProductionSystem.Reservoir.Por;
-            x = ProductionSystem.Reservoir.State.x;
-            x1 = x(:,1:2);
-            x2 = 1 - x1;
-            s = ProductionSystem.Reservoir.State.S;
-            rho = ProductionSystem.Reservoir.State.rho;
+            
+            P = zeros(N, obj.NofPhases);
+            rho = zeros(N, obj.NofPhases);
+            S = zeros(N, obj.NofPhases);
+            x = zeros(N, obj.NofComponents*obj.NofPhases);
+            
+            % Copy values in local variables
+            for j=1:obj.NofPhases
+                P(:, j) = ProductionSystem.Reservoir.State.Properties(['P_', num2str(j)]).Value;
+                rho(:, j) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(j)]).Value;
+                S(:, j) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(j)]).Value;
+                for i=1:obj.NofComponents
+                    x(:,(i-1)*obj.NofPhases + j) = ProductionSystem.Reservoir.State.Properties(['x_', num2str(i),'ph',num2str(j)]).Value;
+                end
+            end
             
             % Fill in block by block
             Jp = cell(obj.NofComponents, 1);
@@ -126,7 +144,7 @@ classdef NaturalVar_formulation < Compositional_formulation
                 vecZ1 = min(reshape(obj.U(1).z(:,:,1:Nz),N,1), 0).*dMupzPh1 + min(reshape(obj.U(2).z(:,:,1:Nz),N,1), 0).*dMupzPh2;
                 vecZ2 = max(reshape(obj.U(1).z(:,:,2:Nz+1),N,1), 0).*dMupzPh1 + max(reshape(obj.U(2).z(:,:,2:Nz+1),N,1), 0).*dMupzPh2;
                 
-                acc = pv/dt .* ( x(:,(i-1)*2+1) .* obj.drhodp(:,1) .* s + x(:,(i-1)*2+2) .* obj.drhodp(:,2) .* (1-s));
+                acc = pv/dt .* ( x(:,(i-1)*2+1) .* obj.drhodp(:,1) .* S(:,1) + x(:,(i-1)*2+2) .* obj.drhodp(:,2) .* S(:,2));
                 DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, -vecZ1];
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 Jp{i} = Jp{i} + spdiags(DiagVecs, DiagIndx, N, N);
@@ -164,7 +182,7 @@ classdef NaturalVar_formulation < Compositional_formulation
             vecY2 = max(reshape(obj.U(1).y(:,2:Ny+1,:),N,1), 0).*dMupyPh1;
             vecZ1 = min(reshape(obj.U(1).z(:,:,1:Nz),N,1), 0).*dMupzPh1; 
             vecZ2 = max(reshape(obj.U(1).z(:,:,2:Nz+1),N,1), 0).*dMupzPh1;
-            acc = pv/dt .* (s .* rho(:,1));
+            acc = pv/dt .* (S(:,1) .* rho(:,1));
             
             DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
@@ -180,7 +198,7 @@ classdef NaturalVar_formulation < Compositional_formulation
             vecY2 = max(reshape(obj.U(2).y(:,2:Ny+1,:),N,1), 0) .* dMupyPh2;
             vecZ1 = min(reshape(obj.U(2).z(:,:,1:Nz),N,1), 0) .* dMupzPh2; 
             vecZ2 = max(reshape(obj.U(2).z(:,:,2:Nz+1),N,1), 0) .* dMupzPh2;
-            acc = pv/dt .* ((1 - s) .* rho(:,2));
+            acc = pv/dt .* (S(:,2) .* rho(:,2));
             
             DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1,vecZ1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
@@ -196,7 +214,10 @@ classdef NaturalVar_formulation < Compositional_formulation
             [Jp{1}, Jp{2}, JS{1}, JS{2}, ...
                 J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2] = ...
                 obj.AddWellsToJacobian(Jp{1}, Jp{2}, JS{1}, JS{2}, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2,...
-                ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K);
+                P, x, rho, ProductionSystem.Wells, ProductionSystem.Reservoir.K);
+            
+            x1 = x(:,1:2);
+            x2 = x(:,3:4);
             
             %% 8. Equilibrium of component 1
             Jeq1p = - spdiags(obj.dKdp(:,1) .* x1(:,2), 0, N, N);
@@ -240,39 +261,9 @@ classdef NaturalVar_formulation < Compositional_formulation
                          Jeq2p, Jeq2S, Jeq2_x1ph1, Jeq2_x1ph2];
             
         end
-        function UpdateState(obj, delta, Status, FluidModel)
-            % Update Solution
-            Status.p = Status.p + delta(1:end/4);
-            Status.S = Status.S + delta(end/4+1:end/2);
-
-            delta1 = delta(end/2 +1:3*end/4);
-            delta2 = delta(3*end/4 +1:end);
-            delta1((Status.S > 1)) = 0;
-            delta2((Status.S > 1)) = 0;
-            delta1((Status.S < 0)) = 0;
-            delta2((Status.S < 0)) = 0;
-            Status.x(:,1) = Status.x(:,1) + delta1;
-            Status.x(:,2) = Status.x(:,2) + delta2;
-            
-            % Single phase from previous solution
-            obj.PreviousSinglePhase = obj.SinglePhase;
-            obj.SinglePhase(Status.S > 1) = 1;
-            obj.SinglePhase(Status.S < 0) = 2;
-            
-            Status.S = min(Status.S, 1);
-            Status.S = max(Status.S, 0);
-            
-            % Update density
-            FluidModel.ComputePhaseDensities(Status);
-            
-            % Update z
-            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x, Status.rho);
-            
-            % Update Pc
-            Status.pc = FluidModel.ComputePc(Status.S);            
-        end
+        
         function [J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2] =...
-                AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2, State, Wells, K)
+                AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2, p, x, rho, Wells, K)
             Inj = Wells.Inj;
             Prod = Wells.Prod;
             %Injectors
@@ -294,30 +285,110 @@ classdef NaturalVar_formulation < Compositional_formulation
                 for j=1:length(b)
                     %Pressure blocks
                     J1p(b(j),b(j)) = J1p(b(j),b(j))...
-                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * State.x(b(j),1) ...
-                        + obj.Mob(b(j), 2) * State.rho(b(j),2) * State.x(b(j),2))...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * State.x(b(j),1) * obj.drhodp(b(j),1) * (Prod(i).p(j) - State.p(b(j))) ...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * State.x(b(j),2) * obj.drhodp(b(j),2) * (Prod(i).p(j) - State.p(b(j)));
+                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * rho(b(j),1) * x(b(j),1) ...
+                        + obj.Mob(b(j), 2) * rho(b(j),2) * x(b(j),2))...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * x(b(j),1) * obj.drhodp(b(j),1) * (Prod(i).p(j) - p(b(j))) ...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * x(b(j),2) * obj.drhodp(b(j),2) * (Prod(i).p(j) - p(b(j)));
                     J2p(b(j),b(j)) = J2p(b(j),b(j)) ...
-                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * State.rho(b(j),1) * State.x(b(j),3) ...
-                        + obj.Mob(b(j), 2) * State.rho(b(j),2) * State.x(b(j),4))...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * State.x(b(j),3) * obj.drhodp(b(j),1) * (Prod(i).p(j) - State.p(b(j))) ...
-                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * State.x(b(j),4) * obj.drhodp(b(j),2) * (Prod(i).p(j) - State.p(b(j)));
+                        + Prod(i).PI * K(b(j)) * (obj.Mob(b(j), 1) * rho(b(j),1) * x(b(j),3) ...
+                        + obj.Mob(b(j), 2) * rho(b(j),2) * x(b(j),4))...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * x(b(j),3) * obj.drhodp(b(j),1) * (Prod(i).p(j) - p(b(j))) ...
+                        - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * x(b(j),4) * obj.drhodp(b(j),2) * (Prod(i).p(j) - p(b(j)));
                     %Saturation blocks
                     J1S(b(j),b(j)) = J1S(b(j),b(j))...
-                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j),1) * State.rho(b(j),1) * State.x(b(j),1) ...
-                        + obj.dMob(b(j), 2) * State.rho(b(j), 2) * State.x(b(j),2)) * (Prod(i).p(j) - State.p(b(j)));
+                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j),1) * rho(b(j),1) * x(b(j),1) ...
+                        + obj.dMob(b(j), 2) * rho(b(j), 2) * x(b(j),2)) * (Prod(i).p(j) - p(b(j)));
                     J2S(b(j),b(j)) = J2S(b(j),b(j)) ...
-                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j), 1) * State.rho(b(j),1) * State.x(b(j), 3) ...
-                        + obj.dMob(b(j),2) * State.rho(b(j),2) * State.x(b(j),4)) * (Prod(i).p(j) - State.p(b(j)));
+                        - Prod(i).PI * K(b(j)) * (obj.dMob(b(j), 1) * rho(b(j),1) * x(b(j), 3) ...
+                        + obj.dMob(b(j),2) * rho(b(j),2) * x(b(j),4)) * (Prod(i).p(j) - p(b(j)));
                     % Mole fractions blocks
-                    J1x1ph1(b(j), b(j)) = J1x1ph1(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (Prod(i).p(j) - State.p(b(j))); 
-                    J1x1ph2(b(j), b(j)) = J1x1ph2(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (Prod(i).p(j) - State.p(b(j)));
-                    J2x1ph1(b(j), b(j)) = J2x1ph1(b(j), b(j)) - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (Prod(i).p(j) - State.p(b(j)));
-                    J2x1ph2(b(j), b(j)) = J2x1ph2(b(j), b(j)) - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (Prod(i).p(j) - State.p(b(j)));
-                    
+                    J1x1ph1(b(j), b(j)) = J1x1ph1(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (Prod(i).p(j) - p(b(j))); 
+                    J1x1ph2(b(j), b(j)) = J1x1ph2(b(j), b(j)) + Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (Prod(i).p(j) - p(b(j)));
+                    J2x1ph1(b(j), b(j)) = J2x1ph1(b(j), b(j)) - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) * (Prod(i).p(j) - p(b(j)));
+                    J2x1ph2(b(j), b(j)) = J2x1ph2(b(j), b(j)) - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * (Prod(i).p(j) - p(b(j)));
                 end
                 
+            end
+        end
+        function UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)   
+            if sum(isnan(delta))
+                % if the solution makes no sense, skip this step
+                return
+            else
+                Nm =  DiscretizationModel.ReservoirGrid.N;
+                %% 1. Update matrix
+                % Update Pressure
+                Pm = ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]);
+                Pm.update(delta(1:Nm));
+                DeltaLast = zeros(Nm, 1);
+                for ph = 1:obj.NofPhases-1
+                    Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(ph)]);
+                    Sm.update(delta(ph*Nm + 1:(ph+1)*Nm));
+                    % Update x unless phase state resulted to be wrong
+                    delta1 = delta(obj.NofPhases*Nm + 1:(obj.NofPhases+1)*Nm);
+                    delta2 = delta((obj.NofPhases+1)*Nm + 1:(obj.NofPhases+2)*Nm);
+                    delta1((Sm.Value > 1)) = 0;
+                    delta2((Sm.Value > 1)) = 0;
+                    delta1((Sm.Value < 0)) = 0;
+                    delta2((Sm.Value < 0)) = 0;
+                    xm = ProductionSystem.Reservoir.State.Properties('x_1ph1');
+                    xm.update(delta1);
+                    xm = ProductionSystem.Reservoir.State.Properties('x_1ph2');
+                    xm.update(delta2);
+                    xm = ProductionSystem.Reservoir.State.Properties('x_2ph1');
+                    xm.update(-delta1);
+                    xm = ProductionSystem.Reservoir.State.Properties('x_2ph2');
+                    xm.update(-delta2);
+            
+                    % Single phase from previous solution
+                    obj.PreviousSinglePhase = obj.SinglePhase;
+                    obj.SinglePhase(Sm.Value > 1) = 1;
+                    obj.SinglePhase(Sm.Value < 0) = 2;
+                    % Remove values that are not physical
+                    Sm.Value = max(Sm.Value, 0);
+                    Sm.Value = min(Sm.Value, 1);
+                    DeltaLast = DeltaLast + delta(ph*Nm + 1:(ph+1)*Nm);
+                end
+                Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
+                Sm.update(-DeltaLast);
+                % Remove values that are not physical
+                Sm.Value = max(Sm.Value, 0);
+                Sm.Value = min(Sm.Value, 1);
+                % Update Phase Densities
+                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
+                % Update total density
+                FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
+                % Compute total mole fractions
+                FluidModel.ComputeTotalFractions(ProductionSystem.Reservoir.State, Nm);
+                % Update Pc
+                FluidModel.ComputePc(ProductionSystem.Reservoir.State);
+                
+                %% 2. Update fractures pressure and densities
+                if ProductionSystem.FracturesNetwork.Active
+                    for i=1:ProductionSystem.FracturesNetwork.NofFractures
+                        % Update Pressure
+                        Pf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['P_', num2str(obj.NofPhases)]);
+                        Pf.update(delta);
+                        DeltaLast = zeros(Nf(i), 1);
+                        for ph = 1:obj.NofPhases-1
+                            Sf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['S_', num2str(ph)]);
+                            Sf.update(delta(ph*Nf(i) + 1:(ph+1)*Nf(i)));
+                            Sf.Value = max(Sf.Value, 0);
+                            Sf.Value = min(Sf.Value, 1);
+                            DeltaLast = DeltaLast + delta(ph*Nf(i) + 1:(ph+1)*Nf(i));
+                        end
+                        Sf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['S_', num2str(obj.NofPhases)]);
+                        Sf.update(-DeltaLast);
+                        Sf.Value = max(Sf.Value, 0);
+                        Sf.Value = min(Sf.Value, 1);
+                        % Update Phase Densities
+                        FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                        % Update total density
+                        FluidModel.ComputeTotalDensity(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                        % Update Pc
+                        FluidModel.ComputePc(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                    end
+                end
             end
         end
         function UpdatePandS(obj, delta, Status)

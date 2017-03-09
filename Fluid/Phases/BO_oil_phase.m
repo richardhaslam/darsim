@@ -15,7 +15,7 @@ classdef BO_oil_phase < phase
             obj.mu = 1e-3;
             obj.sr = 0;
         end
-        function rho = ComputeDensity(obj, Status, Components, Rs)
+        function rho = ComputeDensity(obj, p, Components, Rs)
             rho = (Components(2).rho * ones(length(Rs),1) + Components(1).rho * Rs)/obj.Bo;
         end
         function drho = DrhoDp(obj, p, Components, dRs)

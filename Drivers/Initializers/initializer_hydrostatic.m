@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 8 November 2016
-%Last modified: 8 November 2016
+%Last modified: 6 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef initializer_hydrostatic < initializer
     properties
@@ -16,24 +16,13 @@ classdef initializer_hydrostatic < initializer
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started Hydrostatic initialization');
-            
-             % Define initial values
-            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e6;
-            z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.1;
-            
-            
-            % 1. Assign initial valus
-            ProductionSystem.Reservoir.State.p = P_init;
-            ProductionSystem.Reservoir.State.z(:,1) = z_init;
-            ProductionSystem.Reservoir.State.z(:,2) = 1-z_init;
-            
+
             obj.Equilibrate(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
             
              % Output initial status:      
             disp('Initial conditions:')
-            disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('Pressure').Value/1e5)), ' bar']);
+            disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('P_2').Value/1e5)), ' bar']);
             disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
-            %disp(['reservoir initial z: ', num2str(ProductionSystem.Reservoir.State.Properties('z_1').Value)]);
             disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
             disp('---------------------------------------------------------');
             disp(char(5));
@@ -42,9 +31,10 @@ classdef initializer_hydrostatic < initializer
             equilibrium = 0;
             % Save initial State
             %obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
-            P_init = ProductionSystem.Reservoir.State.p;
+            P_init = ProductionSystem.Reservoir.State.Properties('P_2').Value;
+            P = ProductionSystem.Reservoir.State.Properties('P_2');
             while (~equilibrium)
-                p0 = ProductionSystem.Reservoir.State.p;
+                p0 = ProductionSystem.Reservoir.State.Properties('P_2').Value;
                 
                 % 1. Update Composition of the phases (Flash)
                 Formulation.SinglePhase = FluidModel.Flash(ProductionSystem.Reservoir.State);
@@ -56,14 +46,14 @@ classdef initializer_hydrostatic < initializer
                 FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, Formulation.SinglePhase);
                 
                 % 4. Total Density
-                ProductionSystem.Reservoir.State.rhoT = FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State.S, ProductionSystem.Reservoir.State.rho);
+                FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
                 
                 % 5. Compute initial Pc
-                ProductionSystem.Reservoir.State.pc = FluidModel.ComputePc(ProductionSystem.Reservoir.State.S);
+                FluidModel.ComputePc(ProductionSystem.Reservoir.State);
                 
                 % 6. Compute pressure 
-                ProductionSystem.Reservoir.State.p = P_init + ProductionSystem.Reservoir.State.rhoT .* Formulation.GravityModel.g .* (ProductionSystem.Reservoir.Depth - DiscretizationModel.ReservoirGrid.Depth);
-                delta = ProductionSystem.Reservoir.State.p - p0;
+                P.Value = P_init + ProductionSystem.Reservoir.State.Properties('rhoT').Value .* Formulation.GravityModel.g .* (ProductionSystem.Reservoir.Depth - DiscretizationModel.ReservoirGrid.Depth);
+                delta = ProductionSystem.Reservoir.State.Properties('P_2').Value - p0;
                 
                 if (delta < 1e-3) % If solution doesn t change I am at equilibrium
                     equilibrium = 1;

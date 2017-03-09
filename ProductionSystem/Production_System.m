@@ -20,15 +20,6 @@ classdef Production_System < handle
         function AddWells(obj, Wells)
             obj.Wells = Wells;
         end
-        function InitializeStates(obj, DiscretizationModel, n_phases, n_comp)
-            % This is temporary coz prop map is not ready
-            obj.Reservoir.State.Initialize(DiscretizationModel.ReservoirGrid.N, n_phases, n_comp);
-            if obj.FracturesNetwork.Active
-                for i=1:obj.FracturesNetwork.N
-                    obj.FracturesNetwork.Fractures(i).State.Initialize(DiscretizationModel.FracturesGrid.N(i), n_phases, n_comp);
-                end
-            end
-        end
         function AssignInitialState(obj, VarNames, VarValues)
             obj.Reservoir.State.AssignInitialValues(VarNames, VarValues);
             if obj.FracturesNetwork.Active
@@ -52,7 +43,7 @@ classdef Production_System < handle
             % Create a gradient also inside the producers
             for i=1:length(obj.Wells.Prod)
                 h = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Prod(i).Cells);
-                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.rhoT, h);
+                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.Properties('rhoT').Value, h);
             end
             
             % 3. Injection fluid properties are defined

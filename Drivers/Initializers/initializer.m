@@ -18,9 +18,6 @@ classdef initializer < handle
         end
         function InitializeProductionSystem(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             % Initialize Reservoir state           
-            % 1. Initialize State object (Has to be removed once the other one is ready)
-            ProductionSystem.InitializeStates(DiscretizationModel, FluidModel.NofPhases, FluidModel.NofComp);
-            
             % 1. Assign initial values 
             ProductionSystem.AssignInitialState(obj.VarNames, obj.VarValues);
             
@@ -36,16 +33,6 @@ classdef initializer < handle
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started simple initialization');
-            
-             % Define initial values
-            P_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*1e6;
-            z_init = ones(DiscretizationModel.ReservoirGrid.N, 1)*0.037;
-                        
-            % 1. Assign initial values
-            ProductionSystem.Reservoir.State.p = P_init;
-            ProductionSystem.Reservoir.State.z(:,1) = z_init;
-            ProductionSystem.Reservoir.State.z(:,2) = 1 - z_init;
-           
             % 2. Update Composition of the phases (Flash)
             Formulation.SinglePhase = FluidModel.Flash(ProductionSystem.Reservoir.State);
             
@@ -56,16 +43,15 @@ classdef initializer < handle
             FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, Formulation.SinglePhase);
             
             % 5. Total Density
-            ProductionSystem.Reservoir.State.rhoT = FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State.S, ProductionSystem.Reservoir.State.rho);
+            FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
             
             % 6. Compute initial Pc
-            ProductionSystem.Reservoir.State.pc = FluidModel.ComputePc(ProductionSystem.Reservoir.State.S);
+            FluidModel.ComputePc(ProductionSystem.Reservoir.State);
             
             % Output initial status:      
             disp('Initial conditions:')
-            disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('Pressure').Value/1e5)), ' bar']);
-            disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.S))]);
-            disp(['reservoir initial z: ', num2str(ProductionSystem.Reservoir.State.z(1,:))]);
+            disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('P_2').Value/1e5)), ' bar']);
+            disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
             disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
             disp('---------------------------------------------------------');
             disp(char(5));

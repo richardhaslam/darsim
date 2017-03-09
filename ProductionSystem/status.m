@@ -3,69 +3,53 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 3 March 2017
+%Last modified: 4 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef status < matlab.mixin.Copyable
+classdef status < handle
     % Defines the State of the Reservoir
 properties
-    Properties = containers.Map % contains all existing properties
+    Properties
     T
-    p
-    pc
-    S
-    x
-    z
-    rho
-    rhoT
-    ni
 end
 methods
-    function Initialize(obj, N, nf, ncomp)
-        % Create objects
-        obj.p = ones(N, 1);
-        obj.pc = zeros(N, 1);
-        obj.z = zeros(N, ncomp);
-        obj.S = zeros(N, 1);
-        obj.ni = 0.5*ones(N, 1);
-        obj.x = zeros(N, nf*ncomp);
-        obj.x(:,1) = 1;
-        obj.x(:,end) = 1;
-        obj.rho = zeros(N, nf);
-        obj.rhoT = zeros(N, 1); 
+    function obj = status()
+        obj.Properties = containers.Map;
     end
     function AddProperties(obj, FluidModel, N)
         % Add properties to property map
         %% Pressure
-        Prop = property(N, 1);
-        obj.Properties('Pressure') = Prop;
+        obj.Properties('P_1') = property(N, 1, 1e6, 1e7);
+        obj.Properties('S_1') = property(N, 1, 0 , 1);
         %% Density
-        obj.Properties('rho_1') = Prop;
-        obj.Properties('rhoT') = Prop;
+        obj.Properties('rho_1') = property(N, 1, 0, 2000);
+        obj.Properties('rhoT') = property(N, 1, 0, 2000);
         switch (FluidModel.name)
             case ('SinglePhase')
                % No more properties to be added
             case ('Immiscible')
                 %% Saturation and Pc
                 for i=2:FluidModel.NofPhases
-                    obj.Properties(['S_', num2str(i)]) = Prop;
-                    obj.Properties(['rho_', num2str(i)]) = Prop;
+                    obj.Properties(['P_', num2str(i)]) = property(N, 1, 1e6, 1e7);
+                    obj.Properties(['S_', num2str(i)]) = property(N, 1, 0, 1);
+                    obj.Properties(['rho_', num2str(i)]) = property(N, 1, 0, 2000);
                 end
-                obj.Properties('Pc') = Prop;
+                obj.Properties('Pc') = property(N, 1, 1e3, 1e6);
             otherwise
                 %% Saturation and Pc
                 for i=1:FluidModel.NofPhases
-                    obj.Properties(['S_', num2str(i)]) = Prop;
-                    obj.Properties(['rho_', num2str(i)]) = Prop;
-                    obj.Properties(['ni_', num2str(i)]) = Prop;
+                    obj.Properties(['P_', num2str(i)]) = property(N, 1, 1e6, 1e7);
+                    obj.Properties(['S_', num2str(i)]) = property(N, 1, 0, 1);
+                    obj.Properties(['rho_', num2str(i)]) = property(N, 1, 0, 2000);
+                    obj.Properties(['ni_', num2str(i)]) = property(N, 1, 0, 1);
                 end
-                obj.Properties('Pc') = Prop;
+                obj.Properties('Pc') = property(N, 1, 1e3, 1e6);
                 %% Compositional stuff
                 for i=1:FluidModel.NofComp
-                    obj.Properties(['z_', num2str(i)]) = Prop;
+                    obj.Properties(['z_', num2str(i)]) = property(N, 1, 0, 1);
+                    for j=1:FluidModel.NofPhases
+                        obj.Properties(['x_', num2str(i), 'ph', num2str(j)]) = property(N, 1, 0, 1, i==j);
+                    end
                 end
-                Prop = property(N, FluidModel.NofPhases * FluidModel.NofComp);
-                obj.Properties('x') = Prop;
-                
         end
     end
     function AssignInitialValues(obj, VarNames, VarValues)
@@ -74,11 +58,14 @@ methods
             Prop.Value = ones(length(Prop.Value), 1) * VarValues(i);
         end
     end
-    function UpdatePressure(obj)
-    end
-    function UpdateSaturation(obj)
-    end
-    function UpdateZ(obj)
+    function CopyProperties(obj, Source)
+        Names = Source.Properties.keys;
+        N_prop = double(Source.Properties.Count);
+        for i = 1:N_prop
+            obj.Properties([Names{i}]) = property(1, 1);
+            temp = obj.Properties(Names{i});
+            temp.Value = Source.Properties(Names{i}).Value; 
+        end
     end
 end
 end

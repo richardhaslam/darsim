@@ -23,7 +23,7 @@ classdef BO_Kvalues_calculator < Kvalues_calculator
         end
         function [Rs, dRs] = ComputeRs(obj, Status, Phases)
             n_phases = length(Phases);
-            Pdim = Status.p/obj.Pref;
+            Pdim = Status.Properties(['P_',num2str(n_phases)]).Value/obj.Pref;
             Rs = zeros(length(Pdim), n_phases);
             dRs = zeros(length(Pdim), n_phases);
             for i=1:n_phases

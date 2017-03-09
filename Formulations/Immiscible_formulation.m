@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 16 December 2016
+%Last modified: 7 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
@@ -15,38 +15,46 @@ classdef Immiscible_formulation < formulation
             obj.Tph = cell(2,1);
             obj.Gph = cell(2,1);
         end
-        %% Methods for FIM Coupling
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.p);
-            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.S);
-            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
-            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.S);
+            %% 1. Reservoir Properteis and Derivatives
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]).Value);
+            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            %% 2. Fractures Properteis and Derivatives
         end
+        %% Methods for FIM Coupling
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Create local variables
             N = DiscretizationModel.ReservoirGrid.N;
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
-            s_old(:,1) = State0.S;
-            s_old(:,2) = 1 - s_old(:,1);
-            rho_old = State0.rho;
-            s(:,1) = ProductionSystem.Reservoir.State.S;
-            s(:,2) = 1 - s(:,1);
-            rho = ProductionSystem.Reservoir.State.rho;
-            P(:,1) = ProductionSystem.Reservoir.State.p - ProductionSystem.Reservoir.State.pc;
-            P(:,2) = ProductionSystem.Reservoir.State.p;
+            s_old = zeros(N, obj.NofPhases);
+            rho_old = zeros(N, obj.NofPhases);
+            P = zeros(N, obj.NofPhases);
+            s = zeros(N, obj.NofPhases);
+            rho = zeros(N, obj.NofPhases);
+            
+            % Copy values in local variables
+            for i=1:obj.NofPhases
+                s_old(:,i) = State0.Properties(['S_', num2str(i)]).Value;
+                rho_old(:,i) = State0.Properties(['rho_', num2str(i)]).Value;
+                P(:, i) = ProductionSystem.Reservoir.State.Properties(['P_', num2str(i)]).Value;
+                s(:, i) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
+                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end
             depth = DiscretizationModel.ReservoirGrid.Depth;
             
             % Accumulation Term
             AS = speye(N)*pv/dt;
             
             % Transmissibility matrix
-            for i=1:2
-                [obj.Tph{i}, obj.Gph{i}] = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWind(i), obj.Mob(:,i), rho(i), obj.GravityModel.RhoInt(i));
+            for i=1:obj.NofPhases
+                [obj.Tph{i}, obj.Gph{i}] = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWind(i), obj.Mob(:,i), rho(:,i), obj.GravityModel.RhoInt(i));
             end
             % Source terms
             q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
             
-            %% RESIDUAL
+            % RESIDUAL
             Residual = zeros(obj.NofPhases*N,1);
             for i=1:obj.NofPhases
                 Residual((i-1)*N+1:i*N)  = AS*(rho(:,i) .* s(:,i) - rho_old(:,i) .* s_old(:,i))...
@@ -56,15 +64,18 @@ classdef Immiscible_formulation < formulation
             end   
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
-            %Build FIM Jacobian
+            % Create local variables
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             Nz = DiscretizationModel.ReservoirGrid.Nz;
             N = DiscretizationModel.ReservoirGrid.N;
             pv = DiscretizationModel.ReservoirGrid.Volume*ProductionSystem.Reservoir.Por;
-            rho = ProductionSystem.Reservoir.State.rho;
-            s(:,1) = ProductionSystem.Reservoir.State.S;
-            s(:,2) = 1 - s(:, 1);
+            rho = zeros(N, obj.NofPhases);
+            s = zeros(N, obj.NofPhases);
+            for i=1:obj.NofPhases
+                rho(:,i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+                s(:,i) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
+            end
             
             % BUILD FIM JACOBIAN BLOCK BY BLOCK
             Jp = cell(2,1);
@@ -117,26 +128,64 @@ classdef Immiscible_formulation < formulation
             % Full Jacobian: put the 4 blocks together
             Jacobian = [Jp{1}, JS{1}; Jp{2}, JS{2}];
         end
-        function delta = UpdateState(obj, delta, Status, FluidModel)
-            % Update Solution
-            Status.p = Status.p + delta(1:end/2);
-            Status.S = Status.S + delta(end/2+1:end);
-            
-            % Remove unphysical solutions
-            Status.S = min(Status.S,1);
-            Status.S = max(Status.S,0);
-            
-            % Update density
-            FluidModel.ComputePhaseDensities(Status);
-            
-            % Update z
-            Status.z = FluidModel.ComputeTotalFractions(Status.S, Status.x, Status.rho);
-            
-            % Update total density
-            Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);  
-            
-            % Update Pc
-            Status.pc = FluidModel.ComputePc(Status.S);
+        function delta = UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
+            if sum(isnan(delta))
+                % if the solution makes no sense, skip this step
+                return
+            else
+                Nm =  DiscretizationModel.ReservoirGrid.N;
+                %% 1. Update matrix
+                % Update Pressure
+                Pm = ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]);
+                Pm.update(delta(1:Nm));
+                DeltaLast = zeros(Nm, 1);
+                for ph = 1:obj.NofPhases-1
+                    Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(ph)]);
+                    Sm.update(delta(ph*Nm + 1:(ph+1)*Nm));
+                    % Remove values that are not physical
+                    Sm.Value = max(Sm.Value, 0);
+                    Sm.Value = min(Sm.Value, 1);
+                    DeltaLast = DeltaLast + delta(ph*Nm + 1:(ph+1)*Nm);
+                end
+                Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
+                Sm.update(-DeltaLast);
+                % Remove values that are not physical
+                Sm.Value = max(Sm.Value, 0);
+                Sm.Value = min(Sm.Value, 1);
+                % Update Phase Densities
+                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
+                % Update total density
+                FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
+                % Update Pc
+                FluidModel.ComputePc(ProductionSystem.Reservoir.State);
+                
+                %% 2. Update fractures pressure and densities
+                if ProductionSystem.FracturesNetwork.Active
+                    for i=1:ProductionSystem.FracturesNetwork.NofFractures
+                        % Update Pressure
+                        Pf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['P_', num2str(obj.NofPhases)]);
+                        Pf.update(delta);
+                        DeltaLast = zeros(Nf(i), 1);
+                        for ph = 1:obj.NofPhases-1
+                            Sf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['S_', num2str(ph)]);
+                            Sf.update(delta(ph*Nf(i) + 1:(ph+1)*Nf(i)));
+                            Sf.Value = max(Sf.Value, 0);
+                            Sf.Value = min(Sf.Value, 1);
+                            DeltaLast = DeltaLast + delta(ph*Nf(i) + 1:(ph+1)*Nf(i));
+                        end
+                        Sf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['S_', num2str(obj.NofPhases)]);
+                        Sf.update(-DeltaLast);
+                        Sf.Value = max(Sf.Value, 0);
+                        Sf.Value = min(Sf.Value, 1);
+                        % Update Phase Densities
+                        FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                        % Update total density
+                        FluidModel.ComputeTotalDensity(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                        % Update Pc
+                        FluidModel.ComputePc(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                    end
+                end
+            end
         end
         function [Tph, Gph] = TransmissibilityMatrix(obj, Grid, UpWind, Mob, rho, RhoInt)
             Nx = Grid.Nx;
@@ -199,8 +248,15 @@ classdef Immiscible_formulation < formulation
             end
         end
         function [Jwp, JwS, Jnwp, JnwS] = AddWellsToJacobian(obj, Jwp, JwS, Jnwp, JnwS, State, Wells, K)
+            % Define Local handles
             Inj = Wells.Inj;
             Prod = Wells.Prod;
+            p = State.Properties('P_2').Value;
+            rho = zeros(length(p), obj.NofPhases);
+            for i = 1:obj.NofPhases
+                rho(:, i) = State.Properties(['rho_', num2str(i)]).Value;
+            end
+            
             %Injectors
             for i=1:length(Inj)
                 a = Inj(i).Cells;
@@ -213,13 +269,13 @@ classdef Immiscible_formulation < formulation
             for i=1:length(Prod)
                 b = Prod(i).Cells;
                 for j=1:length(b)
-                    Jnwp(b(j),b(j)) = Jnwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), 2) .* State.rho(b(j), 2)...
-                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * obj.drhodp(b(j),2) .* (Prod(i).p(j) - State.p(b(j)));                    
-                    Jwp(b(j),b(j)) = Jwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), 1) .* State.rho(b(j), 1)...
-                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) .* obj.drhodp(b(j),1) .* (Prod(i).p(j) - State.p(b(j)));
+                    Jnwp(b(j),b(j)) = Jnwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), 2) .* rho(b(j), 2)...
+                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 2) * obj.drhodp(b(j),2) .* (Prod(i).p(j) - p(b(j)));                    
+                    Jwp(b(j),b(j)) = Jwp(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), 1) .* rho(b(j), 1)...
+                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), 1) .* obj.drhodp(b(j),1) .* (Prod(i).p(j) - p(b(j)));
                     
-                    JwS(b(j),b(j)) = JwS(b(j),b(j)) - Prod(i).PI*K(b(j)).* State.rho(b(j), 1) .* (Prod(i).p(j) - State.p(b(j))).*obj.dMob(b(j), 1);
-                    JnwS(b(j),b(j)) = JnwS(b(j),b(j)) - Prod(i).PI*K(b(j)).* State.rho(b(j), 2) .* (Prod(i).p(j) - State.p(b(j))).*obj.dMob(b(j), 2);
+                    JwS(b(j),b(j)) = JwS(b(j),b(j)) - Prod(i).PI*K(b(j)).* rho(b(j), 1) .* (Prod(i).p(j) - p(b(j))).*obj.dMob(b(j), 1);
+                    JnwS(b(j),b(j)) = JnwS(b(j),b(j)) - Prod(i).PI*K(b(j)).* rho(b(j), 2) .* (Prod(i).p(j) - p(b(j))).*obj.dMob(b(j), 2);
                 end
             end
         end
@@ -248,15 +304,20 @@ classdef Immiscible_formulation < formulation
             % Create local variables
             N = DiscretizationModel.ReservoirGrid.N;
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
-            s_old(:,1) = State0.S;
-            s_old(:,2) = 1 - s_old(:,1);
-            rho_old = State0.rho;
-            s(:,1) = ProductionSystem.Reservoir.State.S;
-            s(:,2) = 1 - s(:,1);
-            rho = ProductionSystem.Reservoir.State.rho;
-            %P(:, 1) = ProductionSystem.Reservoir.State.p - ProductionSystem.Reservoir.State.pc;
-            P = ProductionSystem.Reservoir.State.p;
-            P(:, 2) = P(:, 1); 
+            s_old = zeros(N, obj.NofPhases);
+            rho_old = zeros(N, obj.NofPhases);
+            P = zeros(N, obj.NofPhases);
+            s = zeros(N, obj.NofPhases);
+            rho = zeros(N, obj.NofPhases);
+            
+            % Copy values in local variables
+            for i=1:obj.NofPhases
+                P(:, i) = ProductionSystem.Reservoir.State.Properties(['P_', num2str(i)]).Value;
+                s_old(:, i) = State0.Properties(['S_', num2str(i)]).Value;
+                rho_old(:, i) = State0.Properties(['rho_', num2str(i)]).Value;
+                s(:, i) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
+                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end 
             depth = DiscretizationModel.ReservoirGrid.Depth;
             
             % Accumulation Term
@@ -302,21 +363,33 @@ classdef Immiscible_formulation < formulation
                 b = Prod(i).Cells;
                 for j=1:length(b)
                     for phase=obj.NofPhases
-                        A(b(j),b(j)) = A(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), phase) .* State.rho(b(j), phase)...
-                                       - Prod(i).PI * K(b(j)) * obj.Mob(b(j), phase) * obj.drhodp(b(j), phase) .* (Prod(i).p(j) - State.p(b(j)));                    
+                        A(b(j),b(j)) = A(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), phase) .* State.Properties(['rho_', num2str(phase)]).Value(b(j))...
+                                       - Prod(i).PI * K(b(j)) * obj.Mob(b(j), phase) * obj.drhodp(b(j), phase) .* (Prod(i).p(j) - State.Properties(['P_', num2str(obj.NofPhases)]).Value(b(j)));                    
                     end
                 end
             end
         end
-        function delta = UpdatePressure(obj, delta, Status, FluidModel)
+        function UpdatePressure(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
+            %% 1. Update matrix pressure and densities
             % Update Pressure
-            Status.p = Status.p + delta;
-            
-            % Update density
-            FluidModel.ComputePhaseDensities(Status);
-            
+            Pm = ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]);
+            Pm.update(delta);
+            % Update Phase Densities
+            FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
             % Update total density
-            Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);  
+            FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
+            %% 2. Update fractures pressure and densities
+            if ProductionSystem.FracturesNetwork.Active
+                for i=1:ProductionSystem.FracturesNetwork.NofFractures
+                    % Update Pressure
+                    Pf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['P_', num2str(obj.NofPhases)]);
+                    Pf.update(delta);
+                    % Update Phase Densities
+                    FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                    % Update total density
+                    FluidModel.ComputeTotalDensity(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                end
+            end
         end
         function [Utot, Qwells] = ComputeTotalFluxes(obj, ProductionSystem, DiscretizationModel)
             Utot.x(2:Nx+1,:,:) = obj.U(2).x(2:Nx+1,:,:) .* reshape(obj.UpWind.x *  obj.Mobt, Nx, Ny, Nz); %- Ucap.x(2:Nx,:);

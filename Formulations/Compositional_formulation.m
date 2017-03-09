@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 15 October 2016
-%Last modified: 15 October 2016
+%Last modified: 7 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Compositional_formulation < formulation
     properties
@@ -130,26 +130,20 @@ classdef Compositional_formulation < formulation
             obj.UpdatePhaseCompositions(Status, FluidModel);
         end
         function UpdatePhaseCompositions(obj, Status, FluidModel)
-            %% 2. Perform composition update
-            % Computes Status.ni, Status.x1 knowing Status.p and Status.z - Returns single phase as well
-            k = FluidModel.ComputeKvalues(Status);
+            %% 2. Perform composition update ((x, ni) = f(T, p, z))
             obj.SinglePhase = FluidModel.Flash(Status);
             
-            %% 3. Compute Densities
-            % Computes Status.rho knowing Status.p, Status.x1 and Status.T
+            %% 3. Compute Densities (rho = rho(p, x, T))
             FluidModel.ComputePhaseDensities(Status);
             
-            %% 4. Compute Saturations
-            % Computes Status.S
+            %% 4. Compute Saturations (S = S(z, x))
             FluidModel.ComputePhaseSaturation(Status, obj.SinglePhase);
             
-            %% 5. Compute Total Density
-            % Computes Status.rhoT
-            Status.rhoT = FluidModel.ComputeTotalDensity(Status.S, Status.rho);
+            %% 5. Compute Total Density (rhoT = rhoT(S, rho))
+            FluidModel.ComputeTotalDensity(Status);
             
-            %% 6. Compute Pc
-            % Computes Status.pc
-            Status.pc = FluidModel.ComputePc(Status.S);
+            %% 6. Compute Pc (Pc = Pc(S))
+            FluidModel.ComputePc(Status);
         end
     end
 end

@@ -90,37 +90,12 @@ classdef VTK_Plotter < Plotter
             %ADD ADM coarse grids
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
-            %Pressure
-            obj.PrintScalar2VTK(fileID, Status.p - Status.pc, ' Pph1');
-            fprintf(fileID, '\n');
-            obj.PrintScalar2VTK(fileID, Status.p, ' Pph2');
-            fprintf(fileID, '\n');
-            %Saturation
-            Status.S(Status.S<1e-7) = 0;
-            obj.PrintScalar2VTK(fileID, Status.S, ' Sph1');
-            fprintf(fileID, '\n');
-            %Capillary Pressure
-            obj.PrintScalar2VTK(fileID, Status.pc, ' CapPRESSURE');
-            fprintf(fileID, '\n');
-            [~, nc] = size(Status.z);
-            for c=1:nc
-                %xcv
-                obj.PrintScalar2VTK(fileID, Status.x(:,(c-1)*2+1), [' x',num2str(c),'ph1']);
+            % Print all existing variables
+            N_var = double(Status.Properties.Count);
+            Names = Status.Properties.keys;
+            for i=1:N_var
+                obj.PrintScalar2VTK(fileID, Status.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
-                %xcl
-                obj.PrintScalar2VTK(fileID, Status.x(:,(c-1)*2+2), [' x',num2str(c),'ph2']);
-                fprintf(fileID, '\n');
-                %zc
-                obj.PrintScalar2VTK(fileID, Status.z(:,c), [' z',num2str(c)]);
-                fprintf(fileID, '\n');
-            end
-            %Density
-            obj.PrintScalar2VTK(fileID, Status.rho(:,1), ' rhoPh1');
-            fprintf(fileID, '\n');
-            if nc > 1
-                obj.PrintScalar2VTK(fileID, Status.rho(:,2), ' rhoPh2');
-                fprintf(fileID, '\n');
-                obj.PrintScalar2VTK(fileID, Status.rho(:,1).*Status.S + Status.rho(:,2).*(1 - Status.S), ' rhoT');
             end
             obj.VTKindex = obj.VTKindex + 1;
         end
@@ -247,7 +222,7 @@ classdef VTK_Plotter < Plotter
     methods (Access = private)
         function PrintScalar2VTK(obj, fileID, scalar, name)
             %Print a scalar in VTK format
-            fprintf(fileID, strcat('SCALARS ', name,' float 1\n'));
+            fprintf(fileID, strcat('SCALARS  ', name,' float 1\n'));
             fprintf(fileID, 'LOOKUP_TABLE default\n');
             fprintf(fileID,'%d ', scalar);
         end

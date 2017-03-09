@@ -13,8 +13,14 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
     methods
         function SinglePhase = Flash(obj, Status, Components, Phases)
             % Define SinglePhase objects
-            SinglePhase = zeros(length(Status.p), 1);
-            z = Status.z;
+            nc = length(Components);
+            nph = length(Phases);
+            N = length(Status.Properties('z_1').Value);
+            z = zeros(N, nc);
+            SinglePhase = zeros(N, 1);
+            for i=1:nc
+                z(:, i) = Status.Properties(['z_', num2str(i)]).Value;
+            end
             
             %% 1 Check if there are 2 components
             x(z(:, 1) == 1, 1) = 1;  
@@ -50,8 +56,8 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             
             
             % Initilaize variables
-            alpha = ones(length(Status.p),1);
-            fv = Status.ni;
+            alpha = ones(N, 1);
+            fv = Status.Properties('ni_1').Value;
             
             % Single phase cells do not need to flash
             fv(SinglePhase == 1) = 1;
@@ -102,11 +108,19 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1, 1) .* (k(TwoPhase == 1, 1) - 1) + 1);
             % Solves for mole fractions in gas phase
             x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);
+            x(:, 3:4) = 1 - x(:,1:2);
             
+            Ni(:,1) = fv;
+            Ni(:,2) = 1-fv;
             % Copy it into Status object
-            Status.x(:,1:2) = x;
-            Status.x(:,3:4) = 1 - x;
-            Status.ni = fv;
+            for j=1:nph
+                NI = Status.Properties(['ni_', num2str(j)]);
+                NI.Value = Ni(:,j);
+                for i=1:nc
+                    X = Status.Properties(['x_', num2str(i),'ph',num2str(j)]);
+                    X.Value = x(:,(i-1)*nph + j);
+                end
+            end
         end
     end
 end

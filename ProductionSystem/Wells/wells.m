@@ -34,15 +34,15 @@ classdef wells < handle
         end
         function UpdateState(obj, Reservoir, FluidModel)
             K = Reservoir.K(:,1);
-            Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.S);
+            Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('S_1').Value);
             
             % Injectors
             for i=1:obj.NofInj
-                obj.Inj(i).UpdateState(Reservoir.State, K, FluidModel.NofPhases, FluidModel.NofComp);         
+                obj.Inj(i).UpdateState(Reservoir.State, K, FluidModel);         
             end
             % Producers
             for i=1:obj.NofProd
-                obj.Prod(i).UpdateState(Reservoir.State, K, Mob, FluidModel.NofPhases, FluidModel.NofComp);        
+                obj.Prod(i).UpdateState(Reservoir.State, K, Mob, FluidModel);        
             end
         end
         function q = TotalFluxes(obj, Reservoir, Mobt)

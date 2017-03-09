@@ -21,72 +21,32 @@ classdef Matlab_Plotter_2D < Plotter
             obj.Pmin = pmin;
         end
         function PlotSolution(obj, Status, Grid)
-            %Reshape objects for pcolor plots
-            P = reshape(Status.p,Grid.Nx,Grid.Ny);
-            S = reshape(Status.S,Grid.Nx,Grid.Ny);
-            Pc = reshape(Status.pc,Grid.Nx,Grid.Ny);
-            %x1 = reshape(Status.x1(:,1),Grid.Nx,Grid.Ny);
-            %x2 = reshape(1-Status.x1(:,2),Grid.Nx,Grid.Ny);
-            %z = reshape(Status.z(:,1),Grid.Nx,Grid.Ny);
-            
             %Plot for 2D problems
             x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
             y = linspace(Grid.Ny * Grid.dy/(2*Grid.Ny), (2*Grid.Ny^2*Grid.dy-Grid.Ny * Grid.dy)/(2*Grid.Ny), Grid.Ny);
             [X, Y] = meshgrid(x,y);
-            % Grid plot
-            %Pressure
-            figure(1)
-            %subplot(2,1,1);
-            h = pcolor(X,Y,P');
-            set(h, 'EdgeColor', 'none');
-            caxis ([obj.Pmin, obj.Pmax]);
-            %view([45 45]);
-            if Grid.Nx==Grid.Ny
-                axis square;
-            end
-            title('Pressure [Pa]');
-            xlabel('x [m]');
-            ylabel('y [m]');
-            colormap(jet);
-            colorbar;
-            axis('image');
-            set(gca,'fontsize',24);
             
-            %Saturation
-            figure(2)
-            h = pcolor(X,Y,S');
-            set(h, 'EdgeColor', 'none');
-            if Grid.Nx==Grid.Ny
-                axis square;
+            N_var = double(Status.Properties.Count);
+            Names = Status.Properties.keys;
+            for i=1:N_var
+                figure(i+1)
+                Var = reshape(Status.Properties(Names{i}).Value, Grid.Nx, Grid.Ny);
+                h = pcolor(X,Y, Var');
+                set(h, 'EdgeColor', 'none');
+                caxis ([obj.Pmin, obj.Pmax]);
+                %view([45 45]);
+                if Grid.Nx==Grid.Ny
+                    axis square;
+                end
+                title(Names{i});
+                xlabel('x [m]');
+                ylabel('y [m]');
+                colormap(jet);
+                colorbar;
+                axis('image');
+                set(gca,'fontsize',24);
+                drawnow
             end
-          
-            xlabel('x [m]');
-            ylabel('y [m]');
-            colormap(jet);
-            colorbar;
-            caxis ([0,1]);
-            axis('image');
-            set(gca,'fontsize', obj.FontSize);
-            
-            %Capillary pressure
-            figure(3)
-            h = pcolor(X,Y,Pc');
-            set(h, 'EdgeColor', 'none');
-            %view([45 45]);
-            if Grid.Nx==Grid.Ny
-                axis square;
-            end
-            title('Pc [Pa]');
-            xlabel('x [m]');
-            ylabel('y [m]');
-            colormap(jet);
-            colorbar;
-            pressuremax =max(max(Pc));
-            pressuremin = min(min(Pc));
-            caxis ([pressuremin, pressuremax]);
-            axis('image');
-            set(gca,'fontsize', obj.FontSize);
-            drawnow
         end
         function PlotPermeability(obj, Grid, Perm)
             %Plot permeability

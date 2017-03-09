@@ -35,12 +35,11 @@ classdef formulation < handle
         function Reset(obj)    
         end
         function UpWindAndPhaseRockFluxes(obj, Grid, Phases, Status)
-            obj.GravityModel.ComputeInterfaceDensities(Grid.Nx, Grid.Ny, Grid.Nz, Status.rho);
+            obj.GravityModel.ComputeInterfaceDensities(Grid.Nx, Grid.Ny, Grid.Nz, Status);
             % Compute phase rock velocities and Upwind operators
-            P(:, 2) = Status.p;
-            P(:, 1) = Status.p - Status.pc;
             for i=1:obj.NofPhases
-                [obj.UpWind(i), obj.U(i)] = Phases(i).UpWindAndRockFluxes(Grid, P(:,i), obj.GravityModel.RhoInt(i));
+                P = Status.Properties(['P_', num2str(i)]).Value;
+                [obj.UpWind(i), obj.U(i)] = Phases(i).UpWindAndRockFluxes(Grid, P, obj.GravityModel.RhoInt(i));
             end
         end
     end

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 7 March 2017
+%Last modified: 4 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -146,16 +146,16 @@ classdef builder < handle
             %% Define Initialization procedure
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
-                    VarNames = {'Pressure'};
-                    VarValues = 1;
+                    VarNames = {'P_1', 'S_1'};
+                    VarValues = [1, 1];
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
-                    VarNames = {'Pressure', 'S_1', 'S_2'};
-                    VarValues = [1, 0.1, 0.9];
-                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                    VarNames = {'P_2', 'S_1', 'S_2'};
+                    VarValues = [1e6, 0.1, 0.9];
+                    simulation.Initializer = initializer(VarNames, VarValues);
                 otherwise
-                    VarNames = {'Pressure', 'z_1', 'z_2'};
-                    VarValues = [1, 0.1, 0.9];
+                    VarNames = {'P_2', 'z_1', 'z_2'};
+                    VarValues = [1e6, 0.1, 0.9];
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
         end
