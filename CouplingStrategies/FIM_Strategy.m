@@ -11,6 +11,7 @@ properties
     NLSolver
     chops
     MaxChops
+    CFL
 end
 methods
     function obj = FIM_Strategy(name, NONLinearSolver)
@@ -49,7 +50,9 @@ methods
             end
             obj.Converged = obj.NLSolver.Converged;
         end
-        obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount - 1, obj.chops)
+        obj.CFL = Formulation.ComputeCFLNumber(ProductionSystem, DiscretizationModel, dt);
+        disp(['CFL = ', num2str(obj.CFL)]);
+        obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount - 1, obj.chops);
     end
     function Summary = UpdateSummary(obj, Summary, Wells, Ndt, dt)
         %% Stats, timers and Injection/Production data

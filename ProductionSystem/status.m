@@ -3,10 +3,10 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 4 March 2017
+%Last modified: 9 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef status < handle
-    % Defines the State of the Reservoir
+    % Defines the State of the reservoir or of the fractures
 properties
     Properties
     T
@@ -64,7 +64,9 @@ methods
         for i = 1:N_prop
             obj.Properties([Names{i}]) = property(1, 1);
             temp = obj.Properties(Names{i});
-            temp.Value = Source.Properties(Names{i}).Value; 
+            temp.Value = Source.Properties(Names{i}).Value;
+            temp.Valmax = Source.Properties(Names{i}).Valmax;
+            temp.Valmin = Source.Properties(Names{i}).Valmin; 
         end
     end
 end

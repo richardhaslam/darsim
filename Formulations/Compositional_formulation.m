@@ -145,5 +145,46 @@ classdef Compositional_formulation < formulation
             %% 6. Compute Pc (Pc = Pc(S))
             FluidModel.ComputePc(Status);
         end
+        function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)
+            N = DiscretizationModel.ReservoirGrid.N;      
+            pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
+            P = zeros(N, obj.NofPhases);
+            z = zeros(N, obj.NofComponents);
+            rho = zeros(N, obj.NofPhases);
+            x = zeros(N, obj.NofComponents*obj.NofPhases);
+            % Copy values in local variables
+            for i=1:obj.NofPhases
+                P(:, i) = ProductionSystem.Reservoir.State.Properties(['P_', num2str(i)]).Value;
+                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end
+            for i=1:obj.NofComponents
+                z(:, i) = ProductionSystem.Reservoir.State.Properties(['z_', num2str(i)]).Value;
+                for j=1:obj.NofComponents
+                    x(:,(i-1)*obj.NofPhases + j) = ProductionSystem.Reservoir.State.Properties(['x_', num2str(i),'ph',num2str(j)]).Value;
+                end
+            end
+            rhoT =  ProductionSystem.Reservoir.State.Properties('rhoT').Value;
+            
+             % Depths
+            depth = DiscretizationModel.ReservoirGrid.Depth;
+            
+            % Source terms
+            q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
+            
+            ThroughPut = zeros(N, obj.NofComponents);
+            Mass = zeros(N, obj.NofComponents);
+            for i=1:obj.NofComponents
+                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt, x(:,(i-1)*2+1:(i-1)*2+2), i); 
+                ThroughPut(:,i) = ...
+                           + obj.Tph{i, 1} *  P(:,1) ...    % Convective term                
+                           + obj.Tph{i, 2} *  P(:,2)...
+                           + obj.Gph{i,1} * depth...       % Gravity
+                           + obj.Gph{i,2} * depth...
+                           - q(:,i);                       % Wells
+                Mass(:,i) = rhoT .* z(:,i);
+            end
+            Ratio = ThroughPut ./ Mass;
+            CFL = dt/pv * max(max(Ratio));
+        end
     end
 end

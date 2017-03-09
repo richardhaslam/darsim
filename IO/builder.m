@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 4 March 2017
+%Last modified: 9 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -25,6 +25,7 @@ classdef builder < handle
         foam
         Comp_Type
         Comp_Prop
+        Init
         inj
         prod
         MaxNumTimeSteps
@@ -88,6 +89,12 @@ classdef builder < handle
             else
                 obj.Gravity = char(inputMatrix{1}(index + 1));
             end
+            
+            %%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%%%%
+            temp = strfind(inputMatrix{1}, 'INIT');
+            init = find(~cellfun('isempty', temp));
+            obj.Init = str2num(char(inputMatrix{1}(init + 1)));
+            
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
             temp = regexp(inputMatrix{1}, 'INJ\d', 'match');
             obj.inj = find(~cellfun('isempty', temp));
@@ -144,18 +151,16 @@ classdef builder < handle
             obj.DefineProperties(simulation.ProductionSystem, simulation.FluidModel, simulation.DiscretizationModel);
             
             %% Define Initialization procedure
+            VarValues = obj.Init;
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
                     VarNames = {'P_1', 'S_1'};
-                    VarValues = [1, 1];
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    VarValues = [1e6, 0.1, 0.9];
                     simulation.Initializer = initializer(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
-                    VarValues = [1e6, 0.1, 0.9];
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
         end
