@@ -12,14 +12,8 @@ classdef Matlab_Plotter_2D < Plotter
         
     end
     properties
-        Pmax
-        Pmin
     end
     methods
-        function obj = Matlab_Plotter_2D(pmin, pmax)
-            obj.Pmax = pmax;
-            obj.Pmin = pmin;
-        end
         function PlotSolution(obj, Status, Grid)
             %Plot for 2D problems
             x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
@@ -33,7 +27,7 @@ classdef Matlab_Plotter_2D < Plotter
                 Var = reshape(Status.Properties(Names{i}).Value, Grid.Nx, Grid.Ny);
                 h = pcolor(X,Y, Var');
                 set(h, 'EdgeColor', 'none');
-                caxis ([obj.Pmin, obj.Pmax]);
+                caxis ([Status.Properties(Names{i}).Valmin, Status.Properties(Names{i}).Valmax]);
                 %view([45 45]);
                 if Grid.Nx==Grid.Ny
                     axis square;
@@ -56,7 +50,7 @@ classdef Matlab_Plotter_2D < Plotter
             %Use log scale
             K = log10(Perm(:,1));
             
-            figure(4)
+            figure(1)
             K = reshape(K, Grid.Nx, Grid.Ny);
             h = pcolor(X,Y,K');
             set(h, 'EdgeColor', 'none');

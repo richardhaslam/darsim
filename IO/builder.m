@@ -37,7 +37,7 @@ classdef builder < handle
         adm
         flash
         ADM
-        LinearSolver = 'direct';
+        LinearSolver
         Formulation = 'Natural';
         StopCriterion = 'MAX TIME';
         Fractured = 'No';
@@ -442,12 +442,12 @@ classdef builder < handle
                                 ConvergenceChecker = convergence_checker_FS();
                         end
                         switch (obj.LinearSolver)
-                            case ('direct')
-                                NLSolver.LinearSolver = linear_solver();
                             case ('gmres')
-                                NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 100);
+                                NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
                             case ('bicg')
-                                NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 100);
+                                NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
+                            otherwise
+                                NLSolver.LinearSolver = linear_solver();
                         end
                     case ('active')
                         NLSolver.SystemBuilder = fim_system_builder_ADM();
@@ -537,13 +537,14 @@ classdef builder < handle
             switch(obj.plotting)
                 case('Matlab')
                     if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
-                        plotter = Matlab_Plotter_1D(simulation.ProductionSystem.Wells.Prod.p, simulation.ProductionSystem.Wells.Inj.p);
+                        plotter = Matlab_Plotter_1D();
                     else
-                        plotter = Matlab_Plotter_2D(simulation.ProductionSystem.Wells.Prod(1).p, simulation.ProductionSystem.Wells.Inj(1).p);
+                        plotter = Matlab_Plotter_2D();
                     end
                 case('VTK')
                     plotter = VTK_Plotter(InputDirectory, obj.ProblemName);
                 otherwise
+                    warning('WARNING: NO valid Plotter was selected. Results will not be plotted.');
                     plotter = no_Plotter();
             end
             

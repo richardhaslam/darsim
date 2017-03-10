@@ -10,16 +10,11 @@ classdef Matlab_Plotter_1D < Plotter
     properties
         color1
         color2
-        Pmax
-        Pmin
     end
     methods
-        function obj = Matlab_Plotter_1D(pmin, pmax)
+        function obj = Matlab_Plotter_1D()
             obj.color1 = 'red';
             obj.color2 = 'green';
-           
-            obj.Pmax = pmax*1.1;
-            obj.Pmin = pmin*0.9;
         end
         function PlotSolution(obj, Status, Grid)
             %Plot for 1D problems
@@ -40,8 +35,7 @@ classdef Matlab_Plotter_1D < Plotter
         end
         function PlotPermeability(obj, Grid, Perm)
             figure(1)
-            x = linspace(0, Grid.Nx*Grid.dx-Grid.dx, Grid.Nx);
-            subplot(3,1,1);
+            x = linspace(0, Grid.Nx*Grid.dx-Grid.dx, Grid.Nx);;
             plot(x, log10(Perm));
             %title('Permeability');
             axis([0 Grid.dx*Grid.Nx min(min(log10(Perm)))-1 max(max(log10(Perm)))+1]);

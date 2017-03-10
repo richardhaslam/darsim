@@ -40,7 +40,7 @@ classdef ADM_Discretization_model < Discretization_model
             %% Pressure interpolators
             disp('Static operators - start computation');
             obj.OperatorsHandler.BuildStaticOperators(obj.CoarseGrid, obj.ReservoirGrid, obj.maxLevel,...
-                ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.S, FluidModel);
+                ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.Properties('S_1').Value, FluidModel);
             disp('Static operators - end')
             disp(char(2));
         end

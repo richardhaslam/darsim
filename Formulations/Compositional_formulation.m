@@ -174,13 +174,24 @@ classdef Compositional_formulation < formulation
             ThroughPut = zeros(N, obj.NofComponents);
             Mass = zeros(N, obj.NofComponents);
             for i=1:obj.NofComponents
-                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt, x(:,(i-1)*2+1:(i-1)*2+2), i); 
+                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt, x(:,(i-1)*2+1:(i-1)*2+2), i);
+                d1 = tril(obj.Tph{i, 1}, -1); 
+                d2 = tril(obj.Tph{i, 2}, -1);
+                u1 = triu(obj.Tph{i, 1},  1);
+                u2 = triu(obj.Tph{i, 2},  1);
+                Diag1 = diag(obj.Tph{i, 1});
+                Diag2 = diag(obj.Tph{i, 2});
+                % Assemble
+                D1 = diag(Diag1 + sum(u1, 2)) + d1; 
+                D2 = diag(Diag2 + sum(u2, 2)) + d2;
+                U1 = diag(Diag1 + sum(d1, 2)) + u1;
+                U2 = diag(Diag2 + sum(d2, 2)) + u2;
                 ThroughPut(:,i) = ...
-                           + obj.Tph{i, 1} *  P(:,1) ...    % Convective term                
-                           + obj.Tph{i, 2} *  P(:,2)...
-                           + obj.Gph{i,1} * depth...       % Gravity
-                           + obj.Gph{i,2} * depth...
-                           - q(:,i);                       % Wells
+                           - min(D1 * P(:,1), 0)...    % Convective term                
+                           - min(D2 * P(:,2), 0)...
+                           - min(U1 * P(:,1), 0)...    % Convective term                
+                           - min(U2 * P(:,2), 0)...
+                           + max(q(:,i), 0);                       % Wells
                 Mass(:,i) = rhoT .* z(:,i);
             end
             Ratio = ThroughPut ./ Mass;

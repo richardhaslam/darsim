@@ -56,7 +56,7 @@ methods
     end
     function Summary = UpdateSummary(obj, Summary, Wells, Ndt, dt)
         %% Stats, timers and Injection/Production data
-        Summary.CouplingStats.SaveStats(Ndt, obj.NLSolver.itCount-1, obj.chops);
+        Summary.CouplingStats.SaveStats(Ndt, obj.NLSolver.itCount-1, obj.chops, obj.CFL);
         Summary.CouplingStats.SaveTimers(Ndt, obj.NLSolver.TimerConstruct, obj.NLSolver.TimerSolve, obj.NLSolver.TimerInner);
         Summary.SaveWellsData(Ndt+1, Wells.Inj, Wells.Prod, dt);
     end

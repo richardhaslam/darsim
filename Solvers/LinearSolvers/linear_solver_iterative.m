@@ -39,7 +39,7 @@ classdef linear_solver_iterative < linear_solver
                     [x, flag, relres, obj.Iter] = bicg(A, rhs, obj.Tol, obj.Maxit, L, U);
             end
             if flag ~= 0
-                disp(['Linear solver did not converge. The residual norm is ', num2str(relres)]);
+                disp(['WARNING: Linear solver did not converge. The residual norm is ', num2str(relres)]);
             end
         end
     end

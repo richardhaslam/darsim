@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 July 2016
-%Last modified: 11 July 2016
+%Last modified: 10 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef FIM_Stats < Coupling_Stats
     properties
@@ -13,21 +13,24 @@ classdef FIM_Stats < Coupling_Stats
         ConstructTimer
         SolveTimer
         FlashTimer
+        CFL
     end
     methods
         function obj = FIM_Stats(MaxNTimeSteps)
            obj@Coupling_Stats(MaxNTimeSteps); 
            obj.NLIter = zeros(MaxNTimeSteps, 1);
            obj.Chops = zeros(MaxNTimeSteps, 1);
+           obj.CFL = zeros(MaxNTimeSteps, 1);
            obj.ConstructTimer = zeros(MaxNTimeSteps, 1);
            obj.SolveTimer = zeros(MaxNTimeSteps, 1);
            obj.FlashTimer = zeros(MaxNTimeSteps, 1);
            obj.NTimers = 4;
-           obj.NStats = 2;
+           obj.NStats = 3;
         end
-        function SaveStats(obj, Ndt, itCount, n_chops)
+        function SaveStats(obj, Ndt, itCount, n_chops, cfl)
             obj.NLIter(Ndt) = itCount;
             obj.Chops(Ndt) = n_chops;
+            obj.CFL(Ndt) = cfl;
         end
         function SaveTimers(obj, Ndt, t_Construct, t_Solve, t_flash)
             obj.ConstructTimer(Ndt) = sum(t_Construct);
@@ -40,7 +43,7 @@ classdef FIM_Stats < Coupling_Stats
         end
         function Matrix = StatsMatrix(obj, Ndt)
             timesteps = 1:Ndt;
-            Matrix = [timesteps', obj.Chops(1:Ndt), obj.NLIter(1:Ndt)]';
+            Matrix = [timesteps', obj.Chops(1:Ndt), obj.NLIter(1:Ndt), obj.CFL(1:Ndt)]';
         end
     end
 end
