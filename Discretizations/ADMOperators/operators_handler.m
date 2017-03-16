@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_handler < handle
     properties
+        Dimensions
         R
         Pp
         ADMmap
@@ -21,7 +22,14 @@ classdef operators_handler < handle
         function obj = operators_handler(n, CF)
             obj.R = cell(1, n);
             obj.Pp = cell(1, n);
-            obj.ADMmap = adm_map(CF);
+            obj.ADMmap = adm_map(prod(CF));
+            if CF(3) == 1 && CF(2) == 1
+                obj.Dimensions = 1;
+            elseif CF(3) == 1
+                obj.Dimensions = 2;
+            else
+                obj.Dimensions = 3;
+            end
         end
         function MsR = MsRestriction(obj, FineGrid, CoarseGrid)
             Nf = FineGrid.N;

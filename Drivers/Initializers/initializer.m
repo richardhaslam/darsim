@@ -37,7 +37,7 @@ classdef initializer < handle
             Formulation.SinglePhase = FluidModel.Flash(ProductionSystem.Reservoir.State);
             
             % 3 Compute Phase Density
-            FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
+            FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State, Formulation.SinglePhase);
             
             % 4. Update S based on components mass balance
             FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, Formulation.SinglePhase);

@@ -11,42 +11,63 @@ classdef bf_updater < handle
         A
     end
     methods 
-        function MsP = MsProlongation(obj, FineGrid, CoarseGrid, cf)
+        function MsP = MsProlongation(obj, FineGrid, CoarseGrid, cf, Dimensions)
             %Permutation Matrix
             [G, Ni, Nf, Ne, Nn] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
             % 1. Reorder finescale system
             tildeA   = G * obj.A * G';
-            % 2. Define interior-interior (ii) block
-            Mii = tildeA(1:Ni, 1:Ni);
-            % 3. define interior-face (if) block
-            Mif = tildeA(1:Ni, Ni+1:Ni+Nf);
-            % 4. Define face-face block
-            Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf) + diag(sum(Mif,1));
-            % Define edge-face (fe) block
-            Mfe = tildeA(Ni+1:Ni+Nf, Ni+Nf+1:Ni+Nf+Ne);
-            % 5. Define edge-edge (ee) block
-            Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
-            % 6. Define edge-node (en) block
-            Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
-            % 7. Compute inverse of (ii), (ff) and (ee) blocks
-            Mii_inv = Mii^-1;      
-            Mff_inv = Mff^-1;
-            Mee_inv = Mee^-1;
-            
-            % 8. Assemble Prolongation operator: columns are the basis functions
-            switch (Ni)
-                case(0)
+            switch (Dimensions)
+                case (1)
+                    % 2. Define edge-edge (ee) block
+                    Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne);
+                    % 3. Define edge-node (en) block
+                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
+                    % 4. Compute inverse of (ii), (ff) and (ee) blocks
+                    Mee_inv = Mee^-1;
+                    
+                    % 1D
+                    MsP = [-Mee_inv*Men;...
+                        speye(Nn,Nn)];
+                case (2)
+                    % 2. Define face-face block
+                    Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf);
+                    % 3. Define edge-face (fe) block
+                    Mfe = tildeA(Ni+1:Ni+Nf, Ni+Nf+1:Ni+Nf+Ne);
+                    % 4. Define edge-edge (ee) block
+                    Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
+                    % 5. Define edge-node (en) block
+                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
+                    % 6. Compute inverse of (ii), (ff) and (ee) blocks
+                    Mff_inv = Mff^-1;
+                    Mee_inv = Mee^-1;
                     % 2D
-                    % when 2D there are no interiors. 
+                    % when 2D there are no interiors.
                     MsP = [Mff_inv*(Mfe*Mee_inv*Men);...
-                          -Mee_inv*Men;...
-                          speye(Nn,Nn)];
+                        -Mee_inv*Men;...
+                        speye(Nn,Nn)];
                 otherwise
                     % 3D
+                    % 2. Define interior-interior (ii) block
+                    Mii = tildeA(1:Ni, 1:Ni);
+                    % 3. define interior-face (if) block
+                    Mif = tildeA(1:Ni, Ni+1:Ni+Nf);
+                    % 4. Define face-face block
+                    Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf) + diag(sum(Mif,1));
+                    % Define edge-face (fe) block
+                    Mfe = tildeA(Ni+1:Ni+Nf, Ni+Nf+1:Ni+Nf+Ne);
+                    % 5. Define edge-edge (ee) block
+                    Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
+                    % 6. Define edge-node (en) block
+                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
+                    % 7. Compute inverse of (ii), (ff) and (ee) blocks
+                    Mii_inv = Mii^-1;
+                    Mff_inv = Mff^-1;
+                    Mee_inv = Mee^-1;
+                    
                     MsP = [-Mii_inv*(Mif*Mff_inv*Mfe*Mee_inv*Men);...
-                          Mff_inv*(Mfe*Mee_inv*Men);...
-                          -Mee_inv*Men;...
-                          speye(Nn,Nn)];
+                        Mff_inv*(Mfe*Mee_inv*Men);...
+                        -Mee_inv*Men;...
+                        speye(Nn,Nn)];
             end
             MsP = G'*MsP;
         end

@@ -51,7 +51,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             SinglePhase(DewCheck - 1 < obj.tol) = 1;  % It s all vapour
             
             %% 3. Actual Flash: solves for fv (vapor fraction)
-            TwoPhase = ones(length(Status.p), 1);
+            TwoPhase = ones(length(SinglePhase), 1);
             TwoPhase(SinglePhase > 0 ) = 0;
             
             
@@ -93,7 +93,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                 alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
                 fv (fv > 1) = 0.9;
                 fv (fv < 0) = 0.1;
-                fv (isnan(fv)) = Status.ni(isnan(fv));
+                fv (isnan(fv)) = Status.Properties('ni_1').Value(isnan(fv));
             end
             if ~converged
                 [~, cellIndex] = max(abs(h));

@@ -18,7 +18,7 @@ methods
     function AddProperties(obj, FluidModel, N)
         % Add properties to property map
         %% Pressure
-        obj.Properties('P_1') = property(N, 1, 1e6, 1e7);
+        obj.Properties('P_1') = property(N, 1, 1e7, 2e7);
         obj.Properties('S_1') = property(N, 1, 0 , 1);
         %% Density
         obj.Properties('rho_1') = property(N, 1, 0, 2000);
@@ -29,7 +29,7 @@ methods
             case ('Immiscible')
                 %% Saturation and Pc
                 for i=2:FluidModel.NofPhases
-                    obj.Properties(['P_', num2str(i)]) = property(N, 1, 1e6, 1e7);
+                    obj.Properties(['P_', num2str(i)]) = property(N, 1, 1e7, 2e7);
                     obj.Properties(['S_', num2str(i)]) = property(N, 1, 0, 1);
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 0, 2000);
                 end
@@ -37,7 +37,7 @@ methods
             otherwise
                 %% Saturation and Pc
                 for i=1:FluidModel.NofPhases
-                    obj.Properties(['P_', num2str(i)]) = property(N, 1, 1e6, 1e7);
+                    obj.Properties(['P_', num2str(i)]) = property(N, 1, 1e7, 2e7);
                     obj.Properties(['S_', num2str(i)]) = property(N, 1, 0, 1);
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 0, 2000);
                     obj.Properties(['ni_', num2str(i)]) = property(N, 1, 0, 1);

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 7 March 2017
+%Last modified: 16 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fluid_model < handle
     properties
@@ -115,7 +115,8 @@ classdef fluid_model < handle
                 S(:,i) = Status.Properties(['S_',num2str(i)]).Value;
             end
             drhotdp = drho(:,1) .* S(:,1) + rho(:,1) .* dS + drho(:,2) .* S(:,2) - rho(:,2) .* dS;
-            % When it s one phase derivative is zero
+            % When it s one phase derivative is the one of the existing
+            % phase
             drhotdp(S(:,1) == 1) = drho(S(:,1) == 1, 1);
             drhotdp(S(:,1) == 0) = drho(S(:,1) == 0, 2);
         end

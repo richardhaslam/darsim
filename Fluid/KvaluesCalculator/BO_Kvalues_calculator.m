@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef BO_Kvalues_calculator < Kvalues_calculator
     properties
-       Pref = 1e7;
+       Pref = 2.5e7;
     end
     methods
         function k = Compute(obj, Status, Components, Phases)
@@ -23,13 +23,12 @@ classdef BO_Kvalues_calculator < Kvalues_calculator
         end
         function [Rs, dRs] = ComputeRs(obj, Status, Phases)
             n_phases = length(Phases);
-            Pdim = Status.Properties(['P_',num2str(n_phases)]).Value/obj.Pref;
-            Rs = zeros(length(Pdim), n_phases);
-            dRs = zeros(length(Pdim), n_phases);
+            P = Status.Properties(['P_',num2str(n_phases)]).Value;
+            Rs = zeros(length(P), n_phases);
+            dRs = zeros(length(P), n_phases);
             for i=1:n_phases
-                [Rs(:,i), dRs(:,i)] = Phases(i).ComputeRs(Pdim);
+                [Rs(:,i), dRs(:,i)] = Phases(i).ComputeRs(P);
             end
-            dRs = dRs / obj.Pref;
         end
     end
 end

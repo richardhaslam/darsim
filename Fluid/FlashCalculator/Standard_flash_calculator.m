@@ -86,6 +86,7 @@ classdef Standard_flash_calculator < Kvalues_flash_calculator
                         for c=1:nc
                             x(i,(c-1)*2+1) = z(i, c);
                             x(i,(c-1)*2+2) = 1; % This is for Stability
+                            x(i, 3) = 0;
                         end
                         ni(i) = 1;
                     case(2)
@@ -93,6 +94,7 @@ classdef Standard_flash_calculator < Kvalues_flash_calculator
                         for c = 1:nc
                             x(i, (c-1)*2+2) = z(i,c);
                             x(i, (c-1)*2+1) = 1; % This is for Stability
+                            x(i, 3) = 0;
                         end
                         ni(i) = 0;
                 end

@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef BO_gas_component < component
     properties
-        rho = 100;
+        rho = 1; % It's the stock tank density in kg/m^3
     end
     methods
         

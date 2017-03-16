@@ -24,7 +24,7 @@ classdef Matlab_Plotter_1D < Plotter
             Names = Status.Properties.keys;
             for i=1:N_var
                 figure(i+1)
-                plot(x, Status.Properties(Names{i}).Value, obj.color1, 'LineWidth',1);
+                plot(x, Status.Properties(Names{i}).Value, obj.color2, 'LineWidth',1);
                 xlabel('x [m]');
                 ylabel(Names{i});
                 axis([0 Grid.dx*Grid.Nx Status.Properties(Names{i}).Valmin Status.Properties(Names{i}).Valmax])
@@ -50,6 +50,8 @@ classdef Matlab_Plotter_1D < Plotter
         end
         function PlotADMGrid(obj, Grid, CoarseGrid)
             
+        end
+        function PlotDynamicBasisFunctions(obj, ReservoirGrid, ADMProlp)
         end
     end
 end

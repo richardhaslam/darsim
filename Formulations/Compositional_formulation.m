@@ -134,7 +134,7 @@ classdef Compositional_formulation < formulation
             obj.SinglePhase = FluidModel.Flash(Status);
             
             %% 3. Compute Densities (rho = rho(p, x, T))
-            FluidModel.ComputePhaseDensities(Status);
+            FluidModel.ComputePhaseDensities(Status, obj.SinglePhase);
             
             %% 4. Compute Saturations (S = S(z, x))
             FluidModel.ComputePhaseSaturation(Status, obj.SinglePhase);

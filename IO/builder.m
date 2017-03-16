@@ -161,7 +161,7 @@ classdef builder < handle
                     simulation.Initializer = initializer(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
-                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                    simulation.Initializer = initializer(VarNames, VarValues);
             end
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
@@ -190,12 +190,12 @@ classdef builder < handle
                 x = find(~cellfun('isempty', temp));
                 switch (char(SettingsMatrix(x+1))) 
                     case ('Constant')
-                        operatorshandler = operators_handler_constant(maxLevel, cx*cy*cz);
+                        operatorshandler = operators_handler_constant(maxLevel, [cx,cy,cz]);
                     case ('Homogeneous')
-                        operatorshandler = operators_handler_MS(maxLevel, cx*cy*cz);
+                        operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
                         operatorshandler.BFUpdater = bf_updater_bilin();
                     case ('MS')
-                        operatorshandler = operators_handler_MS(maxLevel, cx*cy*cz);
+                        operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
                         operatorshandler.BFUpdater = bf_updater_ms();
                 end
                 gridselector = adm_grid_selector(tol);
@@ -222,7 +222,7 @@ classdef builder < handle
                 % reshape it to specified size
                 field = reshape(field(4:end),[field(1) field(2) field(3)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-12, DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
                 Kz = Kx;
             else
