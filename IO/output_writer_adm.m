@@ -16,7 +16,7 @@ classdef output_writer_adm < output_writer
         function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp)
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
             obj.basisfunctions = false;
-            obj.dynamicBF = true;
+            obj.dynamicBF = false;
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
@@ -36,7 +36,7 @@ classdef output_writer_adm < output_writer
             obj.WriteADMStats(Summary.ADMStats, Summary.NumberTimeSteps);
         end
         function WriteADMStats(obj, ADMStats, Ndt)
-             %Stats
+            % Stats
             fileID = fopen(strcat(obj.Directory,'ADMStats.txt'),'w');
             fprintf(fileID, '%8d %8d %8d %8.2f\n', ADMStats(1:Ndt, :)');
             fclose(fileID);

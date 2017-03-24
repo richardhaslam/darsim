@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 9 March 2017
+%Last modified: 17 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -222,7 +222,7 @@ classdef builder < handle
                 % reshape it to specified size
                 field = reshape(field(4:end),[field(1) field(2) field(3)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-12, DiscretizationModel.ReservoirGrid.N, 1);
+                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
                 Ky = Kx;
                 Kz = Kx;
             else
@@ -328,15 +328,15 @@ classdef builder < handle
                         water = component();
                         FluidModel.AddComponent(water, 3);
                     end
-                    %FlashCalculator = Rachford_Rice_flash_calculator();
-                    FlashCalculator = Standard_flash_calculator();
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    %FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                 case('Compositional')
                     n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
-                    %FlashCalculator = Rachford_Rice_flash_calculator();
-                    FlashCalculator = Standard_flash_calculator();
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    %FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                     % Add phases

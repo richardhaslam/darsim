@@ -124,8 +124,12 @@ classdef Compositional_formulation < formulation
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, R, P)
             % Perform Average for ADM
-            z_rest = R * Status.z;
-            Status.z = P * z_rest;
+            for i=1:obj.NofComponents
+                z = Status.Properties(['z_',num2str(i)]);
+                z_rest = R * z.Value;
+                z.Value = P * z_rest;
+            end
+            
             % Update other unknwons as well 
             obj.UpdatePhaseCompositions(Status, FluidModel);
         end

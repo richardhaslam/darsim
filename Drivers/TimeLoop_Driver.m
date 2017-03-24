@@ -79,10 +79,6 @@ classdef TimeLoop_Driver < handle
                     Writer.WriteSolutionOnFile(ProductionSystem, index);
                     index = index + 1;
                 end
-                %P = reshape(ProductionSystem.Reservoir.State.Properties('P_2').Value, 99, 27);
-                %figure(1)
-                %surf(P);
-                %drawnow
             end
         end
     end

@@ -25,7 +25,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             % This is the bitchy part!! 
             [obj.dxdp, obj.dxdz] = FluidModel.DxDpDz(ProductionSystem.Reservoir.State, obj.SinglePhase);
             % %%%%%%%%%%%%%%%%%%%%%%%%
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]).Value, obj.SinglePhase);
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State, obj.SinglePhase);
             obj.drhodz = FluidModel.DrhoDz(ProductionSystem.Reservoir.State, obj.SinglePhase);
             dSdp = FluidModel.DSDp(ProductionSystem.Reservoir.State, obj.drhodp, -obj.dxdp(:,5));
             dSdz = FluidModel.DSDz(ProductionSystem.Reservoir.State, -obj.dxdz(:, end));

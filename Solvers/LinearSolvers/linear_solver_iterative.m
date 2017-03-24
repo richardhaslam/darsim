@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 November 2016
-%Last modified: 16 November 2016
+%Last modified: 17 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef linear_solver_iterative < linear_solver
     properties
@@ -33,8 +33,7 @@ classdef linear_solver_iterative < linear_solver
             [L, U] = ilu(A, setup);
             switch (obj.Name)
                 case('gmres')
-                    restart = 3;
-                    [x, flag, relres, obj.Iter] = gmres(A, rhs, restart, obj.Tol, obj.Maxit, L, U);
+                    [x, flag, relres, obj.Iter] = gmres(A, rhs, [], obj.Tol, obj.Maxit, L, U);
                 case('bicg')
                     [x, flag, relres, obj.Iter] = bicg(A, rhs, obj.Tol, obj.Maxit, L, U);
             end

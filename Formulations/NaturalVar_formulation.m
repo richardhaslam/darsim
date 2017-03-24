@@ -29,7 +29,7 @@ classdef NaturalVar_formulation < Compositional_formulation
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]).Value);
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State, obj.SinglePhase);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State);
             obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State);
@@ -311,10 +311,10 @@ classdef NaturalVar_formulation < Compositional_formulation
             end
         end
         function UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)   
-            if sum(isnan(delta))
+            %if sum(isnan(delta))
                 % if the solution makes no sense, skip this step
-                return
-            else
+                %return
+            %else
                 Nm =  DiscretizationModel.ReservoirGrid.N;
                 %% 1. Update matrix
                 % Update Pressure
@@ -355,7 +355,7 @@ classdef NaturalVar_formulation < Compositional_formulation
                 Sm.Value = max(Sm.Value, 0);
                 Sm.Value = min(Sm.Value, 1);
                 % Update Phase Densities
-                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
+                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State, obj.SinglePhase);
                 % Update total density
                 FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
                 % Compute total mole fractions
@@ -382,14 +382,14 @@ classdef NaturalVar_formulation < Compositional_formulation
                         Sf.Value = max(Sf.Value, 0);
                         Sf.Value = min(Sf.Value, 1);
                         % Update Phase Densities
-                        FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                        FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(i).State, obj.SinglePhase);
                         % Update total density
                         FluidModel.ComputeTotalDensity(ProductionSystem.FracturesNetwork.Fractures(i).State);
                         % Update Pc
                         FluidModel.ComputePc(ProductionSystem.FracturesNetwork.Fractures(i).State);
                     end
                 end
-            end
+            %end
         end
         function UpdatePandS(obj, delta, Status)
             % Update Solution
