@@ -12,13 +12,13 @@ classdef Constant_Kvalues_calculator < Kvalues_calculator
     end
     methods
         function k = Compute(obj, Status, Components, Phases)
-           k = zeros(length(Status.p), length(Components));
+           k = zeros(length(Status.Properties('P_2').Value), length(Components));
            for c=1:length(Components)
-               k(:, c) = Components(c).kval0 * ones(length(Status.p), 1);
+               k(:, c) = Components(c).kval0 * ones(length(Status.Properties('P_2').Value), 1);
            end
         end
         function dk = DKvalDp(obj, Status, Components, Phases)
-            dk = zeros(length(Status.p), length(Components));
+            dk = zeros(length(Status.Properties('P_2').Value), length(Components));
         end
     end
 end

@@ -93,7 +93,7 @@ classdef builder < handle
             %%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%%%%
             temp = strfind(inputMatrix{1}, 'INIT');
             init = find(~cellfun('isempty', temp));
-            obj.Init = str2num(char(inputMatrix{1}(init + 1)));
+            obj.Init = str2double(strsplit(char(inputMatrix{1}(init + 1))));
             
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
             temp = regexp(inputMatrix{1}, 'INJ\d', 'match');
@@ -155,6 +155,7 @@ classdef builder < handle
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
                     VarNames = {'P_1', 'S_1'};
+                    VarValues(2) = 1;
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
@@ -353,14 +354,10 @@ classdef builder < handle
                     % Add components
                     kval = [1.5 0.5 0.1];
                     for i = 1:FluidModel.NofComp
-                        %Gets all atmospheric bubble points [K]
-                        Tb = str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*7));
-                        %Gets all slopes connecting bubble point and
-                        %critical point on 1/T plot [K]
-                        b = str2double(inputMatrix(obj.Comp_Prop + 5 + (i-1)*7));
-                        MM = str2double(inputMatrix(obj.Comp_Prop + 7*i));
+                        Prop = str2double(strsplit(char(inputMatrix(obj.Comp_Prop + i * 2))));
+                        MM = Prop(1);
                         comp = component();
-                        comp.AddCompProperties(Tb, b, MM, kval(i));
+                        comp.AddCompProperties(MM, kval(i));
                         FluidModel.AddComponent(comp, i);
                     end
             end

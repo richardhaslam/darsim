@@ -65,7 +65,11 @@ classdef VTK_Plotter < Plotter
             end
             fclose(fileID);
         end
-        function PlotSolution(obj, Status, Grid)
+        function PlotSolution(obj, ProductionSystem, DiscretizationModel)
+            obj.PlotReservoirSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+            
+        end
+        function PlotReservoirSolution(obj, Status, Grid)
             %Write a VTK file
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');

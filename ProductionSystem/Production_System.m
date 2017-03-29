@@ -36,7 +36,7 @@ classdef Production_System < handle
             % 2.a Estimate fluid properties inside injectors
             FluidModel.InitializeInjectors(obj.Wells.Inj);
             % Adjust pressures
-            for i=1:length(obj.Wells.Inj)
+            for i=1:obj.Wells.NofInj
                 h = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Inj(i).Cells);
                 obj.Wells.Inj(i).AdjustConstraint(GravityModel, h); 
             end

@@ -14,7 +14,7 @@ classdef output_writer_FS < output_writer
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
-            obj.Plotter.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+            obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
         end
         function WriteSummary(obj, Summary)

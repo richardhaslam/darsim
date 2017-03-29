@@ -8,15 +8,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef component < matlab.mixin.Heterogeneous & handle
     properties
-        Tb % Bubble point temperature
-        b  % 
         MM % Molecular mass
         kval0 % Ref kvalue for correlations
     end
     methods
-        function AddCompProperties(obj, Tb, b, mm, kval)
-           obj.Tb = Tb;
-           obj.b = b;
+        function AddCompProperties(obj, mm, kval)
            obj.MM = mm;
            obj.kval0 = kval;
         end

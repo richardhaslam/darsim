@@ -15,21 +15,36 @@ classdef Comp_fluid_model < fluid_model
             obj@fluid_model(n_phases, n_comp);
             obj.name = 'Compositional';
         end
-        function InitializeInjectors(obj, Inj)
-            injvector = zeros(1, obj.NofComp);
-            injvector(1) = 0.8;
-            injvector(2) = 0.2;
-            injvector(3) = 0.1;
-            injxvector = [1 0 0 1 0 1];
+        function InitializeInjectors(obj, Inj)      
             % Loop over all injectors
             for i=1:length(Inj)
-                Inj(i).z = injvector;
-                Inj(i).ni = 0.5;
-                Inj(i).x = injxvector;
-                SinglePhase = obj.Flash(Inj(i));                
-                obj.ComputePhaseDensities(Inj(i));
-                obj.ComputePhaseSaturation(Inj(i), SinglePhase);
-                Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
+                state = status();
+                % this is a temporary solution to a problem
+                state.Properties('P_2') = property(length(Inj(i).Cells), 1, 0, 0, 0, Inj(i).p);
+                state.Properties('S_1') = property(length(Inj(i).Cells), 1, 0,  0, 0, 1);
+                state.Properties('S_2')= property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('z_1') = property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('z_2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('rho_1') = property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('rho_2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('x_1ph1') = property(length(Inj(i).Cells), 1,  0, 0, 0,1);
+                state.Properties('x_1ph2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('x_2ph1') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('x_2ph2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('ni_1') = property(length(Inj(i).Cells), 1, 0,  0, 0, 0.5);
+                state.Properties('ni_2') = property(length(Inj(i).Cells), 1, 0,  0, 0, 0.5);
+                SinglePhase = obj.Flash(state);                
+                obj.ComputePhaseDensities(state);
+                obj.ComputePhaseSaturation(state, SinglePhase);
+                Inj(i).Mob = obj.ComputePhaseMobilities(state.Properties('S_1').Value);
+                % Copy values
+                %Inj(i).z(:, 1) = state.Properties('z_1').Value;
+                %Inj(i).z(:, 2) = state.Properties('z_2').Value;
+                Inj(i).x(:, 1) = state.Properties('x_1ph1').Value;
+                Inj(i).x(:, 2) = state.Properties('x_2ph1').Value;
+                Inj(i).x(:, 3:4) = 1 - Inj(i).x(:,1:2);
+                Inj(i).rho(:, 1) = state.Properties('rho_1').Value;
+                Inj(i).rho(:, 2) = state.Properties('rho_2').Value;
             end            
         end
         function SinglePhase = Flash(obj, Status)
@@ -52,9 +67,10 @@ classdef Comp_fluid_model < fluid_model
                 S.Value = (ni(:,i)./rho(:,i)) ./ NiRhoT;
             end
         end
-        function ComputePhaseDensities(obj, Status)
+        function ComputePhaseDensities(obj, Status, SinglePhase)
             for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components);
+                rho = Status.Properties(strcat('rho_', num2str(i)));
+                rho.Value = obj.Phases(i).ComputeDensity(Status.Properties('P_2').Value, obj.Components);
             end
         end
         function z = ComputeTotalFractions(obj, Status, N)
