@@ -6,6 +6,8 @@
 %Created: 22 July 2016
 %Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%% This class is not used any more!!
 classdef seq_formulation < handle
     properties
         NumOfEquations
@@ -211,7 +213,6 @@ classdef seq_formulation < handle
             injector = max(obj.Qwells,0) .* dt/pv;  % injection flux * dt/pv
             
             ProductionSystem.Reservoir.State.S = ProductionSystem.Reservoir.State.S + (B * obj.f + injector);
-        end
-        
+        end 
     end
 end

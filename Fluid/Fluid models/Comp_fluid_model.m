@@ -15,21 +15,36 @@ classdef Comp_fluid_model < fluid_model
             obj@fluid_model(n_phases, n_comp);
             obj.name = 'Compositional';
         end
-        function InitializeInjectors(obj, Inj)
-            injvector = zeros(1, obj.NofComp);
-            injvector(1) = 0.8;
-            injvector(2) = 0.2;
-            injvector(3) = 0.1;
-            injxvector = [1 0 0 1 0 1];
+        function InitializeInjectors(obj, Inj)      
             % Loop over all injectors
             for i=1:length(Inj)
-                Inj(i).z = injvector;
-                Inj(i).ni = 0.5;
-                Inj(i).x = injxvector;
-                SinglePhase = obj.Flash(Inj(i));                
-                obj.ComputePhaseDensities(Inj(i));
-                obj.ComputePhaseSaturation(Inj(i), SinglePhase);
-                Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
+                state = status();
+                % this is a temporary solution to a problem
+                state.Properties('P_2') = property(length(Inj(i).Cells), 1, 0, 0, 0, Inj(i).p);
+                state.Properties('S_1') = property(length(Inj(i).Cells), 1, 0,  0, 0, 1);
+                state.Properties('S_2')= property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('z_1') = property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('z_2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('rho_1') = property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('rho_2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('x_1ph1') = property(length(Inj(i).Cells), 1,  0, 0, 0,1);
+                state.Properties('x_1ph2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('x_2ph1') = property(length(Inj(i).Cells), 1,  0, 0, 0, 0);
+                state.Properties('x_2ph2') = property(length(Inj(i).Cells), 1,  0, 0, 0, 1);
+                state.Properties('ni_1') = property(length(Inj(i).Cells), 1, 0,  0, 0, 0.5);
+                state.Properties('ni_2') = property(length(Inj(i).Cells), 1, 0,  0, 0, 0.5);
+                SinglePhase = obj.Flash(state);                
+                obj.ComputePhaseDensities(state);
+                obj.ComputePhaseSaturation(state, SinglePhase);
+                Inj(i).Mob = obj.ComputePhaseMobilities(state.Properties('S_1').Value);
+                % Copy values
+                %Inj(i).z(:, 1) = state.Properties('z_1').Value;
+                %Inj(i).z(:, 2) = state.Properties('z_2').Value;
+                Inj(i).x(:, 1) = state.Properties('x_1ph1').Value;
+                Inj(i).x(:, 2) = state.Properties('x_2ph1').Value;
+                Inj(i).x(:, 3:4) = 1 - Inj(i).x(:,1:2);
+                Inj(i).rho(:, 1) = state.Properties('rho_1').Value;
+                Inj(i).rho(:, 2) = state.Properties('rho_2').Value;
             end            
         end
         function SinglePhase = Flash(obj, Status)
@@ -52,28 +67,57 @@ classdef Comp_fluid_model < fluid_model
                 S.Value = (ni(:,i)./rho(:,i)) ./ NiRhoT;
             end
         end
-        function ComputePhaseDensities(obj, Status)
+        function ComputePhaseDensities(obj, Status, SinglePhase)
             for i=1:obj.NofPhases
-                Status.rho(:, i) = obj.Phases(i).ComputeDensity(Status, obj.Components);
+                rho = Status.Properties(strcat('rho_', num2str(i)));
+                rho.Value = obj.Phases(i).ComputeDensity(Status.Properties('P_2').Value, obj.Components);
+            end
+        end
+        function z = ComputeTotalFractions(obj, Status, N)
+            %Two phase, two component total mole fraction updater
+            %Based on mass balance equation z_1 * rho_t = x11*rho1*s1 + x12*rho2*s2
+            S = zeros(N, obj.NofPhases);
+            rho = zeros(N, obj.NofPhases);
+            x = zeros(N, obj.NofComp*obj.NofPhases);
+            
+            for ph=1:obj.NofPhases
+                rho(:, ph) = Status.Properties(['rho_', num2str(ph)]).Value;
+                S(:, ph) = Status.Properties(['S_', num2str(ph)]).Value;
+                for c=1:obj.NofComp
+                    x(:,(c-1)*obj.NofPhases + ph) = Status.Properties(['x_', num2str(c),'ph',num2str(ph)]).Value;
+                end
+            end
+            rhoT = Status.Properties('rhoT').Value;
+            for i=1:obj.NofComp
+                z = Status.Properties(['z_', num2str(i)]);
+                Num = zeros(N,1);
+                for j=1:obj.NofPhases
+                    Num = Num + x(:,(i-1)*obj.NofPhases + j) .* S(:, j) .* rho(:,j); 
+                end
+                z.Value = Num ./ rhoT; 
             end
         end
         function SinglePhase = CheckNumberOfPhases(obj, SinglePhase, PreviousSinglePhase, Status, k)
-            z = Status.z;
+            N = length(SinglePhase);
+            z = zeros(N, obj.NofComp);
+            for i=1:obj.NofComp
+                z(:, i) = Status.Properties(['z_', num2str(i)]).Value;
+                for j=1:obj.NofPhases
+                    x = Status.Properties(['x_', num2str(i),'ph',num2str(j)]);
+                    x.Value(z(:,i) == 1) = i==j;
+                    x.Value(z(:,i) == 0) = i==j;
+                end
+            end
+            
             % Check if single component
-            SinglePhase(z(:, 1) == 1) = 1;
-            SinglePhase(z(:, 1) == 0) = 2;
-            Status.x(z(:, 1) == 1, 1) = 1;
-            Status.x(z(:, 1) == 0, 1) = 1;
-            Status.x(z(:, 1) == 1, 2) = 0;
-            Status.x(z(:, 1) == 0, 2) = 0;
-            Status.x(:,3:4) = 1 - Status.x(:,1:2);
+            SinglePhase(z(:,1) == 1) = 1;
+            SinglePhase(z(:,1) == 0) = 2;
             
             % Transform mass fractions into mole fractions to check phase
             % state
             BubCheck = zeros(length(z), 2);
             BubCheck(PreviousSinglePhase == 2, :) = z(PreviousSinglePhase == 2,:) .* k (PreviousSinglePhase == 2, :);
             BubCheck = sum(BubCheck, 2);
-            
             SinglePhase(BubCheck > 1) = 0;
             
             % 2.b: checking if it 's all vapor: checks if mix is above dew
@@ -86,8 +130,8 @@ classdef Comp_fluid_model < fluid_model
         function k = ComputeKvalues(obj, Status)
             k = obj.FlashCalculator.KvaluesCalculator.Compute(Status, obj.Components, obj.Phases);
         end
-        function dkdp = DKvalDp(obj, p)
-            dkdp = obj.FlashCalculator.KvaluesCalculator.DKvalDp(p, obj.Components, obj.Phases);
+        function dkdp = DKvalDp(obj, Status)
+            dkdp = obj.FlashCalculator.KvaluesCalculator.DKvalDp(Status, obj.Components, obj.Phases);
         end
         function [dxdp, dxdz] = DxDpDz(obj, Status, SinglePhase)
             % x = x1v, x1l, x2v, x2l, ni
@@ -130,21 +174,24 @@ classdef Comp_fluid_model < fluid_model
                     dxdz(i,:,j) = (dFdx\dFdz(:,j+1))';
                 end
             end
-            dxdz(SinglePhase == 1, 1) = 1;
+            dxdp(SinglePhase == 1, 5) = 0;
+            dxdp(SinglePhase == 2, 5) = 0;
+            
+            dxdz(SinglePhase == 1, 1) = 1; %1
             dxdz(SinglePhase == 1, 2) = 0;
-            dxdz(SinglePhase == 1, 3) = -1;
+            dxdz(SinglePhase == 1, 3) = -1; %-1
             dxdz(SinglePhase == 1, 4) = 0;
             dxdz(SinglePhase == 1, 5) = 0;
             
             % 
             dxdz(SinglePhase == 2, 1) = 0;
-            dxdz(SinglePhase == 2, 2) = 1;
+            dxdz(SinglePhase == 2, 2) = 1;%1
             dxdz(SinglePhase == 2, 3) = 0;
-            dxdz(SinglePhase == 2, 4) = -1;
+            dxdz(SinglePhase == 2, 4) = -1;%-1
             dxdz(SinglePhase == 2, 5) = 0;
             
         end
-        function drho = DrhoDz(obj, Status, dxdz)
+        function drho = DrhoDz(obj, Status, SinglePhase)
             N = length(Status.Properties('P_2').Value);
             drho = zeros(N, obj.NofPhases);
         end
@@ -160,20 +207,16 @@ classdef Comp_fluid_model < fluid_model
             dDen = drhol .* ni + dni .* rhol + drhov - ni .* drhov - rhov .* dni;
             % final derivative
             dSdp = (dNum .* Den - dDen .* Num)./Den.^2;
-        end  
-        function dSdz = DSDz(obj, Status, dni, dx1v, dx1l)
+        end
+        function dMobdp = DMobDp(obj, Status, dSdp)
+            dMobdS = obj.DMobDS(Status.Properties('S_1').Value); 
+            dMobdp = dMobdS .* dSdp;
+        end
+        function dSdz = DSDz(obj, Status, dni)
+            % Derivative of S with respect to overall composition
             rhov = Status.Properties('rho_1').Value;
             rhol = Status.Properties('rho_2').Value;
-            %x1v = Status.x(:,1);
-            %x1l = Status.x(:,2);
             ni = Status.Properties('ni_1').Value;
-            %z = Status.z(:,1);
-            % Derivative of S with respect to z
-            % Num = rhol .* (x1l - z);
-            % dNum = rhol .* (dx1l - 1);
-            % Den = rhov .* (z - x1v) + rhol .* (x1l - z);
-            % dDen = rhov .* (1 - dx1v) + rhol .* (dx1l - 1);
-            % dSdz =(Den .* dNum - Num .* dDen) ./ Den.^2;
             dSdz = zeros(length(ni), obj.NofComp - 1);
             for j = 1:obj.NofComp-1
                 Num1 = rhol .* ni;
@@ -182,7 +225,10 @@ classdef Comp_fluid_model < fluid_model
                 dDen1 = rhol .* dni(:,j) - dni(:,j) .* rhov;
                 dSdz(:, j) =(Den1 .* dNum1 - Num1 .* dDen1) ./ Den1.^2;
             end
-            %dSdz(:,2) = dSdz(:,2)*-1;
+            dSdz(Status.Properties('S_1').Value == 0, 2) = 0;
+            dSdz(Status.Properties('S_1').Value == 0, 1) = 0;
+            dSdz(Status.Properties('S_1').Value == 1, 2) = 0;
+            dSdz(Status.Properties('S_1').Value == 1, 1) = 0;
         end
         function drhotdz = DrhotDz(obj, Status, drho, dS)
             N = length(Status.Properties('rho_1').Value);
@@ -196,9 +242,8 @@ classdef Comp_fluid_model < fluid_model
             for j=1:obj.NofComp-1
                 drhotdz(:,j) = drho(:,1) .* S(:,1) + rho(:,1) .* dS(:,j) + drho(:,2) .* S(:,2) - rho(:,2) .* dS(:,j);
             end
-            % When it s one phase derivative is zero
-            drhotdz(S(:,1) == 1,:) = 0;
-            drhotdz(S(:,1) == 0,:) = 0;
+            % When it s one phase
+            drhotdz(S(:,1) == 1, :) = 0;
         end
         function dPc = DPcDz(obj, Status, dSdz)
             dPcdS = obj.DPcDS(Status.Properties('S_1').Value);

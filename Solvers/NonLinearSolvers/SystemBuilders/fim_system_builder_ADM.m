@@ -13,12 +13,12 @@ classdef fim_system_builder_ADM < fim_system_builder
     methods
         function UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
             % Update Reservoir State
-            %Formulation.UpdatePandS(delta, ProductionSystem.Reservoir.State);
+            % Formulation.UpdatePandS(delta, ProductionSystem.Reservoir.State);
             
             % Solve FS equilibrium
-            %Formulation.UpdateCompositions(ProductionSystem.Reservoir.State, FluidModel, DiscretizationModel.ReservoirGrid.N);
+            % Formulation.UpdateCompositions(ProductionSystem.Reservoir.State, FluidModel, DiscretizationModel.ReservoirGrid.N);
             % Update Reservoir State
-            Formulation.UpdateState(delta, ProductionSystem.Reservoir.State, FluidModel);
+            Formulation.UpdateState(delta, ProductionSystem, FluidModel, DiscretizationModel);
             % UpdateWells
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end

@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef BO_oil_component < component
     properties
-        rho = 800;
+        rho = 800; % It's the stock tank density in kg/m^3
     end
     methods
        

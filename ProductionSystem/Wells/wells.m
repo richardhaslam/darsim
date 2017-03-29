@@ -57,6 +57,6 @@ classdef wells < handle
             for i=1:obj.NofProd
                 q = obj.Prod(i).TotalFlux(q, Reservoir.State.p, K, Mobt);        
             end
-        end 
+        end
     end
 end

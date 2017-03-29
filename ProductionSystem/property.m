@@ -4,16 +4,19 @@ classdef property < matlab.mixin.Copyable
         Value
         Valmin
         Valmax
+        Plot
     end
     methods
-        function obj = property(row, col, minValue, maxValue, init)
+        function obj = property(row, col, plot, minValue, maxValue, init)
             % Creates matrix with property values
             obj.Value = zeros(row, col);
             switch (nargin)
-                case(4)
+                case(3)
+                    obj.Plot = plot;
+                case(5)
                     obj.Valmin = minValue;
                     obj.Valmax = maxValue;
-                case(5)
+                case(6)
                     obj.Valmin = minValue;
                     obj.Valmax = maxValue;
                     obj.Value = init * ones(row, col);

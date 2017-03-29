@@ -1,11 +1,3 @@
-%FIM Linear Solver
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Matteo Cusini's Research Code
-%Author: Matteo Cusini
-%TU Delft
-%Created: 21 March 2016
-%Last modified: 21 March 2016
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Linear Solver
 %Given a linear system A x = b it solves it either with ADM or without
 

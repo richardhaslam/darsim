@@ -56,11 +56,11 @@ classdef output_writer < handle
             for i = 2:n_stats 
                 obj.FormatStats = [obj.FormatStats, ' %10.0f'];
             end
-            obj.FormatStats = [obj.FormatStats, ' %10.0f\n'];
+            obj.FormatStats = [obj.FormatStats, ' %10.2f\n'];
             
             %Format for Solution
             obj.FormatSol = '%10.2f';
-            for i = 2:n_components+1 
+            for i = 2:2 
                 obj.FormatSol = [obj.FormatSol, ' %10.5f'];
             end
             obj.FormatSol = [obj.FormatSol, ' %10.5f\n'];
@@ -99,7 +99,7 @@ classdef output_writer < handle
         function WriteCouplingStats(obj, CouplingStats, Ndt)
             %Stats
             fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
-            fprintf(fileID, '%10s %10s %10s\n', 'Timestep', 'Chops', 'Iterations');
+            fprintf(fileID, '%10s %10s %10s %10.0s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
             fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
             fclose(fileID);
             %Timers

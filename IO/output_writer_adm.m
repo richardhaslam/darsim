@@ -15,11 +15,11 @@ classdef output_writer_adm < output_writer
     methods
         function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp)
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
-            obj.basisfunctions = true;
+            obj.basisfunctions = false;
             obj.dynamicBF = false;
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
-            obj.Plotter.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+            obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
             obj.Plotter.PlotADMGrid(DiscretizationModel.ReservoirGrid, DiscretizationModel.CoarseGrid);
             if obj.basisfunctions
@@ -36,7 +36,7 @@ classdef output_writer_adm < output_writer
             obj.WriteADMStats(Summary.ADMStats, Summary.NumberTimeSteps);
         end
         function WriteADMStats(obj, ADMStats, Ndt)
-             %Stats
+            % Stats
             fileID = fopen(strcat(obj.Directory,'ADMStats.txt'),'w');
             fprintf(fileID, '%8d %8d %8d %8.2f\n', ADMStats(1:Ndt, :)');
             fclose(fileID);

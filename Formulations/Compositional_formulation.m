@@ -124,8 +124,12 @@ classdef Compositional_formulation < formulation
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, R, P)
             % Perform Average for ADM
-            z_rest = R * Status.z;
-            Status.z = P * z_rest;
+            for i=1:obj.NofComponents
+                z = Status.Properties(['z_',num2str(i)]);
+                z_rest = R * z.Value;
+                z.Value = P * z_rest;
+            end
+            
             % Update other unknwons as well 
             obj.UpdatePhaseCompositions(Status, FluidModel);
         end
@@ -134,7 +138,7 @@ classdef Compositional_formulation < formulation
             obj.SinglePhase = FluidModel.Flash(Status);
             
             %% 3. Compute Densities (rho = rho(p, x, T))
-            FluidModel.ComputePhaseDensities(Status);
+            FluidModel.ComputePhaseDensities(Status, obj.SinglePhase);
             
             %% 4. Compute Saturations (S = S(z, x))
             FluidModel.ComputePhaseSaturation(Status, obj.SinglePhase);
@@ -144,6 +148,58 @@ classdef Compositional_formulation < formulation
             
             %% 6. Compute Pc (Pc = Pc(S))
             FluidModel.ComputePc(Status);
+        end
+        function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)
+            N = DiscretizationModel.ReservoirGrid.N;      
+            pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
+            P = zeros(N, obj.NofPhases);
+            z = zeros(N, obj.NofComponents);
+            rho = zeros(N, obj.NofPhases);
+            x = zeros(N, obj.NofComponents*obj.NofPhases);
+            % Copy values in local variables
+            for i=1:obj.NofPhases
+                P(:, i) = ProductionSystem.Reservoir.State.Properties(['P_', num2str(i)]).Value;
+                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end
+            for i=1:obj.NofComponents
+                z(:, i) = ProductionSystem.Reservoir.State.Properties(['z_', num2str(i)]).Value;
+                for j=1:obj.NofComponents
+                    x(:,(i-1)*obj.NofPhases + j) = ProductionSystem.Reservoir.State.Properties(['x_', num2str(i),'ph',num2str(j)]).Value;
+                end
+            end
+            rhoT =  ProductionSystem.Reservoir.State.Properties('rhoT').Value;
+            
+             % Depths
+            depth = DiscretizationModel.ReservoirGrid.Depth;
+            
+            % Source terms
+            q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
+            
+            ThroughPut = zeros(N, obj.NofComponents);
+            Mass = zeros(N, obj.NofComponents);
+            for i=1:obj.NofComponents
+                obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt, x(:,(i-1)*2+1:(i-1)*2+2), i);
+                d1 = tril(obj.Tph{i, 1}, -1); 
+                d2 = tril(obj.Tph{i, 2}, -1);
+                u1 = triu(obj.Tph{i, 1},  1);
+                u2 = triu(obj.Tph{i, 2},  1);
+                Diag1 = diag(obj.Tph{i, 1});
+                Diag2 = diag(obj.Tph{i, 2});
+                % Assemble
+                D1 = diag(Diag1 + sum(u1, 2)) + d1; 
+                D2 = diag(Diag2 + sum(u2, 2)) + d2;
+                U1 = diag(Diag1 + sum(d1, 2)) + u1;
+                U2 = diag(Diag2 + sum(d2, 2)) + u2;
+                ThroughPut(:,i) = ...
+                           - min(D1 * P(:,1), 0)...    % Convective term                
+                           - min(D2 * P(:,2), 0)...
+                           - min(U1 * P(:,1), 0)...    % Convective term                
+                           - min(U2 * P(:,2), 0)...
+                           + max(q(:,i), 0);                       % Wells
+                Mass(:,i) = rhoT .* z(:,i);
+            end
+            Ratio = ThroughPut ./ Mass;
+            CFL = dt/pv * max(max(Ratio));
         end
     end
 end

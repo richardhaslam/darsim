@@ -25,13 +25,13 @@ classdef Overall_Composition_formulation < Compositional_formulation
             % This is the bitchy part!! 
             [obj.dxdp, obj.dxdz] = FluidModel.DxDpDz(ProductionSystem.Reservoir.State, obj.SinglePhase);
             % %%%%%%%%%%%%%%%%%%%%%%%%
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]).Value);
-            obj.drhodz = FluidModel.DrhoDz(ProductionSystem.Reservoir.State, obj.dxdz);
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State, obj.SinglePhase);
+            obj.drhodz = FluidModel.DrhoDz(ProductionSystem.Reservoir.State, obj.SinglePhase);
             dSdp = FluidModel.DSDp(ProductionSystem.Reservoir.State, obj.drhodp, -obj.dxdp(:,5));
-            dSdz = FluidModel.DSDz(ProductionSystem.Reservoir.State, -obj.dxdz(:, end, :), obj.dxdz(:, 1));
+            dSdz = FluidModel.DSDz(ProductionSystem.Reservoir.State, -obj.dxdz(:, end));
             obj.drhoTdz = FluidModel.DrhotDz(ProductionSystem.Reservoir.State, obj.drhodz, dSdz);
             obj.drhoTdp = FluidModel.DrhotDp(ProductionSystem.Reservoir.State,obj.drhodp, dSdp);
-            %obj.dMobdp = FluidModel.DMobDp(ProductionSystem.Reservoir.State, dSdp);
+            obj.dMobdp = FluidModel.DMobDp(ProductionSystem.Reservoir.State, [dSdp, dSdp]); % I am not using it !
             obj.dMob = FluidModel.DMobDz(ProductionSystem.Reservoir.State, dSdz);
             obj.dPc = FluidModel.DPcDz(ProductionSystem.Reservoir.State, dSdz);
          end
@@ -85,7 +85,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
                            + obj.Gph{i,1} * depth...       % Gravity
                            + obj.Gph{i,2} * depth...
                            - q(:,i);                       % Source/Sink  
-            end
+            end            
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             % BUILD FIM JACOBIAN BLOCK BY BLOCK
@@ -123,12 +123,12 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 % 1.a: divergence
                 Jp{i} = obj.Tph{i,1}  + obj.Tph{i, 2};
                 % 1.b: compressibility part
-                dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));
-                dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));
-                dMupzPh1 = obj.UpWind(1).z * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));
-                dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));
-                dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));
-                dMupzPh2 = obj.UpWind(2).z * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));
+                dMupxPh1 = obj.UpWind(1).x * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));% + obj.dMobdp(:, 1) .* x(:,(i-1)*2+1) .* rho(:,1));
+                dMupyPh1 = obj.UpWind(1).y * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));% + obj.dMobdp(:, 1) .* x(:,(i-1)*2+1) .* rho(:,1));
+                dMupzPh1 = obj.UpWind(1).z * (obj.Mob(:, 1) .* x(:,(i-1)*2+1) .* obj.drhodp(:,1) + obj.Mob(:, 1) .* obj.dxdp(:,(i-1)*2+1) .* rho(:,1));% + obj.dMobdp(:, 1) .* x(:,(i-1)*2+1) .* rho(:,1));
+                dMupxPh2 = obj.UpWind(2).x * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));% + obj.dMobdp(:, 2) .* x(:,(i-1)*2+2) .* rho(:,2));
+                dMupyPh2 = obj.UpWind(2).y * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));% + obj.dMobdp(:, 2) .* x(:,(i-1)*2+2) .* rho(:,2));
+                dMupzPh2 = obj.UpWind(2).z * (obj.Mob(:, 2) .* x(:,(i-1)*2+2) .* obj.drhodp(:,2) + obj.Mob(:, 2) .* obj.dxdp(:,(i-1)*2+2) .* rho(:,2));% + obj.dMobdp(:, 2) .* x(:,(i-1)*2+2) .* rho(:,2));
                 
                 vecX1 = min(reshape(obj.U(1).x(1:Nx,:,:),N,1), 0).*dMupxPh1 + min(reshape(obj.U(2).x(1:Nx,:,:),N,1), 0).*dMupxPh2;
                 vecX2 = max(reshape(obj.U(1).x(2:Nx+1,:,:),N,1), 0).*dMupxPh1 + max(reshape(obj.U(2).x(2:Nx+1,:,:),N,1), 0).*dMupxPh2;
@@ -240,6 +240,8 @@ classdef Overall_Composition_formulation < Compositional_formulation
                                 + obj.dMob(b(j), 2, zI) * rho(b(j), 2) * x(b(j), (c-1)*2+2)...
                                 + obj.Mob(b(j), 1) * rho(b(j), 1) * obj.dxdz(b(j), (c-1)*2+1, zI) ...
                                 + obj.Mob(b(j), 2) * rho(b(j), 2) * obj.dxdz(b(j), (c-1)*2+2, zI)...
+                                + obj.Mob(b(j), 1, zI) * obj.drhodz(b(j), 1) * x(b(j), (c-1)*2+1) ...
+                                + obj.Mob(b(j), 2, zI) * obj.drhodz(b(j), 2) * x(b(j), (c-1)*2+2)...
                                 ) * (Prod(i).p(j) - p(b(j)));
                         end
                     end

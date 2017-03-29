@@ -34,5 +34,8 @@ classdef injector < handle
             n_phases = length(obj.rho);
             obj.rho = ones(n, n_phases);
         end
+        function residual = InjectorResidual(obj, residual)
+            residual = sum(obj.QPhases);
+        end
     end
 end

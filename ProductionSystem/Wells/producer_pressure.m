@@ -25,7 +25,7 @@ classdef producer_pressure < producer
                 rho = State.Properties(['rho_', num2str(i)]);
                 obj.QPhases(:,i) = rho.Value(obj.Cells) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
-            obj.QComponents = obj.QComponents* 0;
+            obj.QComponents = zeros(length(obj.Cells), FluidModel.NofComp);
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')

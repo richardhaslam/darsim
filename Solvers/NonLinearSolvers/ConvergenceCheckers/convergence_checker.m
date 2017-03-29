@@ -16,7 +16,7 @@ classdef convergence_checker < handle
         obj = Check(obj)
     end
     methods
-        function output = Stagnating(obj, residual)
+        function output = Stagnating(obj, residual, delta)
             output = 0;
             diff = abs(residual - obj.OldResidual)/abs(residual);
             obj.OldResidual = residual;

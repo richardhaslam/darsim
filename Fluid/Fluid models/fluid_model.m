@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 14 July 2016
-%Last modified: 7 March 2017
+%Last modified: 16 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fluid_model < handle
     properties
@@ -38,13 +38,6 @@ classdef fluid_model < handle
                 Mob(:,i) = kr(:,i)/obj.Phases(i).mu;
             end
         end
-        function z = ComputeTotalFractions(obj, s, x, rho)
-            %Two phase, two component total mole fraction updater
-            %Based on mass balance equation z_1 * rho_t = x11*rho1*s1 + x12*rho2*s2
-            z(:,1) = (x(:,1).*rho(:,1).*s + x(:,2).*...
-                rho(:,2).*(1-s))./(rho(:,1).*s + rho(:,2).*(1-s));
-            z(:,2) = 1 - z(:,1);
-        end
         function ComputeTotalDensity(obj, State)
             % Compute the total density
             s = State.Properties('S_1');
@@ -74,10 +67,10 @@ classdef fluid_model < handle
                 dMob(:,2,j) = dMobdS(:,2) .* dSdz(:,j);
             end
         end
-        function drho = DrhoDp(obj, p)
-            drho = zeros(length(p), obj.NofPhases);
+        function drho = DrhoDp(obj, Status, SinglePhase)
+            drho = zeros(length(Status.Properties('P_1').Value), obj.NofPhases);
             for i=1:obj.NofPhases
-                drho(:, i) = obj.Phases(i).DrhoDp(p);
+                drho(:, i) = obj.Phases(i).DrhoDp(Status.Properties('P_2').Value);
             end
         end
         function ComputePc(obj, Status)
@@ -122,7 +115,8 @@ classdef fluid_model < handle
                 S(:,i) = Status.Properties(['S_',num2str(i)]).Value;
             end
             drhotdp = drho(:,1) .* S(:,1) + rho(:,1) .* dS + drho(:,2) .* S(:,2) - rho(:,2) .* dS;
-            % When it s one phase derivative is zero
+            % When it s one phase derivative is the one of the existing
+            % phase
             drhotdp(S(:,1) == 1) = drho(S(:,1) == 1, 1);
             drhotdp(S(:,1) == 0) = drho(S(:,1) == 0, 2);
         end

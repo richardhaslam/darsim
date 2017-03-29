@@ -25,7 +25,7 @@ classdef gravity_model < handle
         end
         function ComputeInterfaceDensities(obj, Nx, Ny, Nz, Status)            
             for i=1:length(obj.RhoInt)
-                rho1 = obj.g * reshape(Status.Properties(['rho_', num2str(i)]).Value(:,i), Nx, Ny, Nz);
+                rho1 = obj.g * reshape(Status.Properties(['rho_', num2str(i)]).Value, Nx, Ny, Nz);
                 obj.RhoInt(i).x(2:Nx,:,:) = (rho1(1:Nx-1,:,:) + rho1(2:Nx,:,:)) / 2;
                 obj.RhoInt(i).y(:,2:Ny,:) = (rho1(:,1:Ny-1,:) + rho1(:,2:Ny,:)) / 2;
                 obj.RhoInt(i).z(:,:,2:Nz) = (rho1(:,:,1:Nz-1) + rho1(:,:,2:Nz)) / 2;

@@ -17,15 +17,15 @@ classdef operators_handler_MS < operators_handler
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
             % Remove high contrast to avoid spikes
             lambdaMax = max(K(:,1));
-            K(K(:,1)./lambdaMax < 10^-2, 1) = 10^-2*lambdaMax;
-            K(K(:,2)./lambdaMax < 10^-2, 2) = 10^-2*lambdaMax;
-            K(K(:,3)./lambdaMax < 10^-2, 3) = 10^-2*lambdaMax;
+            %K(K(:,1)./lambdaMax < 10^-2, 1) = 10^-2*lambdaMax;
+            %K(K(:,2)./lambdaMax < 10^-2, 2) = 10^-2*lambdaMax;
+            %K(K(:,3)./lambdaMax < 10^-2, 3) = 10^-2*lambdaMax;
             % Build Pressure system
             obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
             %Build static restriction operator (FV)
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1));
             % Build Prolongation operator
-            obj.Pp{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor);
+            obj.Pp{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor, obj.Dimensions);
             %Build first coarse system (with MsFE)
             obj.BFUpdater.A = obj.Pp{1}' * obj.BFUpdater.A * obj.Pp{1};
             obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx, CoarseGrid(1).Ny);
@@ -33,7 +33,7 @@ classdef operators_handler_MS < operators_handler
                 % Build static restriction operator (FV)
                 obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x));
                 % Build Prolongation operator
-                obj.Pp{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor);
+                obj.Pp{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor, obj.Dimensions);
                 %Build coarse system (with MsFE)
                 obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
                 obj.BFUpdater.TransformIntoTPFA(CoarseGrid(x).Nx, CoarseGrid(x).Ny);

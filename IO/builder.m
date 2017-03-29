@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 4 March 2017
+%Last modified: 17 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -25,6 +25,7 @@ classdef builder < handle
         foam
         Comp_Type
         Comp_Prop
+        Init
         inj
         prod
         MaxNumTimeSteps
@@ -36,7 +37,7 @@ classdef builder < handle
         adm
         flash
         ADM
-        LinearSolver = 'direct';
+        LinearSolver
         Formulation = 'Natural';
         StopCriterion = 'MAX TIME';
         Fractured = 0;
@@ -88,6 +89,12 @@ classdef builder < handle
             else
                 obj.Gravity = char(inputMatrix{1}(index + 1));
             end
+            
+            %%%%%%%%%%%%%INITIAL CONDITIONS%%%%%%%%%%%%%%%%
+            temp = strfind(inputMatrix{1}, 'INIT');
+            init = find(~cellfun('isempty', temp));
+            obj.Init = str2double(strsplit(char(inputMatrix{1}(init + 1))));
+            
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
             temp = regexp(inputMatrix{1}, 'INJ\d', 'match');
             obj.inj = find(~cellfun('isempty', temp));
@@ -149,19 +156,18 @@ classdef builder < handle
             obj.DefineProperties(simulation.ProductionSystem, simulation.FluidModel, simulation.DiscretizationModel);
             
             %% Define Initialization procedure
+            VarValues = obj.Init;
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
                     VarNames = {'P_1', 'S_1'};
-                    VarValues = [1, 1];
+                    VarValues(2) = 1;
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    VarValues = [1e6, 0.1, 0.9];
                     simulation.Initializer = initializer(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
-                    VarValues = [1e6, 0.1, 0.9];
-                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                    simulation.Initializer = initializer(VarNames, VarValues);
             end
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, FractureMatrix, SettingsMatrix)
@@ -217,12 +223,12 @@ classdef builder < handle
                 x = find(~cellfun('isempty', temp));
                 switch (char(SettingsMatrix(x+1))) 
                     case ('Constant')
-                        operatorshandler = operators_handler_constant(maxLevel, cx*cy*cz);
+                        operatorshandler = operators_handler_constant(maxLevel, [cx,cy,cz]);
                     case ('Homogeneous')
-                        operatorshandler = operators_handler_MS(maxLevel, cx*cy*cz);
+                        operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
                         operatorshandler.BFUpdater = bf_updater_bilin();
                     case ('MS')
-                        operatorshandler = operators_handler_MS(maxLevel, cx*cy*cz);
+                        operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
                         operatorshandler.BFUpdater = bf_updater_ms();
                 end
                 gridselector = adm_grid_selector(tol);
@@ -364,7 +370,6 @@ classdef builder < handle
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
             end
-            
         end
         function FluidModel = BuildFluidModel(obj, inputMatrix, ProductionSystem)
             n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
@@ -424,15 +429,15 @@ classdef builder < handle
                         water = component();
                         FluidModel.AddComponent(water, 3);
                     end
-                    %FlashCalculator = Rachford_Rice_flash_calculator();
-                    FlashCalculator = Standard_flash_calculator();
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    %FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                 case('Compositional')
                     n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
-                    %FlashCalculator = Rachford_Rice_flash_calculator();
-                    FlashCalculator = Standard_flash_calculator();
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    %FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator();
                     % Add phases
@@ -449,14 +454,10 @@ classdef builder < handle
                     % Add components
                     kval = [1.5 0.5 0.1];
                     for i = 1:FluidModel.NofComp
-                        %Gets all atmospheric bubble points [K]
-                        Tb = str2double(inputMatrix(obj.Comp_Prop + 3 + (i-1)*7));
-                        %Gets all slopes connecting bubble point and
-                        %critical point on 1/T plot [K]
-                        b = str2double(inputMatrix(obj.Comp_Prop + 5 + (i-1)*7));
-                        MM = str2double(inputMatrix(obj.Comp_Prop + 7*i));
+                        Prop = str2double(strsplit(char(inputMatrix(obj.Comp_Prop + i * 2))));
+                        MM = Prop(1);
                         comp = component();
-                        comp.AddCompProperties(Tb, b, MM, kval(i));
+                        comp.AddCompProperties(MM, kval(i));
                         FluidModel.AddComponent(comp, i);
                     end
             end
@@ -538,12 +539,12 @@ classdef builder < handle
                                 ConvergenceChecker = convergence_checker_FS();
                         end
                         switch (obj.LinearSolver)
-                            case ('direct')
-                                NLSolver.LinearSolver = linear_solver();
                             case ('gmres')
-                                NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 100);
+                                NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
                             case ('bicg')
-                                NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 100);
+                                NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
+                            otherwise
+                                NLSolver.LinearSolver = linear_solver();
                         end
                     case ('active')
                         NLSolver.SystemBuilder = fim_system_builder_ADM();
@@ -633,13 +634,14 @@ classdef builder < handle
             switch(obj.plotting)
                 case('Matlab')
                     if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
-                        plotter = Matlab_Plotter_1D(simulation.ProductionSystem.Wells.Prod.p, simulation.ProductionSystem.Wells.Inj.p);
+                        plotter = Matlab_Plotter_1D();
                     else
-                        plotter = Matlab_Plotter_2D(simulation.ProductionSystem.Wells.Prod(1).p, simulation.ProductionSystem.Wells.Inj(1).p);
+                        plotter = Matlab_Plotter_2D();
                     end
                 case('VTK')
                     plotter = VTK_Plotter(InputDirectory, obj.ProblemName);
                 otherwise
+                    warning('WARNING: NO valid Plotter was selected. Results will not be plotted.');
                     plotter = no_Plotter();
             end
             

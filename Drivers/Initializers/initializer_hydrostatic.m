@@ -16,6 +16,7 @@ classdef initializer_hydrostatic < initializer
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started Hydrostatic initialization');
+
             obj.Equilibrate(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
             
              % Output initial status:      
@@ -39,7 +40,7 @@ classdef initializer_hydrostatic < initializer
                 Formulation.SinglePhase = FluidModel.Flash(ProductionSystem.Reservoir.State);
                 
                 % 2 Compute Phase Density
-                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
+                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State, Formulation.SinglePhase);
                 
                 % 3. Update S based on components mass balance
                 FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, Formulation.SinglePhase);

@@ -14,13 +14,8 @@ classdef output_writer_FS < output_writer
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
-            %% Reservoir
-            obj.Plotter.PlotSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+            obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
-            %% Fractures
-            if ProductionSystem.FracturesNetwork.Active
-               obj.Plotter.PlotFracture(); 
-            end
         end
         function WriteSummary(obj, Summary)
             obj.WriteWellsData(Summary.Time, Summary.WellsData, Summary.NumberTimeSteps);
@@ -28,6 +23,4 @@ classdef output_writer_FS < output_writer
         end
     end
 end
-
-   
        
