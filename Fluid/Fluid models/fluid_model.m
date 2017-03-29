@@ -70,7 +70,7 @@ classdef fluid_model < handle
         function drho = DrhoDp(obj, Status, SinglePhase)
             drho = zeros(length(Status.Properties('P_1').Value), obj.NofPhases);
             for i=1:obj.NofPhases
-                drho(:, i) = obj.Phases(i).DrhoDp(Status.Properties('P_2').Value);
+                drho(:, i) = obj.Phases(i).DrhoDp(Status.Properties(strcat('P_', num2str(obj.NofPhases))).Value);
             end
         end
         function ComputePc(obj, Status)

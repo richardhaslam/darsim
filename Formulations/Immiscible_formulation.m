@@ -17,7 +17,7 @@ classdef Immiscible_formulation < formulation
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             %% 1. Reservoir Properteis and Derivatives
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]).Value);
+            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State);
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
