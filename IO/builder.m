@@ -104,7 +104,12 @@ classdef builder < handle
             %%%%%%%%%%%%%%Fractures' Properties%%%%%%%%%%%%%%%%
             % Check the main input file and look for FRACTURED
             temp = strfind(inputMatrix{1}, 'FRACTURED');
-            obj.Fractured = str2double(  inputMatrix{1}{ find(~cellfun('isempty', temp))+1 }  );
+            obj.Fractured = find(~cellfun('isempty', temp));
+            if isempty(obj.Fractured)
+                obj.Fractured = 0;
+            else
+                obj.Fractured = 1;
+            end
            
             %%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
             temp = strfind(SettingsMatrix{1}, 'TIMESTEPS');
@@ -178,8 +183,8 @@ classdef builder < handle
             nz = str2double(inputMatrix(obj.grid + 3));
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
                 % Fine-scale discretization model
-                 obj.ADM = 'inactive';
-                 Discretization = FS_Discretization_model();
+                obj.ADM = 'inactive';
+                Discretization = FS_Discretization_model();
                 %% Reservori Grid
                 ReservoirGrid = cartesian_grid(nx, ny, nz);
                 Discretization.AddReservoirGrid(ReservoirGrid);
@@ -232,7 +237,10 @@ classdef builder < handle
                         operatorshandler.BFUpdater = bf_updater_ms();
                 end
                 gridselector = adm_grid_selector(tol);
-                Discretization = ADM_Discretization_model(nx, ny, nz, maxLevel, Coarsening);
+                %% Reservori Grid
+                Discretization = ADM_Discretization_model(maxLevel, Coarsening);
+                ReservoirGrid = cartesian_grid(nx, ny, nz);
+                Discretization.AddReservoirGrid(ReservoirGrid);
                 Discretization.AddADMGridSelector(gridselector);
                 Discretization.AddOperatorsHandler(operatorshandler);
             end

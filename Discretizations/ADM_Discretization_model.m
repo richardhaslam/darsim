@@ -18,8 +18,7 @@ classdef ADM_Discretization_model < Discretization_model
         ADMStats
     end
     methods
-        function obj = ADM_Discretization_model(nx, ny, nz, maxlevel, coarsening)
-            obj@Discretization_model(nx, ny, nz);
+        function obj = ADM_Discretization_model(maxlevel, coarsening)
             obj.CoarseGrid = coarse_grid();
             obj.ADMGrid = adm_grid();
             obj.Coarsening = coarsening;

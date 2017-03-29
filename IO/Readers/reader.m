@@ -34,7 +34,13 @@ classdef reader < handle
             fclose(fileID);
             %ReadSettingFile
             temp = strfind(obj.InputMatrix{1}, 'FRACTURED');
-            if str2double(  obj.InputMatrix{1}{ find(~cellfun('isempty', temp))+1 }  ) == 1
+            fractured = find(~cellfun('isempty', temp));
+            if isempty(fractured)
+                fractured = 0;
+            else
+                fractured = 1;
+            end
+            if fractured 
                 FractureFile = strcat(obj.Directory, '/Fracture_Output.txt');
                 fileID = fopen(FractureFile, 'r');
                 obj.FractureMatrix = textscan(fileID, '%s', 'Delimiter', '\n');

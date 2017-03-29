@@ -72,17 +72,13 @@ classdef TimeLoop_Driver < handle
                 EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, obj.Time, obj.Ndt-1);
                 
                 %% %%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-                %if (obj.Time == obj.TStops(index) || EndOfSimCriterion==1)
+                if (obj.Time == obj.TStops(index) || EndOfSimCriterion==1)
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
                     disp(char(5));
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
                     Writer.WriteSolutionOnFile(ProductionSystem, index);
                     index = index + 1;
-                %end
-                figure(1)
-                surf(reshape(ProductionSystem.Reservoir.State.Properties('P_2').Value, 216, 54));
-                view([120 20])
-                drawnow
+                end
             end
         end
     end
