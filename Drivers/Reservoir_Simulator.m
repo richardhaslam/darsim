@@ -21,7 +21,7 @@ classdef Reservoir_Simulator < handle
         end
         function BuildObjects(obj)
             obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix);
-            obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1});
+            obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1}, obj.Reader.FractureMatrix);
             obj.Writer = obj.Builder.BuildWriter(obj.Reader.Directory, obj.Simulation); 
         end
         function PrintInfo(obj)
@@ -32,7 +32,7 @@ classdef Reservoir_Simulator < handle
             disp('Reservoir geometry:');
             disp(['Lx: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Length), ' m']);
             disp(['Ly: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Width), ' m']);
-            disp(['Depth:  ', num2str(obj.Simulation.ProductionSystem.Reservoir.Depth), ' m']);
+            disp(['Thickness:  ', num2str(obj.Simulation.ProductionSystem.Reservoir.Thickness), ' m']);
             disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nz)]);
             disp('---------------------------------------------------------');
             disp('Fluid Model:');

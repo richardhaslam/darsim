@@ -10,11 +10,14 @@ classdef Discretization_model < handle
     properties
         N
         ReservoirGrid
+        FracturesGrid
     end
     methods
-        function obj = Discretization_model(nx, ny, nz)
-            obj.ReservoirGrid = cartesian_grid(nx, ny, nz);
-            obj.N = obj.ReservoirGrid.N;
+        function AddReservoirGrid(obj, reservoirgrid)
+            obj.ReservoirGrid = reservoirgrid;
+        end
+        function AddFracturesGrid(obj, fracturesgrid)
+            obj.FracturesGrid = fracturesgrid;
         end
         function Initialize(obj, ProductionSystem, Formulation)
             obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
@@ -22,6 +25,13 @@ classdef Discretization_model < handle
             obj.DefinePerforatedCells(ProductionSystem.Wells);
             % . Assign Depth
             obj.ReservoirGrid.ComputeDepth(Formulation.GravityModel.alpha);
+            
+            % initialize fractures
+            if ProductionSystem.FracturesNetwork.Active
+                for f = 1 : length( obj.FracturesGrid.Nfrac )
+                    obj.FracturesGrid.Grids(f).Initialize(ProductionSystem.FracturesNetwork.Fractures(f))
+                end
+            end
         end
         function DefinePerforatedCells(obj, Wells)
             % Has to be improved for Diagonal wells (maybe using trajectories)

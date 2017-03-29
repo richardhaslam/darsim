@@ -39,7 +39,7 @@ classdef cartesian_grid < grid_darsim
         function Initialize(obj, Reservoir)
             obj.dx = Reservoir.Length/obj.Nx;
             obj.dy = Reservoir.Width/obj.Ny;
-            obj.dz = Reservoir.Depth/obj.Nz;
+            obj.dz = Reservoir.Thickness/obj.Nz;
             obj.Ax = obj.dy * obj.dz;
             obj.Ay = obj.dx * obj.dz;
             obj.Az = obj.dx * obj.dy;

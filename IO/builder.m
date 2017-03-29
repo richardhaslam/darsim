@@ -39,7 +39,7 @@ classdef builder < handle
         LinearSolver = 'direct';
         Formulation = 'Natural';
         StopCriterion = 'MAX TIME';
-        Fractured = 'No';
+        Fractured = 0;
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
@@ -94,6 +94,11 @@ classdef builder < handle
             temp = regexp(inputMatrix{1}, 'PROD\d', 'match');
             obj.prod = find(~cellfun('isempty', temp));
             
+            %%%%%%%%%%%%%%Fractures' Properties%%%%%%%%%%%%%%%%
+            % Check the main input file and look for FRACTURED
+            temp = strfind(inputMatrix{1}, 'FRACTURED');
+            obj.Fractured = str2double(  inputMatrix{1}{ find(~cellfun('isempty', temp))+1 }  );
+           
             %%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
             temp = strfind(SettingsMatrix{1}, 'TIMESTEPS');
             xv = find(~cellfun('isempty', temp));
@@ -126,15 +131,15 @@ classdef builder < handle
             obj.flash = find(~cellfun('isempty', temp));
             
             %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
-            temp = strfind(SettingsMatrix{1}, 'OUTPUT');
+            temp = strfind(SettingsMatrix{1}, 'OUTPUT'); 
             xv = find(~cellfun('isempty', temp));
             obj.plotting = char(SettingsMatrix{1}(xv+1)); %Matlab or VTK
             
         end
-        function simulation = BuildSimulation(obj, inputMatrix, SettingsMatrix)
+        function simulation = BuildSimulation(obj, inputMatrix, SettingsMatrix, FractureMatrix)
             simulation = Reservoir_Simulation();
-            simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, SettingsMatrix);
-            simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, simulation.DiscretizationModel);            
+            simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, FractureMatrix, SettingsMatrix);
+            simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, FractureMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
             simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
@@ -159,15 +164,42 @@ classdef builder < handle
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
         end
-        function Discretization = BuildDiscretization(obj, inputMatrix, SettingsMatrix)
+        function Discretization = BuildDiscretization(obj, inputMatrix, FractureMatrix, SettingsMatrix)
+            %% Define your discretization Model (choose between FS and ADM)
             %Gridding
             nx = str2double(inputMatrix(obj.grid + 1));
             ny = str2double(inputMatrix(obj.grid + 2));
             nz = str2double(inputMatrix(obj.grid + 3));
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
-                Discretization = FS_Discretization_model(nx, ny, nz);
-                obj.ADM = 'inactive';
+                % Fine-scale discretization model
+                 obj.ADM = 'inactive';
+                 Discretization = FS_Discretization_model();
+                %% Reservori Grid
+                ReservoirGrid = cartesian_grid(nx, ny, nz);
+                Discretization.AddReservoirGrid(ReservoirGrid);
+                %% Fractures Grid
+                if obj.Fractured
+                    temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
+                    index = find(~cellfun('isempty', temp));
+                    temp = strsplit(FractureMatrix{1}{index},' ');
+                    NrOfFrac = str2double( temp{end} );
+                    FracturesGrid = fractures_grid(NrOfFrac);
+                    temp = strfind(FractureMatrix{1}, 'PROPERTIES');
+                    frac_index = find(~cellfun('isempty', temp));
+                    for f = 1 : NrOfFrac
+                        % Creat cartesian grid in each fracture
+                        frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
+                        grid_temp = strsplit(frac_info_split{8}, 'x');
+                        nx = str2double(grid_temp{1});
+                        ny = str2double(grid_temp{2});
+                        nz = 1;
+                        FractureGrid = cartesian_grid(nx, ny, nz);
+                        FracturesGrid.AddGrid(FractureGrid, f);
+                    end 
+                    Discretization.AddFracturesGrid(FracturesGrid);
+                end
             else
+                % ADM discretization model
                 obj.ADM = 'active';
                 temp = strfind(SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
@@ -200,12 +232,12 @@ classdef builder < handle
             end
             
         end
-        function ProductionSystem = BuildProductionSystem (obj, inputMatrix, DiscretizationModel)
+        function ProductionSystem = BuildProductionSystem (obj, inputMatrix, FractureMatrix, DiscretizationModel)
             ProductionSystem = Production_System();
-            %Reservoir
+            %% RESERVOIR
             Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x−direction [m]
             Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y−direction [m]
-            h = str2double(inputMatrix(obj.size + 3));  %Reservoir thickness [m]
+            h  = str2double(inputMatrix(obj.size +3));  %Reservoir thickness [m]
             Tres = str2double(inputMatrix(obj.temperature + 1));   %Res temperature [K]
             Reservoir = reservoir(Lx, Ly, h, Tres);
             phi = str2double(inputMatrix(obj.por + 1));
@@ -230,7 +262,7 @@ classdef builder < handle
             Reservoir.AddPermeabilityPorosity(K, phi);
             ProductionSystem.AddReservoir(Reservoir);
             
-            % Wells
+            %% WELLS
             Wells = wells();
             Wells.NofInj = length(obj.inj);
             Wells.NofProd = length(obj.prod);
@@ -263,7 +295,76 @@ classdef builder < handle
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
             end
-            ProductionSystem.AddWells(Wells); 
+            ProductionSystem.AddWells(Wells);
+            
+            %% FRACTURE NETWORK
+            if obj.Fractured == 1
+                FracturesNetwork = fracture_system();
+                FracturesNetwork.Active = 1;
+                temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
+                index = find(~cellfun('isempty', temp));
+                temp = strsplit(FractureMatrix{1}{index},' ');
+                NrOfFrac = temp{end};
+                FracturesNetwork.NumOfFrac = str2double( NrOfFrac );
+                
+                temp = strfind(FractureMatrix{1}, 'PROPERTIES');
+                frac_index = find(~cellfun('isempty', temp));
+                
+                temp = strfind(FractureMatrix{1}, 'GRID_COORDS_X');
+                frac_grid_coords_x = find(~cellfun('isempty', temp));
+                temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Y');
+                frac_grid_coords_y = find(~cellfun('isempty', temp));
+                temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Z');
+                frac_grid_coords_z = find(~cellfun('isempty', temp));
+                
+                temp = strfind(FractureMatrix{1}, 'FRACCELL');
+                frac_cell_index = find(~cellfun('isempty', temp));
+                
+                temp = strfind(FractureMatrix{1}, 'ROCK_CONN');
+                frac_rockConn_index = find(~cellfun('isempty', temp));
+                
+                temp = strfind(FractureMatrix{1}, 'FRAC_CONN');
+                frac_fracConn_index = find(~cellfun('isempty', temp));
+                
+                FracturesNetwork.Fractures = fracture();
+                for f = 1 : FracturesNetwork.NumOfFrac
+                    frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');                   % Splitted data for each fracture
+                    FracturesNetwork.Fractures(f).Length = str2double( frac_info_split{3} );            % Length of each fracture
+                    FracturesNetwork.Fractures(f).Width = str2double( frac_info_split{4} );             % Width of each fracture
+                    FracturesNetwork.Fractures(f).Thickness = str2double( frac_info_split{5} );         % Thickness of each fracture
+                    
+                    Porosity = str2double( frac_info_split{6} );                                        % Porosity  of each fracture 
+                    Permeability = str2double( frac_info_split{7} );                                    % Permeability of each fracture
+                    Kx = ones(DiscretizationModel.FracturesGrid.N(f), 1)*Permeability;
+                    Ky = Kx;
+                    Kz = Kx;
+                    K = [Kx, Ky, Kz];
+                    FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture 
+                    
+                    CornerPoint = strsplit(frac_info_split{9}, {'[',';',']'});
+                    FracturesNetwork.Fractures(f).PointA = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
+                    CornerPoint = strsplit(frac_info_split{11}, {'[',';',']'});
+                    FracturesNetwork.Fractures(f).PointB = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
+                    CornerPoint = strsplit(frac_info_split{13}, {'[',';',']'});
+                    FracturesNetwork.Fractures(f).PointC = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
+                    CornerPoint = strsplit(frac_info_split{15}, {'[',';',']'});
+                    FracturesNetwork.Fractures(f).PointD = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
+                    
+                    frac_grid_coords_x_split = strsplit(FractureMatrix{1}{frac_grid_coords_x(f)},' ');
+                    frac_grid_coords_y_split = strsplit(FractureMatrix{1}{frac_grid_coords_y(f)},' ');
+                    frac_grid_coords_z_split = strsplit(FractureMatrix{1}{frac_grid_coords_z(f)},' ');
+                    frac_grid_coords_x_split = str2double(frac_grid_coords_x_split);
+                    frac_grid_coords_y_split = str2double(frac_grid_coords_y_split);
+                    frac_grid_coords_z_split = str2double(frac_grid_coords_z_split);
+                    frac_grid_coords_x_split(1) = [];
+                    frac_grid_coords_y_split(1) = [];
+                    frac_grid_coords_z_split(1) = [];
+                    FracturesNetwork.Fractures(f).GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];;
+                    
+                end
+                ProductionSystem.AddFractures(FracturesNetwork);
+            end
+            
         end
         function FluidModel = BuildFluidModel(obj, inputMatrix, ProductionSystem)
             n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
@@ -552,11 +653,13 @@ classdef builder < handle
         end
         function DefineProperties(obj, ProductionSystem, FluidModel, DiscretizationModel)
             switch(obj.Fractured)
-                case('No')
+                case(0)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
-                case('Yes')
+                case(1)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
-                    ProductionSystem.FracturesNetwork.State.AddProperties(FluidModel, DiscretizationModel.FractureGrid.N);
+                    for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
+                        ProductionSystem.FracturesNetwork.Fractures(f).State.AddProperties(FluidModel, DiscretizationModel.FracturesGrid.N(f));
+                    end
             end
         end
     end

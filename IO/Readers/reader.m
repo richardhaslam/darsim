@@ -12,6 +12,7 @@ classdef reader < handle
         File
         InputMatrix
         SettingsMatrix
+        FractureMatrix
     end
     methods
         function obj = reader(dir, file)
@@ -25,11 +26,20 @@ classdef reader < handle
             matrix = textscan(fileID, '%s', 'Delimiter', '\n');
             obj.InputMatrix = matrix;
             fclose(fileID);
+            %ReadSettingFile
             SettingsFile = strcat(obj.Directory, '/SimulatorSettings.txt');
             fileID = fopen(SettingsFile, 'r');
             matrix = textscan(fileID, '%s', 'Delimiter', '\n');
             obj.SettingsMatrix = matrix;
             fclose(fileID);
+            %ReadSettingFile
+            temp = strfind(obj.InputMatrix{1}, 'FRACTURED');
+            if str2double(  obj.InputMatrix{1}{ find(~cellfun('isempty', temp))+1 }  ) == 1
+                FractureFile = strcat(obj.Directory, '/Fracture_Output.txt');
+                fileID = fopen(FractureFile, 'r');
+                obj.FractureMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                fclose(fileID);
+            end
         end
     end
 end

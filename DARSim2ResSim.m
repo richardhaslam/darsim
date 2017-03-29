@@ -40,7 +40,6 @@ ResSimulator = Reservoir_Simulator(Directory, File);
 ResSimulator.Reader.ReadInputFile();
 % Build objects
 ResSimulator.BuildObjects();
-
 % Print info to screen
 ResSimulator.PrintInfo();
 

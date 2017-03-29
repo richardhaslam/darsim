@@ -10,17 +10,17 @@ classdef reservoir < handle
     properties
         Length
         Width
-        Depth
+        Thickness
         Temp
         K
         Por
         State
     end
     methods
-        function obj = reservoir(length, width, depth, temp)
+        function obj = reservoir(length, width, thickness, temp)
             obj.Length = length;
             obj.Width = width;
-            obj.Depth = depth;
+            obj.Thickness = thickness;
             obj.Temp = temp;
             obj.State = status();
         end

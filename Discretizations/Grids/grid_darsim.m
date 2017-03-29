@@ -10,7 +10,6 @@ classdef grid_darsim < handle
     properties
         N
         Depth
-        Connections
         Active
         Fathers
         Children

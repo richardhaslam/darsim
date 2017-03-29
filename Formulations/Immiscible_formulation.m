@@ -380,14 +380,14 @@ classdef Immiscible_formulation < formulation
             FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
             %% 2. Update fractures pressure and densities
             if ProductionSystem.FracturesNetwork.Active
-                for i=1:ProductionSystem.FracturesNetwork.NofFractures
+                for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
                     % Update Pressure
-                    Pf = ProductionSystem.FracturesNetwork.Fractures(i).State.Properties(['P_', num2str(obj.NofPhases)]);
+                    Pf = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['P_', num2str(obj.NofPhases)]);
                     Pf.update(delta);
                     % Update Phase Densities
-                    FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                    FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(f).State);
                     % Update total density
-                    FluidModel.ComputeTotalDensity(ProductionSystem.FracturesNetwork.Fractures(i).State);
+                    FluidModel.ComputeTotalDensity(ProductionSystem.FracturesNetwork.Fractures(f).State);
                 end
             end
         end

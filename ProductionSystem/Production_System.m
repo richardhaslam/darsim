@@ -20,11 +20,14 @@ classdef Production_System < handle
         function AddWells(obj, Wells)
             obj.Wells = Wells;
         end
+        function AddFractures(obj, fractures)
+            obj.FracturesNetwork = fractures;
+        end
         function AssignInitialState(obj, VarNames, VarValues)
             obj.Reservoir.State.AssignInitialValues(VarNames, VarValues);
             if obj.FracturesNetwork.Active
-                for i=1:obj.FracturesNetwork.N
-                    obj.FracturesNetwork.Fractures.State.AssignInitialValues(VarNames, VarValues);
+                for f = 1:obj.FracturesNetwork.NumOfFrac
+                    obj.FracturesNetwork.Fractures(f).State.AssignInitialValues(VarNames, VarValues);
                 end
             end
         end

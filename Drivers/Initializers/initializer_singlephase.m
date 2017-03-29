@@ -8,7 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef initializer_singlephase < initializer
     properties
-        NLSolver
     end
     methods
         function obj = initializer_singlephase(names, values)

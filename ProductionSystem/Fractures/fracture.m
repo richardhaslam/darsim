@@ -9,9 +9,25 @@
 classdef fracture < handle
     properties
         Length
-        Height
-        Aperture
+        Width
+        Thickness
+        Temp
+        Por
         K
         State
+        PointA
+        PointB
+        PointC
+        PointD
+        GridCoords
+    end
+    methods
+        function obj = fracture()
+            obj.State = status();
+        end
+        function AddPermeabilityPorosity(obj, k, por)
+            obj.K = k;
+            obj.Por = por;
+        end
     end
 end
