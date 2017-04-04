@@ -51,7 +51,7 @@ classdef Reservoir_Simulator < handle
             % Plot Wells
             obj.Writer.Plotter.PlotWells(obj.Simulation.ProductionSystem.Wells.Inj, obj.Simulation.ProductionSystem.Wells.Prod, obj.Simulation.DiscretizationModel.ReservoirGrid);
             % Run simulation
-%             obj.Simulation.Run(obj.Writer);
+            obj.Simulation.Run(obj.Writer);
         end
         function OutputResults(obj)
             obj.Writer.WriteSummary(obj.Simulation.Summary);
