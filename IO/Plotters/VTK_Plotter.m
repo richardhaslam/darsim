@@ -61,17 +61,19 @@ classdef VTK_Plotter < Plotter
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.PlotReservoirSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
-            
+            for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
+                obj.PlotFracturesSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f));
+            end 
         end
         function PlotReservoirSolution(obj, Status, Grid)
-            %Write a VTK file
+            %Write a VTK file for Reservoir
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             fprintf(fileID, 'ASCII\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
-            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, Grid.Nz+1);
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, Grid.Nz+1);
             fprintf(fileID, '\n');
             fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
             fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
@@ -93,6 +95,30 @@ classdef VTK_Plotter < Plotter
             Names = Status.Properties.keys;
             for i=1:N_var
                 obj.PrintScalar2VTK(fileID, Status.Properties(Names{i}).Value, [' ',Names{i}]);
+                fprintf(fileID, '\n');
+            end
+            obj.VTKindex = obj.VTKindex + 1;
+        end
+        function PlotFracturesSolution(obj, Fracture, Grid)
+            %Write a VTK file for each
+            fileID = fopen(strcat(obj.FileName, '_Fracture_', num2str(obj.VTKindex),'.vtk'), 'w');
+            fprintf(fileID, '# vtk DataFile Version 2.0\n');
+            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            fprintf(fileID, 'ASCII\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'POINTS    %d   double\n', size(Fracture.GridCoords,1) );
+            fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
+            fprintf(fileID, '\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
+            fprintf(fileID, '\n');
+            N_var = double(Fracture.State.Properties.Count);
+            Names = Fracture.State.Properties.keys;
+            for i=1:N_var
+                obj.PrintScalar2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
             obj.VTKindex = obj.VTKindex + 1;

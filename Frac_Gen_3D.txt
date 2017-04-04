@@ -1,0 +1,493 @@
+%% File describing Fracture Networks for the F-AMS C++ reservoir simulator
+%%	Convention:
+%%	A % marks the beginning of a comment
+%%	Once started, comments last for the rest of their containing line
+%%	A data block ends with /
+%%	Keywords are in capital letters
+
+%Dimension    100.0  100.0  100.0 
+%Grid            15     15     15 
+%Layers        1 
+NUM_NETS       2 
+NUM_FRACS      2 
+NUM_NODES      4 
+
+%Layer 0        1 nets 
+NETWORK 
+%		 #fracs		fracIDs 
+FRACTURES   1      0 
+NUM_NODES   2            
+%	ID	 X		    Y		    #cells		#fracs		fracIDs 
+NODE	0	 0.00000e+00      0.00000e+00	    1		    1		    0 
+NODE	1	 0.00000e+00      6.00000e+01	    1		    1		    0 
+/
+
+
+NETWORK 
+%		 #fracs		fracIDs 
+FRACTURES   1      1 
+NUM_NODES   2            
+%	ID	 X		    Y		    #cells		#fracs		fracIDs 
+NODE	0	 0.00000e+00      0.00000e+00	    1		    1		    0 
+NODE	1	 0.00000e+00      3.00000e+01	    1		    1		    0 
+/
+
+
+FRACTURE
+%    ID   node1ID  node2ID	 apert     Z1       Z2	      #cells       
+PROP   0    0         1         5.00000e-02     0.00000e+00    4.00000e+01      4   3 
+%      idx      poro     perm     #perf    #proj     
+CELL     0    1.00000e+00    1.00000e+07    12    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1042    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1027    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1057    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    817    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1267    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    802    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1252    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    832    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1282    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    592    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    577    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    607    0.00000e+00    1.00000e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     1    1.00000e+00    1.00000e+07     9    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1492    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1477    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1507    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1267    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1717    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1252    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1282    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    2.22222e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     2    1.00000e+00    1.00000e+07     9    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1942    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1927    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1957    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1717    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2167    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2152    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2182    3.33333e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     3    1.00000e+00    1.00000e+07    12    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2392    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2377    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2407    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2167    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2617    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2152    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2602    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2182    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2632    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2842    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    2827    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    2857    0.00000e+00    1.00000e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     4    1.00000e+00    1.00000e+07    12    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1012    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    997    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1027    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    787    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1237    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    772    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1222    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    802    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1252    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    562    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    547    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    577    0.00000e+00    1.00000e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     5    1.00000e+00    1.00000e+07     9    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1462    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1447    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1477    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1237    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1687    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1222    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1252    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.22222e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     6    1.00000e+00    1.00000e+07     9    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1912    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1897    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1927    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1687    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2137    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2122    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2152    3.33333e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     7    1.00000e+00    1.00000e+07    12    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2362    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2347    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2377    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2137    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2587    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2122    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2572    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2152    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2602    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2812    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    2797    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    2827    0.00000e+00    1.00000e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     8    1.00000e+00    1.00000e+07    12    0     
+%      cell      area     dist     volume            
+ROCK_CONN    982    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    967    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    997    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    757    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1207    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    742    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1192    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    772    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1222    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    532    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    517    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    547    0.00000e+00    1.00000e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     9    1.00000e+00    1.00000e+07     9    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1432    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1417    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1447    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1207    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1657    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1192    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1222    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.22222e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    10    1.00000e+00    1.00000e+07     9    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1882    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1867    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1897    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1657    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2107    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2092    3.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2122    3.33333e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    11    1.00000e+00    1.00000e+07    12    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2332    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2317    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2347    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2107    2.22222e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2557    8.88889e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2092    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2542    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2122    1.11111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2572    4.44444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2782    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    2767    0.00000e+00    1.00000e+00    0.00000e+00          
+ROCK_CONN    2797    0.00000e+00    1.00000e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+/
+
+
+FRACTURE
+%    ID   node1ID  node2ID	 apert     Z1       Z2	      #cells       
+PROP   1    0         1         5.00000e-02     0.00000e+00    7.00000e+01      5   5 
+%      idx      poro     perm     #perf    #proj     
+CELL     0    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1297    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1282    2.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1312    5.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1522    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1507    4.66667e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1537    1.00000e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     1    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1522    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1507    2.64444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1537    5.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1747    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    1.55556e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1762    3.33333e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     2    1.00000e+00    1.00000e+07     3    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1747    8.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    2.80000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1762    6.00000e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     3    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1972    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1957    2.64444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1987    5.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1747    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    1.55556e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1762    3.33333e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     4    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2197    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2182    2.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2212    5.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1972    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1957    4.66667e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1987    1.00000e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     5    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1267    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1252    3.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1282    4.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1492    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1477    6.00000e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1507    8.66667e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     6    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1492    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1477    3.40000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1507    4.91111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1717    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.00000e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    2.88889e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     7    1.00000e+00    1.00000e+07     3    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1717    8.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    3.60000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    5.20000e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     8    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1942    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1927    3.40000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1957    4.91111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1717    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.00000e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1732    2.88889e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL     9    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2167    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2152    3.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2182    4.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1942    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1927    6.00000e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1957    8.66667e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    10    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1237    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1222    3.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1252    3.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1462    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1447    7.33333e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1477    7.33333e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    11    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1462    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1447    4.15556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1477    4.15556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1687    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.44444e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    12    1.00000e+00    1.00000e+07     3    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1687    8.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    4.40000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    4.40000e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    13    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1912    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1897    4.15556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1927    4.15556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1687    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1702    2.44444e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    14    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2137    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2122    3.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2152    3.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1912    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1897    7.33333e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1927    7.33333e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    15    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1207    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1192    4.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1222    3.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1432    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1417    8.66667e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1447    6.00000e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    16    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1432    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1417    4.91111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1447    3.40000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1657    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    2.88889e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.00000e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    17    1.00000e+00    1.00000e+07     3    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1657    8.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    5.20000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    3.60000e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    18    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1882    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1867    4.91111e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1897    3.40000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1657    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    2.88889e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1672    2.00000e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    19    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2107    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2092    4.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2122    3.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1882    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1867    8.66667e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1897    6.00000e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    20    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1177    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1162    5.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1192    2.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1402    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1387    1.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1417    4.66667e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    21    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1402    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1387    5.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1417    2.64444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1627    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1612    3.33333e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    1.55556e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    22    1.00000e+00    1.00000e+07     3    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1627    8.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1612    6.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    2.80000e+01    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    23    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    1852    7.55556e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1837    5.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1867    2.64444e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1627    4.44444e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1612    3.33333e+00    1.85185e+00    0.00000e+00          
+ROCK_CONN    1642    1.55556e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+%      idx      poro     perm     #perf    #proj     
+CELL    24    1.00000e+00    1.00000e+07     6    0     
+%      cell      area     dist     volume            
+ROCK_CONN    2077    6.66667e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2062    5.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    2092    2.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1852    1.33333e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1837    1.00000e+01    1.85185e+00    0.00000e+00          
+ROCK_CONN    1867    4.66667e+00    1.85185e+00    0.00000e+00          
+%      fracID       cellIdx      area     dist   
+%      interf    dir     area        dist            
+/
+
+
