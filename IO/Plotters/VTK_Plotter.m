@@ -44,21 +44,15 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'DATASET POLYDATA\n');
             fprintf(fileID, ['POINTS ', num2str(length(Well.Cells) + 1), ' float\n']);
             %loop over perforations
-            z1 = Grid.dz/2;
-            z2 = 2*Grid.dz;
+            ztop = (Grid.Nz+1)*Grid.dz;
             for c=1:length(Well.Cells)
-                dummy = mod(Well.Cells(c), Grid.Nx);
-                if dummy == 0
-                    i = Grid.Nx;
-                else
-                    i = dummy;
-                end
-                j = (Well.Cells(c) - i)/Grid.Nx + 1;
-                x = (i - 1)*Grid.dx + Grid.dx/2;
-                y = (j - 1)*Grid.dy + Grid.dy/2;
-                fprintf(fileID, '%10.5f %10.5f %10.5f\n', x, y, z1);
+                [i, j, k] = ind2sub([Grid.Nx, Grid.Ny, Grid.Nz], Well.Cells(c));
+                x = (i - 1)* Grid.dx + Grid.dx/2;
+                y = (j - 1)* Grid.dy + Grid.dy/2;
+                z = (k -1) * Grid.dz + Grid.dz/2;
+                fprintf(fileID, '%10.5f %10.5f %10.5f\n', x, y, z);
             end
-            fprintf(fileID, '%10.5f %10.5f %10.5f\n', x, y, z2);
+            fprintf(fileID, '%10.5f %10.5f %10.5f\n', x, y, ztop);
             fprintf(fileID, ['LINES ', num2str(length(Well.Cells)), ' ',num2str(3*(length(Well.Cells))), '\n']);
             for c = 1:length(Well.Cells)
                 fprintf(fileID, '%d %d %d\n', [2, c-1, c]);

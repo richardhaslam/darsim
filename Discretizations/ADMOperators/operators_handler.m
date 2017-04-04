@@ -35,7 +35,7 @@ classdef operators_handler < handle
             Nf = FineGrid.N;
             Nc = CoarseGrid.N;
             %% MSFV Restriction Operator
-            MsR = zeros(Nc, Nf);
+            MsR = sparse(Nc, Nf);
             for c = 1:Nc
                 MsR(c, CoarseGrid.Children(c,:)) = 1;
             end
@@ -54,6 +54,7 @@ classdef operators_handler < handle
             disp(['Prolongation built in: ', num2str(prolongation), ' s']);
         end
         function ADMRestriction(obj, ADMGrid, FineGrid)
+            % Old version was slow
 %             Rf = speye(obj.ADMmap.Nf);
 %             Rc = zeros(obj.ADMmap.Nc, obj.ADMmap.Nx);
 %             % Restriction operator
@@ -69,7 +70,6 @@ classdef operators_handler < handle
               
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               % Fine-scale cells
-              
               obj.ADMRest = sparse(ADMGrid.Ntot, FineGrid.N);
               rows = 1:ADMGrid.N(1);
               columns = ADMGrid.CellIndex(1:ADMGrid.N(1))';
