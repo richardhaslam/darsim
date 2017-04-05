@@ -1,3 +1,4 @@
+
 %  Basis functions updater
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
@@ -23,11 +24,16 @@ classdef bf_updater < handle
                     % 3. Define edge-node (en) block
                     Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
                     % 4. Compute inverse of (ii), (ff) and (ee) blocks
-                    Mee_inv = Mee^-1;
+                    Edges = slvblk(Mee, Men);
                     
-                    % 1D
-                    MsP = [-Mee_inv*Men;...
+                    MsP = [-Edges;...
                         speye(Nn,Nn)];
+                    
+%                     Mee_inv = Mee^-1;
+%                     
+%                     % 1D
+%                     MsP = [-Mee_inv*Men;...
+%                         speye(Nn,Nn)];
                 case (2)
                     % 2. Define face-face block
                     Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf);
@@ -38,13 +44,20 @@ classdef bf_updater < handle
                     % 5. Define edge-node (en) block
                     Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
                     % 6. Compute inverse of (ii), (ff) and (ee) blocks
-                    Mff_inv = Mff^-1;
-                    Mee_inv = Mee^-1;
                     % 2D
                     % when 2D there are no interiors.
-                    MsP = [Mff_inv*(Mfe*Mee_inv*Men);...
-                        -Mee_inv*Men;...
+                    Edges = slvblk(Mee, Men);
+                    Faces = slvblk(Mff, Mfe * Edges);
+                    
+                    MsP = [Faces;...
+                        -Edges;...
                         speye(Nn,Nn)];
+%                     Mff_inv = Mff^-1;
+%                     Mee_inv = Mee^-1;
+%                     
+%                     MsP = [Mff_inv*(Mfe*Mee_inv*Men);...
+%                         -Mee_inv*Men;...
+%                         speye(Nn,Nn)];
                 otherwise
                     % 3D
                     % 2. Define interior-interior (ii) block
@@ -60,14 +73,25 @@ classdef bf_updater < handle
                     % 6. Define edge-node (en) block
                     Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
                     % 7. Compute inverse of (ii), (ff) and (ee) blocks
-                    Mii_inv = Mii^-1;
-                    Mff_inv = Mff^-1;
-                    Mee_inv = Mee^-1;
+                    Edges = slvblk(Mee, Men);
+                    Faces = slvblk(Mff, Mfe * Edges);
+                    Interiors = slvblk(Mii, Mif * Faces);
                     
-                    MsP = [-Mii_inv*(Mif*Mff_inv*Mfe*Mee_inv*Men);...
-                        Mff_inv*(Mfe*Mee_inv*Men);...
-                        -Mee_inv*Men;...
+                    MsP = [-Interiors;...
+                        Faces;...
+                        -Edges;...
                         speye(Nn,Nn)];
+                    
+% Old version was slower
+%                     start2 = tic;
+%                     Mii_inv = Mii^-1;
+%                     Mff_inv = Mff^-1;                   
+%                     Mee_inv = Mee^-1;                    
+%                     MsP = [-Mii_inv*(Mif*Mff_inv*Mfe*Mee_inv*Men);...                    
+%                         Mff_inv*(Mfe*Mee_inv*Men);...                    
+%                         -Mee_inv*Men;...                    
+%                         speye(Nn,Nn)];
+%                     time2 =toc(start2)
             end
             MsP = G'*MsP;
         end

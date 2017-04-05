@@ -9,14 +9,14 @@
 classdef linear_solver < handle
     properties
         CondNumber
+        %Preconditioner
     end
     methods
         function SetUp(obj, ProductionSystem, DiscretizationModel)
+            %obj.Preconditioner.Setup(ProductionSystem, DiscretizationModel);
         end
         function x = Solve(obj, A, rhs)
-            % Use Matlab direct solver
-            %obj.CondNumber = condest(A);
-            obj.CondNumber = 1;
+            %x = obj.Preconditioner.Solve(A, rhs);
             x = A\rhs;
         end
     end

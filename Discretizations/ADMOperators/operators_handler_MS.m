@@ -23,16 +23,20 @@ classdef operators_handler_MS < operators_handler
             % Build Pressure system
             obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
             %Build static restriction operator (FV)
+            disp('Building Restriction 1');
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1));
             % Build Prolongation operator
+            disp('Building Prolongation 1');
             obj.Pp{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor, obj.Dimensions);
             %Build first coarse system (with MsFE)
             obj.BFUpdater.A = obj.Pp{1}' * obj.BFUpdater.A * obj.Pp{1};
             obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx, CoarseGrid(1).Ny);
             for x = 2:maxLevel
                 % Build static restriction operator (FV)
+                disp(['Building Restriction ', num2str(x)]);
                 obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x));
                 % Build Prolongation operator
+                disp(['Building Prolongation ', num2str(x)]);
                 obj.Pp{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor, obj.Dimensions);
                 %Build coarse system (with MsFE)
                 obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
