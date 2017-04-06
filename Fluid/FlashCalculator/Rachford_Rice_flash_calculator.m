@@ -4,7 +4,7 @@
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 26 October 2016
-%Last modified: 26 October 2016
+%Last modified: 6 APril 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
     properties
@@ -34,7 +34,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             k = obj.KvaluesCalculator.Compute(Status, Components, Phases);
             
             %% 3 Chek if we are in 2 phase region
-            % 2.a: checking if it 's all liquid: checks if mix is below bubble
+            % 3.a: checking if it 's all liquid: checks if mix is below bubble
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
             
@@ -42,7 +42,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             x(BubCheck - 1 <= obj.tol, 1) = 1; % This is to avoid having singular Jacobian matrix.
             SinglePhase(BubCheck - 1 <= obj.tol) = 2; % It s all liquid
             
-            % 2.b: checking if it 's all vapor: checks if mix is above dew
+            % 3.b: checking if it 's all vapor: checks if mix is above dew
             % point
             DewCheck = z ./ k;
             DewCheck = sum(DewCheck, 2);
@@ -50,7 +50,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             x(DewCheck - 1 < obj.tol, 2) = 1; % This is to avoid having singular Jacobian matrix.
             SinglePhase(DewCheck - 1 < obj.tol) = 1;  % It s all vapour
             
-            %% 3. Actual Flash: solves for fv (vapor fraction)
+            %% 4. Actual Flash: solves for fv (vapor fraction)
             TwoPhase = ones(length(SinglePhase), 1);
             TwoPhase(SinglePhase > 0 ) = 0;
             
@@ -66,15 +66,17 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             % Find fv with the tangent method
             converged = 0;
             itLimit = 10000;
+            hi = zeros(N, nc);
+            dhi = zeros(N, nc);
             while ~converged && min(alpha) > 0.01
                 itCounter = 0;
                 while itCounter < itLimit && ~converged
                     % Finds hi for each component
-                    hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
-                    hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
-                    % Finds the derivative of hi for each component
-                    dhi(:, 1) = (z(:,1) .* (k(:,1) - 1).^2) ./ ((fv .* (k(:,1) - 1) + 1).^2);
-                    dhi(:, 2) = (z(:,2) .* (k(:,2) - 1).^2) ./ ((fv .* (k(:,2) - 1) + 1).^2);
+                    for i=1:nc
+                        hi(:,i) = (z(:,i) .* k(:,i)) ./ (fv .* (k(:,i) - 1) + 1);
+                        % Finds the derivative of hi for each component
+                        dhi(:,i) = (z(:,i) .* (k(:,i) - 1).^2) ./ ((fv .* (k(:,i) - 1) + 1).^2);
+                    end
                     h = sum(hi, 2) - 1;
                     dh = - sum(dhi, 2);
                     
@@ -103,7 +105,11 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
                 fv(fv < 0 ) = 0;
             end
             
-            %5. Solve for x's and y's
+            %% 5. Solve for xs and ys
+            % Have to make it general for nc components. Should be easy.
+%             for i=1:nc
+%                 x(TwoPhase==1, )
+%             end
             % Solves for mole fractions in liquid phase
             x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1, 1) .* (k(TwoPhase == 1, 1) - 1) + 1);
             % Solves for mole fractions in gas phase
