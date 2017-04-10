@@ -14,7 +14,7 @@ classdef end_of_sim_evaluator_gascut < end_of_sim_evaluator
         function obj = end_of_sim_evaluator_gascut(limit)
             obj.Limit = limit;
         end
-        function End = HasSimulationEnded(obj, End, Summary, Time, Ndt)
+        function End = HasSimulationEnded(obj, End, Summary, ProductionSystem, Time, Ndt)
             gascut = sum(Summary.WellsData.Production.Phases(Ndt, :, 1))/sum(Summary.WellsData.Injection.Phases(Ndt, :, 1));
             if gascut >= obj.Limit
                 End = 1;

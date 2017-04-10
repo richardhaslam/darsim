@@ -39,7 +39,7 @@ classdef builder < handle
         ADM
         LinearSolver
         Formulation = 'Natural';
-        StopCriterion = 'MAX TIME';
+        StopCriterion = 'PV INJECTED';
         Fractured = 0;
     end
     methods
@@ -530,7 +530,7 @@ classdef builder < handle
             end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
-            TimeDriver = TimeLoop_Driver(obj.reports, obj.TotalTime);
+            TimeDriver = TimeLoop_Driver(obj.reports, obj.TotalTime, obj.MaxNumTimeSteps);
             %% Construct Coupling
             switch(obj.CouplingType)
                 case('FIM')
@@ -616,6 +616,8 @@ classdef builder < handle
                     end_of_sim_eval = end_of_sim_evaluator_totaltime(obj.TotalTime, obj.MaxNumTimeSteps);
                 case('COMPONENT CUT')
                     end_of_sim_eval = end_of_sim_evaluator_gascut(0.2);
+                case('PV INJECTED')
+                    end_of_sim_eval = end_of_sim_evaluator_PVInjected(3);
             end
             TimeDriver.AddEndOfSimEvaluator(end_of_sim_eval);
         end

@@ -1,6 +1,6 @@
 % Solve Rachford-Rice equation
 function [fv, x, y]= RachfordRice(z, k)
-fv = 0.992;
+fv = 1;
 converged = 0;
 alpha = 1;
 iterations = 0;

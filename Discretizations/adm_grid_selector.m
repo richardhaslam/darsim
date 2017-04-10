@@ -20,7 +20,7 @@ classdef adm_grid_selector < handle
             FineGrid.Active = ones(FineGrid.N, 1);
             
             % Coarsen the grid where resolution is not necessary
-            S = reshape(ProductionSystem.Reservoir.State.Properties('z_1').Value, FineGrid.Nx, FineGrid.Ny, FineGrid.Nz); % it's useful in this form for selecting the grid.
+            S = reshape(ProductionSystem.Reservoir.State.Properties('S_1').Value, FineGrid.Nx, FineGrid.Ny, FineGrid.Nz); % it's useful in this form for selecting the grid.
             
             %1. Choose Active Coarse cells and Flag fine ones  
             CoarseGrid(1).Active = obj.NoWellsCoarseCells;

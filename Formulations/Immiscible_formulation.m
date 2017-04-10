@@ -286,6 +286,9 @@ classdef Immiscible_formulation < formulation
             % Update other unknwons as well 
             %obj.UpdatePhaseCompositions(Status, FluidModel);
         end
+        function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)
+            CFL = 0;
+        end
         %% Methods for Sequential Coupling
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
             s = ProductionSystem.Reservoir.State.S;

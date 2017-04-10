@@ -61,49 +61,82 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             
             % Single phase cells do not need to flash
             fv(SinglePhase == 1) = 1;
-            fv(SinglePhase == 2)= 0;
+            fv(SinglePhase == 2) = 0;
             
             % Find fv with the tangent method
+%             converged = 0;
+%             itLimit = 10000;
+%             hi = zeros(N, nc);
+%             dhi = zeros(N, nc);
+%             while ~converged && min(alpha) > 0.01
+%                 itCounter = 0;
+%                 while itCounter < itLimit && ~converged
+%                     % Finds hi for each component
+%                     for i=1:nc
+%                         hi(:,i) = (z(:,i) .* k(:,i)) ./ (fv .* (k(:,i) - 1) + 1);
+%                         % Finds the derivative of hi for each component
+%                         dhi(:,i) = (z(:,i) .* (k(:,i) - 1).^2) ./ ((fv .* (k(:,i) - 1) + 1).^2);
+%                     end
+%                     h = sum(hi, 2) - 1;
+%                     dh = - sum(dhi, 2);
+%                     
+%                     % Update fv
+%                     h(TwoPhase == 0) = 0;
+%                     dh(TwoPhase == 0) = 1;
+%                     fvnew = alpha .* (-h ./ dh) + fv;
+%                     
+%                     fv = fvnew;
+%                     if norm(h, inf) < 1e-10
+%                         converged = 1;
+%                         disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations, with alpha ', num2str(min(alpha))])
+%                     end
+%                     itCounter = itCounter + 1;
+%                 end
+%                 alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
+%                 fv (fv > 1) = 0.9;
+%                 fv (fv < 0) = 0.1;
+%                 fv (isnan(fv)) = Status.Properties('ni_1').Value(isnan(fv));
+%             end
+%             if ~converged
+%                 [~, cellIndex] = max(abs(h));
+%                 disp('Warning: Flash did not fully converge!');
+%                 disp(['The residual norm of the equilibrium equation is ', num2str(norm(h, inf)), ' in cell ', num2str(cellIndex)]);
+%                 fv (fv > 1) = 1;
+%                 fv(fv < 0 ) = 0;
+%             end
+            
+            % find fv with bisection method
             converged = 0;
-            itLimit = 10000;
-            hi = zeros(N, nc);
-            dhi = zeros(N, nc);
-            while ~converged && min(alpha) > 0.01
-                itCounter = 0;
-                while itCounter < itLimit && ~converged
-                    % Finds hi for each component
-                    for i=1:nc
-                        hi(:,i) = (z(:,i) .* k(:,i)) ./ (fv .* (k(:,i) - 1) + 1);
-                        % Finds the derivative of hi for each component
-                        dhi(:,i) = (z(:,i) .* (k(:,i) - 1).^2) ./ ((fv .* (k(:,i) - 1) + 1).^2);
-                    end
-                    h = sum(hi, 2) - 1;
-                    dh = - sum(dhi, 2);
-                    
-                    % Update fv
-                    h(TwoPhase == 0) = 0;
-                    dh(TwoPhase == 0) = 1;
-                    fvnew = alpha .* (-h ./ dh) + fv;
-                    
-                    fv = fvnew;
-                    if norm(h, inf) < 1e-10
-                        converged = 1;
-                        disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations, with alpha ', num2str(min(alpha))])
-                    end
-                    itCounter = itCounter + 1;
+            itCounter = 0;
+            hia = zeros(N, nc);
+            hib = zeros(N, nc);
+            hinew = zeros(N, nc);
+            fva = 0.0 * ones(N, 1);
+            fvb = 1 * ones(N, 1);
+            while itCounter < itLimit && ~converged
+                fvn = (fva + fvb)./2;
+                % Finds hi for each component
+                for i=1:nc
+                    hia(:,i) = (z(:,i) .* k(:,i)) ./ (fva .* (k(:,i) - 1) + 1);
+                    hib(:,i) = (z(:,i) .* k(:,i)) ./ (fvb .* (k(:,i) - 1) + 1);
+                    hinew(:, i) = (z(:,i) .* k(:,i)) ./ (fvn .* (k(:,i) - 1) + 1);
                 end
-                alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
-                fv (fv > 1) = 0.9;
-                fv (fv < 0) = 0.1;
-                fv (isnan(fv)) = Status.Properties('ni_1').Value(isnan(fv));
+                ha = sum(hia, 2) - 1;
+                hb = sum(hib, 2) - 1;
+                hnew = sum(hinew, 2) - 1;
+                % Update fv
+                fva((ha .* hnew) > 0) = fvn((ha .* hnew) > 0);
+                fvb((ha .* hnew) < 0) = fvn((ha .* hnew) < 0);
+                hnew(TwoPhase == 0) = 0;
+                if norm(hnew, inf) < 1e-10
+                    converged = 1;
+                    disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations, with alpha ', num2str(min(alpha))])
+                end
+                itCounter = itCounter + 1;
             end
-            if ~converged
-                [~, cellIndex] = max(abs(h));
-                disp('Warning: Flash did not fully converge!');
-                disp(['The residual norm of the equilibrium equation is ', num2str(norm(h, inf)), ' in cell ', num2str(cellIndex)]);
-                fv (fv > 1) = 1;
-                fv(fv < 0 ) = 0;
-            end
+            fvn(SinglePhase == 1) = 1;
+            fvn(SinglePhase == 2) = 0;
+            disp(max(abs(fvn - fv)));
             
             %% 5. Solve for xs and ys
             % Have to make it general for nc components. Should be easy.

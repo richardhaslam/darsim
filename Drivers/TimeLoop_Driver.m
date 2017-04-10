@@ -10,14 +10,21 @@ classdef TimeLoop_Driver < handle
     properties
         Time
         TStops % List of solution report times
+        TotalTime
         Ndt
         dt
         Coupling
         EndOfSimEvaluator
     end
     methods
-        function obj = TimeLoop_Driver(n_reports, TotalTime)
-            obj.TStops = linspace(TotalTime/n_reports, TotalTime, n_reports);
+        function obj = TimeLoop_Driver(n_reports, TotalTime, MaxNumTimesteps)
+            obj.TotalTime = TotalTime;
+            if n_reports == 0
+                % Prnt at every time-step
+                obj.TStops = TotalTime * ones(MaxNumTimesteps ,1);
+            else
+                obj.TStops = linspace(TotalTime/n_reports, TotalTime, n_reports);
+            end
             %obj.TStops = [365*24*3600:365*24*3600:1000*365*24*3600];
         end
         function AddCouplingStrategy(obj, coupling)
@@ -69,10 +76,10 @@ classdef TimeLoop_Driver < handle
                 Summary.SaveGridStats(obj.Ndt - 1, DiscretizationModel);
                 
                 %% Has simulation ended?
-                EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, obj.Time, obj.Ndt-1);
+                EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, ProductionSystem, obj.Time, obj.Ndt);
                 
                 %% %%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-                if (obj.Time == obj.TStops(index) || EndOfSimCriterion==1)
+                if (obj.Time == obj.TStops(index) || obj.TStops(index) == obj.TotalTime ||EndOfSimCriterion==1 )
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
                     disp(char(5));
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
