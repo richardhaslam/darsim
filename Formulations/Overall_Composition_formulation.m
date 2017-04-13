@@ -212,8 +212,8 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 for j=1:length(a)
                     for c=1:obj.NofComponents
                     Jp{c}(a(j),a(j)) = Jp{c}(a(j),a(j)) ...
-                                       + Inj(i).PI * K(a(j)) * (Inj(i).Mob(:,1) * Inj(i).rho(j,1) * Inj(i).x(:,(c-1)*2+1) ...
-                                       + Inj(i).Mob(:,2) *  Inj(i).rho(j,2) * Inj(i).x(:,(c-1)*2+2));
+                                       + Inj(i).PI * K(a(j)) * (Inj(i).Mob(1,1) * Inj(i).rho(j,1) * Inj(i).x(1,(c-1)*2+1) ...
+                                       + Inj(i).Mob(1,2) *  Inj(i).rho(j,2) * Inj(i).x(1,(c-1)*2+2));
                     end
                 end
             end

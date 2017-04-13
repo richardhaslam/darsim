@@ -33,7 +33,7 @@ classdef Immiscible_fluid_model < fluid_model
                 Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
             end
         end
-        function ComputePhaseDensities(obj, Status)
+        function ComputePhaseDensities(obj, Status, SinglePhase)
             for i=1:obj.NofPhases
                 rho = Status.Properties(['rho_', num2str(i)]);
                 rho.Value = obj.Phases(i).ComputeDensity(Status.Properties('P_2').Value, obj.Components);

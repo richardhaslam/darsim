@@ -14,6 +14,7 @@ classdef reservoir < handle
         Temp
         K
         Por
+        TotalPV
         State
     end
     methods
@@ -27,6 +28,7 @@ classdef reservoir < handle
         function AddPermeabilityPorosity(obj, k, por)
             obj.K = k;
             obj.Por = por;
+            obj.TotalPV = obj.Length * obj.Width * obj.Thickness * obj.Por;
         end
     end
 end

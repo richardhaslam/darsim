@@ -4,7 +4,7 @@
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 26 October 2016
-%Last modified: 26 October 2016
+%Last modified: 11 April 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
     properties
@@ -34,7 +34,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             k = obj.KvaluesCalculator.Compute(Status, Components, Phases);
             
             %% 3 Chek if we are in 2 phase region
-            % 2.a: checking if it 's all liquid: checks if mix is below bubble
+            % 3.a: checking if it 's all liquid: checks if mix is below bubble
             BubCheck = z .* k;
             BubCheck = sum(BubCheck, 2);
             
@@ -42,7 +42,7 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             x(BubCheck - 1 <= obj.tol, 1) = 1; % This is to avoid having singular Jacobian matrix.
             SinglePhase(BubCheck - 1 <= obj.tol) = 2; % It s all liquid
             
-            % 2.b: checking if it 's all vapor: checks if mix is above dew
+            % 3.b: checking if it 's all vapor: checks if mix is above dew
             % point
             DewCheck = z ./ k;
             DewCheck = sum(DewCheck, 2);
@@ -50,60 +50,53 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             x(DewCheck - 1 < obj.tol, 2) = 1; % This is to avoid having singular Jacobian matrix.
             SinglePhase(DewCheck - 1 < obj.tol) = 1;  % It s all vapour
             
-            %% 3. Actual Flash: solves for fv (vapor fraction)
+            %% 4. Actual Flash: solves for fv (vapor fraction)
             TwoPhase = ones(length(SinglePhase), 1);
             TwoPhase(SinglePhase > 0 ) = 0;
             
-            
-            % Initilaize variables
-            alpha = ones(N, 1);
-            fv = Status.Properties('ni_1').Value;
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %           %%%%%%%%% BISECTION %%%%%%%%%
+            % find fv with bisection method
+            converged = 0;
+            itCounter = 0;
+            itLimit = 10000;
+            hia = zeros(N, nc);
+            hib = zeros(N, nc);
+            hinew = zeros(N, nc);
+            fva = 0.0 * ones(N, 1);
+            fvb = 1 * ones(N, 1);
+            while itCounter < itLimit && ~converged
+                fv = (fva + fvb)./2;
+                % Finds hi for each component
+                for i=1:nc
+                    hia(:,i) = (z(:,i) .* k(:,i)) ./ (fva .* (k(:,i) - 1) + 1);
+                    hib(:,i) = (z(:,i) .* k(:,i)) ./ (fvb .* (k(:,i) - 1) + 1);
+                    hinew(:, i) = (z(:,i) .* k(:,i)) ./ (fv .* (k(:,i) - 1) + 1);
+                end
+                ha = sum(hia, 2) - 1;
+                %hb = sum(hib, 2) - 1;
+                hnew = sum(hinew, 2) - 1;
+                % Update fv
+                fva((ha .* hnew) > 0) = fv((ha .* hnew) > 0);
+                fvb((ha .* hnew) < 0) = fv((ha .* hnew) < 0);
+                hnew(TwoPhase == 0) = 0;
+                if norm(hnew, inf) < 1e-10
+                    converged = 1;
+                    disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations'])
+                end
+                itCounter = itCounter + 1;
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % Single phase cells do not need to flash
             fv(SinglePhase == 1) = 1;
-            fv(SinglePhase == 2)= 0;
+            fv(SinglePhase == 2) = 0;
             
-            % Find fv with the tangent method
-            converged = 0;
-            itLimit = 10000;
-            while ~converged && min(alpha) > 0.01
-                itCounter = 0;
-                while itCounter < itLimit && ~converged
-                    % Finds hi for each component
-                    hi(:,1) = (z(:,1) .* k(:,1)) ./ (fv .* (k(:,1) - 1) + 1);
-                    hi(:,2) = (z(:,2) .* k(:,2)) ./ (fv .* (k(:,2) - 1) + 1);
-                    % Finds the derivative of hi for each component
-                    dhi(:, 1) = (z(:,1) .* (k(:,1) - 1).^2) ./ ((fv .* (k(:,1) - 1) + 1).^2);
-                    dhi(:, 2) = (z(:,2) .* (k(:,2) - 1).^2) ./ ((fv .* (k(:,2) - 1) + 1).^2);
-                    h = sum(hi, 2) - 1;
-                    dh = - sum(dhi, 2);
-                    
-                    % Update fv
-                    h(TwoPhase == 0) = 0;
-                    dh(TwoPhase == 0) = 1;
-                    fvnew = alpha .* (-h ./ dh) + fv;
-                    
-                    fv = fvnew;
-                    if norm(h, inf) < 1e-10
-                        converged = 1;
-                        disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations, with alpha ', num2str(min(alpha))])
-                    end
-                    itCounter = itCounter + 1;
-                end
-                alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
-                fv (fv > 1) = 0.9;
-                fv (fv < 0) = 0.1;
-                fv (isnan(fv)) = Status.Properties('ni_1').Value(isnan(fv));
-            end
-            if ~converged
-                [~, cellIndex] = max(abs(h));
-                disp('Warning: Flash did not fully converge!');
-                disp(['The residual norm of the equilibrium equation is ', num2str(norm(h, inf)), ' in cell ', num2str(cellIndex)]);
-                fv (fv > 1) = 1;
-                fv(fv < 0 ) = 0;
-            end
-            
-            %5. Solve for x's and y's
+            %% 5. Compute xs and ys
+            % Have to make it general for nc components. Should be easy.
+%             for i=1:nc
+%                 x(TwoPhase==1, )
+%             end
             % Solves for mole fractions in liquid phase
             x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1, 1) .* (k(TwoPhase == 1, 1) - 1) + 1);
             % Solves for mole fractions in gas phase
@@ -124,3 +117,50 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
         end
     end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %           %%%%%%%%% NEWTON-RAPHSON %%%%%%%%%
+%             % Initilaize variables
+%             alpha = ones(N, 1);
+%             fv = Status.Properties('ni_1').Value;
+%             converged = 0;
+%             itLimit = 10000;
+%             hi = zeros(N, nc);
+%             dhi = zeros(N, nc);
+%             while ~converged && min(alpha) > 0.01
+%                 itCounter = 0;
+%                 while itCounter < itLimit && ~converged
+%                     % Finds hi for each component
+%                     for i=1:nc
+%                         hi(:,i) = (z(:,i) .* k(:,i)) ./ (fv .* (k(:,i) - 1) + 1);
+%                         % Finds the derivative of hi for each component
+%                         dhi(:,i) = (z(:,i) .* (k(:,i) - 1).^2) ./ ((fv .* (k(:,i) - 1) + 1).^2);
+%                     end
+%                     h = sum(hi, 2) - 1;
+%                     dh = - sum(dhi, 2);
+%                     
+%                     % Update fv
+%                     h(TwoPhase == 0) = 0;
+%                     dh(TwoPhase == 0) = 1;
+%                     fvnew = alpha .* (-h ./ dh) + fv;
+%                     
+%                     fv = fvnew;
+%                     if norm(h, inf) < 1e-10
+%                         converged = 1;
+%                         disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations, with alpha ', num2str(min(alpha))])
+%                     end
+%                     itCounter = itCounter + 1;
+%                 end
+%                 alpha (abs(h) > 1e-10) = alpha (abs(h) > 1e-10)/2;
+%                 fv (fv > 1) = 0.9;
+%                 fv (fv < 0) = 0.1;
+%                 fv (isnan(fv)) = Status.Properties('ni_1').Value(isnan(fv));
+%             end
+%             if ~converged
+%                 [~, cellIndex] = max(abs(h));
+%                 disp('Warning: Flash did not fully converge!');
+%                 disp(['The residual norm of the equilibrium equation is ', num2str(norm(h, inf)), ' in cell ', num2str(cellIndex)]);
+%                 fv (fv > 1) = 1;
+%                 fv(fv < 0 ) = 0;
+%             end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

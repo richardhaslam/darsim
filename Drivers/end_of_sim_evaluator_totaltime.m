@@ -7,19 +7,5 @@
 %Last modified: 7 February 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef end_of_sim_evaluator_totaltime < end_of_sim_evaluator
-    properties
-        TotalTime
-        MaxNumberOfTimeSteps
-    end
-    methods
-        function obj = end_of_sim_evaluator_totaltime(total_time, max_n_tsteps)
-            obj.TotalTime = total_time;
-            obj.MaxNumberOfTimeSteps = max_n_tsteps;
-        end
-        function End = HasSimulationEnded(obj, End, ProductionSystem, Time, Ndt)
-            if Time >= obj.TotalTime || Ndt == obj.MaxNumberOfTimeSteps
-                End = 1;
-            end
-        end
-    end
+    
 end

@@ -174,8 +174,8 @@ classdef Comp_fluid_model < fluid_model
                     dxdz(i,:,j) = (dFdx\dFdz(:,j+1))';
                 end
             end
-            dxdp(SinglePhase == 1, 5) = 0;
-            dxdp(SinglePhase == 2, 5) = 0;
+            dxdp(SinglePhase == 1, :) = 0;
+            dxdp(SinglePhase == 2, :) = 0;
             
             dxdz(SinglePhase == 1, 1) = 1; %1
             dxdz(SinglePhase == 1, 2) = 0;

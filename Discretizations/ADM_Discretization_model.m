@@ -34,13 +34,18 @@ classdef ADM_Discretization_model < Discretization_model
        function InitializeMapping(obj, ProductionSystem, FluidModel)
             disp('Algebraic Dynamic Multilevel (ADM) method run') 
             % Construct Coarse Grids
+            disp(char(2));
+            disp('Constructing coarse grids');
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             
             %% Pressure interpolators
             disp('Static operators - start computation');
+            start = tic;
             obj.OperatorsHandler.BuildStaticOperators(obj.CoarseGrid, obj.ReservoirGrid, obj.maxLevel,...
                 ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.Properties('S_1').Value, FluidModel);
             disp('Static operators - end')
+            timer = toc(start);
+            disp(['Static operators construction took ', num2str(timer)])
             disp(char(2));
         end
         function ConstructCoarseGrids(obj, Inj, Prod)

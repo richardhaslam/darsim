@@ -10,24 +10,26 @@ classdef adm_grid_selector < handle
     properties
         tol
         NoWellsCoarseCells
+        key
     end
     methods
-        function obj = adm_grid_selector(tol)
+        function obj = adm_grid_selector(tol, key)
             obj.tol = tol;
+            obj.key = key;
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
             % Select the ADM grid
             FineGrid.Active = ones(FineGrid.N, 1);
             
             % Coarsen the grid where resolution is not necessary
-            S = reshape(ProductionSystem.Reservoir.State.Properties('z_1').Value, FineGrid.Nx, FineGrid.Ny, FineGrid.Nz); % it's useful in this form for selecting the grid.
+            S = reshape(ProductionSystem.Reservoir.State.Properties(obj.key).Value, FineGrid.Nx, FineGrid.Ny, FineGrid.Nz); % it's useful in this form for selecting the grid.
             
             %1. Choose Active Coarse cells and Flag fine ones  
             CoarseGrid(1).Active = obj.NoWellsCoarseCells;
-            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), 1, S);
+            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), S);
             for x = 2:maxLevel
                 obj.DefinePossibleActive(CoarseGrid(x), CoarseGrid(x-1), x);
-                obj.SelectCoarseFine(CoarseGrid(x-1), CoarseGrid(x), x, S);
+                obj.SelectCoarseFine(CoarseGrid(x-1), CoarseGrid(x), S);
             end
             
             %3. Count total number of active nodes
@@ -41,10 +43,10 @@ classdef adm_grid_selector < handle
             
             ADMGrid.Initialize(TotalActive, NumberOfActive, maxLevel);
             
-            %Add fine Grid cells
+            % Add fine Grid cells
             obj.AddActiveCells(ADMGrid, FineGrid, 0);
             
-            %Add Coarse Grids cells
+            % Add Coarse Grids cells
             for x = 1:maxLevel
                 obj.AddActiveCells(ADMGrid, CoarseGrid(x), x);
             end
@@ -77,7 +79,7 @@ classdef adm_grid_selector < handle
                 end
             end
         end
-        function SelectCoarseFine(obj, FineGrid, CoarseGrid, level, S)
+        function SelectCoarseFine(obj, FineGrid, CoarseGrid, S)
             %Given a Fine and a Coarse Grids chooses the cells that have to be active
             %1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
