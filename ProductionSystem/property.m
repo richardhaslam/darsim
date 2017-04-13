@@ -19,7 +19,7 @@ classdef property < matlab.mixin.Copyable
                 case(6)
                     obj.Valmin = minValue;
                     obj.Valmax = maxValue;
-                    obj.Value = init * ones(row, col);
+                    obj.Value = init .* ones(row, col);
             end
         end
         function update(obj, delta)

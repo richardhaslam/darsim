@@ -4,7 +4,7 @@
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
 %Created: 26 October 2016
-%Last modified: 6 APril 2017
+%Last modified: 11 April 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
     properties
@@ -54,16 +54,75 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
             TwoPhase = ones(length(SinglePhase), 1);
             TwoPhase(SinglePhase > 0 ) = 0;
             
-            
-            % Initilaize variables
-            alpha = ones(N, 1);
-            fv = Status.Properties('ni_1').Value;
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %           %%%%%%%%% BISECTION %%%%%%%%%
+            % find fv with bisection method
+            converged = 0;
+            itCounter = 0;
+            itLimit = 10000;
+            hia = zeros(N, nc);
+            hib = zeros(N, nc);
+            hinew = zeros(N, nc);
+            fva = 0.0 * ones(N, 1);
+            fvb = 1 * ones(N, 1);
+            while itCounter < itLimit && ~converged
+                fv = (fva + fvb)./2;
+                % Finds hi for each component
+                for i=1:nc
+                    hia(:,i) = (z(:,i) .* k(:,i)) ./ (fva .* (k(:,i) - 1) + 1);
+                    hib(:,i) = (z(:,i) .* k(:,i)) ./ (fvb .* (k(:,i) - 1) + 1);
+                    hinew(:, i) = (z(:,i) .* k(:,i)) ./ (fv .* (k(:,i) - 1) + 1);
+                end
+                ha = sum(hia, 2) - 1;
+                %hb = sum(hib, 2) - 1;
+                hnew = sum(hinew, 2) - 1;
+                % Update fv
+                fva((ha .* hnew) > 0) = fv((ha .* hnew) > 0);
+                fvb((ha .* hnew) < 0) = fv((ha .* hnew) < 0);
+                hnew(TwoPhase == 0) = 0;
+                if norm(hnew, inf) < 1e-10
+                    converged = 1;
+                    disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations'])
+                end
+                itCounter = itCounter + 1;
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % Single phase cells do not need to flash
             fv(SinglePhase == 1) = 1;
             fv(SinglePhase == 2) = 0;
             
-            % Find fv with the tangent method
+            %% 5. Compute xs and ys
+            % Have to make it general for nc components. Should be easy.
+%             for i=1:nc
+%                 x(TwoPhase==1, )
+%             end
+            % Solves for mole fractions in liquid phase
+            x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1, 1) .* (k(TwoPhase == 1, 1) - 1) + 1);
+            % Solves for mole fractions in gas phase
+            x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);
+            x(:, 3:4) = 1 - x(:,1:2);
+            
+            Ni(:,1) = fv;
+            Ni(:,2) = 1-fv;
+            % Copy it into Status object
+            for j=1:nph
+                NI = Status.Properties(['ni_', num2str(j)]);
+                NI.Value = Ni(:,j);
+                for i=1:nc
+                    X = Status.Properties(['x_', num2str(i),'ph',num2str(j)]);
+                    X.Value = x(:,(i-1)*nph + j);
+                end
+            end
+        end
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %           %%%%%%%%% NEWTON-RAPHSON %%%%%%%%%
+%             % Initilaize variables
+%             alpha = ones(N, 1);
+%             fv = Status.Properties('ni_1').Value;
 %             converged = 0;
 %             itLimit = 10000;
 %             hi = zeros(N, nc);
@@ -104,62 +163,4 @@ classdef Rachford_Rice_flash_calculator < Kvalues_flash_calculator
 %                 fv (fv > 1) = 1;
 %                 fv(fv < 0 ) = 0;
 %             end
-            
-            % find fv with bisection method
-            converged = 0;
-            itCounter = 0;
-            hia = zeros(N, nc);
-            hib = zeros(N, nc);
-            hinew = zeros(N, nc);
-            fva = 0.0 * ones(N, 1);
-            fvb = 1 * ones(N, 1);
-            while itCounter < itLimit && ~converged
-                fvn = (fva + fvb)./2;
-                % Finds hi for each component
-                for i=1:nc
-                    hia(:,i) = (z(:,i) .* k(:,i)) ./ (fva .* (k(:,i) - 1) + 1);
-                    hib(:,i) = (z(:,i) .* k(:,i)) ./ (fvb .* (k(:,i) - 1) + 1);
-                    hinew(:, i) = (z(:,i) .* k(:,i)) ./ (fvn .* (k(:,i) - 1) + 1);
-                end
-                ha = sum(hia, 2) - 1;
-                hb = sum(hib, 2) - 1;
-                hnew = sum(hinew, 2) - 1;
-                % Update fv
-                fva((ha .* hnew) > 0) = fvn((ha .* hnew) > 0);
-                fvb((ha .* hnew) < 0) = fvn((ha .* hnew) < 0);
-                hnew(TwoPhase == 0) = 0;
-                if norm(hnew, inf) < 1e-10
-                    converged = 1;
-                    disp(['Rachford-Rice converged in ', num2str(itCounter + 1), ' iterations, with alpha ', num2str(min(alpha))])
-                end
-                itCounter = itCounter + 1;
-            end
-            fvn(SinglePhase == 1) = 1;
-            fvn(SinglePhase == 2) = 0;
-            disp(max(abs(fvn - fv)));
-            
-            %% 5. Solve for xs and ys
-            % Have to make it general for nc components. Should be easy.
-%             for i=1:nc
-%                 x(TwoPhase==1, )
-%             end
-            % Solves for mole fractions in liquid phase
-            x(TwoPhase == 1, 2) = z(TwoPhase == 1, 1) ./ (fv(TwoPhase == 1, 1) .* (k(TwoPhase == 1, 1) - 1) + 1);
-            % Solves for mole fractions in gas phase
-            x(TwoPhase == 1, 1) = k(TwoPhase == 1, 1) .* x(TwoPhase == 1, 2);
-            x(:, 3:4) = 1 - x(:,1:2);
-            
-            Ni(:,1) = fv;
-            Ni(:,2) = 1-fv;
-            % Copy it into Status object
-            for j=1:nph
-                NI = Status.Properties(['ni_', num2str(j)]);
-                NI.Value = Ni(:,j);
-                for i=1:nc
-                    X = Status.Properties(['x_', num2str(i),'ph',num2str(j)]);
-                    X.Value = x(:,(i-1)*nph + j);
-                end
-            end
-        end
-    end
-end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

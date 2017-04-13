@@ -31,7 +31,7 @@ classdef injector_pressure < injector
                 otherwise
                     for j=1:FluidModel.NofComp
                         for phase=1:FluidModel.NofPhases
-                            obj.QComponents(:, j) = obj.QComponents(:, j) + obj.x((j-1)*2 + phase) .* obj.QPhases(:, phase);
+                            obj.QComponents(:, j) = obj.QComponents(:, j) + obj.x(:,(j-1)*2 + phase) .* obj.QPhases(:, phase);
                         end
                     end
             end

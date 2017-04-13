@@ -82,13 +82,16 @@ classdef fluid_model < handle
             % Compute Pc as a function of S_1
             switch(obj.WettingPhaseIndex)
                 case(1)
-                    S = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr) + 0.1;
-                    S (S < obj.Phases(1).sr) = 0.1;
-                    Pc.Value = obj.CapillaryModel.ComputePc(S);
+                    s = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr);
+                    s = max(s, 0.05);
+                    Pc.Value = obj.CapillaryModel.ComputePc(s);
+                    Pc.Value(S < obj.Phases(1).sr) = 0;
                 case(2)
                     S = 1 - S;
-                    S = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr) + 0.1;
-                    Pc.Value = -obj.CapillaryModel.ComputePc(S);
+                    s = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr);
+                    s = max(s, 0.05);
+                    Pc.Value = -obj.CapillaryModel.ComputePc(s);
+                    Pc.Value(S < obj.Phases(2).sr) = 0;
             end
             % Update P_1
             P1.Value = P2.Value - Pc.Value;
@@ -96,13 +99,16 @@ classdef fluid_model < handle
         function dPc = DPcDS(obj, S)
             switch(obj.WettingPhaseIndex)
                 case(1)
-                    S = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr) + 0.1;
-                    dPc = obj.CapillaryModel.dPcdS(S);
+                    s = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr);
+                    s = max(s, 0.05);
+                    dPc = obj.CapillaryModel.dPcdS(s);
                     dPc (S < obj.Phases(1).sr) = 0.0;
                 case(2)
                     S = 1 - S;
-                    S = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr) + 0.1;
-                    dPc =  - obj.CapillaryModel.dPcdS(S);
+                    s = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr);
+                    s = max(s, 0.05);
+                    dPc =  - obj.CapillaryModel.dPcdS(s);
+                    dPc (S < obj.Phases(2).sr) = 0.0;
             end
             
         end

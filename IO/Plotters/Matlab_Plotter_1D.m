@@ -16,7 +16,9 @@ classdef Matlab_Plotter_1D < Plotter
             obj.color1 = 'red';
             obj.color2 = 'green';
         end
-        function PlotSolution(obj, Status, Grid)
+        function PlotSolution(obj, ProductionSystem, DiscretizationModel)
+            Grid = DiscretizationModel.ReservoirGrid;
+            Status = ProductionSystem.Reservoir.State;
             %Plot for 1D problems
             x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
             
@@ -27,7 +29,7 @@ classdef Matlab_Plotter_1D < Plotter
                 plot(x, Status.Properties(Names{i}).Value, obj.color2, 'LineWidth',1);
                 xlabel('x [m]');
                 ylabel(Names{i});
-                axis([0 Grid.dx*Grid.Nx Status.Properties(Names{i}).Valmin Status.Properties(Names{i}).Valmax])
+                %axis([0 Grid.dx*Grid.Nx Status.Properties(Names{i}).Valmin Status.Properties(Names{i}).Valmax])
                 set(gca,'fontsize',24);
                 hold on
                 drawnow;

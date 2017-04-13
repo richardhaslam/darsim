@@ -218,6 +218,9 @@ classdef builder < handle
                 temp = strfind(SettingsMatrix, 'TOLERANCE');
                 x = find(~cellfun('isempty', temp));
                 tol = str2double(SettingsMatrix(x+1));
+                temp = strfind(SettingsMatrix, 'COARSENING_CRITERION');
+                x = find(~cellfun('isempty', temp));
+                key = char(SettingsMatrix(x+1));
                 temp = strfind(SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
                 cx = str2double(SettingsMatrix(x+1));
@@ -226,6 +229,9 @@ classdef builder < handle
                 Coarsening = [cx, cy, cz; cx^2, cy^2, cz^2; cx^3, cy^3, cz^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
+                if isempty(maxLevel) || isempty(Coarsening) || isempty(key) || isempty(tol) || isempty(x)
+                    error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
+                end
                 switch (char(SettingsMatrix(x+1))) 
                     case ('Constant')
                         operatorshandler = operators_handler_constant(maxLevel, [cx,cy,cz]);
@@ -236,7 +242,7 @@ classdef builder < handle
                         operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
                         operatorshandler.BFUpdater = bf_updater_ms();
                 end
-                gridselector = adm_grid_selector(tol);
+                gridselector = adm_grid_selector(tol, key);
                 %% Reservori Grid
                 Discretization = ADM_Discretization_model(maxLevel, Coarsening);
                 ReservoirGrid = cartesian_grid(nx, ny, nz);
@@ -615,9 +621,9 @@ classdef builder < handle
                 case('MAX TIME')
                     end_of_sim_eval = end_of_sim_evaluator_totaltime(obj.TotalTime, obj.MaxNumTimeSteps);
                 case('COMPONENT CUT')
-                    end_of_sim_eval = end_of_sim_evaluator_gascut(0.2);
+                    end_of_sim_eval = end_of_sim_evaluator_gascut(obj.TotalTime, obj.MaxNumTimeSteps, 0.2);
                 case('PV INJECTED')
-                    end_of_sim_eval = end_of_sim_evaluator_PVInjected(3);
+                    end_of_sim_eval = end_of_sim_evaluator_PVInjected(obj.TotalTime, obj.MaxNumTimeSteps, 3);
             end
             TimeDriver.AddEndOfSimEvaluator(end_of_sim_eval);
         end
