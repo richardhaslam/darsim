@@ -20,7 +20,7 @@ methods
     end
     function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)        
         dt = obj.TimeStepSelector.ChooseTimeStep();
-        obj.PressureSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
+        obj.PressureSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         % Solve pressure equation
         disp('Pressure Solver')
         disp('...............................................');

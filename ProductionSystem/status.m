@@ -62,7 +62,7 @@ methods
         Names = Source.Properties.keys;
         N_prop = double(Source.Properties.Count);
         for i = 1:N_prop
-            obj.Properties([Names{i}]) = property(1, 1);
+            obj.Properties(Names{i}) = property(1, 1);
             temp = obj.Properties(Names{i});
             temp.Value = Source.Properties(Names{i}).Value;
             temp.Valmax = Source.Properties(Names{i}).Valmax;

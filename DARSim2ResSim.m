@@ -15,6 +15,8 @@ clc;
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
+% close all files if there's any open one
+fclose('all');
 
 %% Set up Diary
 if ~exist(strcat(Directory, '/Output/'), 'dir')

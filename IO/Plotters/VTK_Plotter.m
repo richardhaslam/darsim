@@ -68,8 +68,9 @@ classdef VTK_Plotter < Plotter
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.PlotReservoirSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
-                obj.PlotFracturesSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f));
-            end 
+                obj.PlotFracturesSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
+            end
+            obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotReservoirSolution(obj, Status, Grid)
             %Write a VTK file for Reservoir
@@ -103,11 +104,10 @@ classdef VTK_Plotter < Plotter
                 obj.PrintScalar2VTK(fileID, Status.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
-            obj.VTKindex = obj.VTKindex + 1;
         end
-        function PlotFracturesSolution(obj, Fracture, Grid)
+        function PlotFracturesSolution(obj, Fracture, Grid, f)
             %Write a VTK file for each
-            fileID = fopen(strcat(obj.FileName, '_Fracture_', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f), '_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             fprintf(fileID, 'ASCII\n');
@@ -127,7 +127,6 @@ classdef VTK_Plotter < Plotter
                 obj.PrintScalar2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
-            obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotPermeability(obj, Grid, K)
             %Permeability

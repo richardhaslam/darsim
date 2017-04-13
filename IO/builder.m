@@ -153,7 +153,7 @@ classdef builder < handle
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, FractureMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, FractureMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
-            simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel);
+            simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel, simulation.ProductionSystem);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
             
@@ -197,6 +197,7 @@ classdef builder < handle
                     FracturesGrid = fractures_grid(NrOfFrac);
                     temp = strfind(FractureMatrix{1}, 'PROPERTIES');
                     frac_index = find(~cellfun('isempty', temp));
+                    
                     for f = 1 : NrOfFrac
                         % Creat cartesian grid in each fracture
                         frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
@@ -206,8 +207,47 @@ classdef builder < handle
                         nz = 1;
                         FractureGrid = cartesian_grid(nx, ny, nz);
                         FracturesGrid.AddGrid(FractureGrid, f);
-                    end 
+                    end
                     Discretization.AddFracturesGrid(FracturesGrid);
+                    
+                    % Reading the non-neighboring connectivities of frac-frac and frac-matrix
+                    CrossConnections = cross_connections();
+                    temp = strfind(FractureMatrix{1}, 'FRACCELL');
+                    frac_cell_index = find(~cellfun('isempty', temp));
+
+                    temp = strfind(FractureMatrix{1}, 'ROCK_CONN');
+                    frac_rockConn_index = find(~cellfun('isempty', temp));
+
+                    temp = strfind(FractureMatrix{1}, 'FRAC_CONN');
+                    frac_fracConn_index = find(~cellfun('isempty', temp));
+                    
+                    for f = 1 : NrOfFrac
+                        % looping over all global fracture cells
+                        for If = 1:length(frac_cell_index)
+                            fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
+                            
+                            % frac-marix conn
+                            temp = frac_rockConn_index - frac_cell_index(If); temp(temp<0) = max(temp);
+                            [~ , frac_rockConn_index_start] = min(temp);
+                            for Im = 1:str2double(fracCell_info_split{3})
+                                frac_rockConn_info_split = strsplit(FractureMatrix{1}{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
+                                CrossConnections(If,1).Cells(Im,1) = str2double(frac_rockConn_info_split{2})+1;
+                                CrossConnections(If,1).T_Geo(Im,1) = str2double(frac_rockConn_info_split{3}) / str2double(frac_rockConn_info_split{4});
+                            end
+                            
+                            % frac-frac conn
+                            temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp);
+                            [~ , frac_fracConn_index_start] = min(temp);
+                            for Ig = 1:str2double(fracCell_info_split{5})
+                                frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
+                                CrossConnections(If,1).Cells(Im+Ig,1) = Discretization.ReservoirGrid.N + sum( Discretization.FracturesGrid.N( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
+                                CrossConnections(If,1).T_Geo(Im+Ig,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                            end
+                            
+                        end 
+                    end
+                    
+                    Discretization.AddCrossConnections(CrossConnections);
                 end
             else
                 % ADM discretization model
@@ -330,16 +370,7 @@ classdef builder < handle
                 frac_grid_coords_y = find(~cellfun('isempty', temp));
                 temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Z');
                 frac_grid_coords_z = find(~cellfun('isempty', temp));
-                
-                temp = strfind(FractureMatrix{1}, 'FRACCELL');
-                frac_cell_index = find(~cellfun('isempty', temp));
-                
-                temp = strfind(FractureMatrix{1}, 'ROCK_CONN');
-                frac_rockConn_index = find(~cellfun('isempty', temp));
-                
-                temp = strfind(FractureMatrix{1}, 'FRAC_CONN');
-                frac_fracConn_index = find(~cellfun('isempty', temp));
-                
+
                 FracturesNetwork.Fractures = fracture();
                 for f = 1 : FracturesNetwork.NumOfFrac
                     frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');                   % Splitted data for each fracture
@@ -373,10 +404,11 @@ classdef builder < handle
                     frac_grid_coords_x_split(1) = [];
                     frac_grid_coords_y_split(1) = [];
                     frac_grid_coords_z_split(1) = [];
-                    FracturesNetwork.Fractures(f).GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];;
+                    FracturesNetwork.Fractures(f).GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];
                     
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
+%                 DiscretizationModel.AddHarmonicPermeabilities(Reservoir,FracturesNetwork.Fractures);
             end
         end
         function FluidModel = BuildFluidModel(obj, inputMatrix, ProductionSystem)
@@ -497,7 +529,7 @@ classdef builder < handle
             end
             
         end
-        function Formulation = BuildFormulation(obj, inputMatrix, Discretization, FluidModel)
+        function Formulation = BuildFormulation(obj, inputMatrix, Discretization, FluidModel,ProductionSystem)
             switch(obj.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
@@ -521,7 +553,7 @@ classdef builder < handle
             Formulation.NofPhases = FluidModel.NofPhases;
             
             % Gravity model
-            Formulation.GravityModel = gravity_model(Discretization.ReservoirGrid.Nx, Discretization.ReservoirGrid.Ny, Discretization.ReservoirGrid.Nz, FluidModel.NofPhases);
+            Formulation.GravityModel = gravity_model(Discretization, FluidModel.NofPhases, ProductionSystem.FracturesNetwork.NumOfFrac);
             switch (obj.Gravity)
                 case('ON')
                     Formulation.GravityModel.g = 9.806;
