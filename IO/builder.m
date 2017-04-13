@@ -446,14 +446,12 @@ classdef builder < handle
                     FlashCalculator = Rachford_Rice_flash_calculator();
                     %FlashCalculator = Standard_flash_calculator();
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
-                    FluidModel.FlashCalculator = FlashCalculator();
+                    FluidModel.FlashCalculator = FlashCalculator;
                 case('Compositional')
                     n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
-                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    
                     %FlashCalculator = Standard_flash_calculator();
-                    FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
-                    FluidModel.FlashCalculator = FlashCalculator();
                     % Add phases
                     for i = 1:FluidModel.NofPhases
                         Phase = comp_phase();
@@ -466,14 +464,19 @@ classdef builder < handle
                         FluidModel.AddPhase(Phase, i);
                     end
                     % Add components
-                    kval = [1.5 0.5 0.1];
                     for i = 1:FluidModel.NofComp
                         Prop = str2double(strsplit(char(inputMatrix(obj.Comp_Prop + i * 2))));
-                        MM = Prop(1);
                         comp = component();
-                        comp.AddCompProperties(MM, kval(i));
+                        comp.AddCompProperties(Prop);
                         FluidModel.AddComponent(comp, i);
                     end
+                    FlashCalculator = Rachford_Rice_flash_calculator();
+                    if length(Prop) > 2
+                        FlashCalculator.KvaluesCalculator = Wilson_Kvalues_calculator(str2double(inputMatrix(obj.temperature + 1)));
+                    else
+                        FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
+                    end
+                    FluidModel.FlashCalculator = FlashCalculator;
             end
             
             %%  RelPerm model

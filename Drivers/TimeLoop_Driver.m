@@ -84,6 +84,7 @@ classdef TimeLoop_Driver < handle
                     disp(char(5));
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
                     Writer.WriteSolutionOnFile(ProductionSystem, index);
+                    obj.TStops(index) = 0;
                     index = index + 1;
                 end
             end
