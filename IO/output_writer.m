@@ -29,20 +29,20 @@ classdef output_writer < handle
             end
             
             %Format for production output
-            obj.FormatInj = '%10.2f';
+            obj.FormatInj = '%10.5f';
             for i=1:n_inj
-                obj.FormatInj = [obj.FormatInj, ' %10.2e'];
+                obj.FormatInj = [obj.FormatInj, ' %10.5e'];
                 i = i+1;
             end
-            obj.FormatInj = [obj.FormatInj, ' %10.2e\n'];
+            obj.FormatInj = [obj.FormatInj, ' %10.5e\n'];
             
             % Format for Injection output
-            obj.FormatProd = '%10.2f';
+            obj.FormatProd = '%10.5f';
             for i=1:n_prod
-                obj.FormatProd = [obj.FormatProd, ' %10.2e'];
+                obj.FormatProd = [obj.FormatProd, ' %10.5e'];
                 i = i+1;
             end
-            obj.FormatProd = [obj.FormatProd, ' %10.2e\n'];
+            obj.FormatProd = [obj.FormatProd, ' %10.5e\n'];
             
             %Format for timers
             obj.FormatTimers = '%10.0f';

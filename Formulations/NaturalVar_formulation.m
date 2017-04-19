@@ -261,7 +261,6 @@ classdef NaturalVar_formulation < Compositional_formulation
                          Jeq2p, Jeq2S, Jeq2_x1ph1, Jeq2_x1ph2];
             
         end
-        
         function [J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2] =...
                 AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2, p, x, rho, Wells, K)
             Inj = Wells.Inj;

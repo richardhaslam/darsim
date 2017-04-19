@@ -14,9 +14,11 @@ classdef property < matlab.mixin.Copyable
                 case(3)
                     obj.Plot = plot;
                 case(5)
+                    obj.Plot = plot;
                     obj.Valmin = minValue;
                     obj.Valmax = maxValue;
                 case(6)
+                    obj.Plot = plot;
                     obj.Valmin = minValue;
                     obj.Valmax = maxValue;
                     obj.Value = init .* ones(row, col);

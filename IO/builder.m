@@ -39,7 +39,7 @@ classdef builder < handle
         ADM
         LinearSolver
         Formulation = 'Natural';
-        StopCriterion = 'PV INJECTED';
+        StopCriterion = 'MAX TIME';
         Fractured = 0;
     end
     methods
@@ -169,7 +169,7 @@ classdef builder < handle
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    simulation.Initializer = initializer(VarNames, VarValues);
+                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
                     simulation.Initializer = initializer(VarNames, VarValues);
@@ -622,7 +622,7 @@ classdef builder < handle
             TimeDriver.AddCouplingStrategy(Coupling);
             switch(obj.StopCriterion)
                 case('MAX TIME')
-                    end_of_sim_eval = end_of_sim_evaluator_totaltime(obj.TotalTime, obj.MaxNumTimeSteps);
+                    end_of_sim_eval = end_of_sim_evaluator(obj.TotalTime, obj.MaxNumTimeSteps);
                 case('COMPONENT CUT')
                     end_of_sim_eval = end_of_sim_evaluator_gascut(obj.TotalTime, obj.MaxNumTimeSteps, 0.2);
                 case('PV INJECTED')

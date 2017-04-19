@@ -25,14 +25,16 @@ classdef Matlab_Plotter_1D < Plotter
             N_var = double(Status.Properties.Count);
             Names = Status.Properties.keys;
             for i=1:N_var
-                figure(i+1)
-                plot(x, Status.Properties(Names{i}).Value, obj.color2, 'LineWidth',1);
-                xlabel('x [m]');
-                ylabel(Names{i});
-                %axis([0 Grid.dx*Grid.Nx Status.Properties(Names{i}).Valmin Status.Properties(Names{i}).Valmax])
-                set(gca,'fontsize',24);
-                hold on
-                drawnow;
+                if Status.Properties(Names{i}).Plot
+                    figure(i+1)
+                    plot(x, Status.Properties(Names{i}).Value, obj.color2, 'LineWidth',1);
+                    xlabel('x [m]');
+                    ylabel(Names{i});
+                    %axis([0 Grid.dx*Grid.Nx Status.Properties(Names{i}).Valmin Status.Properties(Names{i}).Valmax])
+                    set(gca,'fontsize',24);
+                    hold on
+                    drawnow;
+                end
             end
         end
         function PlotPermeability(obj, Grid, Perm)

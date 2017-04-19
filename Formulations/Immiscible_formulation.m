@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
+        Mobt
     end
     methods
         function obj = Immiscible_formulation()
@@ -291,9 +292,8 @@ classdef Immiscible_formulation < formulation
         end
         %% Methods for Sequential Coupling
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
-            s = ProductionSystem.Reservoir.State.S;
-            obj.Mob = FluidModel.ComputePhaseMobilities(s);
-            obj.Mobt = sum(obj.Mob,2);
+            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.Mobt = sum(obj.Mob, 2);
         end
         function UpdateFractionalFlow(obj, ProductionSystem, FluidModel)
             obj.ComputeTotalMobility(ProductionSystem, FluidModel);

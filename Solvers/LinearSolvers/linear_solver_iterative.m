@@ -30,6 +30,7 @@ classdef linear_solver_iterative < linear_solver
             setup.type = 'nofill';
             setup.milu = 'off';
             setup.droptol = 0.1; 
+            start = tic;
             [L, U] = ilu(A, setup);
             switch (obj.Name)
                 case('gmres')
@@ -37,6 +38,7 @@ classdef linear_solver_iterative < linear_solver
                 case('bicg')
                     [x, flag, relres, obj.Iter] = bicg(A, rhs, obj.Tol, obj.Maxit, L, U);
             end
+            disp(['LS time:', num2str(toc(start))]);
             if flag ~= 0
                 disp(['WARNING: Linear solver did not converge. The residual norm is ', num2str(relres)]);
             end

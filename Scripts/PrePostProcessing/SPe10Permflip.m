@@ -1,6 +1,5 @@
 K = load('../Permeability/spe10/Permx.dat');
 K = K(4:end);
-
 kspe10 = zeros(length(K),1);
 for i=1:84
     kspe10((i-1)*220*60 + 1:220*60*(i+1)) = K((85-i-1)*220*60+1:220*60*(85-i+1));
