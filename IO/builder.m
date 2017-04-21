@@ -566,7 +566,7 @@ classdef builder < handle
                     case ('active')
                         NLSolver.SystemBuilder = fim_system_builder_ADM();
                         ConvergenceChecker = convergence_checker_ADM();
-                        NLSolver.LinearSolver = linear_solver_ADM();
+                        NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500); 
                 end
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));

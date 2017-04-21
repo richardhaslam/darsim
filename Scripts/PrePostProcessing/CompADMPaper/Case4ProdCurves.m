@@ -9,11 +9,12 @@ Directory_noPc_FS = '../Results/4_Papers_Results/AWR_paper/Case4/AWR_Case4_noPc_
 Directory_noPc_ADM = '../Results/4_Papers_Results/AWR_paper/Case4/AWR_Case4_noPc_ADM/';
 Directory_noPc_ADM_dz2 = '../Results/4_Papers_Results/AWR_paper/Case4/AWR_Case4_noPc_ADM_dz2/';
 
-% PlotProductionCurves(Directory_FS, 'red');
-% PlotProductionCurves(Directory_ADM, 'yellow');
-PlotProductionCurves(Directory_noPc_FS, 'blue');
-PlotProductionCurves(Directory_noPc_ADM, 'green');
-PlotProductionCurves(Directory_noPc_ADM_dz2, 'red');
+PlotProductionCurves(Directory_FS, 'red:', 5);
+PlotProductionCurves(Directory_ADM, 'green:', 5);
+PlotProductionCurves(Directory_ADM_dz2, 'black:', 5);
+PlotProductionCurves(Directory_noPc_FS, 'red', 5);
+PlotProductionCurves(Directory_noPc_ADM, 'green', 5);
+PlotProductionCurves(Directory_noPc_ADM_dz2, 'black', 5);
 %% Rescale for latex plot
 Dir_fs = strcat(Directory_FS, '/Output/');
 Ph1_prod_fs = load(strcat(Dir_fs, 'Prod_Phase1.txt'));
@@ -36,7 +37,7 @@ fprintf(fid, '%10.4f %10.4f\n', [Ph1_prod_adm(:, 1), Ph1_prod_adm(:,end)/Ph1_pro
 fclose(fid);
 % Phase 2
 fid = fopen(strcat('Case4_Prod_Ph2_adm_const.txt'), 'w');
-fprintf(fid, '%10.4f %10.4f\n', [Ph2_prod_adm(:,1), Ph2_prod_adm(:,end/Ph2_prod_fs(end, end))]');
+fprintf(fid, '%10.4f %10.4f\n', [Ph2_prod_adm(:,1), Ph2_prod_adm(:,end)/Ph2_prod_fs(end, end)]');
 fclose(fid);
 
 % ADM_ms
@@ -74,7 +75,7 @@ fprintf(fid, '%10.4f %10.4f\n', [Ph1_prod_adm(:, 1), Ph1_prod_adm(:,end)/Ph1_pro
 fclose(fid);
 % Phase 2
 fid = fopen(strcat('Case4_noPc_Prod_Ph2_adm_const.txt'), 'w');
-fprintf(fid, '%10.4f %10.4f\n', [Ph2_prod_adm(:,1), Ph2_prod_adm(:,end/Ph2_prod_fs(end, end))]');
+fprintf(fid, '%10.4f %10.4f\n', [Ph2_prod_adm(:,1), Ph2_prod_adm(:,end)/Ph2_prod_fs(end, end)]');
 fclose(fid);
 
 % ADM_ms

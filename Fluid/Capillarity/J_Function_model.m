@@ -11,7 +11,7 @@ classdef  J_Function_model < capillary_pressure_model
         PorPermTerm
     end
     properties (Constant)
-        alpha = 4.361e-2;
+        sigma = 4.361e-2;
     end
     methods 
         function obj = J_Function_model(ProductionSystem)
@@ -26,12 +26,12 @@ classdef  J_Function_model < capillary_pressure_model
             J = 0.1.*(S).^(-0.5);
             
             %Compute Pc and dPc analytically
-            Pc = obj.alpha .* obj.PorPermTerm.*J; 
+            Pc = obj.sigma .* obj.PorPermTerm.*J; 
         end
         function dPc = dPcdS(obj, S)
             % Derivative
             dJ = - 0.1*0.5*(S).^(-1.5);
-            dPc = obj.alpha .* obj.PorPermTerm .* dJ;
+            dPc = obj.sigma .* obj.PorPermTerm .* dJ;
         end
     end
 end

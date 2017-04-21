@@ -26,7 +26,7 @@ for j=1:20
     % Change Perm field
     tmp = strfind(A, 'PERMX');
     index = find(~cellfun('isempty', tmp));
-    A{index + 1} = strcat('EggModel/EggPerm', num2str(j),'.txt');
+    A{index + 1} = strcat('EggModel/EggPerm_ref', num2str(j),'.txt');
     
     % Write cell A into txt
     fid = fopen(strcat(Dir_fs,'/Case5.txt'), 'w');
@@ -47,7 +47,7 @@ for j=1:20
     % Change Perm field
     tmp = strfind(A, 'PERMX');
     index = find(~cellfun('isempty', tmp));
-    A{index + 1} = strcat('EggModel/EggPerm', num2str(j),'.txt');
+    A{index + 1} = strcat('EggModel/EggPerm_ref', num2str(j),'.txt');
     
     % Write cell A into txt
     fid = fopen(strcat(Dir_adm,'/Case5.txt'), 'w');
