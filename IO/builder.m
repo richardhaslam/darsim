@@ -41,6 +41,7 @@ classdef builder < handle
         Formulation = 'Natural';
         StopCriterion = 'MAX TIME';
         Fractured = 0;
+        incompressible
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix)
@@ -161,11 +162,19 @@ classdef builder < handle
             obj.DefineProperties(simulation.ProductionSystem, simulation.FluidModel, simulation.DiscretizationModel);
             
             %% Define Initialization procedure
-            VarValues = obj.Init;
+            N = simulation.DiscretizationModel.ReservoirGrid.N;
+            VarValues = ones(N, length(obj.Init));
+            for i=1:length(obj.Init)
+                VarValues(:, i) = VarValues(:, i) * obj.Init(i);
+            end
+            VarValues(N/2+1:N, 2) = 0.1;
+            VarValues(1:N/2 , 2) = 0.9;
+            VarValues(N/2+1:N, 3) = 0.9;
+            VarValues(1:N/2 , 3) = 0.1;
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
                     VarNames = {'P_1', 'S_1'};
-                    VarValues(2) = 1;
+                    VarValues(:, 2) = 1;
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
@@ -406,6 +415,9 @@ classdef builder < handle
                     Phase.cf = str2double(inputMatrix(obj.compressibility + 2));
                     FluidModel.AddPhase(Phase, 1);
                     obj.Formulation = 'Immiscible';
+                    if Phase.cf == 0
+                        obj.incompressible = 1;
+                    end
                 case('Immiscible')
                     FluidModel = Immiscible_fluid_model(n_phases);
                     % Add phases
@@ -617,6 +629,9 @@ classdef builder < handle
                     pressuresolver.SystemBuilder = pressure_system_builder();    
                     pressuresolver.LinearSolver = linear_solver();
                     Coupling.AddPressureSolver(pressuresolver);
+                    if obj.incompressible
+                        Coupling.Inompressible = 1;
+                    end
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
             TimeDriver.AddCouplingStrategy(Coupling);

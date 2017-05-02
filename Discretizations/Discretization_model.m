@@ -24,7 +24,7 @@ classdef Discretization_model < handle
             % Perforated cells
             obj.DefinePerforatedCells(ProductionSystem.Wells);
             % . Assign Depth
-            obj.ReservoirGrid.ComputeDepth(Formulation.GravityModel.alpha);
+            obj.ReservoirGrid.ComputeDepth(Formulation.GravityModel.alpha, ProductionSystem.Reservoir.Thickness);
             
             % initialize fractures
             if ProductionSystem.FracturesNetwork.Active

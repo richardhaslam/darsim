@@ -17,7 +17,8 @@ classdef injector_pressure < injector
         end
         function AdjustConstraint(obj, GravityModel, h)
             rho = max(max(obj.rho));
-            obj.p = obj.p - rho*GravityModel.g*h;
+            obj.BHPDepth = max(h);
+            obj.p = obj.p - rho*GravityModel.g* (obj.BHPDepth - h);
         end
         function UpdateState(obj, State, K, FluidModel)
             p = State.Properties(['P_',num2str(FluidModel.NofPhases)]);

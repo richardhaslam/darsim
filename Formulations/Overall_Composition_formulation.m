@@ -82,8 +82,8 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 Residual((i-1)*N+1:i*N) = A * (n - n_old) ...             % Accumulation term
                            + obj.Tph{i, 1} *  P(:,1) ...    % Convective term                
                            + obj.Tph{i, 2} *  P(:,2)...
-                           + obj.Gph{i,1} * depth...       % Gravity
-                           + obj.Gph{i,2} * depth...
+                           - obj.Gph{i,1} * depth...       % Gravity
+                           - obj.Gph{i,2} * depth...
                            - q(:,i);                       % Source/Sink  
             end            
         end

@@ -52,7 +52,7 @@ classdef initializer_hydrostatic < initializer
                 FluidModel.ComputePc(ProductionSystem.Reservoir.State);
                 
                 % 6. Compute pressure 
-                P.Value = P_init + ProductionSystem.Reservoir.State.Properties('rhoT').Value .* Formulation.GravityModel.g .* (ProductionSystem.Reservoir.Thickness - DiscretizationModel.ReservoirGrid.Depth);
+                P.Value = P_init + ProductionSystem.Reservoir.State.Properties('rhoT').Value .* Formulation.GravityModel.g .* DiscretizationModel.ReservoirGrid.Depth;
                 delta = ProductionSystem.Reservoir.State.Properties('P_2').Value - p0;
                 
                 if (delta < 1e-3) % If solution doesn t change I am at equilibrium

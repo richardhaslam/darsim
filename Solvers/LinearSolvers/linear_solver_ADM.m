@@ -14,7 +14,7 @@ classdef linear_solver_ADM < linear_solver
         Iter
         R
         P
-        Smooth = 1
+        Smooth = 0
     end
     methods
         function obj = linear_solver_ADM(name, tol, maxit)

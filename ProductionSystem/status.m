@@ -56,7 +56,7 @@ methods
     function AssignInitialValues(obj, VarNames, VarValues)
         for i=1:length(VarNames)
             Prop = obj.Properties(char(VarNames{i}));
-            Prop.Value = ones(length(Prop.Value), 1) * VarValues(i);
+            Prop.Value = ones(length(Prop.Value), 1) .* VarValues(:, i);
         end
     end
     function CopyProperties(obj, Source)

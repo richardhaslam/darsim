@@ -60,7 +60,7 @@ classdef Immiscible_formulation < formulation
             for i=1:obj.NofPhases
                 Residual((i-1)*N+1:i*N)  = AS*(rho(:,i) .* s(:,i) - rho_old(:,i) .* s_old(:,i))...
                                            + obj.Tph{i} * P(:, i)...
-                                           + obj.Gph{i} * depth...
+                                           - obj.Gph{i} * depth...
                                            - q(:,i);
             end   
         end
@@ -342,10 +342,17 @@ classdef Immiscible_formulation < formulation
             end
         end
         function A = BuildPressureMatrix(obj, ProductionSystem, DiscretizationModel, dt)
+            pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
+            
             A = obj.Tph{1};
             for i=2:obj.NofPhases
                 A = A + obj.Tph{i}; 
             end
+            
+            % Compressibility in the accumulation term
+            vec = pv .* obj.drhodp / dt;
+            A = A + diag(vec);
+            
             A = obj.AddWellsToPressureSystem(A, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1));
         end       
         function A = AddWellsToPressureSystem(obj, A, State, Wells, K)

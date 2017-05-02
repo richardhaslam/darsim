@@ -86,11 +86,11 @@ classdef cartesian_grid < grid_darsim
                 obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny) = i*ones(obj.Nx*obj.Ny, 1);
             end
         end
-        function ComputeDepth(obj, alpha)
+        function ComputeDepth(obj, alpha, Thickness)
             x_centres = (obj.I - 1/2) * obj.dx;
             y_centres = (obj.J - 1/2) * obj.dy;
             z_centres = (obj.K - 1/2) * obj.dz;
-            obj.Depth = z_centres;
+            obj.Depth = Thickness - z_centres;
         end
     end
 end
