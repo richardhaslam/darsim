@@ -14,7 +14,8 @@ classdef norm_calculator_immiscible < norm_calculator
         end
         function [dp, dS] = SolutionNorm(obj, delta, N, State)
             dp = norm(delta(1:N), inf)/max(State.Properties('P_1').Value);
-            dS = norm(delta(N+1:end), inf);
+            % Only Matrix for now
+            dS = norm(delta(N+1:2*N), inf);
         end
     end
 end

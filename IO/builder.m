@@ -236,7 +236,7 @@ classdef builder < handle
                             end
                             
                             % frac-frac conn
-                            temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp);
+                            temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp)+1;
                             [~ , frac_fracConn_index_start] = min(temp);
                             for Ig = 1:str2double(fracCell_info_split{5})
                                 frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});

@@ -26,7 +26,7 @@ methods
         obj.chops = 0;
         End = 0;
         % Save initial State
-        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
+        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         % Linear Solver Setup
         obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
