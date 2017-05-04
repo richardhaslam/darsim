@@ -46,6 +46,9 @@ classdef timestep_selector < handle
             dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt]);
         end
         function dt = ChooseTimeStep(obj)
+            if obj.ReportDt <= 0
+                obj.ReportDt = obj.MaxDt;
+            end
             dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
             %dt = max(obj.MinDt, dt);
         end

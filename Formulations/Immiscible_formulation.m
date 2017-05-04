@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
+        Mobt
     end
     methods
         function obj = Immiscible_formulation()
@@ -58,7 +59,7 @@ classdef Immiscible_formulation < formulation
             for i=1:obj.NofPhases
                 Residual((i-1)*N+1:i*N)  = AS*(rho(:,i) .* s(:,i) - rho_old(:,i) .* s_old(:,i))...
                                            + obj.Tph{i, 1+f} * P(:, i)...
-                                           + obj.Gph{i, 1+f} * depth...
+                                           - obj.Gph{i, 1+f} * depth...
                                            - qw(Index.Start:Index.End, i)...
                                            - qf(Index.Start:Index.End, i);
             end
@@ -519,9 +520,8 @@ classdef Immiscible_formulation < formulation
         end
         %% Methods for Sequential Coupling
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
-            s = ProductionSystem.Reservoir.State.S;
-            obj.Mob = FluidModel.ComputePhaseMobilities(s);
-            obj.Mobt = sum(obj.Mob,2);
+            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.Mobt = sum(obj.Mob, 2);
         end
         function UpdateFractionalFlow(obj, ProductionSystem, FluidModel)
             obj.ComputeTotalMobility(ProductionSystem, FluidModel);
@@ -604,16 +604,32 @@ classdef Immiscible_formulation < formulation
         function A = BuildPressureMatrix(obj, ProductionSystem, DiscretizationModel, dt)
             %% 1. Reservoir
             A = obj.Tph{1, 1};
+            pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
             for i=2:obj.NofPhases
                 A = A + obj.Tph{i, 1}; 
             end
+            
+            % Compressibility in the accumulation term (only for matrix)
+            Index.Start = 1;
+            Index.End = DiscretizationModel.ReservoirGrid.N;
+            vec = pv .* obj.drhodp(Index.Start:Index.End) / dt;
+            A = A + diag(vec);
+            
             A = obj.AddWellsToPressureSystem(A, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1));
             %% 2. Fractures
+            Nx = DiscretizationModel.ReservoirGrid.Nx;
+            Ny = DiscretizationModel.ReservoirGrid.Ny;
+            Nz = DiscretizationModel.ReservoirGrid.Nz;
             for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
                 Af = obj.Tph{1 , f+1};
                 for i=2:obj.NofPhases
                     Af = Af + obj.Tph{i, f+1};
                 end
+                pv = ProductionSystem.FracturesNetwork.Fractures(f).Por*DiscretizationModel.FracturesGrid.Grids(f).Volume; 
+                Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
+                End = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, DiscretizationModel.FracturesGrid.Grids(f).N);
+                vec = pv .* obj.drhodp(Start:End) / dt;
+                Af = Af + diag(vec);
                 A = blkdiag(A, Af);
             end
             %% 3.  Add matrix-frac and frac-frac connections

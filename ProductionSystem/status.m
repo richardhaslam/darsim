@@ -17,37 +17,38 @@ methods
     end
     function AddProperties(obj, FluidModel, N)
         % Add properties to property map
-        %% Pressure
-        obj.Properties('P_1') = property(N, 1, true, 1e7, 2e7);
-        obj.Properties('S_1') = property(N, 1, true, 0 , 1);
-        %% Density
-        obj.Properties('rho_1') = property(N, 1, false, 0, 2000);
+        % Total density
         obj.Properties('rhoT') = property(N, 1, false, 0, 2000);
         switch (FluidModel.name)
             case ('SinglePhase')
                % No more properties to be added
-            case ('Immiscible')
-                %% Saturation and Pc
-                for i=2:FluidModel.NofPhases
+               for i=1:FluidModel.NofPhases
                     obj.Properties(['P_', num2str(i)]) = property(N, 1, true, 1e7, 2e7);
-                    obj.Properties(['S_', num2str(i)]) = property(N, 1, true, 0, 1);
+                    obj.Properties(['S_', num2str(i)]) = property(N, 1, false, 0, 1);
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, false, 0, 2000);
                 end
-                obj.Properties('Pc') = property(N, 1, true, 1e3, 1e6);
+            case ('Immiscible')
+                %% Saturation and Pc
+                for i=1:FluidModel.NofPhases
+                    obj.Properties(['P_', num2str(i)]) = property(N, 1, true, 1e7, 2e7);
+                    obj.Properties(['S_', num2str(i)]) = property(N, 1, false, 0, 1);
+                    obj.Properties(['rho_', num2str(i)]) = property(N, 1, false, 0, 2000);
+                end
+                obj.Properties('Pc') = property(N, 1, false, 1e3, 1e6);
             otherwise
                 %% Saturation and Pc
                 for i=1:FluidModel.NofPhases
                     obj.Properties(['P_', num2str(i)]) = property(N, 1, true, 1e7, 2e7);
                     obj.Properties(['S_', num2str(i)]) = property(N, 1, true, 0, 1);
-                    obj.Properties(['rho_', num2str(i)]) = property(N, 1, true, 0, 2000);
-                    obj.Properties(['ni_', num2str(i)]) = property(N, 1, true, 0, 1);
+                    obj.Properties(['rho_', num2str(i)]) = property(N, 1, false, 0, 2000);
+                    obj.Properties(['ni_', num2str(i)]) = property(N, 1, false, 0, 1);
                 end
-                obj.Properties('Pc') = property(N, 1, 1e3, 1e6);
+                obj.Properties('Pc') = property(N, 1, false, 1e3, 1e6);
                 %% Compositional stuff
                 for i=1:FluidModel.NofComp
                     obj.Properties(['z_', num2str(i)]) = property(N, 1, true, 0, 1);
                     for j=1:FluidModel.NofPhases
-                        obj.Properties(['x_', num2str(i), 'ph', num2str(j)]) = property(N, 1, true, 0, 1, i==j);
+                        obj.Properties(['x_', num2str(i), 'ph', num2str(j)]) = property(N, 1, false, 0, 1, i==j);
                     end
                 end
         end
@@ -55,7 +56,7 @@ methods
     function AssignInitialValues(obj, VarNames, VarValues)
         for i=1:length(VarNames)
             Prop = obj.Properties(char(VarNames{i}));
-            Prop.Value = ones(length(Prop.Value), 1) * VarValues(i);
+            Prop.Value = ones(length(Prop.Value), 1) .* VarValues(:, i);
         end
     end
     function CopyProperties(obj, Source)
@@ -64,6 +65,7 @@ methods
         for i = 1:N_prop
             obj.Properties(Names{i}) = property(1, 1);
             temp = obj.Properties(Names{i});
+            temp.Plot = Source.Properties(Names{i}).Plot;
             temp.Value = Source.Properties(Names{i}).Value;
             temp.Valmax = Source.Properties(Names{i}).Valmax;
             temp.Valmin = Source.Properties(Names{i}).Valmin; 

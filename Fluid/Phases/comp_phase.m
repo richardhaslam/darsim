@@ -12,7 +12,7 @@ classdef comp_phase < phase
         cf % Compressibility
     end
     properties (Constant)
-        Pref = 1e5; % Atmospheric pressure
+        Pref = 0; % Atmospheric pressure
     end
     methods
         function rho = ComputeDensity(obj, p, Components)

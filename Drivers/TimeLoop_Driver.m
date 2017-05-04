@@ -21,7 +21,7 @@ classdef TimeLoop_Driver < handle
             obj.TotalTime = TotalTime;
             if n_reports == 0
                 % Prnt at every time-step
-                obj.TStops = TotalTime * ones(MaxNumTimesteps ,1);
+                obj.TStops = TotalTime * zeros(MaxNumTimesteps ,1);
             else
                 obj.TStops = linspace(TotalTime/n_reports, TotalTime, n_reports);
             end
@@ -79,12 +79,11 @@ classdef TimeLoop_Driver < handle
                 EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, ProductionSystem, obj.Time, obj.Ndt);
                 
                 %% %%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
-                if (obj.Time == obj.TStops(index) || obj.TStops(index) == obj.TotalTime ||EndOfSimCriterion==1 )
+                if (obj.Time == obj.TStops(index) || obj.TStops(index) == 0 ||EndOfSimCriterion==1 )
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
                     disp(char(5));
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
                     Writer.WriteSolutionOnFile(ProductionSystem, index);
-                    obj.TStops(index) = 0;
                     index = index + 1;
                 end
             end

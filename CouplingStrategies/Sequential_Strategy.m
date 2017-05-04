@@ -50,7 +50,8 @@ methods
         obj.TransportSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
         while obj.Converged == 0 && obj.itCount < obj.MaxIter
             % copy state to check outer convergence
-            State_old = copy(ProductionSystem.Reservoir.State);
+            State_old = status();
+            State_old.CopyProperties(ProductionSystem.Reservoir.State);
             disp(char(5));
             disp(['Outer iteration: ', num2str(obj.itCount)]);
             %% 1. Solve pressure equation

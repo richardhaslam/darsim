@@ -1,5 +1,5 @@
 
-function PlotProductionCurves(CaseDirectory, color)
+function PlotProductionCurves(CaseDirectory, color, well)
 Ph1_file = strcat(CaseDirectory, '/Output/Prod_Phase1.txt');
 Ph2_file = strcat(CaseDirectory, '/Output/Prod_Phase2.txt');
 Comp1_file = strcat(CaseDirectory, '/Output/Prod_Comp1.txt');
@@ -9,14 +9,15 @@ Ph1_prod = load(Ph1_file);
 Ph2_prod = load(Ph2_file);
 % Comp1_prod = load(Comp1_file);
 % Comp2_prod = load(Comp2_file);
+well = well + 1;
 
 figure(1)
 title('Prod ph1');
-plot(Ph1_prod(:,1), Ph1_prod(:,end), color);
+plot(Ph1_prod(:,1), Ph1_prod(:,well), color);
 hold on
 figure(2)
 title('Prod ph2');
-plot(Ph2_prod(:,1), Ph2_prod(:,end), color);
+plot(Ph2_prod(:,1), Ph2_prod(:,well), color);
 hold on
 % figure(3)
 % title('Prod comp1');

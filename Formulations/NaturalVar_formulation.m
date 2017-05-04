@@ -83,8 +83,8 @@ classdef NaturalVar_formulation < Compositional_formulation
                     A * m - A * m_old...          % Accumulation term
                     + obj.Tph{i, 1} *  P(:,1) ... % Convective term                
                     + obj.Tph{i, 2} *  P(:,2)...
-                    + obj.Gph{i,1} * depth...     % Gravity
-                    + obj.Gph{i,2} * depth...
+                    - obj.Gph{i,1} * depth...     % Gravity
+                    - obj.Gph{i,2} * depth...
                     - q(:,i);                     % Source terms
                 
                 % 2. THERMODYNAMIC EQUILIBRIUM EQUATIONS
@@ -261,7 +261,6 @@ classdef NaturalVar_formulation < Compositional_formulation
                          Jeq2p, Jeq2S, Jeq2_x1ph1, Jeq2_x1ph2];
             
         end
-        
         function [J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2] =...
                 AddWellsToJacobian(obj, J1p, J2p, J1S, J2S, J1x1ph1, J1x1ph2, J2x1ph1, J2x1ph2, p, x, rho, Wells, K)
             Inj = Wells.Inj;

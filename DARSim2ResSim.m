@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function ResSimulator = DARSim2ResSim(Directory, File)
 clc;
+addpath(genpath(pwd));
 % Example of Directory and File
 %ImmDirectory = '../Input/ImmHomo'
 %ImmFile = 'ImmHomo';

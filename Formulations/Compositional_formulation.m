@@ -198,6 +198,8 @@ classdef Compositional_formulation < formulation
                            + max(q(:,i), 0);                       % Wells
                 Mass(:,i) = rhoT .* z(:,i);
             end
+            Mass = max(Mass, 1e-10);
+            ThroughPut(ThroughPut < 1e-10) = 0;
             Ratio = ThroughPut ./ Mass;
             CFL = dt/pv * max(max(Ratio));
         end

@@ -15,6 +15,7 @@ classdef injector < handle
         QPhases
         QComponents
         PI
+        BHPDepth
         z
         S
         ni
