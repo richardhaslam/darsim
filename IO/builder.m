@@ -167,10 +167,6 @@ classdef builder < handle
             for i=1:length(obj.Init)
                 VarValues(:, i) = VarValues(:, i) * obj.Init(i);
             end
-            VarValues(N/2+1:N, 2) = 0.1;
-            VarValues(1:N/2 , 2) = 0.9;
-            VarValues(N/2+1:N, 3) = 0.9;
-            VarValues(1:N/2 , 3) = 0.1;
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
                     VarNames = {'P_1', 'S_1'};
