@@ -16,11 +16,30 @@ classdef Immiscible_formulation < formulation
             obj.Tph = cell(2,1);
             obj.Gph = cell(2,1);
         end
-        function x = GetPrimaryUnknowns(obj, ProductionSystem, N)
-             x = zeros(obj.NofPhases * N, 1);
-             x(1:N) = ProductionSystem.Reservoir.State.Properties('P_2').Value;
+        function x = GetPrimaryUnknowns(obj, ProductionSystem, DiscretizationModel)
+             Nt = DiscretizationModel.N;
+             Nm = DiscretizationModel.ReservoirGrid.N;
+             Nf = DiscretizationModel.FracturesGrid.N;
+             x = zeros(obj.NofPhases * Nt, 1);
+             %% Reservoir
+             Start = 1;
+             End = Nm;
+             x(Start:End) = ProductionSystem.Reservoir.State.Properties('P_2').Value;
              for i=1:obj.NofPhases-1
-                 x(i*N + 1:(i+1)*N) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
+                 Start = End + 1;
+                 End = Start + Nm - 1;
+                 x(Start:End) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
+             end
+             %% Fractures
+             for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
+                 Start = End + 1; 
+                 End = Start + Nf(f) - 1; 
+                 x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_2').Value;
+                 for i=1:obj.NofPhases-1
+                     Start = End + 1;
+                     End = Start + Nf(f) - 1;
+                     x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['S_', num2str(i)]).Value;
+                 end
              end
         end
         function x = GetPrimaryPressure(obj, ProductionSystem, N)

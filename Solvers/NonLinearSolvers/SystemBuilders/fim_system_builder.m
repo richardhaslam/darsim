@@ -21,8 +21,8 @@ classdef fim_system_builder < system_builder
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
             Jacobian = Formulation.BuildJacobian(ProductionSystem, DiscretizationModel, dt);
         end
-        function SetUpSolutionChopper(obj, SolutionChopper, Formulation, ProductionSystem, N)
-            x = Formulation.GetPrimaryUnknowns(ProductionSystem, N);
+        function SetUpSolutionChopper(obj, SolutionChopper, Formulation, ProductionSystem, DiscretizationModel)
+            x = Formulation.GetPrimaryUnknowns(ProductionSystem, DiscretizationModel);
             SolutionChopper.DefineMaxDelta(x);
         end
         function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
