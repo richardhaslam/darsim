@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 2 March 2017
-%Last modified: 6 March 2017
+%Last modified: 21 June 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef injector_pressure < injector
     properties
@@ -35,6 +35,15 @@ classdef injector_pressure < injector
                             obj.QComponents(:, j) = obj.QComponents(:, j) + obj.x(:,(j-1)*2 + phase) .* obj.QPhases(:, phase);
                         end
                     end
+            end
+        end
+        function [dQdp, dQdS] = dQPhasesdPdS(obj, State, K, NofPhases)
+            p = State.Properties(['P_',num2str(NofPhases)]);
+            dQdp = zeros(length(obj.Cells), NofPhases);
+            dQdS = zeros(length(obj.Cells), NofPhases * (NofPhases - 1));
+            for i = 1:NofPhases
+                dQdp(:, i) = - obj.rho(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells);
+                dQdS(:, i) = 0;
             end
         end
         function [A, rhs] = AddToPressureSystem(obj, K, A, rhs)

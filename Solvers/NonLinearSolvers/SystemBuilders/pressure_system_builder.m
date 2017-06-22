@@ -18,9 +18,13 @@ classdef pressure_system_builder < system_builder
            Residual = Formulation.BuildPressureResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
-            Jacobian = Formulation.BuildPressureMatrix(ProductionSystem, DiscretizationModel, dt);
+            Jacobian = Formulation.BuildPressureMatrix(ProductionSystem, DiscretizationModel, dt, obj.State);
         end
-        function UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
+        function SetUpSolutionChopper(obj, SolutionChopper, Formulation, ProductionSystem, N)
+            x = Formulation.GetPrimaryPressure(ProductionSystem, N);
+            SolutionChopper.DefineMaxDelta(x);
+        end
+        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
             % Update Reservoir State
             Formulation.UpdatePressure(delta, ProductionSystem, FluidModel, DiscretizationModel);
             % UpdateWells

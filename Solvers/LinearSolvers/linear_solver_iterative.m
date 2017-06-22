@@ -31,6 +31,11 @@ classdef linear_solver_iterative < linear_solver
             setup.milu = 'off';
             setup.droptol = 0.1; 
             start = tic;
+            Diagonal = diag(A);
+            i=find(Diagonal==0);
+            if ~isempty(i)
+                disp(i);
+            end
             [L, U] = ilu(A, setup);
             switch (obj.Name)
                 case('gmres')

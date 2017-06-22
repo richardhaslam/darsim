@@ -177,7 +177,7 @@ classdef builder < handle
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
-                    simulation.Initializer = initializer(VarNames, VarValues);
+                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, FractureMatrix, SettingsMatrix)
@@ -301,7 +301,7 @@ classdef builder < handle
                 k_init = str2double(inputMatrix(obj.inj(i) + 5));
                 k_final = str2double(inputMatrix(obj.inj(i) + 6));
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 2000;
+                PI = 1000;
                 pressure = str2double(inputMatrix(obj.inj(i) + 8));
                 Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
                 Wells.AddInjector(Injector);
@@ -315,7 +315,7 @@ classdef builder < handle
                 k_init = str2double(inputMatrix(obj.prod(i) + 5));
                 k_final = str2double(inputMatrix(obj.prod(i) + 6));
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 2000;
+                PI = 1000;
                 pressure = str2double(inputMatrix(obj.prod(i) + 8));
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);
@@ -384,7 +384,7 @@ classdef builder < handle
                     frac_grid_coords_x_split(1) = [];
                     frac_grid_coords_y_split(1) = [];
                     frac_grid_coords_z_split(1) = [];
-                    FracturesNetwork.Fractures(f).GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];;
+                    FracturesNetwork.Fractures(f).GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];
                     
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
@@ -592,7 +592,7 @@ classdef builder < handle
                     Coupling.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
                     %pressuresolver = incompressible_pressure_solver();
                     pressuresolver = NL_Solver();
-                    pressuresolver.MaxIter = 10;
+                    pressuresolver.MaxIter = 15;
                     ConvergenceChecker = convergence_checker_pressure();
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
@@ -618,7 +618,7 @@ classdef builder < handle
                 case('SinglePhase')
                     Coupling = SinglePhase_Strategy('SinglePhase');
                     pressuresolver = NL_Solver();
-                    pressuresolver.MaxIter = 10;
+                    pressuresolver.MaxIter = 15;
                     ConvergenceChecker = convergence_checker_pressure();
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
@@ -626,7 +626,7 @@ classdef builder < handle
                     pressuresolver.LinearSolver = linear_solver();
                     Coupling.AddPressureSolver(pressuresolver);
                     if obj.incompressible
-                        Coupling.Inompressible = 1;
+                        Coupling.Incompressible = 1;
                     end
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));

@@ -21,9 +21,13 @@ classdef fim_system_builder < system_builder
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
             Jacobian = Formulation.BuildJacobian(ProductionSystem, DiscretizationModel, dt);
         end
-        function UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
+        function SetUpSolutionChopper(obj, SolutionChopper, Formulation, ProductionSystem, N)
+            x = Formulation.GetPrimaryUnknowns(ProductionSystem, N);
+            SolutionChopper.DefineMaxDelta(x);
+        end
+        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
             % Update Reservoir State
-            Formulation.UpdateState(delta, ProductionSystem, FluidModel, DiscretizationModel);
+            delta = Formulation.UpdateState(delta, ProductionSystem, FluidModel, DiscretizationModel);
             % UpdateWells
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end

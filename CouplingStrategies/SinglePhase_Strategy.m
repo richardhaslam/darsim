@@ -27,6 +27,11 @@ methods
         dt = obj.TimeStepSelector.ChooseTimeStep();
         obj.PressureSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
         while obj.Converged == 0  && obj.chops < 10
+            if (obj.chops > 0)
+                disp('Max num. of iterations reached or stagnation detected: Time-step was chopped');
+                disp(char(5));
+                disp(['Restart Newton loop dt = ', num2str(dt)]);
+            end
             % Solve pressure equation
             disp('Pressure Solver')
             disp('...............................................');
@@ -42,6 +47,7 @@ methods
                 ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
             else 
                 obj.Converged = 1;
+                obj.TimeStepSelector.Update(dt, obj.PressureSolver.itCount - 1, obj.chops);
             end
             if obj.Incompressible
                 disp('Single Phase incompressible problem: No time dependency');
