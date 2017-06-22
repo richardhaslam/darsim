@@ -167,10 +167,10 @@ classdef builder < handle
             for i=1:length(obj.Init)
                 VarValues(:, i) = VarValues(:, i) * obj.Init(i);
             end
-            VarValues(N/2+1:N, 2) = 0.1;
-            VarValues(1:N/2 , 2) = 0.9;
-            VarValues(N/2+1:N, 3) = 0.9;
-            VarValues(1:N/2 , 3) = 0.1;
+%             VarValues(N/2+1:N, 2) = 0.1;
+%             VarValues(1:N/2 , 2) = 0.9;
+%             VarValues(N/2+1:N, 3) = 0.9;
+%             VarValues(1:N/2 , 3) = 0.1;
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
                     VarNames = {'P_1', 'S_1'};
@@ -178,7 +178,9 @@ classdef builder < handle
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                    %index = 1;
+                    %VarValues(index, 2) = 1;
+                    simulation.Initializer = initializer(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
                     simulation.Initializer = initializer(VarNames, VarValues);
@@ -236,7 +238,7 @@ classdef builder < handle
                             fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
                             
                             % frac-marix conn
-                            temp = frac_rockConn_index - frac_cell_index(If); temp(temp<0) = max(temp);
+                            temp = frac_rockConn_index - frac_cell_index(If); temp(temp<0) = max(temp) +1;
                             [~ , frac_rockConn_index_start] = min(temp);
                             for Im = 1:str2double(fracCell_info_split{3})
                                 frac_rockConn_info_split = strsplit(FractureMatrix{1}{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
@@ -338,26 +340,184 @@ classdef builder < handle
             n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
             %Injectors
             for i=1:Wells.NofInj
-                i_init = str2double(inputMatrix(obj.inj(i) + 1));
-                i_final = str2double(inputMatrix(obj.inj(i) + 2));
-                j_init = str2double(inputMatrix(obj.inj(i) + 3));
-                j_final = str2double(inputMatrix(obj.inj(i) + 4));
-                k_init = str2double(inputMatrix(obj.inj(i) + 5));
-                k_final = str2double(inputMatrix(obj.inj(i) + 6));
+                %i_init
+                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 1}, ' ');
+                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 1}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  i_init = DiscretizationModel.ReservoirGrid.Nx-1;
+                        else,  error('For Injection Well Coordination, you can only use "NX" with minus sign "-"!');
+                        end
+                    else
+                        i_init = DiscretizationModel.ReservoirGrid.Nx;   
+                    end
+                else
+                    i_init = str2double(inputMatrix{obj.inj(i) + 1});
+                end
+                %i_final
+                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 2}, ' ');
+                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 2}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  i_final = DiscretizationModel.ReservoirGrid.Nx-1;
+                        else,  error('For Injection Well Coordination, you can only use "NX" with minus sign "-"!');
+                        end
+                    else
+                        i_final = DiscretizationModel.ReservoirGrid.Nx;   
+                    end
+                else
+                    i_final = str2double(inputMatrix{obj.inj(i) + 2});
+                end
+                %j_init
+                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 3}, ' ');
+                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 3}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  j_init = DiscretizationModel.ReservoirGrid.Ny-1;
+                        else,  error('For Injection Well Coordination, you can only use "NY" with minus sign "-"!');
+                        end
+                    else
+                        j_init = DiscretizationModel.ReservoirGrid.Ny;   
+                    end
+                else
+                    j_init = str2double(inputMatrix{obj.inj(i) + 3});
+                end
+                %j_final
+                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 4}, ' ');
+                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 4}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  j_final = DiscretizationModel.ReservoirGrid.Ny-1;
+                        else,  error('For Injection Well Coordination, while you can only use "NY" with minus sign "-"!');
+                        end
+                    else
+                        j_final = DiscretizationModel.ReservoirGrid.Ny;   
+                    end
+                else
+                    j_final = str2double(inputMatrix{obj.inj(i) + 4});
+                end
+                %k_init
+                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 5}, ' ');
+                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 5}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  k_init = DiscretizationModel.ReservoirGrid.Nz-1;
+                        else,  error('For Injection Well Coordination, you can only use "NZ" with minus sign "-"!');
+                        end
+                    else
+                        k_init = DiscretizationModel.ReservoirGrid.Nz;
+                    end
+                else
+                    k_init = str2double(inputMatrix{obj.inj(i) + 5});
+                end
+                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 6}, ' ');
+                %k_final
+                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 6}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  k_final = DiscretizationModel.ReservoirGrid.Nz-1;
+                        else,  error('For Injection Well Coordination, while you can only use "NZ" with minus sign "-"!');
+                        end
+                    else
+                        k_final = DiscretizationModel.ReservoirGrid.Nz;
+                    end
+                else
+                    k_final = str2double(inputMatrix{obj.inj(i) + 6});
+                end
+                
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
                 PI = 2000;
                 pressure = str2double(inputMatrix(obj.inj(i) + 8));
                 Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
                 Wells.AddInjector(Injector);
             end
+            
             %Producers
             for i=1:Wells.NofProd
-                i_init = str2double(inputMatrix(obj.prod(i) + 1));
-                i_final = str2double(inputMatrix(obj.prod(i) + 2));
-                j_init = str2double(inputMatrix(obj.prod(i) + 3));
-                j_final = str2double(inputMatrix(obj.prod(i) + 4));
-                k_init = str2double(inputMatrix(obj.prod(i) + 5));
-                k_final = str2double(inputMatrix(obj.prod(i) + 6));
+                %i_init
+                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 1}, ' ');
+                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 1}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  i_init = DiscretizationModel.ReservoirGrid.Nx-1;
+                        else,  error('For Production Well Coordination, you can only use "NX" with minus sign "-"!');
+                        end
+                    else
+                        i_init = DiscretizationModel.ReservoirGrid.Nx;   
+                    end
+                else
+                    i_init = str2double(inputMatrix{obj.prod(i) + 1});
+                end
+                %i_final
+                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 2}, ' ');
+                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 2}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  i_final = DiscretizationModel.ReservoirGrid.Nx-1;
+                        else,  error('For Production Well Coordination, you can only use "NX" with minus sign "-"!');
+                        end
+                    else
+                        i_final = DiscretizationModel.ReservoirGrid.Nx;   
+                    end
+                else
+                    i_final = str2double(inputMatrix{obj.prod(i) + 2});
+                end
+                %j_init
+                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 3}, ' ');
+                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  j_init = DiscretizationModel.ReservoirGrid.Ny-1;
+                        else,  error('For Production Well Coordination, you can only use "NY" with minus sign "-"!');
+                        end
+                    else
+                        j_init = DiscretizationModel.ReservoirGrid.Ny;   
+                    end
+                else
+                    j_init = str2double(inputMatrix{obj.prod(i) + 3});
+                end
+                %j_final
+                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 4}, ' ');
+                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 4}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  j_final = DiscretizationModel.ReservoirGrid.Ny-1;
+                        else,  error('For Production Well Coordination, while you can only use "NY" with minus sign "-"!');
+                        end
+                    else
+                        j_final = DiscretizationModel.ReservoirGrid.Ny;   
+                    end
+                else
+                    j_final = str2double(inputMatrix{obj.prod(i) + 4});
+                end
+                %k_init
+                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 5}, ' ');
+                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 5}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  k_init = DiscretizationModel.ReservoirGrid.Nz-1;
+                        else,  error('For Production Well Coordination, you can only use "NZ" with minus sign "-"!');
+                        end
+                    else
+                        k_init = DiscretizationModel.ReservoirGrid.Nz;
+                    end
+                else
+                    k_init = str2double(inputMatrix{obj.prod(i) + 5});
+                end
+                %k_final
+                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 6}, ' ');
+                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
+                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 6}, ' ');
+                    if length(Well_Coord_Temp)>1
+                        if Well_Coord_Temp{2}=='-',  k_final = DiscretizationModel.ReservoirGrid.Nz-1;
+                        else,  error('For prodection Well Coordination, while you can only use "NZ" with minus sign "-"!');
+                        end
+                    else
+                        k_final = DiscretizationModel.ReservoirGrid.Nz;
+                    end
+                else
+                    k_final = str2double(inputMatrix{obj.prod(i) + 6});
+                end
+                          
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
                 PI = 2000;
                 pressure = str2double(inputMatrix(obj.prod(i) + 8));
@@ -581,6 +741,11 @@ classdef builder < handle
                 case('OFF')
                     Formulation.GravityModel.g = 0;
             end
+            
+            % Adding the Jacobian Indexing (Independent of time steps)
+            if obj.Fractured
+                Discretization.AddJacobianIndex(Formulation);
+            end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
             TimeDriver = TimeLoop_Driver(obj.reports, obj.TotalTime, obj.MaxNumTimeSteps);
@@ -662,7 +827,7 @@ classdef builder < handle
                     pressuresolver.LinearSolver = linear_solver();
                     Coupling.AddPressureSolver(pressuresolver);
                     if obj.incompressible
-                        Coupling.Inompressible = 1;
+                        Coupling.Incompressible = 1;
                     end
             end
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));

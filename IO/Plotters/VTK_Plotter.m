@@ -98,6 +98,7 @@ classdef VTK_Plotter < Plotter
                 obj.PrintScalar2VTK(fileID, Status.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
+            fclose(fileID);
         end
         function PlotFracturesSolution(obj, Fracture, Grid, f)
             %Write a VTK file for each
@@ -121,6 +122,7 @@ classdef VTK_Plotter < Plotter
                 obj.PrintScalar2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
+            fclose(fileID);
         end
         function PlotPermeability(obj, Grid, K)
             %Permeability

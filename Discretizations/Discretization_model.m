@@ -12,6 +12,7 @@ classdef Discretization_model < handle
         ReservoirGrid
         FracturesGrid
         CrossConnections
+        JacInd
     end
     methods
         function AddReservoirGrid(obj, reservoirgrid)
@@ -20,8 +21,11 @@ classdef Discretization_model < handle
         function AddFracturesGrid(obj, fracturesgrid)
             obj.FracturesGrid = fracturesgrid;
         end
-        function AddCrossConnections(obj, crossconnections)
-            obj.CrossConnections = crossconnections;
+        function AddCrossConnections(obj, crossconnections, Formulation)
+            obj.CrossConnections = crossconnections; 
+        end
+        function AddJacobianIndex(obj, Formulation)
+            obj.JacInd = Formulation.DefineJacobianIndex(obj);
         end
         function Initialize(obj, ProductionSystem, Formulation)
             obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
