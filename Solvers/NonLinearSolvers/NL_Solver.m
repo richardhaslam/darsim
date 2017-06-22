@@ -4,11 +4,12 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 July 2016
-%Last modified: 14 July 2016
+%Last modified: 26 May 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef NL_Solver < handle
 properties
     SystemBuilder
+    SolutionChopper
     MaxIter
     Converged
     itCount
@@ -26,6 +27,7 @@ end
 methods
     function obj = NL_Solver()
         obj.Converged = 0;
+        obj.SolutionChopper = solution_chopper();
     end
     function AddConvergenceChecker(obj, convcheck)
         obj.ConvergenceChecker = convcheck;
@@ -55,9 +57,11 @@ methods
             obj.TimerConstruct(obj.itCount) = toc(start1);           
             
             % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
+            obj.SystemBuilder.SetUpSolutionChopper(obj.SolutionChopper, Formulation, ProductionSystem, DiscretizationModel.N);
             start2 = tic;
             obj.SolveLinearSystem();
             obj.TimerSolve(obj.itCount) = toc(start2);
+            obj.Delta = obj.SolutionChopper.Chop(obj.Delta);
             
             % 3. Update Solution
             start3 = tic;
@@ -93,7 +97,7 @@ methods
         obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State);
     end
     function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
-        obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
+        obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
     end
 end
 end

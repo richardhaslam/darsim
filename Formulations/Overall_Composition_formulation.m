@@ -20,6 +20,13 @@ classdef Overall_Composition_formulation < Compositional_formulation
         function obj = Overall_Composition_formulation(n_components)
             obj@Compositional_formulation(n_components);
         end
+        function x = GetPrimaryUnknowns(obj, ProductionSystem, N)
+             x = zeros(obj.NofComponents * N, 1);
+             x(1:N) = ProductionSystem.Reservoir.State.Properties('P_2').Value;
+             for i=1:obj.NofComponents-1
+                 x(i*N + 1:(i+1)*N) = ProductionSystem.Reservoir.State.Properties(['z_', num2str(i)]).Value;
+             end
+        end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             % This is the bitchy part!! 
@@ -248,7 +255,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 end          
             end
         end
-        function UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
+        function delta = UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
             if sum(isnan(delta))
                 % if the solution makes no sense, skip this step
                 return
@@ -262,15 +269,16 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 DeltaLast = zeros(Nm, 1);
                 for c = 1:obj.NofComponents-1
                     Zm = ProductionSystem.Reservoir.State.Properties(['z_', num2str(c)]);
-                    Zm.update(delta(c*Nm + 1:(c+1)*Nm));
-                    Zm.Value = max(Zm.Value, 0);
-                    Zm.Value = min(Zm.Value, 1);
-                    DeltaLast = DeltaLast + delta(c*Nm + 1:(c+1)*Nm);
+                    Deltaz = delta(c*Nm + 1:(c+1)*Nm);
+                    Zm.update(Deltaz);
+                    Zm.Value = max(Zm.Value, 0.0001);
+                    Zm.Value = min(Zm.Value, 0.9999);
+                    DeltaLast = DeltaLast + Deltaz;
                 end
                 Zm = ProductionSystem.Reservoir.State.Properties(['z_', num2str(obj.NofPhases)]);
                 Zm.update(-DeltaLast);
-                Zm.Value = max(Zm.Value, 0);
-                Zm.Value = min(Zm.Value, 1);
+                Zm.Value = max(Zm.Value, 0.0001);
+                Zm.Value = min(Zm.Value, 0.9999);
                 % Update Remaining properties (x, S, rho, rhoT, Pc)
                 obj.UpdatePhaseCompositions(ProductionSystem.Reservoir.State, FluidModel);
                 

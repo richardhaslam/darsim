@@ -309,7 +309,7 @@ classdef NaturalVar_formulation < Compositional_formulation
                 
             end
         end
-        function UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)   
+        function delta = UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)   
             %if sum(isnan(delta))
                 % if the solution makes no sense, skip this step
                 %return

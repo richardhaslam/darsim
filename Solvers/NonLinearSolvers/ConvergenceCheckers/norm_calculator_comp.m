@@ -16,6 +16,8 @@ classdef norm_calculator_comp < norm_calculator
         function [dp, dS] = SolutionNorm(obj, delta, N, State)
             dp = norm(delta(1:N), inf)/max(State.Properties('P_2').Value);
             dS = norm(delta(N+1:end), inf);
+            %[a, b] = max(norm(dS));
+            %disp(['max is ', num2str(a), ' in cell ', num2str(b)]);
         end
     end
 end
