@@ -19,7 +19,7 @@ classdef Immiscible_formulation < formulation
         function x = GetPrimaryUnknowns(obj, ProductionSystem, DiscretizationModel)
              Nt = DiscretizationModel.N;
              Nm = DiscretizationModel.ReservoirGrid.N;
-             Nf = DiscretizationModel.FracturesGrid.N;
+             
              x = zeros(obj.NofPhases * Nt, 1);
              %% Reservoir
              Start = 1;
@@ -31,23 +31,29 @@ classdef Immiscible_formulation < formulation
                  x(Start:End) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
              end
              %% Fractures
-             for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
-                 Start = End + 1; 
-                 End = Start + Nf(f) - 1; 
-                 x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_2').Value;
-                 for i=1:obj.NofPhases-1
+             if ProductionSystem.FracturesNetwork.Active
+                 Nf = DiscretizationModel.FracturesGrid.N;
+                 for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
                      Start = End + 1;
                      End = Start + Nf(f) - 1;
-                     x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['S_', num2str(i)]).Value;
+                     x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_2').Value;
+                     for i=1:obj.NofPhases-1
+                         Start = End + 1;
+                         End = Start + Nf(f) - 1;
+                         x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['S_', num2str(i)]).Value;
+                     end
                  end
              end
         end
-        function x = GetPrimaryPressure(obj, ProductionSystem, N)
-            x = zeros(N, 1);
+        function x = GetPrimaryPressure(obj, ProductionSystem, DiscretizationModel)
+            Nt = DiscretizationModel.N;
+            Nm = DiscretizationModel.ReservoirGrid.N;
+            %Nf = DiscretizationModel.FracturesGrid.N;
+            x = zeros(Nt, 1);
             if obj.NofPhases > 1
-                x(1:N) = ProductionSystem.Reservoir.State.Properties('P_2').Value;
+                x(1:Nm) = ProductionSystem.Reservoir.State.Properties('P_2').Value;
             else
-                x(1:N) = ProductionSystem.Reservoir.State.Properties('P_1').Value;
+                x(1:Nm) = ProductionSystem.Reservoir.State.Properties('P_1').Value;
             end
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
@@ -744,9 +750,9 @@ classdef Immiscible_formulation < formulation
             end
             Index.Start = 1;
             Index.End = DiscretizationModel.ReservoirGrid.N;
-            pvdt = ProductionSystem.Reservoir.Por .* DiscretizationModel.ReservoirGrid.Volume ./ dt;
+            phi = ProductionSystem.Reservoir.Por;
             Residual(1:DiscretizationModel.ReservoirGrid.N) =...
-                obj.MediumPressureResidual(pvdt, DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.State, State0, qw, qf, Index, 0);
+                obj.MediumPressureResidual(dt, phi, DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.State, State0, qw, qf, Index, 0);
             if ProductionSystem.FracturesNetwork.Active
                 %% Fractures Residuals
                 for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
@@ -758,20 +764,21 @@ classdef Immiscible_formulation < formulation
                             obj.TransmissibilityMatrix(DiscretizationModel.FracturesGrid.Grids(f), obj.UpWind{i, 1+f}, obj.Mob(Index.Start:Index.End, i),...
                             ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(i)]).Value, obj.GravityModel.RhoInt{i, f+1});
                     end
-                    pvdt = ProductionSystem.FracturesNetwork.Fractures(f).Por .* DiscretizationModel.FracturesGrid.Grids(f).Volume ./ dt;
+                    Por = ProductionSystem.FracturesNetwork.Fractures(f).Por;
                     % Residual of Fracture Grid-cells
                     Residual(Index.Start:Index.End) = ...
-                        obj.MediumPressureResidual(pvdt, DiscretizationModel.FracturesGrid.Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).State, State0, qw, qf, Index, f);
+                        obj.MediumPressureResidual(dt, phi, DiscretizationModel.FracturesGrid.Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).State, State0, qw, qf, Index, f);
                 end
             end
         end
-        function Residual = MediumPressureResidual(obj, pvdt, Grid, State, State0, qw, qf, Index, f)
+        function Residual = MediumPressureResidual(obj, dt, phi, Grid, State, State0, qw, qf, Index, f)
             % Initialise local variables
             N = Grid.N;
             s_old = zeros(N, obj.NofPhases);
             rho_old = zeros(N, obj.NofPhases);
             P = zeros(N, obj.NofPhases);
             rho = zeros(N, obj.NofPhases);
+            pv = phi * Grid.Volume;
             
             % Copy values in local variables
 
@@ -780,60 +787,43 @@ classdef Immiscible_formulation < formulation
                 s_old(:, i) = State0.Properties(['S_', num2str(i)]).Value(Index.Start:Index.End);
                 rho_old(:, i) = State0.Properties(['rho_', num2str(i)]).Value(Index.Start:Index.End);
                 rho(:, i) = State.Properties(['rho_', num2str(i)]).Value;
+                obj.Tph{i, f+1} = bsxfun(@rdivide, obj.Tph{i, f+1}, rho(:, i));
             end 
             depth = Grid.Depth;
             
-            % Transmissibility matrix
-            %for i=1:obj.NofPhases
-             %   [obj.Tph{i}, ~] = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWind(i), obj.Mob(:,i), rho(:,i), obj.GravityModel.RhoInt(i));
-                
-            %end
-            
-            % Source terms
-            %q = sparse(obj.ComputeSourceTerms(N, ProductionSystem.Wells));     
-            %% RESIDUAL
-            % Mousa's
-            Residual = zeros(N, 1);
-            for i=1:obj.NofPhases
-                Residual(:)  = Residual (:) + AS*(rho(:,i) .* s(:,i) - rho_old(:,i) .* s_old(:,i))...
-                               + obj.Tph{i, f+1} * P(:, i)...
-                               - qw(Index.Start:Index.End,i)...
-                               - qf(Index.Start:Index.End,i);
-            end
-            
-            % residual divided by density
-            %obj.Tph{i} = bsxfun(@rdivide, obj.Tph{i}, rho(:, i));
             Residual = zeros(N, 1);
             for i=1:obj.NofPhases
             Residual(:) = ...
                     Residual(:) - ...
                     pv/dt * (rho_old(:, i) .* s_old(:, i) ./ rho(:, i))...
-                    + obj.Tph{i} * P(:, i)...
+                    + obj.Tph{i, f+1} * P(:, i)...
                     - qw(:, i) ./ rho(:, i)...
                     - qf(:, i) ./ rho(:, i);
             end
-            Residual(:) = Residual(:) + pv/dt;
-            
-            % without dividing 'Mattteo'
-            Residual = zeros(N, 1);
-            for i=1:obj.NofPhases
-            Residual(:) = ...
-                   Residual(:) + ...
-                   pv/dt * (rho(:, i).*s_old(:, i) - rho_old(:, i) .* s_old(:, i))...
-                   + obj.Tph{i} * P(:, i)...
-                   - qw(:, i)...
-                   - qf(:, i);
-            end
+%             
+%             Residual(:) = Residual(:) + pv/dt; 
+%             % without dividing 'Mattteo'
+%             Residual = zeros(N, 1);
+%             for i=1:obj.NofPhases
+%             Residual(:) = ...
+%                    Residual(:) + ...
+%                    pv/dt * (rho(:, i).*s_old(:, i) - rho_old(:, i) .* s_old(:, i))...
+%                    + obj.Tph{i} * P(:, i)...
+%                    - qw(:, i)...
+%                    - qf(:, i);
+%             end
         end
         function A = BuildPressureMatrix(obj, ProductionSystem, DiscretizationModel, dt, State0)
             %% 1. Reservoir            
-            A = obj.Build_Medium_PressureMatrix(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, 1, DiscretizationModel.ReservoirGrid.N, 0); 
-            
+            A = obj.Build_Medium_PressureMatrix(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, 1, DiscretizationModel.ReservoirGrid.N, 0);
             %% 3. Add wells
-            W = obj.AddWellsToPressureSystem(N, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1), rho);
+            rho = zeros(DiscretizationModel.ReservoirGrid.N, obj.NofPhases);
+            for i=1:obj.NofPhases
+                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end
+            W = obj.AddWellsToPressureSystem(DiscretizationModel.ReservoirGrid.N, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1), rho);
             A = A + W;
-            
-            A = obj.AddWellsToPressureSystem(A, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1));
+           
             %% 2. Fractures
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
@@ -918,61 +908,62 @@ classdef Immiscible_formulation < formulation
             for i=1:obj.NofPhases
                 s_old(:, i) = State0.Properties(['S_', num2str(i)]).Value;
                 rho_old(:, i) = State0.Properties(['rho_', num2str(i)]).Value;
-                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+                rho(:, i) = Medium.State.Properties(['rho_', num2str(i)]).Value;
             end 
             
             A = sparse(N,N);
             C = sparse(N,N);
             for i=1:obj.NofPhases
                 %% 1. Accummulation term
-                % vec = - pv/dt * (- rho_old(Start:End, i) .* s_old(Start:End, i) .* obj.drhodp(Start:End,i) ./ rho(:, i).^2) ;
+                vec = - pv/dt * (- rho_old(Start:End, i) .* s_old(Start:End, i) .* obj.drhodp(Start:End,i) ./ rho(:, i).^2) ;
                 % Alternative
-                vec = pv/dt * obj.drhodp(Start:End,i);
+                %vec = pv/dt * obj.drhodp(Start:End,i);
                 C = C + spdiags(vec, 0, N, N);
                 
                 %% 2. Convective term 
                 % a. transmissibility matrix
                 A = A + obj.Tph{i, f+1};
                 % b. Derivative of transmissibility with respect to p
-                dMupx = obj.UpWind(i).x*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
-                dMupy = obj.UpWind(i).y*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
-                dMupz = obj.UpWind(i).z*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
+                dMupx = obj.UpWind{i, f+1}.x*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
+                dMupy = obj.UpWind{i, f+1}.y*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
+                dMupz = obj.UpWind{i, f+1}.z*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
                 
-                vecX1 = min(reshape(obj.U(i).x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-                vecX2 = max(reshape(obj.U(i).x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-                vecY1 = min(reshape(obj.U(i).y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-                vecY2 = max(reshape(obj.U(i).y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-                vecZ1 = min(reshape(obj.U(i).z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-                vecZ2 = max(reshape(obj.U(i).z(:,:,2:Nz+1), N, 1), 0) .* dMupz; 
+                vecX1 = min(reshape(obj.U{i, f+1}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
+                vecX2 = max(reshape(obj.U{i, f+1}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
+                vecY1 = min(reshape(obj.U{i, f+1}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
+                vecY2 = max(reshape(obj.U{i, f+1}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
+                vecZ1 = min(reshape(obj.U{i, f+1}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
+                vecZ2 = max(reshape(obj.U{i, f+1}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz; 
                 maindiag = vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1;
                 
                 DiagVecs = [-vecZ2, -vecY2, -vecX2, maindiag, vecX1, vecY1, vecZ1];
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 dTdp = spdiags(DiagVecs, DiagIndx, N, N);
 %                 
-%                 % multiply row i by rho(i)
-%                 dTdp = bsxfun(@times, dTdp, rho(:, i));
+                % multiply row i by rho(i)
+                dTdp = bsxfun(@times, dTdp, rho(:, i));
+                
+%                 dMupx = obj.UpWind{i, f+1}.x*(obj.Mob(:, i) .* rho(:,i));
+%                 dMupy = obj.UpWind{i, f+1}.y*(obj.Mob(:, i) .* rho(:,i));
+%                 dMupz = obj.UpWind{i, f+1}.z*(obj.Mob(:, i) .* rho(:,i));
 %                 
-%                 dMupx = obj.UpWind(i).x*(obj.Mob(:, i) .* rho(:,i));
-%                 dMupy = obj.UpWind(i).y*(obj.Mob(:, i) .* rho(:,i));
-%                 dMupz = obj.UpWind(i).z*(obj.Mob(:, i) .* rho(:,i));
-%                 
-%                 vecX1 = min(reshape(obj.U(i).x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-%                 vecX2 = max(reshape(obj.U(i).x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-%                 vecY1 = min(reshape(obj.U(i).y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-%                 vecY2 = max(reshape(obj.U(i).y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-%                 vecZ1 = min(reshape(obj.U(i).z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-%                 vecZ2 = max(reshape(obj.U(i).z(:,:,2:Nz+1), N, 1), 0) .* dMupz; 
+%                 vecX1 = min(reshape(obj.U{i, f+1}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
+%                 vecX2 = max(reshape(obj.U{i, f+1}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
+%                 vecY1 = min(reshape(obj.U{i, f+1}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
+%                 vecY2 = max(reshape(obj.U{i, f+1}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
+%                 vecZ1 = min(reshape(obj.U{i, f+1}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
+%                 vecZ2 = max(reshape(obj.U{i, f+1}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz; 
 %                 maindiag = vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1;
 %                 vec = - maindiag .* obj.drhodp(:,i); 
 %                 dTdp = dTdp + spdiags(vec, 0, N, N);
-%                  
-%                 dTdp = bsxfun(@rdivide, dTdp, rho(:, i).^2);
+                 
+                dTdp = bsxfun(@rdivide, dTdp, rho(:, i).^2);
 %                  
                  A = A + dTdp; 
             end            
             %% Jacobian: Put them together
             J = A + C;
+            
         end       
         function W = AddWellsToPressureSystem(obj, N, State, Wells, K, rho)
             %% Add Wells in residual form
@@ -993,7 +984,7 @@ classdef Immiscible_formulation < formulation
             q = sparse(obj.ComputeSourceTerms(N, Wells));
             dqt = sum((dq .* rho - obj.drhodp .* q)./rho.^2, 2);
             % Alternative
-            dqt = sum(dq, 2);
+            %dqt = sum(dq, 2);
             
             W = -spdiags(dqt, 0, N, N);
             
