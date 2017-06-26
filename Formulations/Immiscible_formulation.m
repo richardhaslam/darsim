@@ -8,7 +8,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
+        % Sequential run variables
         Mobt
+        Utot
+        Qwells
+        f
+        df
+        V
     end
     methods
         function obj = Immiscible_formulation()
@@ -712,12 +718,12 @@ classdef Immiscible_formulation < formulation
                            - min(GD * depth, 0)...    % Gravity term (take only incoming fluxes (negative))                
                            - min(GU * depth, 0)...    % Gravity term (take only incoming fluxes (negative))
                            + max(q(:,i), 0);          % Wells (injectors)
-                Mass(:,i) = rho(:,i) .* S(:,i);
+                Mass(:,i) = rho(:,i) .* S(:,i) * pv;
             end
             Mass = max(Mass, 1e-10);
             ThroughPut(ThroughPut < 1e-10) = 0;
             Ratio = ThroughPut ./ Mass;
-            CFL = dt/pv * max(max(Ratio));
+            CFL = dt * max(max(Ratio));
         end
         %% Methods for Sequential Coupling
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
@@ -729,8 +735,26 @@ classdef Immiscible_formulation < formulation
             obj.f = obj.Mob(:,1) ./ obj.Mobt;
         end
         function dfdS(obj, ProductionSystem, FluidModel)
-            dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
-            obj.df = (dMob(:,1) .* sum(obj.Mob, 2) - sum(dMob, 2) .* obj.Mob(:,1)) ./ sum(obj.Mob, 2).^2;
+            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.df = (obj.dMob(:,1) .* sum(obj.Mob, 2) - sum(obj.dMob, 2) .* obj.Mob(:,1)) ./ sum(obj.Mob, 2).^2;
+        end
+        function dfdsds = DfDsDs(obj, s, FluidModel)
+           % f = Mob1 / (Mob1 + Mob2);
+           % df = (dMob1 * (Mob1 + Mob2) - (dMob1 + dMob2)*Mob1 )/(Mob1 +
+           % Mob2)^2
+           % d(df)
+           ddMob = FluidModel.DMobDSDS(s);
+           A = obj.dMob(:,1) .* sum(obj.Mob, 2);
+           dA = ddMob(:,1) .* sum(obj.Mob, 2) +  sum(obj.dMob, 2) .* obj.dMob(:, 1);
+           B = sum(obj.dMob, 2) .* obj.Mob(:,1);
+           dB = sum(ddMob, 2) .* obj.Mob(:,1) + sum(obj.dMob, 2) .* ddMob(:,1);
+           num = A - B;
+           dnum = dA - dB;
+           den = sum(obj.Mob, 2).^2;
+           dden = sum(obj.Mob, 2) .* sum(obj.dMob, 2);  
+           
+           dfdsds = (dnum .* den - dden .* num) ./ den.^2;
+           
         end
         function Residual = BuildPressureResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             %%%% fix wells
@@ -800,6 +824,7 @@ classdef Immiscible_formulation < formulation
                     - qw(:, i) ./ rho(:, i)...
                     - qf(:, i) ./ rho(:, i);
             end
+            Residual = Residual + pv/dt;
 %             
 %             Residual(:) = Residual(:) + pv/dt; 
 %             % without dividing 'Mattteo'
@@ -1018,15 +1043,31 @@ classdef Immiscible_formulation < formulation
                 end
             end
         end
-        function [Utot, Qwells] = ComputeTotalFluxes(obj, ProductionSystem, DiscretizationModel)
-            Utot.x(2:Nx+1,:,:) = obj.U(2).x(2:Nx+1,:,:) .* reshape(obj.UpWind.x *  obj.Mobt, Nx, Ny, Nz); %- Ucap.x(2:Nx,:);
-            Utot.y(:,2:Ny+1,:) = obj.U(2).y(:,2:Ny+1,:) .* reshape(obj.UpWind.y *  obj.Mobt, Nx, Ny, Nz); %- Ucap.y(:,2:Ny);
-            Utot.z(:,:,2:Nz+1) = obj.U(2).z(:,:,2:Nz+1) .* reshape(obj.UpWind.z *  obj.Mobt, Nx, Ny, Nz);  %- Ucap.y(:,2:Ny);
+        function ComputeTotalFluxes(obj, ProductionSystem, DiscretizationModel)
+            Nx = DiscretizationModel.ReservoirGrid.Nx;
+            Ny = DiscretizationModel.ReservoirGrid.Ny;
+            Nz = DiscretizationModel.ReservoirGrid.Nz;
+            
+            obj.Utot.x = zeros(Nx+1, Ny, Nz); 
+            obj.Utot.y = zeros(Nx, Ny+1, Nz); 
+            obj.Utot.z = zeros(Nx, Ny, Nz+1);
+            
+            N = Nx*Ny*Nz;
+            rho = zeros(N, obj.NofPhases);
+            for i=1:obj.NofPhases
+                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end 
+            for ph = 1:obj.NofPhases
+                obj.Utot.x(2:Nx+1,:,:) = obj.Utot.x(2:Nx+1,:,:) + obj.U{ph, 1}.x(2:Nx+1,:,:) .* reshape(obj.UpWind{ph,1}.x *  (rho(:, ph) .* obj.Mob(:, ph)), Nx, Ny, Nz); %- Ucap.x(2:Nx,:);
+                obj.Utot.y(:,2:Ny+1,:) = obj.Utot.y(:,2:Ny+1,:) + obj.U{ph, 1}.y(:,2:Ny+1,:) .* reshape(obj.UpWind{ph,1}.y *  (rho(:, ph) .* obj.Mob(:, ph)), Nx, Ny, Nz); %- Ucap.y(:,2:Ny);
+                obj.Utot.z(:,:,2:Nz+1) = obj.Utot.z(:,:,2:Nz+1) + obj.U{ph, 1}.z(:,:,2:Nz+1) .* reshape(obj.UpWind{ph,1}.z *  (rho(:, ph) .* obj.Mob(:, ph)), Nx, Ny, Nz);  %- Ucap.y(:,2:Ny);
+            end
             
             % Wells total fluxes
-            Qwells = ProductionSystem.Wells.TotalFluxes(ProductionSystem.Reservoir, obj.Mobt);
+            q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
+            obj.Qwells = sum(q, 2);
         end
-        function conservative = CheckMassConservation(obj, Grid, Utot, Qwells)
+        function conservative = CheckMassConservation(obj, Grid)
             %Checks mass balance in all cells
             Nx = Grid.Nx;
             Ny = Grid.Ny;
@@ -1036,11 +1077,11 @@ classdef Immiscible_formulation < formulation
             maxUy = max(max(max(obj.Utot.y)));
             maxUz = max(max(max(obj.Utot.z)));
             maxU = max([maxUx, maxUy, maxUz]);
-            qWells = reshape(Qwells, Nx, Ny, Nz);
+            qWells = reshape(obj.Qwells, Nx, Ny, Nz);
             for k=1:Nz
                 for j=1:Ny
                     for i=1:Nx
-                        Accum = Utot.x(i,j,k) - Utot.x(i+1,j,k) + Utot.y(i,j,k) - Utot.y(i,j+1,k) + Utot.z(i,j,k) - Utot.z(i,j,k+1) + qWells(i,j,k);
+                        Accum = obj.Utot.x(i,j,k) - obj.Utot.x(i+1,j,k) + obj.Utot.y(i,j,k) - obj.Utot.y(i,j+1,k) + obj.Utot.z(i,j,k) - obj.Utot.z(i,j,k+1) + qWells(i,j,k);
                         if (abs(Accum/maxU) > 10^(-5))
                             conservative = 0;
                         end
@@ -1048,7 +1089,7 @@ classdef Immiscible_formulation < formulation
                 end
             end
         end
-        function ViscousMatrix(obj, Grid, Utot)
+        function ViscousMatrix(obj, Grid)
             %Builds Upwind Flux matrix
             Nx = Grid.Nx;
             Ny = Grid.Ny;
@@ -1056,18 +1097,18 @@ classdef Immiscible_formulation < formulation
             N = Grid.N;                                   
             q = min(obj.Qwells, 0);                        
             % right to left and top to bottom (negative x, y, z)
-            Xneg = min(Utot.x, 0); 
-            Yneg = min(Utot.y, 0);
-            Zneg = min(Utot.z, 0);
+            Xneg = min(obj.Utot.x, 0); 
+            Yneg = min(obj.Utot.y, 0);
+            Zneg = min(obj.Utot.z, 0);
             % make them vectors 
             x1 = reshape(Xneg(1:Nx,:,:),N,1);
             y1 = reshape(Yneg(:,1:Ny,:),N,1);
             z1 = reshape(Zneg(:,:,1:Nz),N,1);
             
             % left to right and bottom to top (positive x, y, z)
-            Xpos = max(Utot.x, 0); 
-            Ypos = max(Utot.y, 0); 
-            Zpos = max(Utot.z, 0);
+            Xpos = max(obj.Utot.x, 0); 
+            Ypos = max(obj.Utot.y, 0); 
+            Zpos = max(obj.Utot.z, 0);
             % make them vectors
             x2 = reshape(Xpos(2:Nx+1,:,:), N, 1);
             y2 = reshape(Ypos(:,2:Ny+1,:), N, 1);
@@ -1081,8 +1122,11 @@ classdef Immiscible_formulation < formulation
         function Residual = BuildTransportResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Initialise local objects
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
-            s = ProductionSystem.Reservoir.State.S;
-            s_old = State0.S;      
+            s = ProductionSystem.Reservoir.State.Properties('S_1').Value;
+            s_old = State0.Properties('S_1').Value;      
+            
+            % viscous fluxes matrix
+            obj.ViscousMatrix(DiscretizationModel.ReservoirGrid);      
             
             % Compute residual
             Residual = pv/dt * (s - s_old)  - max(obj.Qwells, 0) - obj.V * obj.f;
@@ -1094,12 +1138,38 @@ classdef Immiscible_formulation < formulation
             D = spdiags(pv/dt*ones(N,1),0,N,N);
             Jacobian = D - obj.V * spdiags(obj.df,0,N,N); %+ CapJac;
         end
-        function UpdateSaturation(obj, State, delta, FluidModel)
-            State.S = State.S + delta;
-            State.S = min(State.S, 1);
-            State.S = max(State.S, FluidModel.Phases(1).sr);
+        function delta = UpdateSaturation(obj, ProductionSystem, delta, FluidModel, DiscretizationModel)
+            s_old = ProductionSystem.Reservoir.State.Properties('S_1').Value; 
+            
+            % Update
+            snew = s_old + delta;
+            
+            % Remove values that are not physical
+            snew = max(snew, 0);
+            snew = min(snew, 1);
+            
+            % FLUX CORRECTION - PATRICK
+            Ddf_old = obj.DfDsDs(s_old, FluidModel);
+            Ddf = obj.DfDsDs(snew, FluidModel);           
+            snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + sold).*(Ddf.*Ddf_old<0);
+            delta = snew-s_old;
+            
+            % This is the actual update
+            Nm = DiscretizationModel.ReservoirGrid.N;
+            DeltaLast = zeros(Nm, 1);
+            for ph = 1:obj.NofPhases-1
+                Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(ph)]);
+                DeltaS = delta(1:Nm);
+                Sm.update(DeltaS);
+                % Remove values that are not physical
+                Sm.Value = max(Sm.Value, 0);
+                Sm.Value = min(Sm.Value, 1);
+                DeltaLast = DeltaLast + DeltaS;
+            end
+            Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
+            Sm.update(-DeltaLast);
         end
-        function UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)
+        function delta = UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)
             % 0. Initialise
             pv = ProductionSystem.Reservoir.Por .* DiscretizationModel.ReservoirGrid.Volume;
             N = DiscretizationModel.ReservoirGrid.N;
@@ -1109,7 +1179,28 @@ classdef Immiscible_formulation < formulation
             B = T * obj.V;
             injector = max(obj.Qwells,0) .* dt/pv;  % injection flux * dt/pv
             
-            ProductionSystem.Reservoir.State.S = ProductionSystem.Reservoir.State.S + (B * obj.f + injector);
+            S = ProductionSystem.Reservoir.State.Properties('S_1');
+            s_old = S.Value;
+            
+            delta = S.Value - s_old + (B * obj.f + injector);
+            
+            % Now update values
+            Nm = DiscretizationModel.ReservoirGrid.N;
+            DeltaLast = zeros(Nm, 1);
+            for ph = 1:obj.NofPhases-1
+                Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(ph)]);
+                DeltaS = delta(1:Nm);
+                Sm.update(DeltaS);
+                % Remove values that are not physical
+                Sm.Value = max(Sm.Value, 0);
+                Sm.Value = min(Sm.Value, 1);
+                DeltaLast = DeltaLast + DeltaS;
+            end
+            Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
+            Sm.update(-DeltaLast);
+            % Remove values that are not physical
+            Sm.Value = max(Sm.Value, 0);
+            Sm.Value = min(Sm.Value, 1);
         end
     end
 end

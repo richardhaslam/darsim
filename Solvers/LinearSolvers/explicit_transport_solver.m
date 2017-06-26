@@ -10,6 +10,7 @@ classdef explicit_transport_solver < handle
     properties
         itCount
         SystemBuilder
+        Converged;
     end
     methods
         function obj = explicit_transport_solver()
@@ -26,6 +27,7 @@ classdef explicit_transport_solver < handle
             % 3. Solve explicit transport
             Formulation.UpdateSaturationExplicitly(ProductionSystem, DiscretizationModel, dt);
             
+            obj.Converged = 1;
         end
     end
 end
