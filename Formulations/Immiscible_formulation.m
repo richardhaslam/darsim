@@ -732,26 +732,41 @@ classdef Immiscible_formulation < formulation
         end
         function UpdateFractionalFlow(obj, ProductionSystem, FluidModel)
             obj.ComputeTotalMobility(ProductionSystem, FluidModel);
-            obj.f = obj.Mob(:,1) ./ obj.Mobt;
+            rho = 0 * obj.Mob; 
+            for i=1:obj.NofPhases
+                rho(:,i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end
+            obj.f = rho(:, 1) .* obj.Mob(:,1) ./ (rho(:, 1) .*obj.Mob(:,1) + rho(:, 2) .* obj.Mob(:, 2));
         end
         function dfdS(obj, ProductionSystem, FluidModel)
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            obj.df = (obj.dMob(:,1) .* sum(obj.Mob, 2) - sum(obj.dMob, 2) .* obj.Mob(:,1)) ./ sum(obj.Mob, 2).^2;
+            rho = 0 * obj.Mob; 
+            for i=1:obj.NofPhases
+                rho(:,i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end
+            num = rho(:, 1) .* obj.Mob(:, 1);
+            dnum = rho(:, 1) .* obj.dMob(:,1);
+            den = sum(rho .* obj.Mob, 2);
+            dden = sum(rho .* obj.dMob, 2);  
+            obj.df = (dnum .* den - dden .* num) ./ den.^2;
+            %obj.df = (obj.dMob(:,1) .* sum(obj.Mob, 2) - sum(obj.dMob, 2) .* obj.Mob(:,1)) ./ sum(obj.Mob, 2).^2;
         end
-        function dfdsds = DfDsDs(obj, s, FluidModel)
+        function dfdsds = dfdSdS(obj, s, FluidModel)
            % f = Mob1 / (Mob1 + Mob2);
            % df = (dMob1 * (Mob1 + Mob2) - (dMob1 + dMob2)*Mob1 )/(Mob1 +
            % Mob2)^2
            % d(df)
+           Mob = FluidModel.ComputePhaseMobilities(s);
+           dMob = FluidModel.DMobDS(s);
            ddMob = FluidModel.DMobDSDS(s);
-           A = obj.dMob(:,1) .* sum(obj.Mob, 2);
-           dA = ddMob(:,1) .* sum(obj.Mob, 2) +  sum(obj.dMob, 2) .* obj.dMob(:, 1);
-           B = sum(obj.dMob, 2) .* obj.Mob(:,1);
-           dB = sum(ddMob, 2) .* obj.Mob(:,1) + sum(obj.dMob, 2) .* ddMob(:,1);
+           A = dMob(:,1) .* sum(Mob, 2);
+           dA = ddMob(:,1) .* sum(Mob, 2) +  sum(dMob, 2) .* dMob(:, 1);
+           B = sum(dMob, 2) .* Mob(:,1);
+           dB = sum(ddMob, 2) .* Mob(:,1) + sum(dMob, 2) .* ddMob(:,1);
            num = A - B;
            dnum = dA - dB;
-           den = sum(obj.Mob, 2).^2;
-           dden = sum(obj.Mob, 2) .* sum(obj.dMob, 2);  
+           den = sum(Mob, 2).^2;
+           dden = sum(Mob, 2) .* sum(dMob, 2);  
            
            dfdsds = (dnum .* den - dden .* num) ./ den.^2;
            
@@ -1124,18 +1139,21 @@ classdef Immiscible_formulation < formulation
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
             s = ProductionSystem.Reservoir.State.Properties('S_1').Value;
             s_old = State0.Properties('S_1').Value;      
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
             
             % viscous fluxes matrix
             obj.ViscousMatrix(DiscretizationModel.ReservoirGrid);      
             
             % Compute residual
-            Residual = pv/dt * (s - s_old)  - max(obj.Qwells, 0) - obj.V * obj.f;
+            Residual = pv/dt .* rho .* (s - s_old)  - max(obj.Qwells, 0) - obj.V * obj.f;
         end
         function Jacobian = BuildTransportJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             % Build Transport Jacobian
-            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
             N = DiscretizationModel.ReservoirGrid.N;
-            D = spdiags(pv/dt*ones(N,1),0,N,N);
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
+            
+            D = spdiags(pv/dt*rho, 0, N, N);
             Jacobian = D - obj.V * spdiags(obj.df,0,N,N); %+ CapJac;
         end
         function delta = UpdateSaturation(obj, ProductionSystem, delta, FluidModel, DiscretizationModel)
@@ -1149,9 +1167,9 @@ classdef Immiscible_formulation < formulation
             snew = min(snew, 1);
             
             % FLUX CORRECTION - PATRICK
-            Ddf_old = obj.DfDsDs(s_old, FluidModel);
-            Ddf = obj.DfDsDs(snew, FluidModel);           
-            snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + sold).*(Ddf.*Ddf_old<0);
+            Ddf_old = obj.dfdSdS(s_old, FluidModel);
+            Ddf = obj.dfdSdS(snew, FluidModel);           
+            snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
             delta = snew-s_old;
             
             % This is the actual update

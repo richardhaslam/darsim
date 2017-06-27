@@ -24,5 +24,11 @@ classdef relperm_model_linear < relperm_model
             dkr(:,2) = -(1-Phases(1).sr - Phases(2).sr)^(-1) .* ones(length(s),1);
             dkr(s > 1 - Phases(2).sr, 2) = 0;
         end
+        function dkr = ComputeSecondDerivative(obj, Phases, s)
+            dkr(:,1) = zeros(length(s), 1);
+            dkr(s < Phases(1).sr, 1) = 0;
+            dkr(:,2) = zeros(length(s), 1);
+            dkr(s > 1 - Phases(2).sr, 2) = 0;
+        end
     end
 end

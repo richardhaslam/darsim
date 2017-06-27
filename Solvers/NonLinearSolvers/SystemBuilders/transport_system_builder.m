@@ -22,6 +22,8 @@ classdef transport_system_builder < system_builder
         end
         function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
             delta = Formulation.UpdateSaturation(ProductionSystem, delta, FluidModel, DiscretizationModel);
+            % UpdateWells
+            ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end
         function SetUpSolutionChopper(obj, SolutionChopper, Formulation, ProductionSystem, N)
             x = Formulation.GetPrimaryPressure(ProductionSystem, N);

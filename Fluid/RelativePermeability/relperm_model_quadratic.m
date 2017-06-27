@@ -32,5 +32,13 @@ classdef relperm_model_quadratic < relperm_model
             dkr(s > 1 - Phases(2).sr, 2) = 0;
             dkr(s > 1 - Phases(2).sr, 1) = 0;
         end
+        function ddkr = ComputeSecondDerivative(obj, Phases, s)
+            ddkr(:,1) = ones(length(s), 1) * (1-Phases(1).sr-Phases(2).sr)^(-1)*2;
+            ddkr(s < Phases(1).sr, 1) = 0;
+            ddkr(s < Phases(1).sr, 2) = 0;
+            ddkr(:,2) = length(s) * (1-Phases(1).sr-Phases(2).sr)^(-1)*2;
+            ddkr(s > 1 - Phases(2).sr, 2) = 0;
+            ddkr(s > 1 - Phases(2).sr, 1) = 0;
+        end
     end
 end

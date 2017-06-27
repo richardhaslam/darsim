@@ -66,11 +66,11 @@ methods
             Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
             % Check that velocity field is conservative
             tstart2 = tic;
-            conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
-            if ~conservative
-                disp('Mass balance not respected!!');
-                break
-            end
+            %conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
+            %if ~conservative
+             %   disp('Mass balance not respected!!');
+              %  break
+            %end
             obj.BalanceTimer(obj.itCount) = toc(tstart2);
              
             %% 3. Solve transport
@@ -89,6 +89,8 @@ methods
                 obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
                 if obj.TransportSolver.Converged == 0
                     ProductionSystem.Reservoir.State.CopyProperties(TempState);
+                    % UpdateWells
+                    ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                     disp(['Chopping time-step and restarting Newton loop with dt = ', num2str(dt)])
                     dt = dt/10;
                 end
