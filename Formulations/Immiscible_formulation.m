@@ -25,7 +25,6 @@ classdef Immiscible_formulation < formulation
         function x = GetPrimaryUnknowns(obj, ProductionSystem, DiscretizationModel)
              Nt = DiscretizationModel.N;
              Nm = DiscretizationModel.ReservoirGrid.N;
-             
              x = zeros(obj.NofPhases * Nt, 1);
              %% Reservoir
              Start = 1;
