@@ -115,7 +115,7 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
             fprintf(fileID, '\n');
             fprintf(fileID, 'POINTS    %d   double\n', size(Fracture.GridCoords,1) );
-            fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
+            %fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
             fwrite(fileID, Fracture.GridCoords', 'double', 'b');
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
