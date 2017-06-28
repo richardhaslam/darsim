@@ -27,7 +27,7 @@ classdef Matlab_Plotter_1D < Plotter
             for i=1:N_var
                 if Status.Properties(Names{i}).Plot
                     figure(i+1)
-                    plot(x, Status.Properties(Names{i}).Value, obj.color2, 'LineWidth',1);
+                    plot(x, Status.Properties(Names{i}).Value, obj.color1, 'LineWidth',1);
                     xlabel('x [m]');
                     ylabel(Names{i});
                     %axis([0 Grid.dx*Grid.Nx Status.Properties(Names{i}).Valmin Status.Properties(Names{i}).Valmax])

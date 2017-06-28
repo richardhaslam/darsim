@@ -66,17 +66,13 @@ methods
             Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
             % Check that velocity field is conservative
             tstart2 = tic;
-            %conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
-            %if ~conservative
-             %   disp('Mass balance not respected!!');
-              %  break
-            %end
             obj.BalanceTimer(obj.itCount) = toc(tstart2);
              
-            %% 3. Solve transport
-            
+            %% 3. Solve transport            
             % 3.1 Choose stable timestep
-            dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+            if obj.itCount == 1
+                dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+            end
             disp('Transport Solver');
             disp('...............................................');
             tstart3 = tic;
