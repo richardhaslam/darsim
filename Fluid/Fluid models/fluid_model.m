@@ -58,6 +58,13 @@ classdef fluid_model < handle
                 dMob(:,i) = dkr(:,i)/obj.Phases(i).mu;
             end
         end
+        function dMobdsds = DMobDSDS(obj, s)
+            dMobdsds = zeros(length(s), obj.NofPhases);
+            ddkr = obj.RelPermModel.ComputeSecondDerivative(obj.Phases, s);
+            for i=1:obj.NofPhases
+                dMobdsds(:,i) = ddkr(:,i)/obj.Phases(i).mu;
+            end
+        end
         function dMob = DMobDz(obj, Status, dSdz)
             dMobdS = obj.DMobDS(Status.Properties('S_1').Value);
             dMob = zeros(length(dMobdS), obj.NofComp-1);
