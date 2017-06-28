@@ -19,7 +19,6 @@ classdef Immiscible_formulation < formulation
         function x = GetPrimaryUnknowns(obj, ProductionSystem, DiscretizationModel)
              Nt = DiscretizationModel.N;
              Nm = DiscretizationModel.ReservoirGrid.N;
-             Nf = DiscretizationModel.FracturesGrid.N;
              x = zeros(obj.NofPhases * Nt, 1);
              %% Reservoir
              Start = 1;
@@ -31,14 +30,17 @@ classdef Immiscible_formulation < formulation
                  x(Start:End) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
              end
              %% Fractures
-             for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
-                 Start = End + 1; 
-                 End = Start + Nf(f) - 1; 
-                 x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_2').Value;
-                 for i=1:obj.NofPhases-1
+             if ProductionSystem.FracturesNetwork.Active
+                 Nf = DiscretizationModel.FracturesGrid.N;
+                 for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
                      Start = End + 1;
                      End = Start + Nf(f) - 1;
-                     x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['S_', num2str(i)]).Value;
+                     x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_2').Value;
+                     for i=1:obj.NofPhases-1
+                         Start = End + 1;
+                         End = Start + Nf(f) - 1;
+                         x(Start:End) = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['S_', num2str(i)]).Value;
+                     end
                  end
              end
         end
