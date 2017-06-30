@@ -52,7 +52,7 @@ methods
             % copy state to check outer convergence
             State_old = status();
             State_old.CopyProperties(ProductionSystem.Reservoir.State);
-            disp(char(5));
+            disp(newline);
             disp(['Outer iteration: ', num2str(obj.itCount)]);
             %% 1. Solve pressure equation
             disp('Pressure Solver')

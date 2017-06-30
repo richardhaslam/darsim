@@ -32,9 +32,9 @@ diary(strcat(Directory, '/Output/RunDiary.txt'));
 disp('******************************************************************');
 disp('********************DARSIM 2 RESERVOIR SIMULATOR******************');
 disp('******************************************************************');
-disp(char(5));
+disp(newline);
 disp(['Reading input file ', File, ' from ', Directory]);
-disp(char(5));
+disp(newline);
 
 %% Build objects
 % Build Simulator
@@ -55,7 +55,7 @@ TotalTime = toc(TotalStart);
 ResSimulator.OutputResults();
 
 %% Display elapsed time
-disp(char(10));
+disp(newline);
 disp(['The Total Simulation time is ' num2str(TotalTime) ' s']);
 
 %Tun off diary

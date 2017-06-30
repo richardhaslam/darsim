@@ -661,9 +661,16 @@ classdef Immiscible_formulation < formulation
             end
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, R, P)
+            
             % Perform Average for ADM
-            S_rest = R * Status.S;
-            Status.S = P * S_rest;
+            for ph = 1:obj.NofPhases - 1
+                S = Status.Properties(['S_', num2str(ph)]);
+                S_rest = R * S.Value;
+                Sav = P * S_rest;
+                delta = Sav - S.Value;
+            end
+            S = Status.Properties(['S_', num2str(obj.NofPhases)]);
+            S.update(-delta);
             % Update other unknwons as well 
             %obj.UpdatePhaseCompositions(Status, FluidModel);
         end
