@@ -26,7 +26,7 @@ classdef Reservoir_Simulator < handle
         end
         function PrintInfo(obj)
             disp(['******************', num2str(obj.Builder.ProblemName),'******************']);
-            disp(char(5));
+            disp(newline);
             disp('FORMATION CHARACTERISTICS:');
            
             disp('Reservoir geometry:');

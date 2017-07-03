@@ -33,7 +33,7 @@ methods
             % Print some info to the screen
             if (obj.chops > 0)
                 disp('Max num. of iterations reached or stagnation detected: Time-step was chopped');
-                disp(char(5));
+                disp(newline);
                 disp(['Restart Newton loop dt = ', num2str(dt)]);
             end
             

@@ -296,7 +296,14 @@ classdef builder < handle
                         operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
                         operatorshandler.BFUpdater = bf_updater_ms();
                 end
-                gridselector = adm_grid_selector(tol, key);
+                gridselcriterion = 1;
+                switch (gridselcriterion)
+                    case(1)
+                        gridselector = adm_grid_selector_delta(tol, key);
+                    case(2)
+                        gridselector = adm_grid_selector_time(tol, key);
+                end
+                
                 %% Reservori Grid
                 Discretization = ADM_Discretization_model(maxLevel, Coarsening);
                 ReservoirGrid = cartesian_grid(nx, ny, nz);

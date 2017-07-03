@@ -52,7 +52,7 @@ methods
             % copy state to check outer convergence
             State_old = status();
             State_old.CopyProperties(ProductionSystem.Reservoir.State);
-            disp(char(5));
+            disp(newline);
             disp(['Outer iteration: ', num2str(obj.itCount)]);
             %% 1. Solve pressure equation
             disp('Pressure Solver')
@@ -66,17 +66,13 @@ methods
             Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
             % Check that velocity field is conservative
             tstart2 = tic;
-            %conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
-            %if ~conservative
-             %   disp('Mass balance not respected!!');
-              %  break
-            %end
             obj.BalanceTimer(obj.itCount) = toc(tstart2);
              
-            %% 3. Solve transport
-            
+            %% 3. Solve transport            
             % 3.1 Choose stable timestep
-            dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+            if obj.itCount == 1
+                dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+            end
             disp('Transport Solver');
             disp('...............................................');
             tstart3 = tic;

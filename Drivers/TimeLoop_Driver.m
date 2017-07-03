@@ -66,7 +66,7 @@ classdef TimeLoop_Driver < handle
                 disp('-----------------------------------------------')
                 disp(['Final time: ' num2str((obj.Time)/(3600*24),4) ' days, dT= ' num2str(obj.dt) ' s']);
                 disp(['end of time-step ' num2str(obj.Ndt)]);
-                disp(char(5));
+                disp(newline);
                 obj.Ndt = obj.Ndt + 1;
                 
                 % Saves the total time of the timestep in the run summary
@@ -81,7 +81,7 @@ classdef TimeLoop_Driver < handle
                 %% %%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
                 if (obj.Time == obj.TStops(index) || obj.TStops(index) == 0 ||EndOfSimCriterion==1 )
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
-                    disp(char(5));
+                    disp(newline);
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
                     Writer.WriteSolutionOnFile(ProductionSystem, index);
                     index = index + 1;
