@@ -232,6 +232,7 @@ classdef builder < handle
                     temp = strfind(FractureMatrix{1}, 'FRAC_CONN');
                     frac_fracConn_index = find(~cellfun('isempty', temp));
                     
+                    n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
                     for f = 1 : NrOfFrac
                         % looping over all global fracture cells
                         for If = 1:length(frac_cell_index)
@@ -249,12 +250,14 @@ classdef builder < handle
                             % frac-frac conn
                             temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp)+1;
                             [~ , frac_fracConn_index_start] = min(temp);
+                           
                             for Ig = 1:str2double(fracCell_info_split{5})
                                 frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
                                 CrossConnections(If,1).Cells(Im+Ig,1) = Discretization.ReservoirGrid.N + sum( Discretization.FracturesGrid.N( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
-                                CrossConnections(If,1).T_Geo(Im+Ig,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                                CrossConnections(If,1).T_Geo(Im+Ig,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});    
                             end
-                            
+                            CrossConnections(If,1).UpWind = zeros(length(CrossConnections(If,1).Cells), n_phases);
+                            CrossConnections(If,1).U_Geo = zeros(length(CrossConnections(If,1).Cells), n_phases);
                         end 
                     end
                     
@@ -740,11 +743,6 @@ classdef builder < handle
                     Formulation.GravityModel.g = 9.806;
                 case('OFF')
                     Formulation.GravityModel.g = 0;
-            end
-            
-            % Adding the Jacobian Indexing (Independent of time steps)
-            if obj.Fractured
-                Discretization.AddJacobianIndex(Formulation);
             end
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)

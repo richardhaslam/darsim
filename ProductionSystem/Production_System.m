@@ -28,6 +28,7 @@ classdef Production_System < handle
             if obj.FracturesNetwork.Active
                 for f = 1:obj.FracturesNetwork.NumOfFrac
                     %% MODIFY INITIAL VALUES FOR FRAC
+                    
                     obj.FracturesNetwork.Fractures(f).State.AssignInitialValues(VarNames, VarValues(1,:));
                 end
             end

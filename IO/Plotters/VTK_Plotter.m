@@ -134,6 +134,7 @@ classdef VTK_Plotter < Plotter
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex - 1),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
             fprintf(fileID, '\n');
+            fclose(fileID);
         end
         function PlotBasisFunctions(obj, Grid, CoarseGrid, Prolp)
             %% 1. Level 1
