@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 30 June 2017
-%Last modified: 30 June 2017
+%Last modified: 4 July 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector_time < adm_grid_selector
     properties
@@ -15,11 +15,31 @@ classdef adm_grid_selector_time < adm_grid_selector
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
             % SELECT the ADM GRID for next time-step
+            % Grid is chosen based on (deltaX)^n
+            
+            %% 0. Reset all cells to be active
             FineGrid.Active = ones(FineGrid.N, 1);
-           
+            for i=1:maxLevel
+                CoarseGrid(i).Active = ones(CoarseGrid(i).N, 1);
+            end
+            
+            %% 1. Compute change of property X over previous time-step
+            delta = abs(ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
+                    ProductionSystem.Reservoir.State_old.Properties(obj.key).Value);
+            delta = reshape(delta, FineGrid.Nx, FineGrid.Ny, FineGrid.Nz);    
+            
+            %% 2. Go from coarse to fine
+            % 2.a coarse grids lmax to 2
+            for i=maxLevel:-1:2
+                obj.SelectCoarseFine(CoarseGrid(i-1), CoarseGrid(i), delta);
+            end
+            % 2.b coarse grid 1 to 0 (fine-scale)
+            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), delta);
+            
+            %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid);
         end
-        function SelectCoarseFine(obj, FineGrid, CoarseGrid, S)
+        function SelectCoarseFine(obj, FineGrid, CoarseGrid, delta)
             %Given a Fine and a Coarse Grids chooses the cells that have to be active
             %1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
@@ -35,22 +55,9 @@ classdef adm_grid_selector_time < adm_grid_selector
                 Kmax = K + ceil((CoarseGrid.CoarseFactor(3) - 1)/2);
                 
                 % Max e Min saturation
-                Smax = max(max(max(S(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
-                Smin = min(min(min(S(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
-                if CoarseGrid.Active(c) == 1
-                    n = CoarseGrid.Neighbours(c).indexes;
-                    Nn = length(n);
-                    i = 1;
-                    while i <= Nn
-                        if (abs(Smax-S(CoarseGrid.I(n(i), 2), CoarseGrid.J(n(i), 2), CoarseGrid.K(n(i), 2)))...
-                                > obj.tol || abs(Smin-S(CoarseGrid.I(n(i),2),CoarseGrid.J(n(i),2), CoarseGrid.K(n(i), 2))) > obj.tol)
-                            CoarseGrid.Active(c) = 0;
-                            %CoarseGrid.Active(i) = 0;
-                            i = Nn + 1;
-                        else
-                            i = i+1;
-                        end
-                    end
+                deltaMax = max(max(max(delta(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
+                if CoarseGrid.Active(c) == 1 && deltaMax > obj.Tol
+                   CoarseGrid.Active(c) = 0;
                 end
             end
             

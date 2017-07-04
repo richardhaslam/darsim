@@ -57,5 +57,16 @@ classdef Production_System < handle
             % 4. ComputeFluxes
             obj.Wells.UpdateState(obj.Reservoir, FluidModel);
         end
+        function SavePreviousState(obj)
+            %% Reservoir
+            obj.Reservoir.State_old.CopyProperties(obj.Reservoir.State);
+            %% Fractures
+            if obj.FracturesNetwork.Active
+                for f = 1:obj.FracturesNetwork.NumOfFrac
+                    %% MODIFY INITIAL VALUES FOR FRAC
+                    obj.FracturesNetwork.Fractures(f).State_old(obj.FracturesNetwork.Fractures(f).State);
+                end
+            end
+        end
     end
 end

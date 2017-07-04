@@ -893,6 +893,7 @@ classdef builder < handle
             switch(obj.Fractured)
                 case(0)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
+                    ProductionSystem.Reservoir.State_old.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                 case(1)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                     for f=1:ProductionSystem.FracturesNetwork.NumOfFrac

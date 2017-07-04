@@ -16,6 +16,7 @@ classdef reservoir < handle
         Por
         TotalPV
         State
+        State_old
     end
     methods
         function obj = reservoir(length, width, thickness, temp)
@@ -24,6 +25,7 @@ classdef reservoir < handle
             obj.Thickness = thickness;
             obj.Temp = temp;
             obj.State = status();
+            obj.State_old = status();
         end
         function AddPermeabilityPorosity(obj, k, por)
             obj.K = k;
