@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 30 June 2017
-%Last modified: 4 July 2017
+%Last modified: 5 July 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector_time < adm_grid_selector
     properties
@@ -19,60 +19,64 @@ classdef adm_grid_selector_time < adm_grid_selector
             
             %% 0. Reset all cells to be active
             FineGrid.Active = ones(FineGrid.N, 1);
-            for i=1:maxLevel
-                CoarseGrid(i).Active = ones(CoarseGrid(i).N, 1);
-            end
+            CoarseGrid(1).Active = obj.NoWellsCoarseCells;
             
             %% 1. Compute change of property X over previous time-step
-            delta = abs(ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
-                    ProductionSystem.Reservoir.State_old.Properties(obj.key).Value);
-            delta = reshape(delta, FineGrid.Nx, FineGrid.Ny, FineGrid.Nz);    
-            
+            num = abs(ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
+                  ProductionSystem.Reservoir.State_old.Properties(obj.key).Value);
+            %den = ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
+            den = 1;
+            delta = num ./ den;
+                                       
             %% 2. Go from coarse to fine
-            % 2.a coarse grids lmax to 2
-            for i=maxLevel:-1:2
+            % 2.a coarse grid 1 to 0 (fine-scale)
+            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), delta);
+            % 2.b coarse grids lmax to 2
+            for i=2:maxLevel
+                obj.DefinePossibleActive(CoarseGrid(i), CoarseGrid(i-1), i);
                 obj.SelectCoarseFine(CoarseGrid(i-1), CoarseGrid(i), delta);
             end
-            % 2.b coarse grid 1 to 0 (fine-scale)
-            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), delta);
+            
+            % 2.c keep perforated cells at the fine-scale
+            %obj.RefineWells(ProductionSystem.Wells, FineGrid, CoarseGrid, maxLevel)
             
             %% 3. Create ADM Grid
-            obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid);
+            obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
         function SelectCoarseFine(obj, FineGrid, CoarseGrid, delta)
-            %Given a Fine and a Coarse Grids chooses the cells that have to be active
-            %1. Select Active Coarse Blocks
+            %Given a Fine (level l-1) and a Coarse (level l) Grids chooses the cells that have to be active
+            
+            %% 1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
             for c = 1:Nc
-                I = CoarseGrid.I(c,2);
-                J = CoarseGrid.J(c,2);
-                K = CoarseGrid.K(c,2);
-                Imin = I - floor((CoarseGrid.CoarseFactor(1) - 1)/2);
-                Imax = I + ceil((CoarseGrid.CoarseFactor(1) - 1)/2);
-                Jmin = J - floor((CoarseGrid.CoarseFactor(2) - 1)/2);
-                Jmax = J + ceil((CoarseGrid.CoarseFactor(2) - 1)/2);
-                Kmin = K - floor((CoarseGrid.CoarseFactor(3) - 1)/2);
-                Kmax = K + ceil((CoarseGrid.CoarseFactor(3) - 1)/2);
+                % fine-scale cells inside coarse block c
+                indexes_fs = CoarseGrid.GrandChildren(c,:);
                 
-                % Max e Min saturation
-                deltaMax = max(max(max(delta(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
-                if CoarseGrid.Active(c) == 1 && deltaMax > obj.Tol
+                % Max delta inside block c
+                deltaSum = sum(delta(indexes_fs));
+                CoarseGrid.DeltaS(c) = deltaSum;
+                if CoarseGrid.Active(c) == 1 && deltaSum > obj.tol
                    CoarseGrid.Active(c) = 0;
                 end
             end
-            
-            %2. Do not coarsen neighbours of cells that are fine
-            DummyActive = CoarseGrid.Active;
-            for i = 1:Nc
-                if (CoarseGrid.Active(i) == 0)
-                    DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
-                end
-            end
-            CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
-            
-            %3. Set to inactive fine block belonging to Active Coarse Blocks
-            %Cindeces = find();
+%             dummy = CoarseGrid.Active;
+%             for c=1:Nc
+%                 if dummy(c) == 0
+%                     CoarseGrid.Active(CoarseGrid.Neighbours(c).indexes) = 0;
+%                 end
+%             end
+            %% 3. Set to inactive fine blocks (level l-1) belonging to active Coarse Blocks (level l)
             FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
+        end
+        function RefineWells(obj, Wells, FineGrid, CoarseGrid, maxLevel)
+%             for w = 1:length(Wells.Inj)       
+%                     FineGrid.Active(Wells.Inj(w).Cells) = 1;
+%             end
+%             for w = 1:length(Wells.Prod)
+%                 FineGrid.Active(Wells.Prod(w).Cells) = 1;
+%             end
+              indexes = CoarseGrid(1).Children(obj.NoWellsCoarseCells == 0, :);
+              FineGrid.Active(indexes) = 1;
         end
     end
 end

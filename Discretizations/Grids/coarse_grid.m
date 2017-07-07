@@ -16,6 +16,7 @@ classdef coarse_grid < grid_darsim
         K
         Neighbours
         Wells
+        DeltaS
     end
     methods
         function obj = coarse_grid()
@@ -27,6 +28,7 @@ classdef coarse_grid < grid_darsim
             obj.Ny = FineGrid.Ny/obj.CoarseFactor(2);
             obj.Nz = FineGrid.Nz/obj.CoarseFactor(3);
             obj.N = obj.Nx*obj.Ny*obj.Nz;
+            obj.DeltaS = zeros(obj.N, 1);
             % Coordinates of the centres
             obj.I = ones(obj.N, 2);
             obj.J = ones(obj.N, 2);

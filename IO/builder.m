@@ -296,7 +296,7 @@ classdef builder < handle
                         operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
                         operatorshandler.BFUpdater = bf_updater_ms();
                 end
-                gridselcriterion = 1;
+                gridselcriterion = 2;
                 switch (gridselcriterion)
                     case(1)
                         gridselector = adm_grid_selector_delta(tol, key);
