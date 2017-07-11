@@ -187,88 +187,91 @@ classdef builder < handle
             end
         end
         function Discretization = BuildDiscretization(obj, inputMatrix, FractureMatrix, SettingsMatrix)
-            %% Define your discretization Model (choose between FS and ADM)
-            %Gridding
+            %% 1. Create fine-scale grids
+            % 1a. Reservoir Grid
             nx = str2double(inputMatrix(obj.grid + 1));
             ny = str2double(inputMatrix(obj.grid + 2));
             nz = str2double(inputMatrix(obj.grid + 3));
+            Nm = nx*ny*nz;
+            ReservoirGrid = cartesian_grid(nx, ny, nz);
+            NrOfFrac = 0;
+            % 1b. Fractures Grid
+            if obj.Fractured
+                temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
+                index = find(~cellfun('isempty', temp));
+                temp = strsplit(FractureMatrix{1}{index},' ');
+                NrOfFrac = str2double( temp{end} );
+                FracturesGrid = fractures_grid(NrOfFrac);
+                temp = strfind(FractureMatrix{1}, 'PROPERTIES');
+                frac_index = find(~cellfun('isempty', temp));
+                
+                for f = 1 : NrOfFrac
+                    % Creat cartesian grid in each fracture
+                    frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
+                    grid_temp = strsplit(frac_info_split{8}, 'x');
+                    nx = str2double(grid_temp{1});
+                    ny = str2double(grid_temp{2});
+                    nz = 1;
+                    FractureGrid = cartesian_grid(nx, ny, nz);
+                    FracturesGrid.AddGrid(FractureGrid, f);
+                    Nf(f) = nx*ny*nz;
+                end
+                
+                % Reading the non-neighboring connectivities of frac-frac and frac-matrix
+                CrossConnections = cross_connections();
+                temp = strfind(FractureMatrix{1}, 'FRACCELL');
+                frac_cell_index = find(~cellfun('isempty', temp));
+                
+                temp = strfind(FractureMatrix{1}, 'ROCK_CONN');
+                frac_rockConn_index = find(~cellfun('isempty', temp));
+                
+                temp = strfind(FractureMatrix{1}, 'FRAC_CONN');
+                frac_fracConn_index = find(~cellfun('isempty', temp));
+                
+                n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
+                for f = 1 : NrOfFrac
+                    % looping over all global fracture cells
+                    for If = 1:length(frac_cell_index)
+                        fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
+                        
+                        % frac-marix conn
+                        temp = frac_rockConn_index - frac_cell_index(If); temp(temp<0) = max(temp) +1;
+                        [~ , frac_rockConn_index_start] = min(temp);
+                        for Im = 1:str2double(fracCell_info_split{3})
+                            frac_rockConn_info_split = strsplit(FractureMatrix{1}{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
+                            CrossConnections(If,1).Cells(Im,1) = str2double(frac_rockConn_info_split{2})+1;
+                            CrossConnections(If,1).T_Geo(Im,1) = str2double(frac_rockConn_info_split{3}) / str2double(frac_rockConn_info_split{4});
+                        end
+                        
+                        % frac-frac conn
+                        temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp)+1;
+                        [~ , frac_fracConn_index_start] = min(temp);
+                        
+                        for Ig = 1:str2double(fracCell_info_split{5})
+                            frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
+                            CrossConnections(If,1).Cells(Im+Ig,1) = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
+                            CrossConnections(If,1).T_Geo(Im+Ig,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                        end
+                        CrossConnections(If,1).UpWind = zeros(length(CrossConnections(If,1).Cells), n_phases);
+                        CrossConnections(If,1).U_Geo = zeros(length(CrossConnections(If,1).Cells), n_phases);
+                    end
+                end
+            end
+            %% 2. Define your discretization Model (choose between FS and ADM)
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
                 % Fine-scale discretization model
                 obj.ADM = 'inactive';
                 Discretization = FS_Discretization_model();
-                %% Reservori Grid
-                ReservoirGrid = cartesian_grid(nx, ny, nz);
-                Discretization.AddReservoirGrid(ReservoirGrid);
-                %% Fractures Grid
-                if obj.Fractured
-                    temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
-                    index = find(~cellfun('isempty', temp));
-                    temp = strsplit(FractureMatrix{1}{index},' ');
-                    NrOfFrac = str2double( temp{end} );
-                    FracturesGrid = fractures_grid(NrOfFrac);
-                    temp = strfind(FractureMatrix{1}, 'PROPERTIES');
-                    frac_index = find(~cellfun('isempty', temp));
-                    
-                    for f = 1 : NrOfFrac
-                        % Creat cartesian grid in each fracture
-                        frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
-                        grid_temp = strsplit(frac_info_split{8}, 'x');
-                        nx = str2double(grid_temp{1});
-                        ny = str2double(grid_temp{2});
-                        nz = 1;
-                        FractureGrid = cartesian_grid(nx, ny, nz);
-                        FracturesGrid.AddGrid(FractureGrid, f);
-                    end
-                    Discretization.AddFracturesGrid(FracturesGrid);
-                    
-                    % Reading the non-neighboring connectivities of frac-frac and frac-matrix
-                    CrossConnections = cross_connections();
-                    temp = strfind(FractureMatrix{1}, 'FRACCELL');
-                    frac_cell_index = find(~cellfun('isempty', temp));
-
-                    temp = strfind(FractureMatrix{1}, 'ROCK_CONN');
-                    frac_rockConn_index = find(~cellfun('isempty', temp));
-
-                    temp = strfind(FractureMatrix{1}, 'FRAC_CONN');
-                    frac_fracConn_index = find(~cellfun('isempty', temp));
-                    
-                    n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
-                    for f = 1 : NrOfFrac
-                        % looping over all global fracture cells
-                        for If = 1:length(frac_cell_index)
-                            fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
-                            
-                            % frac-marix conn
-                            temp = frac_rockConn_index - frac_cell_index(If); temp(temp<0) = max(temp) +1;
-                            [~ , frac_rockConn_index_start] = min(temp);
-                            for Im = 1:str2double(fracCell_info_split{3})
-                                frac_rockConn_info_split = strsplit(FractureMatrix{1}{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
-                                CrossConnections(If,1).Cells(Im,1) = str2double(frac_rockConn_info_split{2})+1;
-                                CrossConnections(If,1).T_Geo(Im,1) = str2double(frac_rockConn_info_split{3}) / str2double(frac_rockConn_info_split{4});
-                            end
-                            
-                            % frac-frac conn
-                            temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp)+1;
-                            [~ , frac_fracConn_index_start] = min(temp);
-                           
-                            for Ig = 1:str2double(fracCell_info_split{5})
-                                frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
-                                CrossConnections(If,1).Cells(Im+Ig,1) = Discretization.ReservoirGrid.N + sum( Discretization.FracturesGrid.N( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
-                                CrossConnections(If,1).T_Geo(Im+Ig,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});    
-                            end
-                            CrossConnections(If,1).UpWind = zeros(length(CrossConnections(If,1).Cells), n_phases);
-                            CrossConnections(If,1).U_Geo = zeros(length(CrossConnections(If,1).Cells), n_phases);
-                        end 
-                    end
-                    
-                    Discretization.AddCrossConnections(CrossConnections);
-                end
             else
                 % ADM discretization model
                 obj.ADM = 'active';
+                Coarsening = cell(1+NrOfFrac , 1);
+                maxLevel = ones(1+NrOfFrac , 1);
+                
+                % ADM grid for reservoir
                 temp = strfind(SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
-                maxLevel = str2double(SettingsMatrix(x+1));
+                maxLevel(1) = str2double(SettingsMatrix(x+1));
                 temp = strfind(SettingsMatrix, 'TOLERANCE');
                 x = find(~cellfun('isempty', temp));
                 tol = str2double(SettingsMatrix(x+1));
@@ -280,22 +283,60 @@ classdef builder < handle
                 cx = str2double(SettingsMatrix(x+1));
                 cy = str2double(SettingsMatrix(x+2));
                 cz = str2double(SettingsMatrix(x+3));
-                Coarsening = [cx, cy, cz; cx^2, cy^2, cz^2; cx^3, cy^3, cz^3]; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                Coarsening{1} = ones(maxLevel(1),3);
+                for L = 1:maxLevel(1)
+                    Coarsening{1}(L,:) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                end
                 temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
-                if isempty(maxLevel) || isempty(Coarsening) || isempty(key) || isempty(tol) || isempty(x)
+                if isempty(maxLevel(1)) || isempty(Coarsening{1}) || isempty(key) || isempty(tol) || isempty(x)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end
-                switch (char(SettingsMatrix(x+1))) 
-                    case ('Constant')
-                        operatorshandler = operators_handler_constant(maxLevel, [cx,cy,cz]);
-                    case ('Homogeneous')
-                        operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
-                        operatorshandler.BFUpdater = bf_updater_bilin();
-                    case ('MS')
-                        operatorshandler = operators_handler_MS(maxLevel, [cx,cy,cz]);
-                        operatorshandler.BFUpdater = bf_updater_ms();
+                
+                % ADM grid for fractures
+                if obj.Fractured
+                    for f = 1 : NrOfFrac
+                        frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
+                        ADM_temp = regexprep(frac_info_split{9},' ' ,'');
+                        ADM_temp = strsplit(ADM_temp, { '[' , ',' , ']' });
+                        ADM_temp = [ str2double(ADM_temp(2)) , str2double(ADM_temp(3)) , str2double(ADM_temp(4)) , str2double(ADM_temp(5)) ];
+                        if ADM_temp(1)
+                            maxLevel(1+f) = ADM_temp(2);
+                            Coarsening{1+f} = ones(maxLevel(1+f),3);
+                            for L = 1:maxLevel(1+f)
+                                Coarsening{1+f}(L,:) = [ADM_temp(3), ADM_temp(4), 1].^L;
+                            end
+                        else
+                            maxLevel(1+f) = 1;
+                            Coarsening{f+1} = ones(maxLevel(1+f),3);
+                        end
+                        
+                    end
                 end
+                
+                operatorshandler = cell(1+NrOfFrac,1);
+                switch (char(SettingsMatrix(x+1)))
+                    case ('Constant')
+                        operatorshandler{1} = operators_handler_constant( maxLevel(1) , Coarsening{1+f}(1,:) );
+                        for f = 1 : NrOfFrac
+                            operatorshandler{1+f} = operators_handler_constant( maxLevel(1+f) , Coarsening{1+f}(1,:) );
+                        end
+                    case ('Homogeneous')
+                        operatorshandler{1} = operators_handler_MS( maxLevel(1) , Coarsening{1}(1,:) );
+                        operatorshandler{1}.BFUpdater = bf_updater_bilin();
+                        for f = 1 : NrOfFrac
+                            operatorshandler{1+f} = operators_handler_MS( maxLevel(1+f) , Coarsening{1+f}(1,:) );
+                            operatorshandler{1+f}.BFUpdater = bf_updater_bilin();
+                        end
+                    case ('MS')
+                        operatorshandler{1} = operators_handler_MS( maxLevel(1) , Coarsening{1+f}(1,:) );
+                        operatorshandler{1}.BFUpdater = bf_updater_ms();
+                        for f = 1 : NrOfFrac
+                            operatorshandler{1+f} = operators_handler_MS( maxLevel(1+f) , Coarsening{1+f}(1,:) );
+                            operatorshandler{1+f}.BFUpdater = bf_updater_ms();
+                        end
+                end
+                
                 gridselcriterion = 1;
                 switch (gridselcriterion)
                     case(1)
@@ -303,15 +344,18 @@ classdef builder < handle
                     case(2)
                         gridselector = adm_grid_selector_time(tol, key);
                 end
-                
-                %% Reservori Grid
                 Discretization = ADM_Discretization_model(maxLevel, Coarsening);
-                ReservoirGrid = cartesian_grid(nx, ny, nz);
-                Discretization.AddReservoirGrid(ReservoirGrid);
                 Discretization.AddADMGridSelector(gridselector);
                 Discretization.AddOperatorsHandler(operatorshandler);
+
             end
-            
+
+            %% 3. Add Grids to the Discretization Model
+            Discretization.AddReservoirGrid(ReservoirGrid);
+            if obj.Fractured
+                Discretization.AddFracturesGrid(FracturesGrid);
+                Discretization.AddCrossConnections(CrossConnections);
+            end
         end
         function ProductionSystem = BuildProductionSystem (obj, inputMatrix, FractureMatrix, DiscretizationModel)
             ProductionSystem = Production_System();
@@ -571,13 +615,13 @@ classdef builder < handle
                     K = [Kx, Ky, Kz];
                     FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture 
                     
-                    CornerPoint = strsplit(frac_info_split{9}, {'[',';',']'});
+                    CornerPoint = strsplit(frac_info_split{10}, {'[',';',']'});
                     FracturesNetwork.Fractures(f).PointA = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
-                    CornerPoint = strsplit(frac_info_split{11}, {'[',';',']'});
+                    CornerPoint = strsplit(frac_info_split{12}, {'[',';',']'});
                     FracturesNetwork.Fractures(f).PointB = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
-                    CornerPoint = strsplit(frac_info_split{13}, {'[',';',']'});
+                    CornerPoint = strsplit(frac_info_split{14}, {'[',';',']'});
                     FracturesNetwork.Fractures(f).PointC = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
-                    CornerPoint = strsplit(frac_info_split{15}, {'[',';',']'});
+                    CornerPoint = strsplit(frac_info_split{16}, {'[',';',']'});
                     FracturesNetwork.Fractures(f).PointD = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
                     
                     frac_grid_coords_x_split = strsplit(FractureMatrix{1}{frac_grid_coords_x(f)},' ');
@@ -725,17 +769,26 @@ classdef builder < handle
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
                     if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
+                        Discretization.OperatorsHandler{1}.FullOperatorsAssembler = operators_assembler_Imm();
+                        for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
+                            Discretization.OperatorsHandler{1+f}.FullOperatorsAssembler = operators_assembler_Imm();
+                        end
                     end
                 case('Natural')
                     Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
                     if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_comp();
+                        Discretization.OperatorsHandler{1}.FullOperatorsAssembler = operators_assembler_comp();
+                        for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
+                            Discretization.OperatorsHandler{1+f}.FullOperatorsAssembler = operators_assembler_comp();
+                        end
                     end
                 case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
                     if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
+                        Discretization.OperatorsHandler{1}.FullOperatorsAssembler = operators_assembler_Imm();
+                        for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
+                            Discretization.OperatorsHandler{1+f}.FullOperatorsAssembler = operators_assembler_Imm();
+                        end
                     end
                 case('Jeremy')
                     Formulation = OBL_formualtion();
@@ -862,7 +915,7 @@ classdef builder < handle
                 case('inactive')
                     Summary = Run_Summary(obj.MaxNumTimeSteps, CouplingStats, wellsData);
                 case('active')
-                    Summary = Run_Summary_ADM(obj.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel);
+                    Summary = Run_Summary_ADM(obj.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
             end
         end
         function Writer = BuildWriter(obj, InputDirectory, simulation)

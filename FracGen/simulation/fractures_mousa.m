@@ -32,6 +32,7 @@ classdef fractures_mousa < handle
         isParallel
         N_Length_AB
         N_Width_AD
+        ADM
         D_Length_AB
         D_Width_AD
         D_Length_AB_vec

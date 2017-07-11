@@ -108,13 +108,17 @@ classdef builder_frac < handle
                 obj.FracInput(f).Porosity       = str2double( frac_temp{12} );
                 %%% The permeability of the fracture plate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 obj.FracInput(f).Permeability   = str2double( frac_temp{13} );
+                %%% ADM Configuration of the fracture %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                frac_temp{14} = regexprep(frac_temp{14},' ' ,'');
+                ADM_temp = strsplit(frac_temp{14}, { '[' , ',' , ']' });
+                obj.FracInput(f).ADM = [ str2double(ADM_temp{2}) , str2double(ADM_temp{3}) , str2double(ADM_temp{4}) , str2double(ADM_temp{5}) ];
                 %%% The coordinates of 3 corners of fracture plate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                frac_temp{14}                 = regexprep(frac_temp{14},' ' ,'');
-                CornerCoord_temp              = strsplit(frac_temp{14}, { '[' , ';' , ',' , ']' });
+                frac_temp{15}                 = regexprep(frac_temp{15},' ' ,'');
+                CornerCoord_temp              = strsplit(frac_temp{15}, { '[' , ';' , ',' , ']' });
                 obj.FracInput(f).CornerCoords = [ str2double(CornerCoord_temp{02}) , str2double(CornerCoord_temp{03}) , str2double(CornerCoord_temp{04})
                                                   str2double(CornerCoord_temp{05}) , str2double(CornerCoord_temp{06}) , str2double(CornerCoord_temp{07})
                                                   str2double(CornerCoord_temp{08}) , str2double(CornerCoord_temp{09}) , str2double(CornerCoord_temp{10}) ];
-            end  
+            end
         end
         
         function Simulation = BuildSimulation(obj, inputMatrix)

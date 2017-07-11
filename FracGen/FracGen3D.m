@@ -46,7 +46,7 @@ for F = 1 : size(Frac_Input,2)
                 PointRightAngle   = find( dotProduct==0 , 1 );
                 PointSalientAngle = find( dotProduct~=0     );
 
-                if isempty(PointRightAngle),  error('Fracture # %1.0f is not a rectangle!',f);  end
+                if isempty(PointRightAngle),  error('Fracture # %1.0f is not a rectangle! Please check the input file.',f);  end
 
                 % Setting attributes to the corners (A is the corner with 90 deg angle)
                 Frac(f).PointA   = Frac_Input(F).CornerCoords( : , PointRightAngle      );
@@ -108,7 +108,7 @@ for F = 1 : size(Frac_Input,2)
             if ( min(Frac(f).Points(1,:)) < 0 ) || ( max(Frac(f).Points(1,:)) > LX ) || ...
                ( min(Frac(f).Points(2,:)) < 0 ) || ( max(Frac(f).Points(2,:)) > LY ) || ...
                ( min(Frac(f).Points(3,:)) < 0 ) || ( max(Frac(f).Points(3,:)) > LZ )
-                   error('Fracture #%1.0f does not fit in the matrix dimensions!',f);
+                   error('Fracture #%1.0f does not fit in the matrix dimensions! Please check the input file.',f);
             end
 
     %% Descretizing the Fracture Plates
@@ -155,11 +155,6 @@ for F = 1 : size(Frac_Input,2)
             Frac(f).N_Width_AD  = Frac_Input(F).GridNumAlongW;
         end
 
-    %     if Frac(f).N_Length_AB < 3, Frac(f).N_Length_AB = 3; end
-%         if ( abs(Frac(f).AB_vec(1)) < almostZero ) && ( abs(Frac(f).AB_vec(2)) < almostZero ) && NZ == 1,  Frac(f).N_Length_AB = 1;  end
-%     %     if Frac(f).N_Width_AD < 3, Frac(f).N_Width_AD = 3; end
-%         if ( abs(Frac(f).AD_vec(1)) < almostZero ) && ( abs(Frac(f).AD_vec(2)) < almostZero ) && NZ == 1,  Frac(f).N_Width_AD = 1;  end
-
         % The size of each fracture plate grid cell in AB and AD directions with their vectors
         Frac(f).D_Length_AB     = Frac(f).Length_AB / Frac(f).N_Length_AB;
         Frac(f).D_Width_AD     = Frac(f).Width_AD  / Frac(f).N_Width_AD;
@@ -195,10 +190,21 @@ for F = 1 : size(Frac_Input,2)
                                                       Frac(f).PointD(3) + (i-1)*Frac(f).D_Length_AB_vec(3) , Frac(f).N_Width_AD+1 );    
         end
         
+        % Adding ADM configuration
+        Frac(f).ADM = Frac_Input(F).ADM;
+        if Frac(f).ADM(1)
+            if mod( Frac(f).N_Length_AB , Frac(f).ADM(3)^Frac(f).ADM(2) ) ~= 0
+                error('In fracture #%1.0f, ADM coarsening ratio along length is not acceptable to the number of grid cells! Please check the input file.',f);
+            end
+            if mod( Frac(f).N_Width_AD , Frac(f).ADM(4)^Frac(f).ADM(2) ) ~= 0
+                error('In fracture #%1.0f, ADM coarsening ratio along width is not acceptable to the number of grid cells! Please check the input file.',f);
+            end
+        end
+        
     end
 end
 
-%% Intersections of fracture plate with each matrix cell (if any)
+%% Intersections of fracture plate with each matrix cell
 dummy = LX*10;                                                                        % A dummy value (an abnormal value)
 for f = 1 : length(Frac)
     
@@ -757,7 +763,7 @@ end
 %     end
 % end
 
-%% Row-wise to Vector-wise
+%% Row-wise to column-wise
 Frac = Frac';
 
 %% End of Function
