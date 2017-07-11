@@ -30,32 +30,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
             
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
-        function DefinePossibleActive(obj, CoarseGrid, FineGrid, level)
-            % For a given level defines possible active cells
-            
-            CoarseGrid.Active = ones(CoarseGrid.N, 1);
-            % If a cell inside the block is refined the whole block cannot be coarsened
-            Nf = FineGrid.N;
-            for i=1:Nf
-                if FineGrid.Active(i) == 0
-                    CoarseGrid.Active(FineGrid.Fathers(i, level)) = 0;
-                    %Active(FineGrid.Father(FineGrid.Neighbours(i).indexes, level)) = 0;
-                end
-            end
-            
-            % Force the jump between two neighbouring cells to be max 1 level!
-            Nc = CoarseGrid.N;
-            temp = 1 - CoarseGrid.Active;
-            for j=1:Nc
-                if CoarseGrid.Active(j) == 1
-                    vecNei = CoarseGrid.Neighbours(j).indexes;
-                    check = sum(temp(vecNei));
-                    if check > 0
-                        CoarseGrid.Active(j) = 0;
-                    end
-                end
-            end
-        end
+        
         function SelectCoarseFine(obj, FineGrid, CoarseGrid, S)
             %Given a Fine and a Coarse Grids chooses the cells that have to be active
             %1. Select Active Coarse Blocks

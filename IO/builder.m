@@ -335,8 +335,7 @@ classdef builder < handle
                             operatorshandler{1+f} = operators_handler_MS( maxLevel(1+f) , Coarsening{1+f}(1,:) );
                             operatorshandler{1+f}.BFUpdater = bf_updater_ms();
                         end
-                end
-                
+                end                
                 gridselcriterion = 1;
                 switch (gridselcriterion)
                     case(1)
@@ -946,6 +945,7 @@ classdef builder < handle
             switch(obj.Fractured)
                 case(0)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
+                    ProductionSystem.Reservoir.State_old.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                 case(1)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                     for f=1:ProductionSystem.FracturesNetwork.NumOfFrac

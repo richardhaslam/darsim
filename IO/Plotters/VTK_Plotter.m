@@ -60,13 +60,13 @@ classdef VTK_Plotter < Plotter
             fclose(fileID);
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
-            obj.PlotReservoirSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+            obj.PlotReservoirSolution(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid);
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
                 obj.PlotFracturesSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
             end
             obj.VTKindex = obj.VTKindex + 1;
         end
-        function PlotReservoirSolution(obj, Status, Grid)
+        function PlotReservoirSolution(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -96,12 +96,16 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             % Print all existing variables
-            N_var = double(Status.Properties.Count);
-            Names = Status.Properties.keys;
+            N_var = double(Reservoir.State.Properties.Count);
+            Names = Reservoir.State.Properties.keys;
             for i=1:N_var
-                obj.PrintScalar2VTK(fileID, Status.Properties(Names{i}).Value, [' ',Names{i}]);
+                obj.PrintScalar2VTK(fileID, Reservoir.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
+            % delta S
+            delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
+            obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
+            fprintf(fileID, '\n');
             fclose(fileID);
         end
         function PlotFracturesSolution(obj, Fracture, Grid, f)
@@ -263,6 +267,9 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+                fprintf(fileID, '\n');
+                % Delta_S
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).DeltaS, ' Delta_S');
                 fprintf(fileID, '\n');
                 fclose(fileID);
             end
