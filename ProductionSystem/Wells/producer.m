@@ -14,6 +14,7 @@ classdef producer < handle
         QPhases
         QComponents
         PI
+        BHPDepth
     end
     methods
         function obj = producer(PI, coord)

@@ -26,7 +26,7 @@ classdef single_phase_fluid_model < fluid_model
                 for ph=1:obj.NofPhases
                     Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
                 end
-                Inj(i).Mob = 1;   
+                Inj(i).Mob = 1/obj.Phases(1).mu;   
             end
         end
         function ComputePhaseDensities(obj, Status)

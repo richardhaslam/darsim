@@ -83,8 +83,8 @@ classdef NaturalVar_formulation < Compositional_formulation
                     A * m - A * m_old...          % Accumulation term
                     + obj.Tph{i, 1} *  P(:,1) ... % Convective term                
                     + obj.Tph{i, 2} *  P(:,2)...
-                    + obj.Gph{i,1} * depth...     % Gravity
-                    + obj.Gph{i,2} * depth...
+                    - obj.Gph{i,1} * depth...     % Gravity
+                    - obj.Gph{i,2} * depth...
                     - q(:,i);                     % Source terms
                 
                 % 2. THERMODYNAMIC EQUILIBRIUM EQUATIONS
@@ -309,7 +309,7 @@ classdef NaturalVar_formulation < Compositional_formulation
                 
             end
         end
-        function UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)   
+        function delta = UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)   
             %if sum(isnan(delta))
                 % if the solution makes no sense, skip this step
                 %return

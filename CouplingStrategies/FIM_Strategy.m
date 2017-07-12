@@ -26,14 +26,16 @@ methods
         obj.chops = 0;
         End = 0;
         % Save initial State
-        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem.Reservoir.State, Formulation);
+        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         % Linear Solver Setup
         obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
+        % Save state of current time-step (it's useful for ADM to update based on time change)
+        ProductionSystem.SavePreviousState();
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
                 disp('Max num. of iterations reached or stagnation detected: Time-step was chopped');
-                disp(char(5));
+                disp(newline);
                 disp(['Restart Newton loop dt = ', num2str(dt)]);
             end
             

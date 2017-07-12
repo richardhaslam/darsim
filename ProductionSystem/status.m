@@ -31,7 +31,7 @@ methods
                 %% Saturation and Pc
                 for i=1:FluidModel.NofPhases
                     obj.Properties(['P_', num2str(i)]) = property(N, 1, true, 1e7, 2e7);
-                    obj.Properties(['S_', num2str(i)]) = property(N, 1, false, 0, 1);
+                    obj.Properties(['S_', num2str(i)]) = property(N, 1, true, 0, 1);
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, false, 0, 2000);
                 end
                 obj.Properties('Pc') = property(N, 1, false, 1e3, 1e6);
@@ -56,14 +56,14 @@ methods
     function AssignInitialValues(obj, VarNames, VarValues)
         for i=1:length(VarNames)
             Prop = obj.Properties(char(VarNames{i}));
-            Prop.Value = ones(length(Prop.Value), 1) * VarValues(i);
+            Prop.Value = ones(length(Prop.Value), 1) .* VarValues(:, i);
         end
     end
     function CopyProperties(obj, Source)
         Names = Source.Properties.keys;
         N_prop = double(Source.Properties.Count);
         for i = 1:N_prop
-            obj.Properties([Names{i}]) = property(1, 1);
+            obj.Properties(Names{i}) = property(1, 1);
             temp = obj.Properties(Names{i});
             temp.Plot = Source.Properties(Names{i}).Plot;
             temp.Value = Source.Properties(Names{i}).Value;

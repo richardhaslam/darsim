@@ -1,4 +1,4 @@
-%  ADM discretization model
+%  ADM discretization model arrayfun(@(x)coarse_grid(), 1:n, 'UniformOutput',false)';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -19,11 +19,12 @@ classdef ADM_Discretization_model < Discretization_model
     end
     methods
         function obj = ADM_Discretization_model(maxlevel, coarsening)
-            obj.CoarseGrid = coarse_grid();
-            obj.ADMGrid = adm_grid();
-            obj.Coarsening = coarsening;
-            obj.maxLevel = maxlevel;
+            n = length(maxlevel);
+            obj.CoarseGrid = arrayfun(@(x)coarse_grid(), 1:n, 'UniformOutput',false)';
+            obj.ADMGrid    = arrayfun(@(x)adm_grid()   , 1:n, 'UniformOutput',false)';
             obj.GridMapper = grid_mapper();
+            obj.Coarsening = coarsening;
+            obj.maxLevel   = maxlevel;
         end
         function AddOperatorsHandler(obj, operatorshandler)
             obj.OperatorsHandler = operatorshandler;
@@ -31,8 +32,8 @@ classdef ADM_Discretization_model < Discretization_model
         function AddADMGridSelector(obj, gridselector)
             obj.ADMGridSelector = gridselector;
         end
-       function InitializeMapping(obj, ProductionSystem, FluidModel)
-            disp('Algebraic Dynamic Multilevel (ADM) method run') 
+        function InitializeMapping(obj, ProductionSystem, FluidModel)
+            disp('Algebraic Dynamic Multilevel (ADM) method run')
             % Construct Coarse Grids
             disp(char(2));
             disp('Constructing coarse grids');
@@ -41,70 +42,97 @@ classdef ADM_Discretization_model < Discretization_model
             %% Pressure interpolators
             disp('Static operators - start computation');
             start = tic;
-            obj.OperatorsHandler.BuildStaticOperators(obj.CoarseGrid, obj.ReservoirGrid, obj.maxLevel,...
+            % Reservoir
+            obj.OperatorsHandler{1}.BuildStaticOperators(obj.CoarseGrid{1}, obj.ReservoirGrid, obj.maxLevel(1),...
                 ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.Properties('S_1').Value, FluidModel);
+            
+            % Fractures
+            for f = 1:length(obj.maxLevel) - 1
+                obj.OperatorsHandler{1+f}.BuildStaticOperators(obj.CoarseGrid{1+f}, obj.FracturesGrid.Grids(f), obj.maxLevel(1+f),...
+                    ProductionSystem.FracturesNetwork.Fractures(f).K, ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value, FluidModel);
+            end
+            
             disp('Static operators - end')
             timer = toc(start);
             disp(['Static operators construction took ', num2str(timer)])
             disp(char(2));
         end
         function ConstructCoarseGrids(obj, Inj, Prod)
-            % Construct all coarse grids
-            obj.CoarseGrid(1).CoarseFactor = obj.Coarsening(1,:);
-            obj.CoarseGrid(1).BuildCoarseGrid(obj.ReservoirGrid);
-            obj.GridMapper.BuildFamily(obj.CoarseGrid(1), obj.ReservoirGrid, obj.Coarsening(1,:), 1);
-            for i=2:obj.maxLevel
-                obj.CoarseGrid(i).CoarseFactor = obj.Coarsening(i,:);
-                obj.CoarseGrid(i).BuildCoarseGrid(obj.ReservoirGrid);
-                obj.GridMapper.BuildFamily(obj.CoarseGrid(i), obj.CoarseGrid(i-1), obj.Coarsening(1,:), i);
+            % Construct all coarse grids for reservoir
+            obj.CoarseGrid{1}(1).CoarseFactor = obj.Coarsening{1}(1,:);
+            obj.CoarseGrid{1}(1).BuildCoarseGrid(obj.ReservoirGrid);
+            obj.GridMapper.BuildFamily(obj.CoarseGrid{1}(1), obj.ReservoirGrid, obj.Coarsening{1}(1,:), 1);
+            for i=2:obj.maxLevel(1)
+                obj.CoarseGrid{1}(i).CoarseFactor = obj.Coarsening{1}(i,:);
+                obj.CoarseGrid{1}(i).BuildCoarseGrid(obj.ReservoirGrid);
+                obj.GridMapper.BuildFamily(obj.CoarseGrid{1}(i), obj.CoarseGrid{1}(i-1), obj.Coarsening{1}(1,:), i);
             end
             
-            % Fathers and Verteces
-            obj.GridMapper.AssignFathersandVerteces(obj.ReservoirGrid, obj.CoarseGrid, obj.maxLevel)
+            % Fathers and Verteces for reservoir
+            obj.GridMapper.AssignFathersandVerteces(obj.ReservoirGrid, obj.CoarseGrid{1}, obj.maxLevel(1))
 
-            % Flag coarse blocks with wells
+            % Flag coarse blocks with wells for reservoir
             obj.CoarseWells(Inj, Prod);
-            obj.ADMGridSelector.NoWellsCoarseCells = ones(obj.CoarseGrid(1).N, 1);
-            Nc1 = obj.CoarseGrid(1).N;
-            if obj.maxLevel > 1
+            obj.ADMGridSelector.NoWellsCoarseCells = ones(obj.CoarseGrid{1}(1).N, 1);
+            Nc1 = obj.CoarseGrid{1}(1).N;
+            if obj.maxLevel(1) > 1
                for i = 1:Nc1
-                   if obj.CoarseGrid(2).Wells(obj.CoarseGrid(1).Fathers(i, 2)) == 1
+                   if obj.CoarseGrid{1}(2).Wells(obj.CoarseGrid{1}(1).Fathers(i, 2)) == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
             else
                for i =1:Nc1
-                   if obj.CoarseGrid(1).Wells(i) == 1
+                   if obj.CoarseGrid{1}(1).Wells(i) == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
+            end
+            
+            % Construct all coarse grids for fractures
+            for f = 1 : length(obj.maxLevel) - 1
+                obj.CoarseGrid{1+f}(1).CoarseFactor = obj.Coarsening{1+f}(1,:);
+                obj.CoarseGrid{1+f}(1).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
+                obj.GridMapper.BuildFamily(obj.CoarseGrid{1+f}(1), obj.FracturesGrid.Grids(f), obj.Coarsening{1+f}(1,:), 1);
+                for i=2:obj.maxLevel(1+f)
+                    obj.CoarseGrid{1+f}(i).CoarseFactor = obj.Coarsening{1+f}(i,:);
+                    obj.CoarseGrid{1+f}(i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
+                    obj.GridMapper.BuildFamily(obj.CoarseGrid{1+f}(i), obj.CoarseGrid{1+f}(i-1), obj.Coarsening{1+f}(1,:), i);
+                end
+
+                % Fathers and Verteces
+                obj.GridMapper.AssignFathersandVerteces(obj.FracturesGrid.Grids(f), obj.CoarseGrid{1+f}, obj.maxLevel(1+f))
             end
         end
         function CoarseWells(obj, Inj, Prod)
             for i=1:length(Inj)
                 % Flag coarse Nodes with wells
                 I = Inj(i).Cells;
-                for x = 1:obj.maxLevel
+                for x = 1:obj.maxLevel(1)
                     for j =1:length(I)
-                        [r, ~] = find(obj.CoarseGrid(x).GrandChildren == I(j));
-                        obj.CoarseGrid(x).Wells(r) = 1;
+                        [r, ~] = find(obj.CoarseGrid{1}(x).GrandChildren == I(j)); % Only in reservoir for now
+                        obj.CoarseGrid{1}(x).Wells(r) = 1;
                     end
                 end
             end
             for i =1:length(Prod)
                 P = Prod(i).Cells;
-                for x = 1:obj.maxLevel
+                for x = 1:obj.maxLevel(1)
                     for j=1:length(P)
-                        [r, ~] = find(obj.CoarseGrid(x).GrandChildren == P(j));
-                        obj.CoarseGrid(x).Wells(r) = 1;
+                        [r, ~] = find(obj.CoarseGrid{1}(x).GrandChildren == P(j));
+                        obj.CoarseGrid{1}(x).Wells(r) = 1;
                     end
                 end
             end
         end
         function SelectADMGrid(obj, ProductionSystem)
-            % Build ADM Grid
+            % Build ADM Grid for reservoir
             obj.ADMGridSelector.SelectGrid(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
             obj.ADMStats.N = obj.ADMGrid.N;
+            
+            for f = 1 : length(obj.maxLevel) - 1
+                
+            end
         end
         function BuildADMOperators(obj)
             % Build ADM R and P operators

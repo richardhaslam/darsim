@@ -16,7 +16,7 @@ classdef operators_handler_MS < operators_handler
         end
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
             % Remove high contrast to avoid spikes
-            %lambdaMax = max(K(:,1));
+            lambdaMax = max(K(:,1));
             K(K(:,1)./lambdaMax < 10^-2, 1) = 10^-2*lambdaMax;
             K(K(:,2)./lambdaMax < 10^-2, 2) = 10^-2*lambdaMax;
             K(K(:,3)./lambdaMax < 10^-2, 3) = 10^-2*lambdaMax;

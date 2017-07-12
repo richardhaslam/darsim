@@ -17,6 +17,7 @@ classdef Immiscible_fluid_model < fluid_model
         end
         function SinglePhase = Flash(obj, Status)
             % Composition in this case is fixed to be 1 and 0
+            SinglePhase = zeros(length(Status.Properties('S_1').Value), 1);
             SinglePhase (Status.Properties('S_1').Value == 1) = 1;
             SinglePhase (Status.Properties('S_2').Value == 1) = 2;
             

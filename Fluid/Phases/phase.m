@@ -35,9 +35,9 @@ classdef phase < matlab.mixin.Heterogeneous & handle
             U.x = zeros(Nx+1,Ny,Nz);
             U.y = zeros(Nx,Ny+1,Nz);
             U.z = zeros(Nx,Ny,Nz+1);
-            U.x(2:Nx,:,:) = (P(1:Nx-1,:,:)-P(2:Nx,:,:)) .* Grid.Tx(2:Nx,:,:) + Grid.Tx(2:Nx,:,:) .* Ugx(2:Nx,:,:);
-            U.y(:,2:Ny,:) = (P(:,1:Ny-1,:)-P(:,2:Ny,:)) .* Grid.Ty(:,2:Ny,:) + Grid.Ty(:,2:Ny,:) .* Ugy(:,2:Ny,:);
-            U.z(:,:,2:Nz) = (P(:,:,1:Nz-1)-P(:,:,2:Nz)) .* Grid.Tz(:,:,2:Nz) + Grid.Tz(:,:,2:Nz) .* Ugz(:,:,2:Nz);
+            U.x(2:Nx,:,:) = (P(1:Nx-1,:,:)-P(2:Nx,:,:)) .* Grid.Tx(2:Nx,:,:) - Grid.Tx(2:Nx,:,:) .* Ugx(2:Nx,:,:);
+            U.y(:,2:Ny,:) = (P(:,1:Ny-1,:)-P(:,2:Ny,:)) .* Grid.Ty(:,2:Ny,:) - Grid.Ty(:,2:Ny,:) .* Ugy(:,2:Ny,:);
+            U.z(:,:,2:Nz) = (P(:,:,1:Nz-1)-P(:,:,2:Nz)) .* Grid.Tz(:,:,2:Nz) - Grid.Tz(:,:,2:Nz) .* Ugz(:,:,2:Nz);
             
             %% Use velocity to build upwind operator
             L = reshape((U.x(2:Nx+1,:,:) >= 0), N, 1);

@@ -13,7 +13,7 @@ classdef fim_system_builder < system_builder
     methods
         function ComputePropertiesAndDerivatives(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
             Formulation.ComputePropertiesAndDerivatives(ProductionSystem, FluidModel);
-            Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel.ReservoirGrid, FluidModel.Phases, ProductionSystem.Reservoir.State);
+            Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
         end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
            Residual = Formulation.BuildResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
@@ -21,9 +21,13 @@ classdef fim_system_builder < system_builder
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
             Jacobian = Formulation.BuildJacobian(ProductionSystem, DiscretizationModel, dt);
         end
-        function UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
+        function SetUpSolutionChopper(obj, SolutionChopper, Formulation, ProductionSystem, DiscretizationModel)
+            x = Formulation.GetPrimaryUnknowns(ProductionSystem, DiscretizationModel);
+            SolutionChopper.DefineMaxDelta(x);
+        end
+        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
             % Update Reservoir State
-            Formulation.UpdateState(delta, ProductionSystem, FluidModel, DiscretizationModel);
+            delta = Formulation.UpdateState(delta, ProductionSystem, FluidModel, DiscretizationModel);
             % UpdateWells
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end
