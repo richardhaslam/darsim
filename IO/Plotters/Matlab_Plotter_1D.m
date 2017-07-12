@@ -25,7 +25,7 @@ classdef Matlab_Plotter_1D < Plotter
             N_var = double(Status.Properties.Count);
             Names = Status.Properties.keys;
             for i=1:N_var
-                if Status.Properties(Names{i}).Plot
+                %if Status.Properties(Names{i}).Plot
                     figure(i+1)
                     plot(x, Status.Properties(Names{i}).Value, obj.color2, 'LineWidth',1);
                     xlabel('x [m]');
@@ -34,7 +34,7 @@ classdef Matlab_Plotter_1D < Plotter
                     set(gca,'fontsize',24);
                     hold on
                     drawnow;
-                end
+                %end
             end
         end
         function PlotPermeability(obj, Grid, Perm)

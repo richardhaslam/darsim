@@ -285,7 +285,7 @@ classdef Immiscible_formulation < formulation
             S_rest = R * Status.S;
             Status.S = P * S_rest;
             % Update other unknwons as well 
-            %obj.UpdatePhaseCompositions(Status, FluidModel);
+            % obj.UpdatePhaseCompositions(Status, FluidModel);
         end
         function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)
             CFL = 0;

@@ -18,7 +18,7 @@ classdef timestep_selector < handle
         function obj = timestep_selector(cfl)
             obj.MinDt = 100; % in s (hard-coded for now)
             obj.MaxDt = 30*24*3600; % max 30 days
-            obj.NextDt = 0.01*24*3600;
+            obj.NextDt = 1e-6*24*3600;
             obj.CFL = cfl;
         end
         function dt = StableTimeStep(obj, ProductionSystem, DiscretizationModel, FluidModel, U)
