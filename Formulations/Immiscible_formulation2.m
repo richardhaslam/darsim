@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 7 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Immiscible_formulation < formulation
+classdef Immiscible_formulation2 < formulation
     properties
         % Sequential run variables
         Mobt
@@ -17,7 +17,7 @@ classdef Immiscible_formulation < formulation
         V
     end
     methods
-        function obj = Immiscible_formulation()
+        function obj = Immiscible_formulation2()
             obj@formulation();
             obj.Tph = cell(2,1);
             obj.Gph = cell(2,1);
