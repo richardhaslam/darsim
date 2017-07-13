@@ -60,34 +60,30 @@ classdef VTK_Plotter < Plotter
             fclose(fileID);
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
-            obj.PlotReservoirSolution(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid);
+            obj.PlotReservoirSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
                 obj.PlotFracturesSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
             end
             obj.VTKindex = obj.VTKindex + 1;
         end
-        function PlotReservoirSolution(obj, Reservoir, Grid)
+        function PlotReservoirSolution(obj, Status, Grid)
             %Write a VTK file for Reservoir
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-            %fprintf(fileID, 'ASCII\n');
-            fprintf(fileID, 'BINARY\n');
+            fprintf(fileID, 'ASCII\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, Grid.Nz+1);
             fprintf(fileID, '\n');
             fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
-            %fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
-            fwrite(fileID,[0:Grid.dx:Grid.dx * Grid.Nx],'float', 'b');
+            fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
             fprintf(fileID, '\n');
             fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
-            fwrite(fileID,[0:Grid.dy:Grid.dy * Grid.Ny],'float', 'b');
-            %fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
+            fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
             fprintf(fileID, '\n');
             fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
-            %fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
-            fwrite(fileID,[0:Grid.dz:Grid.dz * Grid.Nz],'float','b');
+            fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
@@ -96,31 +92,25 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             % Print all existing variables
-            N_var = double(Reservoir.State.Properties.Count);
-            Names = Reservoir.State.Properties.keys;
+            N_var = double(Status.Properties.Count);
+            Names = Status.Properties.keys;
             for i=1:N_var
-                obj.PrintScalar2VTK(fileID, Reservoir.State.Properties(Names{i}).Value, [' ',Names{i}]);
+                obj.PrintScalar2VTK(fileID, Status.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
-            % delta S
-            delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
-            obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
-            fprintf(fileID, '\n');
-            fclose(fileID);
         end
         function PlotFracturesSolution(obj, Fracture, Grid, f)
             %Write a VTK file for each
             fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f), '_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-            fprintf(fileID, 'BINARY\n');
+            fprintf(fileID, 'ASCII\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
             fprintf(fileID, '\n');
             fprintf(fileID, 'POINTS    %d   double\n', size(Fracture.GridCoords,1) );
-            %fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
-            fwrite(fileID, Fracture.GridCoords', 'double', 'b');
+            fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
@@ -131,36 +121,31 @@ classdef VTK_Plotter < Plotter
                 obj.PrintScalar2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
-            fclose(fileID);
         end
         function PlotPermeability(obj, Grid, K)
             %Permeability
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex - 1),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
             fprintf(fileID, '\n');
-            fclose(fileID);
         end
         function PlotBasisFunctions(obj, Grid, CoarseGrid, Prolp)
             %% 1. Level 1
             fileID = fopen(strcat(obj.FileName,'_BF_Level1.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-            fprintf(fileID, 'BINARY\n');
+            fprintf(fileID, 'ASCII\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, Grid.Nz+1);
             fprintf(fileID, '\n');
             fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
-            %fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
-            fwrite(fileID, 0:Grid.dx:Grid.dx * Grid.Nx, 'float', 'b');
+            fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
             fprintf(fileID, '\n');
             fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
-            %fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
-            fwrite(fileID, 0:Grid.dy:Grid.dy * Grid.Ny, 'float', 'b');
+            fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
             fprintf(fileID, '\n');
             fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
-            %fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
-            fwrite(fileID, 0:Grid.dz:Grid.dz * Grid.Nz, 'float', 'b');
+            fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
@@ -175,22 +160,19 @@ classdef VTK_Plotter < Plotter
                 fileID = fopen(strcat(obj.FileName,'_BF_Level',num2str(i),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
                 fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-                fprintf(fileID, 'BINARY\n');
+                fprintf(fileID, 'ASCII\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
                 fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i-1).Nx +1, CoarseGrid(i-1).Ny+1, CoarseGrid(i-1).Nz+1);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i-1).Nx+1) ' float\n']);
-                % fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i-1).CoarseFactor(1) : Grid.dx * Grid.Nx);
-                fwrite(fileID, 0 : Grid.dx * CoarseGrid(i-1).CoarseFactor(1) : Grid.dx * Grid.Nx, 'float', 'b');
+                fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i-1).CoarseFactor(1) : Grid.dx * Grid.Nx);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i-1).Ny+1) ' float\n']);
-                %fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i-1).CoarseFactor(2) : Grid.dy * Grid.Ny);
-                fwrite(fileID, 0 : Grid.dy * CoarseGrid(i-1).CoarseFactor(2) : Grid.dy * Grid.Ny, 'float', 'b');
+                fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i-1).CoarseFactor(2) : Grid.dy * Grid.Ny);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['Z_COORDINATES ' num2str(CoarseGrid(i-1).Nz+1) ' float\n']);
-                %fprintf(fileID, '%f ', 0 : Grid.dz * CoarseGrid(i-1).CoarseFactor(3) : Grid.dz * Grid.Nz);
-                fwrite(fileID, 0 : Grid.dz * CoarseGrid(i-1).CoarseFactor(3) : Grid.dz * Grid.Nz, 'float', 'b');
+                fprintf(fileID, '%f ', 0 : Grid.dz * CoarseGrid(i-1).CoarseFactor(3) : Grid.dz * Grid.Nz);
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i-1).N);
@@ -205,22 +187,19 @@ classdef VTK_Plotter < Plotter
             fileID = fopen(strcat(obj.FileName,'Dynamic_BF_', num2str(obj.VTKindex - 1),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-            fprintf(fileID, 'BINARY\n');
+            fprintf(fileID, 'ASCII\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx +1, Grid.Ny+1, Grid.Nz+1);
             fprintf(fileID, '\n');
             fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
-            %fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
-            fwrite(fileID, 0:Grid.dx:Grid.dx * Grid.Nx, 'float', 'b');
+            fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
             fprintf(fileID, '\n');
             fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
-            %fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
-            fwrite(fileID, 0:Grid.dy:Grid.dy * Grid.Ny, 'float', 'b');
+            fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
             fprintf(fileID, '\n');
             fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
-            %fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
-            fwrite(fileID, 0:Grid.dz:Grid.dz * Grid.Nz, 'float', 'b');
+            fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
@@ -234,58 +213,41 @@ classdef VTK_Plotter < Plotter
                 fclose(fileID);
             end
         end
-        function PlotADMGrid(obj, ProductionSystem, DiscretizationModel, CoarseGrid)
-            obj.PlotReservoirADMGrid(DiscretizationModel.ReservoirGrid, CoarseGrid{1});
-            for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
-                obj.PlotFracturesADMGrid(DiscretizationModel.FracturesGrid.Grids(f), CoarseGrid{1+f}, f);
-            end
-            obj.VTKindex = obj.VTKindex + 1;
-        end
-        function PlotReservoirADMGrid(obj, Grid, CoarseGrid)
+        function PlotADMGrid(obj, Grid, CoarseGrid)
             obj.VTKindex = obj.VTKindex - 1;
             for i=1:length(CoarseGrid)
                 fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
                 fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-                fprintf(fileID, 'BINARY\n');
+                fprintf(fileID, 'ASCII\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
                 fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx +1, CoarseGrid(i).Ny+1, CoarseGrid(i).Nz+1);
                 fprintf(fileID, '\n');
-                fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i).Nx+1) ' float\n']);                
-                %fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i).CoarseFactor(1) : Grid.dx * Grid.Nx);
-                fwrite(fileID, 0 : Grid.dx * CoarseGrid(i).CoarseFactor(1) : Grid.dx * Grid.Nx, 'float', 'b');
+                fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i).Nx+1) ' float\n']);
+                fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i).CoarseFactor(1) : Grid.dx * Grid.Nx);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i).Ny+1) ' float\n']);
-                %fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i).CoarseFactor(2) : Grid.dy * Grid.Ny);
-                fwrite(fileID, 0 : Grid.dy * CoarseGrid(i).CoarseFactor(2) : Grid.dy * Grid.Ny, 'float', 'b');
+                fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i).CoarseFactor(2) : Grid.dy * Grid.Ny);
                 fprintf(fileID, '\n');
                 fprintf(fileID, ['Z_COORDINATES ' num2str(CoarseGrid(i).Nz+1) ' float\n']);
-                %fprintf(fileID, '%f ', 0 : Grid.dz * CoarseGrid(i).CoarseFactor(3) : Grid.dz * Grid.Nz);
-                fwrite(fileID, 0 : Grid.dz * CoarseGrid(i).CoarseFactor(3) : Grid.dz * Grid.Nz, 'float', 'b');
+                fprintf(fileID, '%f ', 0 : Grid.dz * CoarseGrid(i).CoarseFactor(3) : Grid.dz * Grid.Nz);
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
                 fprintf(fileID, '\n');
-                % Delta_S
-                obj.PrintScalar2VTK(fileID, CoarseGrid(i).DeltaS, ' Delta_S');
-                fprintf(fileID, '\n');
                 fclose(fileID);
             end
             obj.VTKindex = obj.VTKindex + 1;
-        end
-        function PlotFracturesADMGrid(obj, Grid, CoarseGrid)
         end
     end
     methods (Access = private)
         function PrintScalar2VTK(obj, fileID, scalar, name)
             %Print a scalar in VTK format
-            fprintf(fileID, ' \n');
             fprintf(fileID, strcat('SCALARS  ', name,' float 1\n'));
             fprintf(fileID, 'LOOKUP_TABLE default\n');
-            %fprintf(fileID,'%d ', scalar);
-            fwrite(fileID, scalar','float', 'b');
+            fprintf(fileID,'%d ', scalar);
         end
     end
 end
