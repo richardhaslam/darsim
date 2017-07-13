@@ -504,14 +504,16 @@ classdef Immiscible_formulation < formulation
                         EP = IP + Nf(f) - 1;
                         % Update Pressure
                         Pf = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['P_', num2str(obj.NofPhases)]);
-                        Pf.update(delta(IP:EP));
+                        Pf.update(deltaP(IP:EP));
                         DeltaLast = zeros(Nf(f), 1);
                         for ph = 1:obj.NofPhases-1
+                            IS = Nt*(obj.NofPhases-1) + IP;
+                            ES = Nt*(obj.NofPhases-1) + EP;
                             Sf = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['S_', num2str(ph)]);
-                            Sf.update(delta( obj.NofPhases*(Nm+sum(Nf(1:f-1)))+ ph*Nf(f) + 1 : obj.NofPhases*(Nm+sum(Nf(1:f-1))) + (ph+1)*Nf(f)));
+                            Sf.update(delta(IS:ES));
                             Sf.Value = max(Sf.Value, 0);
                             Sf.Value = min(Sf.Value, 1);
-                            DeltaLast = DeltaLast + delta(obj.NofPhases*(Nm+sum(Nf(1:f-1)))+ ph*Nf(f) + 1 : obj.NofPhases*(Nm+sum(Nf(1:f-1))) + (ph+1)*Nf(f));
+                            DeltaLast = DeltaLast + delta(IS:ES);
                         end
                         Sf = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['S_', num2str(obj.NofPhases)]);
                         Sf.update(-DeltaLast);
