@@ -15,6 +15,7 @@ classdef fracture < handle
         Por
         K
         State
+        State_old
         PointA
         PointB
         PointC

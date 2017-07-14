@@ -30,7 +30,7 @@ methods
         % Linear Solver Setup
         obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
         % Save state of current time-step (it's useful for ADM to update based on time change)
-        ProductionSystem.SavePreviousState();
+        %ProductionSystem.SavePreviousState();
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
