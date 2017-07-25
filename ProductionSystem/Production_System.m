@@ -68,5 +68,35 @@ classdef Production_System < handle
                 end
             end
         end
+        function [P_Global, rho_Global] = CreateGlobalVariables(obj, DiscretizationModel, n_phases)
+            %
+            P_Global   = zeros(DiscretizationModel.N, n_phases);
+            rho_Global = zeros(DiscretizationModel.N, n_phases);
+            %% Reservoir upwind
+            Grid = DiscretizationModel.ReservoirGrid;
+            % Compute phase rock velocities and Upwind operators
+            for i=1:n_phases
+                P = obj.Reservoir.State.Properties(['P_', num2str(i)]).Value;
+                P_Global(1:Grid.N, i) = P;
+                rho = obj.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+                rho_Global(1:Grid.N, i) = rho;
+            end
+            %% Fractures upwind operators
+            if obj.FracturesNetwork.Active
+                End = Grid.N;
+                Grids = DiscretizationModel.FracturesGrid.Grids;
+                for f=1:obj.FracturesNetwork.NumOfFrac
+                    % Compute phase rock velocities and Upwind operators
+                    Start = End+1;
+                    End = Start + Grids(f).N - 1;
+                    for i=1:n_phases
+                        P = obj.FracturesNetwork.Fractures(f).State.Properties(['P_', num2str(i)]).Value;
+                        P_Global(Start:End, i) = P;
+                        rho = obj.FracturesNetwork.Fractures(f).State.Properties(['rho_', num2str(i)]).Value;
+                        rho_Global(Start:End, i) = rho;
+                    end
+                end
+            end
+        end
     end
 end

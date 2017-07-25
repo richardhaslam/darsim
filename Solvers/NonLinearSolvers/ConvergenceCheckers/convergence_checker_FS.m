@@ -21,7 +21,7 @@ classdef convergence_checker_FS < convergence_checker
             converged = 0;
             % Compute Norms
             [massbalance, equilibrium] =  obj.NormCalculator.ResidualNorm(residual, DiscretizationModel.ReservoirGrid.N, Formulation);
-            [dp, dS] = obj.NormCalculator.SolutionNorm(delta, DiscretizationModel.ReservoirGrid.N, State);
+            [dp, dS] = obj.NormCalculator.SolutionNorm(delta, DiscretizationModel.N, State);
             
             disp(['Iter ' num2str(iter) '    ' num2str(massbalance, '%5.5e'), '    ', num2str(equilibrium,'%5.5e'), '    ', num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
             
