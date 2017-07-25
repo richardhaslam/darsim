@@ -1,7 +1,8 @@
-
 clc;
+
 % Directory = '../Input/SinglePhase/';
 % File = 'SinglePhase.txt';
+
 Directory = '../Input/ImmHomo/';
 File = 'ImmHomo.txt';
 

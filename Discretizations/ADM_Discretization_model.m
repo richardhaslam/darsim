@@ -43,11 +43,13 @@ classdef ADM_Discretization_model < Discretization_model
             disp('Static operators - start computation');
             start = tic;
             % Reservoir
+            disp('Matrix:');
             obj.OperatorsHandler{1}.BuildStaticOperators(obj.CoarseGrid{1}, obj.ReservoirGrid, obj.maxLevel(1),...
                 ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.Properties('S_1').Value, FluidModel);
             
             % Fractures
             for f = 1:length(obj.maxLevel) - 1
+                disp(['Fracture #', num2str(f), ':']);
                 obj.OperatorsHandler{1+f}.BuildStaticOperators(obj.CoarseGrid{1+f}, obj.FracturesGrid.Grids(f), obj.maxLevel(1+f),...
                     ProductionSystem.FracturesNetwork.Fractures(f).K, ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value, FluidModel);
             end

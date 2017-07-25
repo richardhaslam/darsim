@@ -103,9 +103,9 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
             end
             % delta S
-            delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
-            obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
-            fprintf(fileID, '\n');
+%             delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
+%             obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
+%             fprintf(fileID, '\n');
             fclose(fileID);
         end
         function PlotFracturesSolution(obj, Fracture, Grid, f)

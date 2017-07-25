@@ -1,4 +1,4 @@
-% Builder Builds all objects
+ % Builder Builds all objects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -317,7 +317,7 @@ classdef builder < handle
                 operatorshandler = cell(1+NrOfFrac,1);
                 switch (char(SettingsMatrix(x+1)))
                     case ('Constant')
-                        operatorshandler{1} = operators_handler_constant( maxLevel(1) , Coarsening{1+f}(1,:) );
+                        operatorshandler{1} = operators_handler_constant( maxLevel(1) , Coarsening{1}(1,:) );
                         for f = 1 : NrOfFrac
                             operatorshandler{1+f} = operators_handler_constant( maxLevel(1+f) , Coarsening{1+f}(1,:) );
                         end
@@ -329,7 +329,7 @@ classdef builder < handle
                             operatorshandler{1+f}.BFUpdater = bf_updater_bilin();
                         end
                     case ('MS')
-                        operatorshandler{1} = operators_handler_MS( maxLevel(1) , Coarsening{1+f}(1,:) );
+                        operatorshandler{1} = operators_handler_MS( maxLevel(1) , Coarsening{1}(1,:) );
                         operatorshandler{1}.BFUpdater = bf_updater_ms();
                         for f = 1 : NrOfFrac
                             operatorshandler{1+f} = operators_handler_MS( maxLevel(1+f) , Coarsening{1+f}(1,:) );
