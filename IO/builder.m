@@ -247,10 +247,15 @@ classdef builder < handle
                         temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp)+1;
                         [~ , frac_fracConn_index_start] = min(temp);
                         
+                        Counter = 1;
                         for Ig = 1:str2double(fracCell_info_split{5})
                             frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
-                            CrossConnections(If,1).Cells(Im+Ig,1) = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
-                            CrossConnections(If,1).T_Geo(Im+Ig,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                            If_Other_Global = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
+                            if If_Other_Global > If + Nm
+                                CrossConnections(If,1).Cells(Im+Counter,1) = If_Other_Global;
+                                CrossConnections(If,1).T_Geo(Im+Counter,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                                Counter = Counter + 1;
+                            end
                         end
                         CrossConnections(If,1).UpWind = zeros(length(CrossConnections(If,1).Cells), n_phases);
                         CrossConnections(If,1).U_Geo = zeros(length(CrossConnections(If,1).Cells), n_phases);

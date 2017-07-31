@@ -104,7 +104,7 @@ classdef Immiscible_formulation < formulation
             qw = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
             if ProductionSystem.FracturesNetwork.Active
-                qf = ComputeSourceTerms_frac_mat(obj, ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures, DiscretizationModel);
+                qf = ComputeSourceTerms_frac_mat(obj, ProductionSystem, DiscretizationModel);
             end
             % Transmissibility of reservoir
             for i=1:obj.NofPhases
@@ -339,7 +339,8 @@ classdef Immiscible_formulation < formulation
                     Jp  = blkdiag(Jp, Jfp);
                     JS  = blkdiag(JS, JfS);
                 end
-                
+                % Combine the Jacobian blocks
+                %Jphnoconn{ph} = horzcat(Jp, JS);
                 %% ADD frac-matrix and frac-frac connections
                 for c = 1:length(DiscretizationModel.CrossConnections)
                     T_Geo = DiscretizationModel.CrossConnections(c).T_Geo;
@@ -361,19 +362,21 @@ classdef Immiscible_formulation < formulation
                     JS2_conn = T_Geo .* ~UpWind(:, ph) .* (P(i, ph) - P(j, ph)).* (rho(i, ph) .* obj.dMob(i, ph));
                     % frac - mat or frac1 - frac2
                     JS(i, j) = JS1_conn;
-                    JS(i, i) = JS(i, i) - sum(JS1_conn);
+                    JS(i, i) = JS(i, i) + sum(JS2_conn);
                     % mat-frac or frac2 - frac1
                     JS(j, i) = -JS2_conn;
                     % diag of mat or frac2
-                    JS(sub2ind([Nt, Nt], j, j)) = JS(sub2ind([Nt, Nt], j, j)) + JS2_conn;
+                    JS(sub2ind([Nt, Nt], j, j)) = JS(sub2ind([Nt, Nt], j, j)) - JS1_conn;
                 end
                 
                 % Combine the Jacobian blocks
                 Jph{ph} = horzcat(Jp, JS);
             end
             Jacobian = Jph{1};
+            %Jacobian_noconn = Jphnoconn{1};
             for i=2:obj.NofPhases
                 Jacobian = vertcat(Jacobian, Jph{i});
+                %Jacobian_noconn = vertcat(Jacobian_noconn, Jphnoconn{i});
             end
         end
         function delta = UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
@@ -505,57 +508,24 @@ classdef Immiscible_formulation < formulation
                 qw(c, :) = Wells.Prod(i).QPhases(:,:);
             end
         end
-        function qf = ComputeSourceTerms_frac_mat(obj, Reservoir, Fractures, DiscretizationModel)
+        function qf = ComputeSourceTerms_frac_mat(obj, ProductionSystem, DiscretizationModel)
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
-            for If1_Local = 1 : length(DiscretizationModel.CrossConnections)
-                indices_m = DiscretizationModel.CrossConnections(If1_Local).Cells( DiscretizationModel.CrossConnections(If1_Local).Cells <= DiscretizationModel.ReservoirGrid.N );
-                If1_Global = DiscretizationModel.ReservoirGrid.N+If1_Local; % Global index of this fracture cells;
-                Index_frac1_Local = DiscretizationModel.Index_Global_to_Local(If1_Global);
-                
-                T_Geo = DiscretizationModel.CrossConnections(If1_Local).T_Geo;
-                UpWind = DiscretizationModel.CrossConnections(If1_Local).UpWind;
-                for i = 1 : obj.NofPhases
-                    
-                    rho_m = Reservoir.State.Properties(['rho_',num2str(i)]).Value(indices_m);
-                    Pm = Reservoir.State.Properties(['P_',num2str(i)]).Value(indices_m);
-                    rho_f1 = Fractures(Index_frac1_Local.f).State.Properties(['rho_',num2str(i)]).Value(Index_frac1_Local.g);
-                    Pf1 = Fractures(Index_frac1_Local.f).State.Properties(['P_',num2str(i)]).Value(Index_frac1_Local.g);
-                    
-                    % matrix to frac
-                    qf(If1_Global, i) = qf(If1_Global, i) + sum(...
-                         T_Geo(1:length(indices_m)) .* ...
-                         ( UpWind(1:length(indices_m),i) .* obj.Mob(indices_m ,i) .* rho_m  .* ( Pm - Pf1 ) + ...
-                          ~UpWind(1:length(indices_m),i) .* obj.Mob(If1_Global,i) .* rho_f1 .* ( Pm - Pf1 ) ) );
-%                     % frac to matrix 
-                    qf(indices_m, i) = qf(indices_m, i) + ...
-                        T_Geo(1:length(indices_m)) .* ...
-                         ( UpWind(1:length(indices_m),i) .* obj.Mob(indices_m ,i) .* rho_m  .* ( Pf1 - Pm ) + ...
-                          ~UpWind(1:length(indices_m),i) .* obj.Mob(If1_Global,i) .* rho_f1 .* ( Pf1 - Pm ) );
-                    
-                    % frac1-frac2 & frac2-frac1
-                    indices_f = DiscretizationModel.CrossConnections(If1_Local).Cells( DiscretizationModel.CrossConnections(If1_Local).Cells > DiscretizationModel.ReservoirGrid.N );
-                    if ~isempty(indices_f)
-                        for n = 1:length(indices_f) 
-                            If2_Global = indices_f(n); % Global indices of the other fractures' cells if any
-                            If2_Local = If2_Global - DiscretizationModel.ReservoirGrid.N;
-                            Index_frac2_Local = DiscretizationModel.Index_Global_to_Local(If2_Global);
-                            rho_f2 = Fractures(Index_frac2_Local.f).State.Properties(['rho_',num2str(i)]).Value(Index_frac2_Local.g);
-                            Pf2 = Fractures(Index_frac2_Local.f).State.Properties(['P_',num2str(i)]).Value(Index_frac2_Local.g);
-                            if Index_frac2_Local.f > Index_frac1_Local.f                           
-                                T_Geo_Half1 = DiscretizationModel.CrossConnections(If1_Local).T_Geo( length(indices_m)+n );
-                                T_Geo_Half2 = DiscretizationModel.CrossConnections(If2_Local).T_Geo( DiscretizationModel.CrossConnections(If2_Local).Cells==If1_Global );
-                                T_Geo_Harmo = 2*(T_Geo_Half1 * T_Geo_Half2) / (T_Geo_Half1 + T_Geo_Half2);
-                                
-                                qf(If1_Global, i) = qf(If1_Global, i) + T_Geo_Harmo * ...
-                                    ( UpWind(length(indices_m)+n,i) * obj.Mob(If2_Global,i) * rho_f2 * ( Pf2 - Pf1 ) + ...
-                                     ~UpWind(length(indices_m)+n,i) * obj.Mob(If1_Global,i) * rho_f1 * ( Pf2 - Pf1 ) ) ;
-                                 
-                                qf(If2_Global, i) = qf(If2_Global, i) + T_Geo_Harmo * ...
-                                    (  UpWind(length(indices_m)+n,i) * obj.Mob(If2_Global,i) * rho_f2 * ( Pf1 - Pf2 ) + ...
-                                      ~UpWind(length(indices_m)+n,i) * obj.Mob(If1_Global,i) * rho_f1 * ( Pf1 - Pf2 ) ) ;
-                            end
-                        end
-                    end
+            Nm = DiscretizationModel.ReservoirGrid.N;
+            % Global variables
+            [P, rho] = ProductionSystem.CreateGlobalVariables(DiscretizationModel, obj.NofPhases); % useful for cross connections assembly
+            for ph=1:obj.NofPhases
+                % fill in qf
+                for c=1:length(DiscretizationModel.CrossConnections)
+                    j = DiscretizationModel.CrossConnections(c).Cells;
+                    i = c + Nm;
+                    T_Geo = DiscretizationModel.CrossConnections(c).T_Geo;
+                    UpWind = DiscretizationModel.CrossConnections(c).UpWind;
+                    qf(i, ph) = qf(i, ph) + sum(T_Geo .* ...
+                        ( UpWind(:, ph) .* obj.Mob(j, ph) .* rho(j, ph) .* (P(j, ph) - P(i, ph)) + ...
+                         ~UpWind(:, ph) .* obj.Mob(i, ph) .* rho(i, ph) .* (P(j, ph) - P(i, ph))) );
+                    qf(j, ph) = qf(j, ph) + T_Geo .* ...
+                        ( UpWind(:, ph) .* obj.Mob(j, ph) .* rho(j, ph) .* (P(i, ph) - P(j, ph)) + ...
+                         ~UpWind(:, ph) .* obj.Mob(i, ph) .* rho(i, ph) .* (P(i, ph) - P(j, ph)) );
                 end
             end
         end
