@@ -29,7 +29,7 @@ classdef linear_solver_ADM < linear_solver
             % Construct R & P based on ADM grid
             DiscretizationModel.BuildADMOperators();
             
-            [obj.R, obj.P] = DiscretizationModel.OperatorsHandler.AssembleFullOperators(); 
+            [obj.R, obj.P] = DiscretizationModel.AssembleFullOperators(); 
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system

@@ -167,10 +167,6 @@ classdef builder < handle
             for i=1:length(obj.Init)
                 VarValues(:, i) = VarValues(:, i) * obj.Init(i);
             end
-%             VarValues(N/2+1:N, 2) = 0.1;
-%             VarValues(1:N/2 , 2) = 0.9;
-%             VarValues(N/2+1:N, 3) = 0.9;
-%             VarValues(1:N/2 , 3) = 0.1;
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
                     VarNames = {'P_1', 'S_1'};
@@ -247,16 +243,22 @@ classdef builder < handle
                         temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp)+1;
                         [~ , frac_fracConn_index_start] = min(temp);
                         
+                        Counter = 1;
                         for Ig = 1:str2double(fracCell_info_split{5})
                             frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
-                            CrossConnections(If,1).Cells(Im+Ig,1) = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
-                            CrossConnections(If,1).T_Geo(Im+Ig,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                            If_Other_Global = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
+                            if If_Other_Global > If + Nm
+                                CrossConnections(If,1).Cells(Im+Counter,1) = If_Other_Global;
+                                CrossConnections(If,1).T_Geo(Im+Counter,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                                Counter = Counter + 1;
+                            end
                         end
                         CrossConnections(If,1).UpWind = zeros(length(CrossConnections(If,1).Cells), n_phases);
                         CrossConnections(If,1).U_Geo = zeros(length(CrossConnections(If,1).Cells), n_phases);
                     end
                 end
             end
+            
             %% 2. Define your discretization Model (choose between FS and ADM)
             if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
                 % Fine-scale discretization model
@@ -267,23 +269,25 @@ classdef builder < handle
                 obj.ADM = 'active';
                 Coarsening = cell(1+NrOfFrac , 1);
                 maxLevel = ones(1+NrOfFrac , 1);
-                
                 % ADM grid for reservoir
                 temp = strfind(SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
                 maxLevel(1) = str2double(SettingsMatrix(x+1));
-                temp = strfind(SettingsMatrix, 'TOLERANCE');
-                x = find(~cellfun('isempty', temp));
-                tol = str2double(SettingsMatrix(x+1));
-                temp = strfind(SettingsMatrix, 'COARSENING_CRITERION');
-                x = find(~cellfun('isempty', temp));
-                key = char(SettingsMatrix(x+1));
                 temp = strfind(SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
                 cx = str2double(SettingsMatrix(x+1));
                 cy = str2double(SettingsMatrix(x+2));
                 cz = str2double(SettingsMatrix(x+3));
                 Coarsening{1} = ones(maxLevel(1),3);
+                temp = strfind(SettingsMatrix, 'COARSENING_CRITERION');
+                x = find(~cellfun('isempty', temp));
+                gridselcriterion = char(SettingsMatrix(x+1));
+                temp = strfind(SettingsMatrix, 'VARIABLE');
+                x = find(~cellfun('isempty', temp));
+                key = char(SettingsMatrix(x+1));
+                temp = strfind(SettingsMatrix, 'TOLERANCE');
+                x = find(~cellfun('isempty', temp));
+                tol = str2double(SettingsMatrix(x+1));
                 for L = 1:maxLevel(1)
                     Coarsening{1}(L,:) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
@@ -291,8 +295,7 @@ classdef builder < handle
                 x = find(~cellfun('isempty', temp));
                 if isempty(maxLevel(1)) || isempty(Coarsening{1}) || isempty(key) || isempty(tol) || isempty(x)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
-                end
-                
+                end 
                 % ADM grid for fractures
                 if obj.Fractured
                     for f = 1 : NrOfFrac
@@ -313,7 +316,6 @@ classdef builder < handle
                         
                     end
                 end
-                
                 operatorshandler = cell(1+NrOfFrac,1);
                 switch (char(SettingsMatrix(x+1)))
                     case ('Constant')
@@ -336,19 +338,16 @@ classdef builder < handle
                             operatorshandler{1+f}.BFUpdater = bf_updater_ms();
                         end
                 end                
-                gridselcriterion = 1;
                 switch (gridselcriterion)
-                    case(1)
+                    case('dfdx')
                         gridselector = adm_grid_selector_delta(tol, key);
-                    case(2)
+                    case('dfdt')
                         gridselector = adm_grid_selector_time(tol, key);
                 end
                 Discretization = ADM_Discretization_model(maxLevel, Coarsening);
                 Discretization.AddADMGridSelector(gridselector);
                 Discretization.AddOperatorsHandler(operatorshandler);
-
             end
-
             %% 3. Add Grids to the Discretization Model
             Discretization.AddReservoirGrid(ReservoirGrid);
             if obj.Fractured
@@ -366,9 +365,9 @@ classdef builder < handle
             Reservoir = reservoir(Lx, Ly, h, Tres);
             phi = str2double(inputMatrix(obj.por + 1));
             if strcmp(inputMatrix(obj.perm - 1), 'INCLUDE')
-                %File name
+                % File name
                 file  = strcat('../Permeability/', char(inputMatrix(obj.perm +1)));
-                %load the file in a vector
+                % load the file in a vector
                 field = load(file);
                 % reshape it to specified size
                 field = reshape(field(4:end),[field(1) field(2) field(3)]);

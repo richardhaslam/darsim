@@ -235,10 +235,10 @@ classdef VTK_Plotter < Plotter
                 fclose(fileID);
             end
         end
-        function PlotADMGrid(obj, ProductionSystem, DiscretizationModel, CoarseGrid)
-            obj.PlotReservoirADMGrid(DiscretizationModel.ReservoirGrid, CoarseGrid{1});
+        function PlotADMGrid(obj, ProductionSystem, DiscretizationModel)
+            obj.PlotReservoirADMGrid(DiscretizationModel.ReservoirGrid, DiscretizationModel.CoarseGrid{1});
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
-                obj.PlotFracturesADMGrid(DiscretizationModel.FracturesGrid.Grids(f), CoarseGrid{1+f}, f);
+                obj.PlotFracturesADMGrid(DiscretizationModel.FracturesGrid.Grids(f), DiscretizationModel.CoarseGrid{1+f}, f);
             end
             obj.VTKindex = obj.VTKindex + 1;
         end

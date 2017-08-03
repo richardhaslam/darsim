@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 12 July 2016
+%Last modified: 03 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef fracture < handle
     properties
@@ -25,6 +25,7 @@ classdef fracture < handle
     methods
         function obj = fracture()
             obj.State = status();
+            obj.State_old = status();
         end
         function AddPermeabilityPorosity(obj, k, por)
             obj.K = k;
