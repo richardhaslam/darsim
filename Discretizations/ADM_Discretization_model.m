@@ -142,7 +142,7 @@ classdef ADM_Discretization_model < Discretization_model
             [R, P] = obj.OperatorsHandler{1}.AssembleFullOperators();
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)
-            Formulation.AverageMassOnCoarseBlocks(Status, FluidModel, obj.OperatorsHandler{1}.ADMRest, obj.OperatorsHandler{1}.ADMProlAv);
+            Formulation.AverageMassOnCoarseBlocks(Status, FluidModel, obj.OperatorsHandler{1}.ADMRest);
         end
     end
 end

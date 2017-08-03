@@ -140,8 +140,6 @@ classdef builder < handle
             
             temp = strfind(SettingsMatrix{1}, 'ADM');
             obj.adm = find(~cellfun('isempty', temp));
-            temp = strfind(SettingsMatrix{1}, 'FLASH LOOPS');
-            obj.flash = find(~cellfun('isempty', temp));
             
             %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
             temp = strfind(SettingsMatrix{1}, 'OUTPUT'); 

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 27 September 2016
+%Last modified: 3 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_handler < handle
     properties
@@ -15,7 +15,6 @@ classdef operators_handler < handle
         ADMRest
         ADMProlp
         ADMProls
-        ADMProlAv
         FullOperatorsAssembler
     end
     methods
@@ -48,6 +47,8 @@ classdef operators_handler < handle
             restriction = toc(start1);
             disp(['Restriction built in: ', num2str(restriction), ' s']);
             % Prolongation
+            % Ideal would be to have one object that build Pp and one that
+            % builds Ps.
             start2 = tic;
             obj.ADMProlongation(ADMGrid, FineGrid, CoarseGrid);
             prolongation = toc(start2);
@@ -79,7 +80,6 @@ classdef operators_handler < handle
               for c = ADMGrid.N(1) + 1:ADMGrid.Ntot 
                 indexes = ADMGrid.GrandChildren{c};
                 obj.ADMRest(c, indexes) = 1;
-                obj.ADMProlAv(indexes, c) = 1/prod(ADMGrid.CoarseFactor(c,:));
               end
         end
         function [Rest, Prol] = AssembleFullOperators(obj)
