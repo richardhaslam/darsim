@@ -45,7 +45,6 @@ classdef Discretization_model < handle
                 obj.N = obj.N + sum(obj.FracturesGrid.N);
                 % Adding the harmonic permeabilities to CrossConnections
                 obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
-                obj.JacInd = Formulation.DefineJacobianIndex(obj);
             end            
         end
         function DefinePerforatedCells(obj, Wells)

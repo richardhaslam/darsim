@@ -64,7 +64,7 @@ classdef Production_System < handle
             if obj.FracturesNetwork.Active
                 for f = 1:obj.FracturesNetwork.NumOfFrac
                     %% MODIFY INITIAL VALUES FOR FRAC
-                    obj.FracturesNetwork.Fractures(f).State_old(obj.FracturesNetwork.Fractures(f).State);
+                    obj.FracturesNetwork.Fractures(f).State_old.CopyProperties(obj.FracturesNetwork.Fractures(f).State);
                 end
             end
         end
