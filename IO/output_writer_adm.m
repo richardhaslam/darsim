@@ -15,13 +15,13 @@ classdef output_writer_adm < output_writer
     methods
         function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp)
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
-            obj.basisfunctions = true;
+            obj.basisfunctions = false;
             obj.dynamicBF = false;
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
-            obj.Plotter.PlotADMGrid(DiscretizationModel.ReservoirGrid, DiscretizationModel.CoarseGrid);
+            obj.Plotter.PlotADMGrid(ProductionSystem, DiscretizationModel);
             if obj.basisfunctions
                 obj.Plotter.PlotBasisFunctions(DiscretizationModel.ReservoirGrid, DiscretizationModel.CoarseGrid, DiscretizationModel.OperatorsHandler.Pp);
                 obj.basisfunctions = false;

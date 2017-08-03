@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 6 September 2016
+%Last modified: 2 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef convergence_checker_ADM < convergence_checker_FS
     properties
@@ -16,9 +16,12 @@ classdef convergence_checker_ADM < convergence_checker_FS
             converged = 0;
             
             % Restrict Residual
-            [R, ~] = DiscretizationModel.OperatorsHandler.AssembleFullOperators();
+            [R, ~] = DiscretizationModel.AssembleFullOperators();
             residual_c = R * residual;
-            [N_adm, Nf] = size(DiscretizationModel.OperatorsHandler.ADMRest);
+            residual_c = residual_c ./ sum(R, 2); % divide by number of cells in each coarse node
+            [N_adm, Nf] = size(R);
+            N_adm = N_adm/2;
+            Nf = Nf/2;
             
             % Compute Norms
             [massbalance, equilibrium] =  obj.NormCalculator.ResidualNorm(residual_c, N_adm, Formulation);

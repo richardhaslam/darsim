@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 7 March 2017
+%Last modified: 1 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
@@ -116,10 +116,10 @@ classdef Immiscible_formulation < formulation
             % Initialise residual vector (Nph * N, 1)
             Nt = DiscretizationModel.N;
             Residual = zeros(Nt * obj.NofPhases, 1);
-            
-            % BuildResidual for Reservoir
             Nm = DiscretizationModel.ReservoirGrid.N;
+           
             for ph=1:obj.NofPhases
+                % BuildResidual for Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
                 Residualm = BuildMediumResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, qw, qf, 0, ph);
@@ -561,6 +561,17 @@ classdef Immiscible_formulation < formulation
                 S_rest = R * S.Value;
                 Sav = P * S_rest;
                 delta = Sav - S.Value;
+%                 figure(100)
+%                 pcolor(reshape(S.Value, 99, 99));
+%                 colorbar
+%                 figure(200)
+%                 pcolor(reshape(Sav, 99, 99));
+%                 colorbar
+                S.update(delta);
+%                 figure(300)
+%                 pcolor(reshape(S.Value, 99, 99));
+%                 colorbar
+%                 drawnow
             end
             S = Status.Properties(['S_', num2str(obj.NofPhases)]);
             S.update(-delta);

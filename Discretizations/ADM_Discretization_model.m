@@ -127,8 +127,8 @@ classdef ADM_Discretization_model < Discretization_model
         end
         function SelectADMGrid(obj, ProductionSystem)
             % Build ADM Grid for reservoir
-            obj.ADMGridSelector.SelectGrid(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
-            obj.ADMStats.N = obj.ADMGrid.N;
+            obj.ADMGridSelector.SelectGrid(obj.ReservoirGrid, obj.CoarseGrid{1}, obj.ADMGrid{1}, ProductionSystem, obj.maxLevel);
+            obj.ADMStats.N = obj.ADMGrid{1}.N;
             
             for f = 1 : length(obj.maxLevel) - 1
                 
@@ -136,10 +136,13 @@ classdef ADM_Discretization_model < Discretization_model
         end
         function BuildADMOperators(obj)
             % Build ADM R and P operators
-            obj.OperatorsHandler.BuildADMOperators(obj.ReservoirGrid, obj.CoarseGrid, obj.ADMGrid);
+            obj.OperatorsHandler{1}.BuildADMOperators(obj.ReservoirGrid, obj.CoarseGrid{1}, obj.ADMGrid{1});
+        end
+        function [R, P] = AssembleFullOperators(obj)
+            [R, P] = obj.OperatorsHandler{1}.AssembleFullOperators();
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)
-            Formulation.AverageMassOnCoarseBlocks(Status, FluidModel, obj.OperatorsHandler.ADMRest, obj.OperatorsHandler.ADMProlAv);
+            Formulation.AverageMassOnCoarseBlocks(Status, FluidModel, obj.OperatorsHandler{1}.ADMRest, obj.OperatorsHandler{1}.ADMProlAv);
         end
     end
 end
