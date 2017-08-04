@@ -211,11 +211,13 @@ for f = 1 : length(Frac)
     Frac(f).  intersectCoord_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Coordinates of intersections between each fracture cell and each matrix cell
     Frac(f).        areaFrac_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Area fraction of each fracture cell inside each matrix cube
     Frac(f).         aveDist_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Average distance between each fracture cell and each matrix cube
+    Frac(f).           T_Geo_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Geometrical Transmissibility between each fracture cell and each matrix cube
     Frac(f).    areaFrac_matCell_sum = 0;                                                    % Summation of all area fractions (only to validate)
     Frac(f).  intersectCoord_fracObj = cell( length(Frac) , 1 );                             % Coordinates of intersections between each two whole fracture plates
     Frac(f). intersectCoord_fracCell = cell( length(Frac) , 1 );                             % Coordinates of intersections between each two fracture cells of distinct fracture plates
     Frac(f).       areaFrac_fracCell = cell( length(Frac) , 1 );                             % Area fraction of of intersection line between each two fracture cells of distinct fracture plates
     Frac(f).        aveDist_fracCell = cell( length(Frac) , 1 );                             % Average distance between each fracture cell and the intersection line between each two fracture cells of distinct fracture plates
+    Frac(f).          T_Geo_fracCell = cell( length(Frac) , 1 );                             % Geometrical Transmissibility between each two non-neighboring fracture cells of distinct fracture plates
     Frac(f).      NumOf_fracCellConn = zeros( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1);   % Number of non-neighboring fracture cells connections
     
     for j_f = 1 : Frac(f).N_Width_AD
@@ -415,11 +417,6 @@ for f = 1 : length(Frac)
                 % Assigning the index of matrix cell to the array
                 if ( isempty(intersectCoord_temp) ),  continue;  end
                 
-                Index_matIntersect = Index_matIntersect + 1;
-                Frac(f).intersectCoord_matCell{If}{Index_matIntersect,1} = Im; 
-                Frac(f).            areaFrac_matCell{If}{Index_matIntersect,1} = Im;
-                Frac(f).       aveDist_matCell{If}{Index_matIntersect,1} = Im;
-                
                 % Add the neighboring cells to the list for intersection check
                 Im_next = Index_Matrix_3D( NX,NY,NZ,max(i-1,1 ),j          ,k           );  if ~ismember(Im_next,Im_List),  Im_List = [Im_List;Im_next];  end
                 Im_next = Index_Matrix_3D( NX,NY,NZ,min(i+1,NX),j          ,k           );  if ~ismember(Im_next,Im_List),  Im_List = [Im_List;Im_next];  end
@@ -467,15 +464,24 @@ for f = 1 : length(Frac)
 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % Writing the final intersection Points into the fracture data structure
+                if ( size(intersectCoord_final,2) < 3 ),  continue;  end
+                
+                Index_matIntersect = Index_matIntersect + 1;
+                Frac(f).intersectCoord_matCell{If}{Index_matIntersect,1} = Im; 
+                Frac(f).      areaFrac_matCell{If}{Index_matIntersect,1} = Im;
+                Frac(f).       aveDist_matCell{If}{Index_matIntersect,1} = Im;
+                Frac(f).         T_Geo_matCell{If}{Index_matIntersect,1} = Im;
+                
                 Frac(f).intersectCoord_matCell{If}{Index_matIntersect,2} = intersectCoord_final;
 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % Calculating the area fraction
                 Frac(f).areaFrac_matCell{If}{Index_matIntersect,2} = 0;
-                if ( size(intersectCoord_final,2) < 3 )
-                    Frac(f).aveDist_matCell{If}{Index_matIntersect,2} = 1;  % If areaFrac_matCell is zero, make aveDist_matcube 1 to prevent 0/0 division.
-                    continue;
-                end
+%                 if ( size(intersectCoord_final,2) < 3 )
+%                     Frac(f).aveDist_matCell{If}{Index_matIntersect,2} = 1;  % If areaFrac_matCell is zero, make aveDist_matcube 1;
+%                     Frac(f).  T_Geo_matCell{If}{Index_matIntersect,2} = 0;  % If areaFrac_matCell is zero, make   T_Geo_matcube 0;
+%                     continue;
+%                 end
                 
                 for n = 2 : size( intersectCoord_final , 2 )  - 1
                     Frac(f).areaFrac_matCell{If}{Index_matIntersect,2} = Frac(f).areaFrac_matCell{If}{Index_matIntersect,2} + ...
@@ -503,6 +509,11 @@ for f = 1 : length(Frac)
                 end
                 Frac(f).aveDist_matCell{If}{Index_matIntersect,2} = Frac(f).aveDist_matCell{If}{Index_matIntersect,2} ...
                                                                   / sqrt( Frac(f).Equation.a^2 + Frac(f).Equation.b^2 + Frac(f).Equation.c^2 ) / N_cube^3 ;
+                                                              
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Obtaining the geometrical transmissibility between the matrix cube cell and the fracture plate cell ( CI = Af/<d> )
+                a = Frac(f).areaFrac_matCell{If}{Index_matIntersect,2} / Frac(f).aveDist_matCell{If}{Index_matIntersect,2};
+                Frac(f).T_Geo_matCell{If}{Index_matIntersect,2} = a;
                                                   
             end % End of while-loop
 
@@ -728,8 +739,16 @@ for f = 1 : length(Frac)
                                     if ( Collinearity1 == 1 ),  Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} = Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} /2;  end
                                     if ( Collinearity2 == 1 ),  Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} = Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} /2;  end
                                     
+                                    T_Geo_1 = Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} / Frac(f).aveDist_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2};
+                                    T_Geo_2 = Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} / Frac(g).aveDist_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2};
+                                    T_Geo_Harmonic = 2*T_Geo_1*T_Geo_2 / (T_Geo_1 + T_Geo_2);
+                                    
+                                    Frac(f).T_Geo_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} = T_Geo_Harmonic;
+                                    Frac(g).T_Geo_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} = T_Geo_Harmonic;
+                                    
                                     Frac(f).areaFrac_fracCell_sum{g} = Frac(f).areaFrac_fracCell_sum{g} + Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2};
                                     Frac(g).areaFrac_fracCell_sum{f} = Frac(g).areaFrac_fracCell_sum{f} + Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2};
+                                    
                                 end
                                
 

@@ -43,11 +43,13 @@ classdef fractures_mousa < handle
         areaFrac_matCell
         areaFrac_matCell_sum
         aveDist_matCell
+        T_Geo_matCell
         intersectCoord_fracObj
         intersectCoord_fracCell
         areaFrac_fracCell
         areaFrac_fracCell_sum
         aveDist_fracCell
+        T_Geo_fracCell
         NumOf_fracCellConn
         StarDelta2D_Neighbor
     end

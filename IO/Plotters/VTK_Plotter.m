@@ -102,7 +102,8 @@ classdef VTK_Plotter < Plotter
                 obj.PrintScalar2VTK(fileID, Reservoir.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 fprintf(fileID, '\n');
             end
-%             % delta S
+
+%             delta S
 %             delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
 %             obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
 %             fprintf(fileID, '\n');
