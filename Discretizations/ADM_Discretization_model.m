@@ -42,15 +42,8 @@ classdef ADM_Discretization_model < Discretization_model
             %% Pressure interpolators
             disp('Static operators - start computation');
             start = tic;
-            % Reservoir
-            obj.OperatorsHandler{1}.BuildStaticOperators(obj.CoarseGrid{1}, obj.ReservoirGrid, obj.maxLevel(1),...
+            obj.OperatorsHandler.ProlongationBuilders(1).BuildStaticOperators(obj.CoarseGrid{1}, obj.ReservoirGrid, obj.maxLevel(1),...
                 ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.Properties('S_1').Value, FluidModel);
-            
-            % Fractures
-            for f = 1:length(obj.maxLevel) - 1
-                obj.OperatorsHandler{1+f}.BuildStaticOperators(obj.CoarseGrid{1+f}, obj.FracturesGrid.Grids(f), obj.maxLevel(1+f),...
-                    ProductionSystem.FracturesNetwork.Fractures(f).K, ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value, FluidModel);
-            end
             
             disp('Static operators - end')
             timer = toc(start);
@@ -136,13 +129,13 @@ classdef ADM_Discretization_model < Discretization_model
         end
         function BuildADMOperators(obj)
             % Build ADM R and P operators
-            obj.OperatorsHandler{1}.BuildADMOperators(obj.ReservoirGrid, obj.CoarseGrid{1}, obj.ADMGrid{1});
+            obj.OperatorsHandler.BuildADMOperators(obj.ReservoirGrid, obj.CoarseGrid{1}, obj.ADMGrid{1});
         end
         function [R, P] = AssembleFullOperators(obj)
-            [R, P] = obj.OperatorsHandler{1}.AssembleFullOperators();
+            [R, P] = obj.OperatorsHandler.AssembleFullOperators();
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)
-            Formulation.AverageMassOnCoarseBlocks(Status, FluidModel, obj.OperatorsHandler{1}.ADMRest);
+            Formulation.AverageMassOnCoarseBlocks(Status, FluidModel, obj.OperatorsHandler.ADMRest);
         end
     end
 end

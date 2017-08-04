@@ -1,18 +1,30 @@
-%  ADM operators handler MS
+%  Prolongation builder MS pressure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 16 August 2016
-%Last modified: 6 September 2016
+%Created: 4 August 2017
+%Last modified: 4 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef operators_handler_MS < operators_handler
+classdef prolongation_builder_MSPressure < prolongation_builder
     properties
         BFUpdater
+        Dimensions
+        ADMmap
     end
     methods
-        function obj = operators_handler_MS(n, cf)
-            obj@operators_handler(n, cf)
+        function obj = prolongation_builder_MSPressure(n, cf)
+            obj@prolongation_builder(n)
+            obj.R = cell(1, n);
+            obj.P = cell(1, n);
+            if cf(3) == 1 && cf(2) == 1
+                obj.Dimensions = 1;
+            elseif cf(3) == 1
+                obj.Dimensions = 2;
+            else
+                obj.Dimensions = 3;
+            end
+            obj.ADMmap = adm_map(prod(cf));
         end
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
             % Remove high contrast to avoid spikes
@@ -20,6 +32,10 @@ classdef operators_handler_MS < operators_handler
             K(K(:,1)./lambdaMax < 10^-2, 1) = 10^-2*lambdaMax;
             K(K(:,2)./lambdaMax < 10^-2, 2) = 10^-2*lambdaMax;
             K(K(:,3)./lambdaMax < 10^-2, 3) = 10^-2*lambdaMax;
+            
+            % Initialise
+            obj.R = cell(maxLevel, 1);
+            obj.P = cell(maxLevel, 1);
             % Build Pressure system
             obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
             %Build static restriction operator (FV)
@@ -27,9 +43,9 @@ classdef operators_handler_MS < operators_handler
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1));
             % Build Prolongation operator
             disp('Building Prolongation 1');
-            obj.Pp{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor, obj.Dimensions);
+            obj.P{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(1), CoarseGrid(1).CoarseFactor, obj.Dimensions);
             %Build first coarse system (with MsFE)
-            obj.BFUpdater.A = obj.Pp{1}' * obj.BFUpdater.A * obj.Pp{1};
+            obj.BFUpdater.A = obj.P{1}' * obj.BFUpdater.A * obj.P{1};
             obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx, CoarseGrid(1).Ny);
             for x = 2:maxLevel
                 % Build static restriction operator (FV)
@@ -37,31 +53,28 @@ classdef operators_handler_MS < operators_handler
                 obj.R{x} = obj.MsRestriction(CoarseGrid(x-1), CoarseGrid(x));
                 % Build Prolongation operator
                 disp(['Building Prolongation ', num2str(x)]);
-                obj.Pp{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor, obj.Dimensions);
+                obj.P{x} = obj.BFUpdater.MsProlongation(CoarseGrid(x-1), CoarseGrid(x), CoarseGrid(x).CoarseFactor./CoarseGrid(x-1).CoarseFactor, obj.Dimensions);
                 %Build coarse system (with MsFE)
-                obj.BFUpdater.A = obj.Pp{x}' * obj.BFUpdater.A * obj.Pp{x};
+                obj.BFUpdater.A = obj.P{x}' * obj.BFUpdater.A * obj.P{x};
                 obj.BFUpdater.TransformIntoTPFA(CoarseGrid(x).Nx, CoarseGrid(x).Ny);
             end
         end
-        function ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid)
+        function ADMProlp = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid, ADMRest)
             % Pressure prolongation
-            obj.ADMProlp = 1;
+            ADMProlp = 1;
             
             % Loop over the levels
             for level = ADMGrid.MaxLevel:-1:2
                Prolp = obj.LevelProlongation(ADMGrid, CoarseGrid(level-1), level);
                % Multiply by previous objects
-               obj.ADMProlp = Prolp * obj.ADMProlp;
+               ADMProlp = Prolp * ADMProlp;
             end
             
             % Last prolongation is different coz I use fine-scale ordering
-            Prolp = obj.LastProlongation(ADMGrid, FineGrid, CoarseGrid(1));
+            Prolp = obj.LastProlongation(ADMGrid, FineGrid);
             
             % Multiply by previous objects
-            obj.ADMProlp = Prolp * obj.ADMProlp;
-            
-            % Saturation prolongation: transpose(R)
-            obj.ADMProls = obj.ADMRest'; 
+            ADMProlp = Prolp * ADMProlp;
         end
         function Prolp = LevelProlongation(obj, ADMGrid, FineGrid, level)
              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,14 +100,14 @@ classdef operators_handler_MS < operators_handler
              Prolp(1:obj.ADMmap.Nf, 1:obj.ADMmap.Nf) = speye(obj.ADMmap.Nf);
              
              % 3. Fill in Bottom left
-             Prolp(obj.ADMmap.Nf + 1 : end,  obj.ADMmap.Verteces) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexVerteces);
+             Prolp(obj.ADMmap.Nf + 1 : end,  obj.ADMmap.Verteces) = obj.P{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexVerteces);
              
              % 4. Fill in Bottom right
-             Prolp(obj.ADMmap.Nf + 1 :end, obj.ADMmap.Nf + 1 : end) = obj.Pp{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
+             Prolp(obj.ADMmap.Nf + 1 :end, obj.ADMmap.Nf + 1 : end) = obj.P{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
         end
-        function Prolp = LastProlongation(obj, ADMGrid, FineGrid, CoarseGrid)
+        function Prolp = LastProlongation(obj, ADMGrid, FineGrid)
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-             % For a the firse level level the prolongation operator looks like this             
+             % For a the first level level the prolongation operator looks like this             
              %       Nf     Nl1
              %    ----       ----
              %    |      |      |
@@ -112,10 +125,10 @@ classdef operators_handler_MS < operators_handler
              Prolp = sparse(FineGrid.N, obj.ADMmap.Nf + obj.ADMmap.Nc);
              
              % 2. Fill in FS verteces of level 1
-             Prolp(:,  obj.ADMmap.Verteces) = obj.Pp{1}(:, obj.ADMmap.OriginalIndexVerteces);
+             Prolp(:,  obj.ADMmap.Verteces) = obj.P{1}(:, obj.ADMmap.OriginalIndexVerteces);
              
              % 3. Fill in coarse-scale nodes
-             Prolp(:, obj.ADMmap.Nf + 1 : end) = obj.Pp{1}(:, obj.ADMmap.OriginalIndexNc);
+             Prolp(:, obj.ADMmap.Nf + 1 : end) = obj.P{1}(:, obj.ADMmap.OriginalIndexNc);
              
              % 4. Fill in fine-scale nodes first
              rows = obj.ADMmap.OriginalIndexNf';

@@ -314,28 +314,26 @@ classdef builder < handle
                         
                     end
                 end
-                operatorshandler = cell(1+NrOfFrac,1);
+                % Create the operatorshandler
+                operatorshandler = operators_handler(Coarsening{1});
+                % a. Pressure prolongation builder
                 switch (char(SettingsMatrix(x+1)))
                     case ('Constant')
-                        operatorshandler{1} = operators_handler_constant( maxLevel(1) , Coarsening{1+f}(1,:) );
-                        for f = 1 : NrOfFrac
-                            operatorshandler{1+f} = operators_handler_constant( maxLevel(1+f) , Coarsening{1+f}(1,:) );
-                        end
+                        prolongationbuilder = prolongation_builder_constant(maxLevel(1));
                     case ('Homogeneous')
-                        operatorshandler{1} = operators_handler_MS( maxLevel(1) , Coarsening{1}(1,:) );
-                        operatorshandler{1}.BFUpdater = bf_updater_bilin();
-                        for f = 1 : NrOfFrac
-                            operatorshandler{1+f} = operators_handler_MS( maxLevel(1+f) , Coarsening{1+f}(1,:) );
-                            operatorshandler{1+f}.BFUpdater = bf_updater_bilin();
-                        end
+                        prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
+                        prolongationbuilder.BFUpdater = bf_updater_bilin();
                     case ('MS')
-                        operatorshandler{1} = operators_handler_MS( maxLevel(1) , Coarsening{1}(1,:) );
-                        operatorshandler{1}.BFUpdater = bf_updater_ms();
-                        for f = 1 : NrOfFrac
-                            operatorshandler{1+f} = operators_handler_MS( maxLevel(1+f) , Coarsening{1+f}(1,:) );
-                            operatorshandler{1+f}.BFUpdater = bf_updater_ms();
-                        end
-                end                
+                        prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
+                        prolongationbuilder.BFUpdater = bf_updater_ms();
+                end
+                operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
+                % Hyperbolic variables operators builder
+                n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
+                for i = 2:n_phases
+                    prolongationbuilder = prolongation_builder_constant(maxLevel(1));
+                    operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
+                end
                 switch (gridselcriterion)
                     case('dfdx')
                         gridselector = adm_grid_selector_delta(tol, key);
@@ -765,26 +763,17 @@ classdef builder < handle
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
                     if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler{1}.FullOperatorsAssembler = operators_assembler_Imm();
-                        for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                            Discretization.OperatorsHandler{1+f}.FullOperatorsAssembler = operators_assembler_Imm();
-                        end
+                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
                     end
                 case('Natural')
                     Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
                     if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler{1}.FullOperatorsAssembler = operators_assembler_comp();
-                        for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                            Discretization.OperatorsHandler{1+f}.FullOperatorsAssembler = operators_assembler_comp();
-                        end
+                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_comp();
                     end
                 case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
                     if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler{1}.FullOperatorsAssembler = operators_assembler_Imm();
-                        for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                            Discretization.OperatorsHandler{1+f}.FullOperatorsAssembler = operators_assembler_Imm();
-                        end
+                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
                     end
                 case('Jeremy')
                     Formulation = OBL_formualtion();
