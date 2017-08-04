@@ -4,42 +4,21 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 27 September 2016
+%Last modified: 4 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_handler < handle
     properties
-        Dimensions
-        R
-        Pp
-        ADMmap
+        ProlongationBuilders
         ADMRest
-        ADMProlp
-        ADMProls
-        ADMProlAv
+        ADMProl
         FullOperatorsAssembler
     end
     methods
-        function obj = operators_handler(n, CF)
-            obj.R = cell(1, n);
-            obj.Pp = cell(1, n);
-            obj.ADMmap = adm_map(prod(CF));
-            if CF(3) == 1 && CF(2) == 1
-                obj.Dimensions = 1;
-            elseif CF(3) == 1
-                obj.Dimensions = 2;
-            else
-                obj.Dimensions = 3;
-            end
+        function obj = operators_handler(cf)
+            obj.ProlongationBuilders = prolongation_builder.empty;
         end
-        function MsR = MsRestriction(obj, FineGrid, CoarseGrid)
-            Nf = FineGrid.N;
-            Nc = CoarseGrid.N;
-            %% MSFV Restriction Operator
-            MsR = sparse(Nc, Nf);
-            for c = 1:Nc
-                MsR(c, CoarseGrid.Children(c,:)) = 1;
-            end
-            MsR = sparse(MsR);
+        function AddProlongationBuilder(obj, prolongationbuilder, index)
+            obj.ProlongationBuilders(index) = prolongationbuilder;
         end
         function BuildADMOperators(obj, FineGrid, CoarseGrid, ADMGrid)
             start1 = tic; 
@@ -49,44 +28,27 @@ classdef operators_handler < handle
             disp(['Restriction built in: ', num2str(restriction), ' s']);
             % Prolongation
             start2 = tic;
-            obj.ADMProlongation(ADMGrid, FineGrid, CoarseGrid);
+            for i=1:length(obj.ProlongationBuilders)
+                obj.ADMProl{i} = obj.ProlongationBuilders(i).ADMProlongation(ADMGrid, FineGrid, CoarseGrid, obj.ADMRest);
+            end
             prolongation = toc(start2);
             disp(['Prolongation built in: ', num2str(prolongation), ' s']);
         end
         function ADMRestriction(obj, ADMGrid, FineGrid)
-            % Old version was slow
-%             Rf = speye(obj.ADMmap.Nf);
-%             Rc = zeros(obj.ADMmap.Nc, obj.ADMmap.Nx);
-%             % Restriction operator
-%             for c = 1:obj.ADMmap.Nc
-%                     % Active coarse cells
-%                     i = (obj.ADMmap.Nf+1) * c;
-%                     f = obj.ADMmap.Nf + CF;
-%                     Rc(c, i:f) = 1;
-%             end
-%             Rest = [Rf, zeros(obj.ADMmap.Nf, obj.ADMmap.Nx);
-%                 zeros(obj.ADMmap.Nc, obj.ADMmap.Nx), Rc];
-%             obj.ADMRest{level} = sparse(Rest);
-              
-              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+              % Assemble dynamic FV restriction operator
               % Fine-scale cells
               obj.ADMRest = sparse(ADMGrid.Ntot, FineGrid.N);
               rows = 1:ADMGrid.N(1);
               columns = ADMGrid.CellIndex(1:ADMGrid.N(1))';
-              obj.ADMRest(sub2ind(size(obj.ADMRest), rows, columns)) = 1;
-              obj.ADMProlAv = obj.ADMRest';              
+              obj.ADMRest(sub2ind(size(obj.ADMRest), rows, columns)) = 1;             
               % Coarse levels cells
               for c = ADMGrid.N(1) + 1:ADMGrid.Ntot 
                 indexes = ADMGrid.GrandChildren{c};
                 obj.ADMRest(c, indexes) = 1;
-                obj.ADMProlAv(indexes, c) = 1/prod(ADMGrid.CoarseFactor(c,:));
               end
         end
         function [Rest, Prol] = AssembleFullOperators(obj)
-            [Rest, Prol] = obj.FullOperatorsAssembler.Assemble(obj.ADMRest, obj.ADMProlp, obj.ADMProls);
+            [Rest, Prol] = obj.FullOperatorsAssembler.Assemble(obj.ADMRest, obj.ADMProl);
         end
-    end
-    methods (Abstract)
-        obj = BuildStaticOperators(obj);
     end
 end
