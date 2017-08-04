@@ -236,7 +236,7 @@ classdef builder < handle
                         for Im = 1:str2double(fracCell_info_split{3})
                             frac_rockConn_info_split = strsplit(FractureMatrix{1}{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
                             CrossConnections(If,1).Cells(Im,1) = str2double(frac_rockConn_info_split{2})+1;
-                            CrossConnections(If,1).T_Geo(Im,1) = str2double(frac_rockConn_info_split{3}) / str2double(frac_rockConn_info_split{4});
+                            CrossConnections(If,1).T_Geo(Im,1) = str2double(frac_rockConn_info_split{3});
                         end
                         
                         % frac-frac conn
@@ -246,10 +246,10 @@ classdef builder < handle
                         Counter = 1;
                         for Ig = 1:str2double(fracCell_info_split{5})
                             frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
-                            If_Other_Global = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +0 ) ) + str2double(frac_fracConn_info_split{3})+1;
+                            If_Other_Global = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +1-1 ) ) + str2double(frac_fracConn_info_split{3})+1;
                             if If_Other_Global > If + Nm
                                 CrossConnections(If,1).Cells(Im+Counter,1) = If_Other_Global;
-                                CrossConnections(If,1).T_Geo(Im+Counter,1) = str2double(frac_fracConn_info_split{4}) / str2double(frac_fracConn_info_split{5});
+                                CrossConnections(If,1).T_Geo(Im+Counter,1) = str2double(frac_fracConn_info_split{4});
                                 Counter = Counter + 1;
                             end
                         end

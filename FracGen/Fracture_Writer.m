@@ -105,18 +105,18 @@ elseif obj.Simulation.Domain == '3D'
                 fprintf(fid, '%%        fracCellID	#perf	#proj	#fracConn\n' );
                 fprintf(fid, 'FRACCELL	%2.0f	%2.0f	%2.0f	%2.0f\n' , If-1 , size(obj.Simulation.Fractures(f).areaFrac_matCell{If},1) , 0 , obj.Simulation.Fractures(f).NumOf_fracCellConn(If) );
 
-                fprintf(fid, '%%            matCellID	area	aveDist\n' );
+                fprintf(fid, '%%            matCellID    T_Geo\n' );
                 for im = 1 : size( obj.Simulation.Fractures(f).areaFrac_matCell{If} , 1 )
-                    fprintf(fid, 'ROCK_CONN	%2.0f	%1.5e	%1.5e\n' , obj.Simulation.Fractures(f).areaFrac_matCell{If}{im,1}-1 , obj.Simulation.Fractures(f).areaFrac_matCell{If}{im,2} , obj.Simulation.Fractures(f).aveDist_matCell{If}{im,2} );
+                    fprintf(fid, 'ROCK_CONN  %2.0f    %1.5e\n' , obj.Simulation.Fractures(f).areaFrac_matCell{If}{im,1}-1 , obj.Simulation.Fractures(f).T_Geo_matCell{If}{im,2} );
                 end
 
-                fprintf(fid, '%%            fracID	cellID	area	aveDist\n' );
+                fprintf(fid, '%%            fracID    cellID    T_Geo\n' );
                 for g = 1 : length(obj.Simulation.Fractures)
                    if ( ~isempty( obj.Simulation.Fractures(f).areaFrac_fracCell{g} ) )
                        if ( ~isempty( obj.Simulation.Fractures(f).areaFrac_fracCell{g}{If} ) )
                            for ig = 1 : size ( obj.Simulation.Fractures(f).areaFrac_fracCell{g}{If} , 1 )
                                if ( ~isempty( obj.Simulation.Fractures(f).areaFrac_fracCell{g}{If}{ig,1} ) )
-                                   fprintf(fid, 'FRAC_CONN	%2.0f	%3.0f	%1.5e	%1.5e\n' , g-1 , obj.Simulation.Fractures(f).areaFrac_fracCell{g}{If}{ig,1}-1 , obj.Simulation.Fractures(f).areaFrac_fracCell{g}{If}{ig,2} , obj.Simulation.Fractures(f).aveDist_fracCell{g}{If}{ig,2} );
+                                   fprintf(fid, 'FRAC_CONN  %2.0f    %3.0f   %1.5e\n' , g-1 , obj.Simulation.Fractures(f).areaFrac_fracCell{g}{If}{ig,1}-1 , obj.Simulation.Fractures(f).T_Geo_fracCell{g}{If}{ig,2} );
                                end
                            end
                        end
