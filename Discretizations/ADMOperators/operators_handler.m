@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 4 August 2017
+%Last modified: 7 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_handler < handle
     properties
@@ -20,15 +20,21 @@ classdef operators_handler < handle
         function AddProlongationBuilder(obj, prolongationbuilder, index)
             obj.ProlongationBuilders(index) = prolongationbuilder;
         end
+        function UpdateProlongationOperators(obj)
+            % Update basis functions for all variables
+            for i=1:length(obj.ProlongationBuilders)
+                obj.ProlongationBuilders(i).UpdateProlongationOperator();
+            end
+        end
         function BuildADMOperators(obj, FineGrid, CoarseGrid, ADMGrid)
             start1 = tic; 
             % Restriction
             obj.ADMRestriction(ADMGrid, FineGrid);
             restriction = toc(start1);
             disp(['Restriction built in: ', num2str(restriction), ' s']);
-            % Prolongation
+            % Prolongation (do the pressure last coz it modifies ADMGrid)
             start2 = tic;
-            for i=1:length(obj.ProlongationBuilders)
+            for i=length(obj.ProlongationBuilders):-1:1
                 obj.ADMProl{i} = obj.ProlongationBuilders(i).ADMProlongation(ADMGrid, FineGrid, CoarseGrid, obj.ADMRest);
             end
             prolongation = toc(start2);

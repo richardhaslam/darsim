@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 August 2017
-%Last modified: 4 August 2017
+%Last modified: 7 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_constant < prolongation_builder
     properties
@@ -15,6 +15,9 @@ classdef prolongation_builder_constant < prolongation_builder
         end
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, S, FluidModel)
             % Build Restriction and Prolongation operators for static grids
+        end
+        function UpdateProlongationOperator(obj)
+            % For constant bf no update is necessary
         end
         function ADMProl = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGridid, ADMRest)
             % Since it s constant interpolation it is just transpose(R)

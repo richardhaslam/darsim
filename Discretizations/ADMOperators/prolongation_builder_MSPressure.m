@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 August 2017
-%Last modified: 4 August 2017
+%Last modified: 7 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_MSPressure < prolongation_builder
     properties
@@ -135,6 +135,9 @@ classdef prolongation_builder_MSPressure < prolongation_builder
              columns = 1:obj.ADMmap.Nf;
              Prolp(rows, :) = 0; % if it s fine-scale already I get rid of useless fillings
              Prolp(sub2ind(size(Prolp), rows, columns)) = 1;
+        end
+        function UpdateProlongationOperator(obj)
+            % for now I do not update pressure basis functions
         end
     end
 end

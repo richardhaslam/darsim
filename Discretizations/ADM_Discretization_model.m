@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 26 July 2016
+%Last modified: 7 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef ADM_Discretization_model < Discretization_model
     properties
@@ -125,6 +125,9 @@ classdef ADM_Discretization_model < Discretization_model
             for f = 1 : length(obj.maxLevel) - 1
                 
             end
+            
+            % Update prolongation builders
+            obj.OperatorsHandler.UpdateProlongationOperators();
         end
         function BuildADMOperators(obj)
             % Build ADM R and P operators
