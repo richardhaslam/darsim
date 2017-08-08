@@ -9,11 +9,14 @@
 classdef prolongation_builder_MSHyperbolic < prolongation_builder
     properties
         key = 'S_1';
+        Pdelta
+        Pdeltac
     end
     methods
-        function obj = prolongation_builder_MSHyperbolic(n, cf)
+        function obj = prolongation_builder_MSHyperbolic(n)
             obj@prolongation_builder(n)
             obj.P = cell(1, n);
+            obj.Pdeltac = cell(1, n);
         end
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
             % Build Restriction and Prolongation operators for static grids
@@ -30,10 +33,10 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
             sf = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
             sf0   =  ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
             for i=1:length(obj.R)
-                obj.UpdateBasisFunctions(sf, sf0, i);
+                obj.UpdateBasisFunctions(sf, sf0, i, CoarseGrid(i));
             end
         end
-        function UpdateBasisFunctions(obj, sf, sf0, l)
+        function UpdateBasisFunctions(obj, sf, sf0, l, CoarseGrid)
             %% Update sat prolongation for level l
             % 1. Compute dSc from Sc^n = 1/V * sum(vSf^n)
             Sc  = obj.R{l}' * ((obj.R{l} * sf)  ./ sum(obj.R{l}, 2));
@@ -41,16 +44,23 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
             deltac = Sc - Sc0;
             deltaf = sf - sf0;
             epsilon = deltaf ./ deltac;
+            epsilon(isnan(epsilon)) = 1;
+            epsilon(epsilon == Inf) = 1;
+            %epsilon(abs(epsilon)<1e-6) = 1;
             % 2. Update the prolongation operator
-            
-            obj.P{l} = xx;
+            obj.Pdelta  = deltaf;
+            obj.Pdeltac{l} = deltac;
+            for c=1:CoarseGrid.N
+                fsI = CoarseGrid.GrandChildren(c,:);
+                obj.P{l}(fsI, c) = epsilon(fsI)/max(epsilon(fsI));
+            end
         end
         function ADMProl = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid, ADMRest)
             ADMProl = ADMRest';
             % Coarse levels cells
             for c = ADMGrid.N(1) + 1:ADMGrid.Ntot
                 indexes = ADMGrid.GrandChildren{c};
-                ADMProl(indexes, c) = obj.P{ADMGrid.level{c}}(indexes, c);
+                ADMProl(indexes, c) = obj.P{ADMGrid.level(c)}(indexes, ADMGrid.CellIndex(c));
             end
         end
     end

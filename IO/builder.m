@@ -316,7 +316,7 @@ classdef builder < handle
                 end
                 % Create the operatorshandler
                 operatorshandler = operators_handler(Coarsening{1});
-                % a. Pressure prolongation builder
+                % a.1 Pressure prolongation builder
                 switch (char(SettingsMatrix(x+1)))
                     case ('Constant')
                         prolongationbuilder = prolongation_builder_constant(maxLevel(1));
@@ -328,12 +328,20 @@ classdef builder < handle
                         prolongationbuilder.BFUpdater = bf_updater_ms();
                 end
                 operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
-                % Hyperbolic variables operators builder
+                % a.2 Hyperbolic variables operators builder
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
+                test = 'MultiscaleSat';
                 for i = 2:n_phases
-                    prolongationbuilder = prolongation_builder_constant(maxLevel(1));
+                    switch(test)
+                        case('Constant')
+                            prolongationbuilder = prolongation_builder_constant(maxLevel(1));
+                        case('MultiscaleSat')
+                            prolongationbuilder = prolongation_builder_MSHyperbolic(maxLevel(1));
+                    end
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
                 end
+                
+                % b. Grid selection criterion (time\space based)
                 switch (gridselcriterion)
                     case('dfdx')
                         gridselector = adm_grid_selector_delta(tol, key);

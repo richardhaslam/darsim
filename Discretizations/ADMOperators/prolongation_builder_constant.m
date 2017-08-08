@@ -16,7 +16,7 @@ classdef prolongation_builder_constant < prolongation_builder
         function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, S, FluidModel)
             % Build Restriction and Prolongation operators for static grids
         end
-        function UpdateProlongationOperator(obj)
+        function UpdateProlongationOperator(obj, FineGrid, CoarseGrid, ProductionSystem)
             % For constant bf no update is necessary
         end
         function ADMProl = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGridid, ADMRest)

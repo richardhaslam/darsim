@@ -16,7 +16,7 @@ classdef output_writer_adm < output_writer
         function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp)
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
             obj.basisfunctions = false;
-            obj.dynamicBF = false;
+            obj.dynamicBF = true;
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
@@ -27,7 +27,17 @@ classdef output_writer_adm < output_writer
                 obj.basisfunctions = false;
             end
             if obj.dynamicBF
-                obj.Plotter.PlotDynamicBasisFunctions(DiscretizationModel.ReservoirGrid, DiscretizationModel.OperatorsHandler.ADMProlp)
+                pressure = 0;
+                saturation = 1;
+                if (pressure)
+                    % Pressure
+                    obj.Plotter.PlotDynamicBasisFunctions(DiscretizationModel.ReservoirGrid, DiscretizationModel.OperatorsHandler.ProlongationBuilders(1).P)
+                end
+                if(saturation)
+                    % Saturation
+                    obj.Plotter.PlotSaturationInterpolator(DiscretizationModel.ReservoirGrid, DiscretizationModel.OperatorsHandler.ProlongationBuilders(2).P,...
+                        DiscretizationModel.OperatorsHandler.ProlongationBuilders(2).Pdelta, DiscretizationModel.OperatorsHandler.ProlongationBuilders(2).Pdeltac);
+                end
             end
         end
         function WriteSummary(obj, Summary)

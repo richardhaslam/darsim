@@ -20,10 +20,10 @@ classdef operators_handler < handle
         function AddProlongationBuilder(obj, prolongationbuilder, index)
             obj.ProlongationBuilders(index) = prolongationbuilder;
         end
-        function UpdateProlongationOperators(obj)
+        function UpdateProlongationOperators(obj, ReservoirGrid, CoarseGrid, ProductionSystem)
             % Update basis functions for all variables
             for i=1:length(obj.ProlongationBuilders)
-                obj.ProlongationBuilders(i).UpdateProlongationOperator();
+                obj.ProlongationBuilders(i).UpdateProlongationOperator(ReservoirGrid, CoarseGrid, ProductionSystem);
             end
         end
         function BuildADMOperators(obj, FineGrid, CoarseGrid, ADMGrid)

@@ -136,7 +136,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
              Prolp(rows, :) = 0; % if it s fine-scale already I get rid of useless fillings
              Prolp(sub2ind(size(Prolp), rows, columns)) = 1;
         end
-        function UpdateProlongationOperator(obj)
+        function UpdateProlongationOperator(obj, FineGrid, CoarseGrid, ProductionSystem)
             % for now I do not update pressure basis functions
         end
     end

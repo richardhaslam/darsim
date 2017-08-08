@@ -42,8 +42,10 @@ classdef ADM_Discretization_model < Discretization_model
             %% Pressure interpolators
             disp('Static operators - start computation');
             start = tic;
-            obj.OperatorsHandler.ProlongationBuilders(1).BuildStaticOperators(obj.CoarseGrid{1}, obj.ReservoirGrid, obj.maxLevel(1),...
-                ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.Properties('S_1').Value, FluidModel);
+            for i=1:length(obj.OperatorsHandler.ProlongationBuilders)
+                obj.OperatorsHandler.ProlongationBuilders(i).BuildStaticOperators(obj.CoarseGrid{1}, obj.ReservoirGrid, obj.maxLevel(1),...
+                    ProductionSystem.Reservoir.K, ProductionSystem.Reservoir.State.Properties('S_1').Value, FluidModel);
+            end
             disp('Static operators - end')
             timer = toc(start);
             disp(['Static operators construction took ', num2str(timer)])
@@ -127,7 +129,7 @@ classdef ADM_Discretization_model < Discretization_model
             end
             
             % Update prolongation builders
-            obj.OperatorsHandler.UpdateProlongationOperators();
+            obj.OperatorsHandler.UpdateProlongationOperators(obj.ReservoirGrid, obj.CoarseGrid{1}, ProductionSystem);
         end
         function BuildADMOperators(obj)
             % Build ADM R and P operators

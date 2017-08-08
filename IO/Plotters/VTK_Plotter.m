@@ -235,6 +235,46 @@ classdef VTK_Plotter < Plotter
                 fclose(fileID);
             end
         end
+        function PlotSaturationInterpolator(obj, Grid, ProlS, Pdelta, Pdeltac)
+            %Write a VTK file for Reservoir
+            fileID = fopen(strcat(obj.FileName,'SatInterp', num2str(obj.VTKindex - 1),'.vtk'), 'w');
+            fprintf(fileID, '# vtk DataFile Version 2.0\n');
+            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            %fprintf(fileID, 'ASCII\n');
+            fprintf(fileID, 'BINARY\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, Grid.Nz+1);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
+            %fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
+            fwrite(fileID,[0:Grid.dx:Grid.dx * Grid.Nx],'float', 'b');
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
+            fwrite(fileID,[0:Grid.dy:Grid.dy * Grid.Ny],'float', 'b');
+            %fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
+            fprintf(fileID, '\n');
+            fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
+            %fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
+            fwrite(fileID,[0:Grid.dz:Grid.dz * Grid.Nz],'float','b');
+            fprintf(fileID, '\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
+            fprintf(fileID, '\n');
+            [~, col] = size(ProlS);
+            if obj.VTKindex > 2
+                obj.PrintScalar2VTK(fileID, Pdelta, ' Delta_fine');
+            for i=1:length(ProlS)
+                [~, col] = size(ProlS{i});
+                obj.PrintScalar2VTK(fileID, Pdeltac{i}, strcat(' Level',num2str(i),'Deltac'));
+                for j = 1:col
+                    obj.PrintScalar2VTK(fileID, full(ProlS{i}(:,j)), strcat(' Level',num2str(i),'Node',num2str(j)));
+                    fprintf(fileID, '\n');
+                end 
+            end
+            fclose(fileID);
+            end
+        end
         function PlotADMGrid(obj, ProductionSystem, DiscretizationModel)
             obj.PlotReservoirADMGrid(DiscretizationModel.ReservoirGrid, DiscretizationModel.CoarseGrid{1});
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
