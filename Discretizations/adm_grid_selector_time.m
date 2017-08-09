@@ -24,8 +24,12 @@ classdef adm_grid_selector_time < adm_grid_selector
             %% 1. Compute change of property X over previous time-step
             num = abs(ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
                   ProductionSystem.Reservoir.State_old.Properties(obj.key).Value);
-            %den = ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
-            den = 1;
+            den = ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
+            %den = 1;
+            a = abs(den) < 1e-3;
+            b = num > 1e-3;
+            num(a+b == 2) = 1; 
+            den(a == 1) = 1;
             delta = num ./ den;
                                        
             %% 2. Go from coarse to fine
@@ -54,6 +58,7 @@ classdef adm_grid_selector_time < adm_grid_selector
                 
                 % Max delta inside block c
                 deltaSum = sum(delta(indexes_fs));
+                deltaMax = max(delta(indexes_fs));
                 CoarseGrid.DeltaS(c) = deltaSum;
                 if CoarseGrid.Active(c) == 1 && deltaSum > obj.tol
                    CoarseGrid.Active(c) = 0;

@@ -57,7 +57,7 @@ classdef linear_solver_ADM < linear_solver
                     flag = 0;
                     x = A_c\rhs_c;
             end
-            disp(['Solving coarse system took ', num2str(toc(start)), ' s']);
+            %disp(['Solving coarse system took ', num2str(toc(start)), ' s']);
             if flag == 1
                 disp(['WARNING: Linear solver did not converge. The residual norm is ', num2str(relres)]);
             end
