@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector_time < adm_grid_selector
     properties
+        tol2 = 5;
     end
     methods
         function obj = adm_grid_selector_time(tol, key)
@@ -22,11 +23,9 @@ classdef adm_grid_selector_time < adm_grid_selector
             CoarseGrid(1).Active = obj.NoWellsCoarseCells;
             
             %% 1. Compute change of property X over previous time-step
-            num = abs(ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
-                  ProductionSystem.Reservoir.State_old.Properties(obj.key).Value);
-            %den = ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
-            den = 1;
-            delta = num ./ den;
+            num = ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
+                  ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;                         
+            delta = num;
                                        
             %% 2. Go from coarse to fine
             % 2.a coarse grid 1 to 0 (fine-scale)
@@ -54,8 +53,11 @@ classdef adm_grid_selector_time < adm_grid_selector
                 
                 % Max delta inside block c
                 deltaSum = sum(delta(indexes_fs));
+                Max = max(delta(indexes_fs)); Max(abs(Max)<1e-4) = 0;
+                Min = min(delta(indexes_fs)); Min(abs(Min)<1e-4) = 1; 
+                deltaRatio = Max/Min;   
                 CoarseGrid.DeltaS(c) = deltaSum;
-                if CoarseGrid.Active(c) == 1 && deltaSum > obj.tol
+                if CoarseGrid.Active(c) == 1 && (abs(deltaSum) > obj.tol || deltaRatio > obj.tol2 || deltaRatio<0)
                    CoarseGrid.Active(c) = 0;
                 end
             end

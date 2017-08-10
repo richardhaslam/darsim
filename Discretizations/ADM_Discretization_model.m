@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 26 July 2016
+%Last modified: 7 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef ADM_Discretization_model < Discretization_model
     properties
@@ -42,8 +42,10 @@ classdef ADM_Discretization_model < Discretization_model
             %% Pressure interpolators
             disp('Static operators - start computation');
             start = tic;
+
             obj.OperatorsHandler.ProlongationBuilders(1).BuildStaticOperators(ProductionSystem,...
                 FluidModel, obj.ReservoirGrid, obj.FracturesGrid, obj.CrossConnections, obj.maxLevel, obj.CoarseGrid);
+
             disp('Static operators - end')
             timer = toc(start);
             disp(['Static operators construction took ', num2str(timer)])
@@ -125,6 +127,9 @@ classdef ADM_Discretization_model < Discretization_model
             for f = 1 : length(obj.maxLevel) - 1
                 
             end
+            
+            % Update prolongation builders
+            obj.OperatorsHandler.UpdateProlongationOperators(obj.ReservoirGrid, obj.CoarseGrid{1}, ProductionSystem);
         end
         function BuildADMOperators(obj)
             % Build ADM R and P operators
