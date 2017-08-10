@@ -46,14 +46,15 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
             epsilon = deltaf ./ deltac;
             epsilon(isnan(epsilon)) = 1;
             epsilon(epsilon == Inf) = 1;
-            epsilon(abs(deltac) < 1e-6) = 1;
-            %epsilon(abs(epsilon)<1e-6) = 1;
+            epsilon(abs(deltac) < 1e-4) = 1;
+            epsilon(abs(deltaf) < 1e-4) = 1;
             % 2. Update the prolongation operator
             obj.Pdelta  = deltaf;
             obj.Pdeltac{l} = deltac;
             for c=1:CoarseGrid.N
                 fsI = CoarseGrid.GrandChildren(c,:);
-                obj.P{l}(fsI, c) = abs(epsilon(fsI)/max(epsilon(fsI)));
+                %obj.P{l}(fsI, c) = epsilon(fsI);
+                obj.P{l}(fsI, c) = epsilon(fsI)/max(epsilon(fsI));
             end
         end
         function ADMProl = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid, ADMRest)

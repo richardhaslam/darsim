@@ -64,7 +64,6 @@ classdef VTK_Plotter < Plotter
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
                 obj.PlotFracturesSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
             end
-            obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotReservoirSolution(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
@@ -136,7 +135,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotPermeability(obj, Grid, K)
             %Permeability
-            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex - 1),'.vtk'), 'a');
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
             fprintf(fileID, '\n');
             fclose(fileID);
@@ -203,7 +202,7 @@ classdef VTK_Plotter < Plotter
             end
         end
         function PlotDynamicBasisFunctions(obj, Grid, Prolp)
-            fileID = fopen(strcat(obj.FileName,'Dynamic_BF_', num2str(obj.VTKindex - 1),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName,'Dynamic_BF_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             fprintf(fileID, 'BINARY\n');
@@ -237,7 +236,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotSaturationInterpolator(obj, Grid, ProlS, Pdelta, Pdeltac)
             %Write a VTK file for Reservoir
-            fileID = fopen(strcat(obj.FileName,'SatInterp', num2str(obj.VTKindex - 1),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName,'SatInterp', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             %fprintf(fileID, 'ASCII\n');
@@ -262,16 +261,17 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
             fprintf(fileID, '\n');
             [~, col] = size(ProlS);
-            if obj.VTKindex > 2
-                obj.PrintScalar2VTK(fileID, Pdelta, ' Delta_fine');
-            for i=1:length(ProlS)
-                [~, col] = size(ProlS{i});
-                obj.PrintScalar2VTK(fileID, Pdeltac{i}, strcat(' Level',num2str(i),'Deltac'));
-                for j = 1:col
-                    obj.PrintScalar2VTK(fileID, full(ProlS{i}(:,j)), strcat(' Level',num2str(i),'Node',num2str(j)));
-                    fprintf(fileID, '\n');
-                end 
-            end
+            if obj.VTKindex >= 2
+                %obj.PrintScalar2VTK(fileID, Pdelta, ' Delta_fine');
+                obj.PrintScalar2VTK(fileID, full(sum(ProlS, 2)), ' BF_S');
+            %for i=1:length(ProlS)
+             %   [~, col] = size(ProlS);
+              %  obj.PrintScalar2VTK(fileID, Pdeltac{i}, strcat(' Level',num2str(i),'Deltac'));
+                %for j = 1:col
+                 %   obj.PrintScalar2VTK(fileID, full(ProlS{i}(:,j)), strcat(' Level',num2str(i),'Node',num2str(j)));
+                  %  fprintf(fileID, '\n');
+                %end 
+            %end
             fclose(fileID);
             end
         end
@@ -280,10 +280,8 @@ classdef VTK_Plotter < Plotter
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
                 obj.PlotFracturesADMGrid(DiscretizationModel.FracturesGrid.Grids(f), DiscretizationModel.CoarseGrid{1+f}, f);
             end
-            obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotReservoirADMGrid(obj, Grid, CoarseGrid)
-            obj.VTKindex = obj.VTKindex - 1;
             for i=1:length(CoarseGrid)
                 fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -314,7 +312,6 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fclose(fileID);
             end
-            obj.VTKindex = obj.VTKindex + 1;
         end
         function PlotFracturesADMGrid(obj, Grid, CoarseGrid)
         end

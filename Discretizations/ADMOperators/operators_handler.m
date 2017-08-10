@@ -16,6 +16,7 @@ classdef operators_handler < handle
     methods
         function obj = operators_handler(cf)
             obj.ProlongationBuilders = prolongation_builder.empty;
+            obj.ADMProl = cell(2,1);
         end
         function AddProlongationBuilder(obj, prolongationbuilder, index)
             obj.ProlongationBuilders(index) = prolongationbuilder;

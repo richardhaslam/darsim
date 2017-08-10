@@ -330,7 +330,7 @@ classdef builder < handle
                 operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                 % a.2 Hyperbolic variables operators builder
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
-                test = 'Constant';
+                test = 'MultiscaleSat';
                 for i = 2:n_phases
                     switch(test)
                         case('Constant')
