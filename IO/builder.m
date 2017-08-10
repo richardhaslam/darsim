@@ -320,12 +320,19 @@ classdef builder < handle
                 switch (char(SettingsMatrix(x+1)))
                     case ('Constant')
                         prolongationbuilder = prolongation_builder_constant(maxLevel(1));
-                    case ('Homogeneous')
-                        prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
-                        prolongationbuilder.BFUpdater = bf_updater_bilin();
-                    case ('MS')
-                        prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
-                        prolongationbuilder.BFUpdater = bf_updater_ms();
+                    otherwise
+                        if ~obj.Fractured
+                            prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
+                            prolongationbuilder.BFUpdater = bf_updater_ms();
+                        else
+                            prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
+                            prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                        end
+                        if strcmp(char(SettingsMatrix(x+1)), 'Homogeneous')
+                            prolongationbuilder.BFUpdater.MaxContrast = 1;
+                        else
+                            prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
+                        end
                 end
                 operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                 % Hyperbolic variables operators builder

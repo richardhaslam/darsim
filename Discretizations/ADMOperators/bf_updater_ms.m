@@ -4,13 +4,27 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 16 August 2016
+%Last modified: 09 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef bf_updater_ms < bf_updater
     properties
+        MaxContrast
     end
     methods
-        function ConstructPressureSystem(obj, FineGrid, K, s, FluidModel)
+        function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, FracturesGrid, CrossConnections)
+            % Builds fine-scale incompressible pressure system
+            K = ProductionSystem.Reservoir.K;
+            Sm = ProductionSystem.Reservoir.State.Properties('S_1').Value;
+            Mob = FluidModel.ComputePhaseMobilities(Sm);
+            obj.A = obj.MediumPressureSystem(FineGrid, K, Mob);
+        end
+        function A_Medium = MediumPressureSystem(obj, FineGrid, K, Mob)
+            % Remove high contrast to avoid spikes
+            lambdaMax = max(K(:,1));
+            K(K(:,1)./lambdaMax < obj.MaxContrast, 1) = obj.MaxContrast * lambdaMax;
+            K(K(:,2)./lambdaMax < obj.MaxContrast, 2) = obj.MaxContrast * lambdaMax;
+            K(K(:,3)./lambdaMax < obj.MaxContrast, 3) = obj.MaxContrast * lambdaMax;
+            
             % Initialize local variables
             Nx = FineGrid.Nx;
             Ny = FineGrid.Ny;
@@ -22,7 +36,6 @@ classdef bf_updater_ms < bf_updater
             Ax = FineGrid.Ax;
             Ay = FineGrid.Ay;
             Az = FineGrid.Az;
-            Mob = FluidModel.ComputePhaseMobilities(s);
             Mobt = sum(Mob,2);
             
             K(:, 1) = K(:,1) .* Mobt;
@@ -58,7 +71,7 @@ classdef bf_updater_ms < bf_updater
             z2 = reshape(Tz(:,:,2:Nz+1),N,1); 
             DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
             DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-            obj.A = spdiags(DiagVecs,DiagIndx,N,N);
+            A_Medium = spdiags(DiagVecs,DiagIndx,N,N);
         end
     end
 end

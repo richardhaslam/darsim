@@ -213,7 +213,8 @@ classdef Immiscible_formulation < formulation
             Fractures = ProductionSystem.FracturesNetwork.Fractures;
             Wells = ProductionSystem.Wells;
             % Global variables
-            [P, rho] = ProductionSystem.CreateGlobalVariables(DiscretizationModel, obj.NofPhases); % useful for cross connections assembly
+            P = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly
             
             Jph = cell(obj.NofPhases, 1);
             for ph=1:obj.NofPhases
@@ -405,7 +406,8 @@ classdef Immiscible_formulation < formulation
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
             Nm = DiscretizationModel.ReservoirGrid.N;
             % Global variables
-            [P, rho] = ProductionSystem.CreateGlobalVariables(DiscretizationModel, obj.NofPhases); % useful for cross connections assembly
+            P = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly
             for ph=1:obj.NofPhases
                 % fill in qf
                 for c=1:length(DiscretizationModel.CrossConnections)
@@ -570,39 +572,43 @@ classdef Immiscible_formulation < formulation
             qw = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
             if ProductionSystem.FracturesNetwork.Active
-                qf = ComputeSourceTerms_frac_mat(obj, ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures, DiscretizationModel);
+                qf = ComputeSourceTerms_frac_mat(obj, ProductionSystem, DiscretizationModel);
             end
-            %% Reservoir residual
-            Residual = zeros(DiscretizationModel.N, 1);
             % Transmissibility of reservoir
             for i=1:obj.NofPhases
                 [obj.Tph{i, 1}, obj.Gph{i, 1}] = ...
                     obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, obj.UpWind{i, 1}, obj.Mob(1:DiscretizationModel.ReservoirGrid.N, i), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(i)]).Value, obj.GravityModel.RhoInt{i, 1});
             end
+            % Initialise residual vector (Nph * N, 1)
+            Nt = DiscretizationModel.N;
+            Nm = DiscretizationModel.ReservoirGrid.N;
+            Nf = DiscretizationModel.FracturesGrid.N;
+            Residual = zeros(Nt, 1);
+            
+            % BuildResidual for Reservoir
             Index.Start = 1;
-            Index.End = DiscretizationModel.ReservoirGrid.N;
+            Index.End = Nm;
             phi = ProductionSystem.Reservoir.Por;
-            Residual(1:DiscretizationModel.ReservoirGrid.N) =...
-                obj.MediumPressureResidual(dt, phi, DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.State, State0, qw, qf, Index, 0);
+            Residual(Index.Start:Index.End) = MediumPressureResidual(obj, DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.State, State0, dt, phi, qw, qf, Index, 0);
+            % Fractures
             if ProductionSystem.FracturesNetwork.Active
-                %% Fractures Residuals
-                for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    Index.Start = DiscretizationModel.Index_Local_to_Global(DiscretizationModel.ReservoirGrid.Nx, DiscretizationModel.ReservoirGrid.Ny, DiscretizationModel.ReservoirGrid.Nz, f, 1);
-                    Index.End = DiscretizationModel.Index_Local_to_Global(DiscretizationModel.ReservoirGrid.Nx, DiscretizationModel.ReservoirGrid.Ny, DiscretizationModel.ReservoirGrid.Nz, f, DiscretizationModel.FracturesGrid.Grids(f).N);
+                for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
+                    Index.Start = Index.End+1;
+                    Index.End = Index.Start + Nf(f) - 1;
                     % Transmissibility of fractures cells
                     for i=1:obj.NofPhases
                         [obj.Tph{i, 1+f}, obj.Gph{i, 1+f}] = ...
                             obj.TransmissibilityMatrix(DiscretizationModel.FracturesGrid.Grids(f), obj.UpWind{i, 1+f}, obj.Mob(Index.Start:Index.End, i),...
                             ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(i)]).Value, obj.GravityModel.RhoInt{i, f+1});
                     end
-                    % Residual of Fracture Grid-cells
-                    Residual(Index.Start:Index.End) = ...
-                        obj.MediumPressureResidual(dt, phi, DiscretizationModel.FracturesGrid.Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).State, State0, qw, qf, Index, f);
+                    % BuildResidual for Fractures
+                    phi = ProductionSystem.FracturesNetwork.Fractures(f).Por;
+                    Residual(Index.Start:Index.End) = MediumPressureResidual(obj, DiscretizationModel.FracturesGrid.Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).State, State0, dt, phi, qw, qf, Index, f);
                 end
-            end
+            end     
         end
-        function Residual = MediumPressureResidual(obj, dt, phi, Grid, State, State0, qw, qf, Index, f)
+        function Residual = MediumPressureResidual(obj, Grid, State, State0, dt, phi, qw, qf, Index, f)
             % Initialise local variables
             N = Grid.N;
             s_old = zeros(N, obj.NofPhases);
@@ -612,7 +618,6 @@ classdef Immiscible_formulation < formulation
             pv = phi * Grid.Volume;
             
             % Copy values in local variables
-
             for i = 1:obj.NofPhases
                 P(:, i) = State.Properties(['P_', num2str(i)]).Value;
                 s_old(:, i) = State0.Properties(['S_', num2str(i)]).Value(Index.Start:Index.End);
@@ -632,114 +637,62 @@ classdef Immiscible_formulation < formulation
                     - qf(Index.Start:Index.End, i) ./ rho(:, i);
             end
             Residual = Residual + pv/dt;
-
-%             Residual(:) = Residual(:) + pv/dt; 
-%             % without dividing 'Mattteo'
-%             Residual = zeros(N, 1);
-%             for i=1:obj.NofPhases
-%             Residual(:) = ...
-%                    Residual(:) + ...
-%                    pv/dt * (rho(:, i).*s_old(:, i) - rho_old(:, i) .* s_old(:, i))...
-%                    + obj.Tph{i} * P(:, i)...
-%                    - qw(:, i)...
-%                    - qf(:, i);
-%             end
         end
         function A = BuildPressureMatrix(obj, ProductionSystem, DiscretizationModel, dt, State0)
-            %% 1. Reservoir            
-            A = obj.Build_Medium_PressureMatrix(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, 1, DiscretizationModel.ReservoirGrid.N, 0);
-            %% 3. Add wells
-            rho = zeros(DiscretizationModel.ReservoirGrid.N, obj.NofPhases);
-            for i=1:obj.NofPhases
-                rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
-            end
-            W = obj.AddWellsToPressureSystem(DiscretizationModel.ReservoirGrid.N, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1), rho);
-            A = A + W;
-           
-            %% 2. Fractures
+            %% Pressure Matrix's assembly
+            % m|   Pmm   |   Pmf   |
+            %  |---------|---------|
+            % f|   Pfm   |   Pff   |
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             Nz = DiscretizationModel.ReservoirGrid.Nz;
-            for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
-                Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
-                End = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, DiscretizationModel.FracturesGrid.Grids(f).N);
-                Af = obj.Build_Medium_PressureMatrix(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Start, End, f);
-                A = blkdiag(A, Af);
+            Nm = DiscretizationModel.ReservoirGrid.N;
+            % Global variables
+            rho = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly         
+            %% 1. Reservoir
+            Index.Start = 1;
+            Index.End = Nm;
+            A = obj.Build_Medium_PressureMatrix(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, 0);
+            % Add wells
+            W = obj.AddWellsToPressureSystem(DiscretizationModel.ReservoirGrid.N, ProductionSystem.Reservoir.State, ProductionSystem.Wells, ProductionSystem.Reservoir.K(:,1), rho(1:Nm,:));
+            A = A + W;
+            %% 2. Fractures
+            if ProductionSystem.FracturesNetwork.Active
+                Nf = DiscretizationModel.FracturesGrid.N;
+                for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
+                    Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
+                    Index.End   = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, Nf(f));
+                    Af = obj.Build_Medium_PressureMatrix(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index, f);
+                    A = blkdiag(A, Af);
+                end
             end
             %% 3.  Add matrix-frac and frac-frac connections
-            for If1_Local = 1 : length(DiscretizationModel.CrossConnections)
-                for i = 1:obj.NofPhases
-                    % |x    |  x  |
-                    % |  M  |  MF |
-                    % |  x  |  x  |
-                    % |-----|-----|----
-                    % | x  x|s(x) |
-                    % |  FM |  F  |
-                    % |     |     |
-                    
-                    % matrix-frac
-                    % Fill in FM entries
-                    indices_m = DiscretizationModel.CrossConnections(If1_Local).Cells( DiscretizationModel.CrossConnections(If1_Local).Cells <= DiscretizationModel.ReservoirGrid.N );
-                    If1_Global = DiscretizationModel.ReservoirGrid.N+If1_Local; % Global index of this fracture cells;
-                    Index_frac1_Local = DiscretizationModel.Index_Global_to_Local(If1_Global);
-                    % Fill in FM entries
-                    A(If1_Global, indices_m) = A(If1_Global, indices_m) - ...
-                        DiscretizationModel.CrossConnections(If1_Local).T_Geo(1:length(indices_m))'...
-                        .* (obj.Mob(indices_m,i)' .* ProductionSystem.Reservoir.State.Properties(['rho_',num2str(i)]).Value(indices_m)' );
-                    % .*(obj.Mob(If1_Global,i) .* ProductionSystem.FracturesNetwork.Fractures(Index_frac1_Local.f).State.Properties(['rho_',num2str(i)]).Value(Index_frac1_Local.g) ...
-                    % Fill in F diagonl entries
-                    A(If1_Global, If1_Global) = A(If1_Global, If1_Global) + ...
-                        sum( DiscretizationModel.CrossConnections(If1_Local).T_Geo(1:length(indices_m)) .* obj.Mob(If1_Global,i) .* ProductionSystem.Reservoir.State.Properties(['rho_',num2str(i)]).Value(indices_m) );
-                    % Fill in MF entries
-                    A(indices_m, If1_Global) = A(If1_Global) - ...
-                        DiscretizationModel.CrossConnections(If1_Local).T_Geo(1:length(indices_m)) .* obj.Mob(If1_Global,i) .* ProductionSystem.Reservoir.State.Properties(['rho_',num2str(i)]).Value(indices_m);
-                    % Fill in M diagonal entries
-                    A(sub2ind(size(A), indices_m, indices_m)) = A(sub2ind(size(A), indices_m, indices_m)) + ...
-                        DiscretizationModel.CrossConnections(If1_Local).T_Geo(1:length(indices_m)) .* obj.Mob(If1_Global,i) .* ProductionSystem.Reservoir.State.Properties(['rho_',num2str(i)]).Value(indices_m);
-                    
-                    % frac-frac
-                    indices_f = DiscretizationModel.CrossConnections(If1_Local).Cells( DiscretizationModel.CrossConnections(If1_Local).Cells > DiscretizationModel.ReservoirGrid.N );
-                    if ~isempty(indices_f)
-                        for n = 1:length(indices_f)
-                            If2_Global = indices_f(n); % Global indices of the other fractures' cells if any
-                            If2_Local = If2_Global - DiscretizationModel.ReservoirGrid.N;
-                            T_Geo_Half1 = DiscretizationModel.CrossConnections(If1_Local      ).T_Geo( length(indices_m)+n );
-                            T_Geo_Half2 = DiscretizationModel.CrossConnections(If2_Local).T_Geo( DiscretizationModel.CrossConnections(If2_Local).Cells==If1_Global );
-                            T_Geo_Harmo = (T_Geo_Half1 * T_Geo_Half2) / (T_Geo_Half1 + T_Geo_Half2);
-                            Index_frac2_Local = DiscretizationModel.Index_Global_to_Local(If2_Global);
-                            % Fill in FG entries
-                            A(If1_Global, If2_Global) = A(If1_Global, If2_Global) - ...
-                                T_Geo_Harmo * obj.Mob(If1_Global,i) * ProductionSystem.FracturesNetwork.Fractures(Index_frac1_Local.f).State.Properties(['rho_',num2str(i)]).Value(Index_frac1_Local.g);
-                            % Fill in F diagonal entries
-                            A(If1_Global, If1_Global) = A(If1_Global, If1_Global) + ...
-                                T_Geo_Harmo * obj.Mob(If1_Global,i) * ProductionSystem.FracturesNetwork.Fractures(Index_frac1_Local.f).State.Properties(['rho_',num2str(i)]).Value(Index_frac1_Local.g);
-                            % Fill in GF diagonal entries
-                            A(If2_Global, If1_Global) = A(If2_Global, If1_Global) - ...
-                                T_Geo_Harmo * obj.Mob(If1_Global,i) * ProductionSystem.FracturesNetwork.Fractures(Index_frac1_Local.f).State.Properties(['rho_',num2str(i)]).Value(Index_frac1_Local.g);
-                            % Fill in G diagonal entries
-                            A(If2_Global, If2_Global) = A(If2_Global, If2_Global) + ...
-                                T_Geo_Harmo * obj.Mob(If1_Global,i) * ProductionSystem.FracturesNetwork.Fractures(Index_frac1_Local.f).State.Properties(['rho_',num2str(i)]).Value(Index_frac1_Local.g);
-                        end
-                    end
+            for ph=1:obj.NofPhases
+                for c = 1:length(DiscretizationModel.CrossConnections)
+                    T_Geo = DiscretizationModel.CrossConnections(c).T_Geo;
+                    i = c + Nm;
+                    j = DiscretizationModel.CrossConnections(c).Cells;
+                    A(i,j) = A(i,j) - T_Geo' .* obj.Mob(j,ph)' .* rho(j,ph)';
+                    A(i,i) = A(i,i) + sum(T_Geo.* obj.Mob(j,ph).* rho(j,ph));
+                    A(j,i) = A(j,i) - T_Geo.* obj.Mob(i,ph).* rho(i,ph);
+                    A(sub2ind(size(A), j, j)) = A(sub2ind(size(A), j, j)) + T_Geo.* obj.Mob(i,ph).* rho(i,ph);
                 end
             end
         end
-        function J = Build_Medium_PressureMatrix(obj, Medium, Grid, dt, State0, Start, End, f)
+        function J = Build_Medium_PressureMatrix(obj, Medium, Grid, dt, State0, Index, f)
             %% 0. Initialise local variables
             N = Grid.N;
             Nx = Grid.Nx;
             Ny = Grid.Ny;
-            Nz = Grid.Nz;
-            
+            Nz = Grid.Nz;            
             pv = Medium.Por*Grid.Volume;
             s_old = zeros(N, obj.NofPhases);
             rho_old = zeros(N, obj.NofPhases);
             rho = zeros(N, obj.NofPhases);
-            
             % Copy values in local variables
             for i=1:obj.NofPhases
-                s_old(:, i) = State0.Properties(['S_', num2str(i)]).Value(Start:End);
-                rho_old(:, i) = State0.Properties(['rho_', num2str(i)]).Value(Start:End);
+                s_old(:, i) = State0.Properties(['S_', num2str(i)]).Value(Index.Start:Index.End);
+                rho_old(:, i) = State0.Properties(['rho_', num2str(i)]).Value(Index.Start:Index.End);
                 rho(:, i) = Medium.State.Properties(['rho_', num2str(i)]).Value;
             end 
             
@@ -747,7 +700,7 @@ classdef Immiscible_formulation < formulation
             C = sparse(N,N);
             for i=1:obj.NofPhases
                 %% 1. Accummulation term
-                vec = - pv/dt * (- rho_old(:, i) .* s_old(:, i) .* obj.drhodp(Start:End,i) ./ rho(:, i).^2) ;
+                vec = - pv/dt * (- rho_old(:, i) .* s_old(:, i) .* obj.drhodp(Index.Start:Index.End,i) ./ rho(:, i).^2) ;
                 % Alternative
                 %vec = pv/dt * obj.drhodp(Start:End,i);
                 C = C + spdiags(vec, 0, N, N);
@@ -756,9 +709,9 @@ classdef Immiscible_formulation < formulation
                 % a. transmissibility matrix
                 A = A + obj.Tph{i, f+1};
                 % b. Derivative of transmissibility with respect to p
-                dMupx = obj.UpWind{i, f+1}.x*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
-                dMupy = obj.UpWind{i, f+1}.y*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
-                dMupz = obj.UpWind{i, f+1}.z*(obj.Mob(Start:End, i) .* obj.drhodp(Start:End,i));
+                dMupx = obj.UpWind{i, f+1}.x*(obj.Mob(Index.Start:Index.End, i) .* obj.drhodp(Index.Start:Index.End,i));
+                dMupy = obj.UpWind{i, f+1}.y*(obj.Mob(Index.Start:Index.End, i) .* obj.drhodp(Index.Start:Index.End,i));
+                dMupz = obj.UpWind{i, f+1}.z*(obj.Mob(Index.Start:Index.End, i) .* obj.drhodp(Index.Start:Index.End,i));
                 
                 vecX1 = min(reshape(obj.U{i, f+1}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
                 vecX2 = max(reshape(obj.U{i, f+1}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
@@ -795,7 +748,6 @@ classdef Immiscible_formulation < formulation
             end            
             %% Jacobian: Put them together
             J = A + C;
-            
         end       
         function W = AddWellsToPressureSystem(obj, N, State, Wells, K, rho)
             %% Add Wells in residual form

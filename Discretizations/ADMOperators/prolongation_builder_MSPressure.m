@@ -26,18 +26,13 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             end
             obj.ADMmap = adm_map(prod(cf));
         end
-        function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
-            % Remove high contrast to avoid spikes
-            lambdaMax = max(K(:,1));
-            K(K(:,1)./lambdaMax < 10^-2, 1) = 10^-2*lambdaMax;
-            K(K(:,2)./lambdaMax < 10^-2, 2) = 10^-2*lambdaMax;
-            K(K(:,3)./lambdaMax < 10^-2, 3) = 10^-2*lambdaMax;
-            
+        function BuildStaticOperators(obj, ProductionSystem, FluidModel, ReservoirGrid, FracturesGrid, CrossConnections, maxLevel, CoarseGrid)
             % Initialise
-            obj.R = cell(maxLevel, 1);
-            obj.P = cell(maxLevel, 1);
+            obj.R = cell(maxLevel(1), 1);
+            obj.P = cell(maxLevel(1), 1);
             % Build Pressure system
-            obj.BFUpdater.ConstructPressureSystem(FineGrid, K, s, FluidModel);
+            obj.BFUpdater.ConstructPressureSystem(ProductionSystem, FluidModel, ReservoirGrid, FracturesGrid, CrossConnections);
+        
             %Build static restriction operator (FV)
             disp('Building Restriction 1');
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(1));
