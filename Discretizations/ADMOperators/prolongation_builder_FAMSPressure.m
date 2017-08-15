@@ -6,53 +6,12 @@
 %Created: 4 August 2017
 %Last modified: 7 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef prolongation_builder_MSPressure < prolongation_builder
+classdef prolongation_builder_FAMSPressure < prolongation_builder_MSPressure
     properties
-        BFUpdater
-        Dimensions
-        ADMmap
     end
     methods
-        function obj = prolongation_builder_MSPressure(n, cf)
-            obj@prolongation_builder(n)
-            obj.R = cell(1, n);
-            obj.P = cell(1, n);
-            if cf(3) == 1 && cf(2) == 1
-                obj.Dimensions = 1;
-            elseif cf(3) == 1
-                obj.Dimensions = 2;
-            else
-                obj.Dimensions = 3;
-            end
-            obj.ADMmap = adm_map(prod(cf));
-        end
-        function BuildStaticOperators(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, maxLevel, CoarseGrid)
-            % Initialise
-            obj.R = cell(maxLevel(1), 1);
-            obj.P = cell(maxLevel(1), 1);
-            % Build Pressure system
-            obj.BFUpdater.ConstructPressureSystem(ProductionSystem, FluidModel, FineGrid, CrossConnections);
-            
-            %Build static restriction operator (FV)
-            disp('Building Restriction 1');
-            obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(:,1));
-            % Build Prolongation operator
-            disp('Building Prolongation 1');
-            obj.P{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
-            %Build first coarse system (with MsFE)
-            obj.BFUpdater.A = obj.P{1}' * obj.BFUpdater.A * obj.P{1};
-            %obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx, CoarseGrid(1).Ny);
-            for x = 2:maxLevel(1)
-                % Build static restriction operator (FV)
-                disp(['Building Restriction ', num2str(x)]);
-                obj.R{x} = obj.MsRestriction(CoarseGrid(:, x-1), CoarseGrid(:, x));
-                % Build Prolongation operator
-                disp(['Building Prolongation ', num2str(x)]);
-                obj.P{x} = obj.BFUpdater.MsProlongation(CoarseGrid(:, x-1), CoarseGrid(:, x), obj.Dimensions);
-                %Build coarse system (with MsFE)
-                obj.BFUpdater.A = obj.P{x}' * obj.BFUpdater.A * obj.P{x};
-                %obj.BFUpdater.TransformIntoTPFA(CoarseGrid(x).Nx, CoarseGrid(x).Ny);
-            end
+        function obj = prolongation_builder_FAMSPressure(n, cf)
+            obj@prolongation_builder_MSPressure(n, cf);
         end
         function ADMProlp = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid, ADMRest)
             % Pressure prolongation

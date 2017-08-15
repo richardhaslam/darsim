@@ -18,12 +18,12 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
             obj.P = cell(1, n);
             obj.Pdeltac = cell(1, n);
         end
-        function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, s, FluidModel)
+        function BuildStaticOperators(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, maxLevel, CoarseGrid)
             % Build Restriction and Prolongation operators for static grids
-            obj.R{1} = MsRestriction(obj, FineGrid, CoarseGrid(1));
+            obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(:, 1));
             obj.P{1} = obj.R{1}';
             for x = 2:maxLevel
-                R = MsRestriction(obj, CoarseGrid(x-1), CoarseGrid(x));
+                R = obj.MsRestriction(CoarseGrid(:, x-1), CoarseGrid(:,x));
                 obj.R{x} = R*obj.R{x-1};
                 obj.P{x} = obj.R{x}';
              end

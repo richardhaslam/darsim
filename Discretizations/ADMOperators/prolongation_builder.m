@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 August 2017
-%Last modified: 4 August 2017
+%Last modified: 14 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder < matlab.mixin.Heterogeneous & handle
     properties
@@ -15,12 +15,17 @@ classdef prolongation_builder < matlab.mixin.Heterogeneous & handle
         function obj = prolongation_builder(n)
         end
         function MsR = MsRestriction(obj, FineGrid, CoarseGrid)
-            Nf = FineGrid.N;
-            Nc = CoarseGrid.N;
-            %% MSFV Restriction Operator
-            MsR = sparse(Nc, Nf);
-            for c = 1:Nc
-                MsR(c, CoarseGrid.Children(c,:)) = 1;
+            %% MSFV Restriction Operator for F-AMS
+            MsR = [];
+            for i=1:length(FineGrid)
+                Nf = FineGrid(i).N;
+                Nc = CoarseGrid(i).N;
+                %% MSFV Restriction Operator
+                R = sparse([],[],[],Nc, Nf, Nf);
+                for c = 1:Nc
+                    R(c, CoarseGrid(i).Children(c,:)) = 1;
+                end
+                MsR = blkdiag(MsR, R);
             end
         end
     end

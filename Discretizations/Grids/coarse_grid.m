@@ -59,6 +59,16 @@ classdef coarse_grid < grid_darsim
             else
                 obj.AssignNeighbours();
             end
+            obj.AddGridCoordinates(FineGrid);
+        end
+        function AddGridCoordinates(obj, FineGrid)
+            % Computes coordinates of corners of the coarse grid
+            if ~isempty(FineGrid.GridCoords)
+                for j = 1 : obj.Ny+1
+                    fs_index = obj.CoarseFactor(2)*(FineGrid.Nx+1)*(j-1) + (obj.CoarseFactor(1) * (0:obj.Nx) )+ 1;
+                    obj.GridCoords((j-1)*(obj.Nx+1)+1:j*(obj.Nx+1),:) = FineGrid.GridCoords(fs_index,:); 
+                end
+            end
         end
         function AssignNeighbours(obj)
             % Let s do the 8 corners separetely

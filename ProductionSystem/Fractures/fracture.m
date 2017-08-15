@@ -16,11 +16,6 @@ classdef fracture < handle
         K
         State
         State_old
-        PointA
-        PointB
-        PointC
-        PointD
-        GridCoords
     end
     methods
         function obj = fracture()

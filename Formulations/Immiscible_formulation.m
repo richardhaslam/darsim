@@ -213,8 +213,13 @@ classdef Immiscible_formulation < formulation
             Fractures = ProductionSystem.FracturesNetwork.Fractures;
             Wells = ProductionSystem.Wells;
             % Global variables
-            P = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'P_'); % useful for cross connections assembly
-            rho = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly
+            if ProductionSystem.FracturesNetwork.Active
+                FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+            else
+                FineGrid = DiscretizationModel.ReservoirGrid;
+            end
+            P = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly
             
             Jph = cell(obj.NofPhases, 1);
             for ph=1:obj.NofPhases
@@ -406,8 +411,8 @@ classdef Immiscible_formulation < formulation
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
             Nm = DiscretizationModel.ReservoirGrid.N;
             % Global variables
-            P = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'P_'); % useful for cross connections assembly
-            rho = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly
+            P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
             for ph=1:obj.NofPhases
                 % fill in qf
                 for c=1:length(DiscretizationModel.CrossConnections)

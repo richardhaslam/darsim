@@ -11,9 +11,10 @@ classdef bf_updater < handle
     properties
         A
     end
-    methods 
-        function MsP = MsProlongation(obj, FineGrid, CoarseGrid, cf, Dimensions)
-            %Permutation Matrix
+    methods
+        function MsP = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
+            cf = CoarseGrid.CoarseFactor./FineGrid.CoarseFactor;
+            % Permutation Matrix
             [G, Ni, Nf, Ne, Nn] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
             % 1. Reorder finescale system
             tildeA   = G * obj.A * G';

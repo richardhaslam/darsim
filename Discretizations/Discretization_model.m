@@ -12,7 +12,6 @@ classdef Discretization_model < handle
         ReservoirGrid
         FracturesGrid
         CrossConnections
-        JacInd
     end
     methods
         function AddReservoirGrid(obj, reservoirgrid)

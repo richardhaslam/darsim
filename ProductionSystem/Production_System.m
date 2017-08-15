@@ -68,22 +68,20 @@ classdef Production_System < handle
                 end
             end
         end
-        function x_Global = CreateGlobalVariables(obj, ReservoirGrid, FracturesGrid, n_phases, key)
+        function x_Global = CreateGlobalVariables(obj, FineGrid, n_phases, key)
             %
-            x_Global   = zeros(ReservoirGrid.N + sum(FracturesGrid.N), n_phases);
+            x_Global   = zeros(sum([FineGrid(1:end).N]), n_phases);
             %% Reservoir
-            Grid = ReservoirGrid;
             for i=1:n_phases
                 x = obj.Reservoir.State.Properties([key, num2str(i)]).Value;
-                x_Global(1:Grid.N, i) = x;
+                x_Global(1:FineGrid(1).N, i) = x;
             end
             %% Fractures
             if obj.FracturesNetwork.Active
-                End = Grid.N;
-                Grids = FracturesGrid.Grids;
+                End = FineGrid(1).N;
                 for f=1:obj.FracturesNetwork.NumOfFrac
                     Start = End+1;
-                    End = Start + Grids(f).N - 1;
+                    End = Start + FineGrid(1+f).N - 1;
                     for i=1:n_phases
                         x = obj.FracturesNetwork.Fractures(f).State.Properties([key, num2str(i)]).Value;
                         x_Global(Start:End, i) = x;

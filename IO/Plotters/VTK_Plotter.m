@@ -62,7 +62,7 @@ classdef VTK_Plotter < Plotter
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.PlotReservoirSolution(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid);
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
-                obj.PlotFracturesSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
+                obj.PlotFractureSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
             end
         end
         function PlotReservoirSolution(obj, Reservoir, Grid)
@@ -108,7 +108,7 @@ classdef VTK_Plotter < Plotter
 %             fprintf(fileID, '\n');
             fclose(fileID);
         end
-        function PlotFracturesSolution(obj, Fracture, Grid, f)
+        function PlotFractureSolution(obj, Fracture, Grid, f)
             %Write a VTK file for each
             fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f), '_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -118,9 +118,9 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
             fprintf(fileID, '\n');
-            fprintf(fileID, 'POINTS    %d   double\n', size(Fracture.GridCoords,1) );
+            fprintf(fileID, 'POINTS    %d   double\n', size(Grid.GridCoords,1) );
             %fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
-            fwrite(fileID, Fracture.GridCoords', 'double', 'b');
+            fwrite(fileID, Grid.GridCoords', 'double', 'b');
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
@@ -140,7 +140,13 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, '\n');
             fclose(fileID);
         end
-        function PlotBasisFunctions(obj, Grid, CoarseGrid, Prolp)
+        function PlotBasisFunctions(obj,FineGrid, CoarseGrid, Prolp, Nf, Nc)
+            obj.PlotReservoirBF(FineGrid(1), CoarseGrid(1,:), Prolp);
+            for i=2:length(FineGrid)
+                obj.PlotFractureBF(FineGrid(i), CoarseGrid(i,:), Prolp, sum(Nf(1:i-1)), Nc, i);
+            end
+        end
+        function PlotReservoirBF(obj, Grid, CoarseGrid, Prolp)
             %% 1. Level 1
             fileID = fopen(strcat(obj.FileName,'_BF_Level1.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
@@ -165,10 +171,18 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
             fprintf(fileID, '\n');
+            [~, n_columns] = size(Prolp{1});
+            % Matrix basis functions in the matrix
             for j = 1:CoarseGrid(1).N
-                obj.PrintScalar2VTK(fileID, full(Prolp{1}(:,j)),strcat(' BF',num2str(j)));
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(1:Grid.N,j)),strcat(' BF',num2str(j)));
                 fprintf(fileID, '\n');
             end
+            % Fracture basis functions in the matrix
+            for j = CoarseGrid(1).N+1:n_columns
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(1:Grid.N, j)), strcat(' Frac_BF',num2str(j)));
+                fprintf(fileID, '\n');
+            end
+            
             fclose(fileID);
             %% 2. Levels > 1
             for i=2:length(CoarseGrid)
@@ -194,8 +208,73 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i-1).N);
+                [~, n_columns] = size(Prolp{i});
+                % Matrix basis functions in the matrix
                 for j = 1:CoarseGrid(i).N
-                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(:,j)), strcat(' BF',num2str(j)));
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(1:CoarseGrid(i-1).N, j)), strcat(' BF',num2str(j)));
+                    fprintf(fileID, '\n');
+                end
+                % Fracture basis functions in the matrix
+                for j = CoarseGrid(i).N+1:n_columns
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(1:CoarseGrid(i-1).N, j)), strcat(' Frac_BF',num2str(j)));
+                    fprintf(fileID, '\n');
+                end
+                fclose(fileID);
+            end
+        end
+        function PlotFractureBF(obj, Grid, CoarseGrid, Prolp, Nf, Nc, f)
+            %% 1. Level 1
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f-1),'_BF_Level1.vtk'), 'w');
+            fprintf(fileID, '# vtk DataFile Version 2.0\n');
+            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            fprintf(fileID, 'BINARY\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'POINTS    %d   double\n', size(Grid.GridCoords,1) );
+            %fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
+            fwrite(fileID, Grid.GridCoords', 'double', 'b');
+            fprintf(fileID, '\n');
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
+            fprintf(fileID, '\n');
+            [~, n_columns] = size(Prolp{1});
+            % Matrix basis functions in the fracture f
+            for j = 1:Nc(1,1)
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(Nf+1:Nf+Grid.N,j)),strcat(' BF',num2str(j)));
+                fprintf(fileID, '\n');
+            end
+            % Fractures basis functions in the fracture 
+            for j = Nc(1,1)+1:n_columns
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(Nf+1:Nf+Grid.N, j)), strcat(' Frac_BF',num2str(j)));
+                fprintf(fileID, '\n');
+            end
+            fclose(fileID);
+            %% 2. Levels > 1
+            for i=2:length(CoarseGrid)
+                fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f-1),'_BF_Level',num2str(i),'.vtk'), 'w');
+                fprintf(fileID, '# vtk DataFile Version 2.0\n');
+                fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+                fprintf(fileID, 'BINARY\n');
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
+                fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i-1).Nx+1, CoarseGrid(i-1).Ny+1, 1);
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'POINTS    %d   double\n', size(CoarseGrid(i-1).GridCoords, 1) );
+                fwrite(fileID, CoarseGrid(i-1).GridCoords', 'double', 'b');
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'CELL_DATA %d\n', CoarseGrid(i-1).N);
+                fprintf(fileID, '\n');
+                [~, n_columns] = size(Prolp{i});
+                % Matrix basis functions in the fracture f
+                for j = 1:Nc(1,i)
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}( sum(Nc(1:f-1, i-1))+1:sum(Nc(1:f-1, i-1)) + CoarseGrid(i-1).N, j) ), strcat(' BF',num2str(j)));
+                    fprintf(fileID, '\n');
+                end
+                % Fracture basis functions in the fracture f
+                for j = Nc(1,i)+1:n_columns
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(sum(Nc(1:f-1, i-1))+1:sum(Nc(1:f-1, i-1)) + CoarseGrid(i-1).N, j)), strcat(' Frac_BF',num2str(j)));
                     fprintf(fileID, '\n');
                 end
                 fclose(fileID);
@@ -276,9 +355,12 @@ classdef VTK_Plotter < Plotter
             end
         end
         function PlotADMGrid(obj, ProductionSystem, DiscretizationModel)
-            obj.PlotReservoirADMGrid(DiscretizationModel.ReservoirGrid, DiscretizationModel.CoarseGrid{1});
+            %% Plot ADM Grid
+            % 1. Reservoir
+            obj.PlotReservoirADMGrid(DiscretizationModel.ReservoirGrid, DiscretizationModel.CoarseGrid(1,:));
+            % 2. Fractures
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
-                obj.PlotFracturesADMGrid(DiscretizationModel.FracturesGrid.Grids(f), DiscretizationModel.CoarseGrid{1+f}, f);
+                obj.PlotFractureADMGrid(DiscretizationModel.FracturesGrid.Grids(f), DiscretizationModel.CoarseGrid(1+f,:), f);
             end
         end
         function PlotReservoirADMGrid(obj, Grid, CoarseGrid)
@@ -313,7 +395,32 @@ classdef VTK_Plotter < Plotter
                 fclose(fileID);
             end
         end
-        function PlotFracturesADMGrid(obj, Grid, CoarseGrid)
+        function PlotFractureADMGrid(obj, Grid, CoarseGrid, f)
+            %Write a VTK file for each
+            for i=1:length(CoarseGrid)
+                fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f),...
+                    '_',num2str(i),'Level_',num2str(obj.VTKindex),'.vtk'), 'w');
+                fprintf(fileID, '# vtk DataFile Version 2.0\n');
+                fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+                fprintf(fileID, 'BINARY\n');
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
+                fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx+1, CoarseGrid(i).Ny+1, 1);
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'POINTS    %d   double\n', size(CoarseGrid(i).GridCoords, 1) );
+                fwrite(fileID, CoarseGrid(i).GridCoords', 'double', 'b');
+                fprintf(fileID, '\n');
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'CELL_DATA %d\n', CoarseGrid(i).N);
+                fprintf(fileID, '\n');
+                fprintf(fileID, '\n');
+                fprintf(fileID, '\n');
+                fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
+                fprintf(fileID, '\n');
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+                fprintf(fileID, '\n');
+                fclose(fileID);
+            end
         end
     end
     methods (Access = private)

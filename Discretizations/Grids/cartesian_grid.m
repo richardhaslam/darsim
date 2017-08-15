@@ -45,7 +45,7 @@ classdef cartesian_grid < grid_darsim
             obj.Az = obj.dx * obj.dy;
             obj.Volume = obj.dx * obj.dy * obj.dz;
             obj.ComputeRockTransmissibilities(Reservoir.K);
-            obj.CoarseFactor = [0, 0, 0];
+            obj.CoarseFactor = [1, 1, 1];
             obj.Children = zeros(obj.N, 1);
             obj.GrandChildren = zeros(obj.N, 1);
             obj.AddCoordinates();

@@ -11,7 +11,7 @@ classdef bf_updater_ms < bf_updater
         MaxContrast
     end
     methods
-        function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, FracturesGrid, CrossConnections)
+        function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, Ntot)
             % Builds fine-scale incompressible pressure system
             K = ProductionSystem.Reservoir.K;
             Sm = ProductionSystem.Reservoir.State.Properties('S_1').Value;

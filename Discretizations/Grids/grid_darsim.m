@@ -16,6 +16,7 @@ classdef grid_darsim < handle
         GrandChildren
         Verteces
         CoarseFactor
+        GridCoords
     end
     methods
         

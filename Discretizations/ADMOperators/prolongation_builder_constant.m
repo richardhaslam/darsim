@@ -13,7 +13,7 @@ classdef prolongation_builder_constant < prolongation_builder
         function obj = prolongation_builder_constant(n)
             obj@prolongation_builder(n)
         end
-        function BuildStaticOperators(obj, CoarseGrid, FineGrid, maxLevel, K, S, FluidModel)
+        function BuildStaticOperators(ProductionSystem, FluidModel, ReservoirGrid, FracturesGrid, CrossConnections, maxLevel, CoarseGrid)
             % Build Restriction and Prolongation operators for static grids
         end
         function UpdateProlongationOperator(obj, FineGrid, CoarseGrid, ProductionSystem)

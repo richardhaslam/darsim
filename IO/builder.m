@@ -199,6 +199,7 @@ classdef builder < handle
                 temp = strfind(FractureMatrix{1}, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
                 
+                Nf = zeros(NrOfFrac,1);
                 for f = 1 : NrOfFrac
                     % Creat cartesian grid in each fracture
                     frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
@@ -207,6 +208,24 @@ classdef builder < handle
                     ny = str2double(grid_temp{2});
                     nz = 1;
                     FractureGrid = cartesian_grid(nx, ny, nz);
+                    
+                    % Add fracture grid coordinates (it's for plotting purposes) 
+                    temp = strfind(FractureMatrix{1}, 'GRID_COORDS_X');
+                    frac_grid_coords_x = find(~cellfun('isempty', temp));
+                    temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Y');
+                    frac_grid_coords_y = find(~cellfun('isempty', temp));
+                    temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Z');
+                    frac_grid_coords_z = find(~cellfun('isempty', temp));
+                    frac_grid_coords_x_split = strsplit(FractureMatrix{1}{frac_grid_coords_x(f)},' ');
+                    frac_grid_coords_y_split = strsplit(FractureMatrix{1}{frac_grid_coords_y(f)},' ');
+                    frac_grid_coords_z_split = strsplit(FractureMatrix{1}{frac_grid_coords_z(f)},' ');
+                    frac_grid_coords_x_split = str2double(frac_grid_coords_x_split);
+                    frac_grid_coords_y_split = str2double(frac_grid_coords_y_split);
+                    frac_grid_coords_z_split = str2double(frac_grid_coords_z_split);
+                    frac_grid_coords_x_split(1) = [];
+                    frac_grid_coords_y_split(1) = [];
+                    frac_grid_coords_z_split(1) = [];
+                    FractureGrid.GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];
                     FracturesGrid.AddGrid(FractureGrid, f);
                     Nf(f) = nx*ny*nz;
                 end
@@ -265,18 +284,17 @@ classdef builder < handle
             else
                 % ADM discretization model
                 obj.ADM = 'active';
-                Coarsening = cell(1+NrOfFrac , 1);
                 maxLevel = ones(1+NrOfFrac , 1);
                 % ADM grid for reservoir
                 temp = strfind(SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
                 maxLevel(1) = str2double(SettingsMatrix(x+1));
+                Coarsening = zeros( 1+NrOfFrac, 3, maxLevel(1) );
                 temp = strfind(SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
                 cx = str2double(SettingsMatrix(x+1));
                 cy = str2double(SettingsMatrix(x+2));
                 cz = str2double(SettingsMatrix(x+3));
-                Coarsening{1} = ones(maxLevel(1),3);
                 temp = strfind(SettingsMatrix, 'COARSENING_CRITERION');
                 x = find(~cellfun('isempty', temp));
                 gridselcriterion = char(SettingsMatrix(x+1));
@@ -287,11 +305,11 @@ classdef builder < handle
                 x = find(~cellfun('isempty', temp));
                 tol = str2double(SettingsMatrix(x+1));
                 for L = 1:maxLevel(1)
-                    Coarsening{1}(L,:) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                    Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
                 temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
-                if isempty(maxLevel(1)) || isempty(Coarsening{1}) || isempty(key) || isempty(tol) || isempty(x)
+                if isempty(maxLevel(1)) || isempty(Coarsening(1,:,:)) || isempty(key) || isempty(tol) || isempty(x)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end 
                 % ADM grid for fractures
@@ -303,29 +321,30 @@ classdef builder < handle
                         ADM_temp = [ str2double(ADM_temp(2)) , str2double(ADM_temp(3)) , str2double(ADM_temp(4)) , str2double(ADM_temp(5)) ];
                         if ADM_temp(1)
                             maxLevel(1+f) = ADM_temp(2);
-                            Coarsening{1+f} = ones(maxLevel(1+f),3);
-                            for L = 1:maxLevel(1+f)
-                                Coarsening{1+f}(L,:) = [ADM_temp(3), ADM_temp(4), 1].^L;
-                            end
                         else
-                            maxLevel(1+f) = 1;
-                            Coarsening{f+1} = ones(maxLevel(1+f),3);
+                            maxLevel(1+f) = 0;
                         end
-                        
+                        for L = 1:maxLevel(1)
+                            if L <= maxLevel(1+f)
+                                Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
+                            else
+                                Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^maxLevel(1+f);
+                            end
+                        end
                     end
                 end
                 % Create the operatorshandler
-                operatorshandler = operators_handler(Coarsening{1});
+                operatorshandler = operators_handler(Coarsening(1,:,:));
                 % a.1 Pressure prolongation builder
                 switch (char(SettingsMatrix(x+1)))
                     case ('Constant')
                         prolongationbuilder = prolongation_builder_constant(maxLevel(1));
                     otherwise
                         if ~obj.Fractured
-                            prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
+                            prolongationbuilder = prolongation_builder_MSPressure( maxLevel(1), Coarsening(1,:,1) );
                             prolongationbuilder.BFUpdater = bf_updater_ms();
                         else
-                            prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening{1}(1,:));
+                            prolongationbuilder = prolongation_builder_FAMSPressure( maxLevel(1), Coarsening(1,:,1) );
                             prolongationbuilder.BFUpdater = bf_updater_FAMS();
                         end
                         if strcmp(char(SettingsMatrix(x+1)), 'Homogeneous')
@@ -337,7 +356,7 @@ classdef builder < handle
                 operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                 % a.2 Hyperbolic variables operators builder
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
-                test = 'MultiscaleSat';
+                test = 'Constant';
                 for i = 2:n_phases
                     switch(test)
                         case('Constant')
@@ -601,13 +620,6 @@ classdef builder < handle
                 
                 temp = strfind(FractureMatrix{1}, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
-                
-                temp = strfind(FractureMatrix{1}, 'GRID_COORDS_X');
-                frac_grid_coords_x = find(~cellfun('isempty', temp));
-                temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Y');
-                frac_grid_coords_y = find(~cellfun('isempty', temp));
-                temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Z');
-                frac_grid_coords_z = find(~cellfun('isempty', temp));
 
                 FracturesNetwork.Fractures = fracture();
                 for f = 1 : FracturesNetwork.NumOfFrac
@@ -622,31 +634,9 @@ classdef builder < handle
                     Ky = Kx;
                     Kz = Kx;
                     K = [Kx, Ky, Kz];
-                    FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture 
-                    
-                    CornerPoint = strsplit(frac_info_split{10}, {'[',';',']'});
-                    FracturesNetwork.Fractures(f).PointA = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
-                    CornerPoint = strsplit(frac_info_split{12}, {'[',';',']'});
-                    FracturesNetwork.Fractures(f).PointB = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
-                    CornerPoint = strsplit(frac_info_split{14}, {'[',';',']'});
-                    FracturesNetwork.Fractures(f).PointC = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
-                    CornerPoint = strsplit(frac_info_split{16}, {'[',';',']'});
-                    FracturesNetwork.Fractures(f).PointD = [ str2double(CornerPoint{2}) ; str2double(CornerPoint{3}) ; str2double(CornerPoint{4}) ];
-                    
-                    frac_grid_coords_x_split = strsplit(FractureMatrix{1}{frac_grid_coords_x(f)},' ');
-                    frac_grid_coords_y_split = strsplit(FractureMatrix{1}{frac_grid_coords_y(f)},' ');
-                    frac_grid_coords_z_split = strsplit(FractureMatrix{1}{frac_grid_coords_z(f)},' ');
-                    frac_grid_coords_x_split = str2double(frac_grid_coords_x_split);
-                    frac_grid_coords_y_split = str2double(frac_grid_coords_y_split);
-                    frac_grid_coords_z_split = str2double(frac_grid_coords_z_split);
-                    frac_grid_coords_x_split(1) = [];
-                    frac_grid_coords_y_split(1) = [];
-                    frac_grid_coords_z_split(1) = [];
-                    FracturesNetwork.Fractures(f).GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];
-                    
+                    FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture  
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
-%                 DiscretizationModel.AddHarmonicPermeabilities(Reservoir,FracturesNetwork.Fractures);
             end
         end
         function FluidModel = BuildFluidModel(obj, inputMatrix, ProductionSystem)
@@ -949,8 +939,10 @@ classdef builder < handle
                     ProductionSystem.Reservoir.State_old.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                 case(1)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
+                    ProductionSystem.Reservoir.State_old.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                     for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
                         ProductionSystem.FracturesNetwork.Fractures(f).State.AddProperties(FluidModel, DiscretizationModel.FracturesGrid.N(f));
+                        ProductionSystem.FracturesNetwork.Fractures(f).State_old.AddProperties(FluidModel, DiscretizationModel.FracturesGrid.N(f));
                     end
             end
         end

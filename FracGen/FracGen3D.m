@@ -205,9 +205,9 @@ for F = 1 : size(Frac_Input,2)
 end
 
 %% Intersections of fracture plate with each matrix cell
-dummy = LX*10;                                                                        % A dummy value (an abnormal value)
+dummy = LX*10;                                                                               % A dummy value (an abnormal value)
 for f = 1 : length(Frac)
-    
+    fprintf('Obtaining fracture %1.0f - matrix overlaps ...\n',f);
     Frac(f).  intersectCoord_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Coordinates of intersections between each fracture cell and each matrix cell
     Frac(f).        areaFrac_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Area fraction of each fracture cell inside each matrix cube
     Frac(f).         aveDist_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Average distance between each fracture cell and each matrix cube
@@ -497,7 +497,7 @@ for f = 1 : length(Frac)
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % Obtaining the average distance between the matrix cube cell and the fracture plate cell
                 Frac(f).aveDist_matCell{If}{Index_matIntersect,2} = 0; 
-                N_cube = 10;
+                N_cube = 06;
                 Xim_cube = linspace( Xim(i), Xim(i+1), N_cube );
                 Yim_cube = linspace( Yim(j), Yim(j+1), N_cube );
                 Zim_cube = linspace( Zim(k), Zim(k+1), N_cube );
@@ -521,8 +521,10 @@ for f = 1 : length(Frac)
     end % End of fractre 2nd for-loop
     
 end % End of main fracture for-loop
+fprintf('---------------------------------------------------------\n');
 
 %% Plotting
+fprintf('Plotting fractures ...\n');
 figure(1);
 for f = 1 : length(Frac)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -585,8 +587,10 @@ if max([NX,NY,NZ]) <= 10
 end
 
 rotate3d on;
+fprintf('---------------------------------------------------------\n');
 
 %% Intersections of fracture plates with each other (if any)
+fprintf('Obtaining fracture - fracture connectivities ...\n');
 for f = 1 : length(Frac)
     for g = f+1 : length(Frac)
         

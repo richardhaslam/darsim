@@ -36,9 +36,6 @@ classdef adm_grid_selector_time < adm_grid_selector
                 obj.SelectCoarseFine(CoarseGrid(i-1), CoarseGrid(i), delta);
             end
             
-            % 2.c keep perforated cells at the fine-scale
-            %obj.RefineWells(ProductionSystem.Wells, FineGrid, CoarseGrid, maxLevel)
-            
             %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
@@ -61,24 +58,9 @@ classdef adm_grid_selector_time < adm_grid_selector
                    CoarseGrid.Active(c) = 0;
                 end
             end
-%             dummy = CoarseGrid.Active;
-%             for c=1:Nc
-%                 if dummy(c) == 0
-%                     CoarseGrid.Active(CoarseGrid.Neighbours(c).indexes) = 0;
-%                 end
-%             end
+            
             %% 3. Set to inactive fine blocks (level l-1) belonging to active Coarse Blocks (level l)
             FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
-        end
-        function RefineWells(obj, Wells, FineGrid, CoarseGrid, maxLevel)
-%             for w = 1:length(Wells.Inj)       
-%                     FineGrid.Active(Wells.Inj(w).Cells) = 1;
-%             end
-%             for w = 1:length(Wells.Prod)
-%                 FineGrid.Active(Wells.Prod(w).Cells) = 1;
-%             end
-              indexes = CoarseGrid(1).Children(obj.NoWellsCoarseCells == 0, :);
-              FineGrid.Active(indexes) = 1;
         end
     end
 end
