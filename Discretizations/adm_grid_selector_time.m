@@ -16,24 +16,44 @@ classdef adm_grid_selector_time < adm_grid_selector
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
             % SELECT the ADM GRID for next time-step
-            % Grid is chosen based on (deltaX)^n
+            % Grid is chosen based on (deltaX)^{n} = X^{n} - X^{n-1}
             
-            %% 0. Reset all cells to be active
-            FineGrid.Active = ones(FineGrid.N, 1);
-            CoarseGrid(1).Active = obj.NoWellsCoarseCells;
-            
-            %% 1. Compute change of property X over previous time-step
-            num = ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
-                  ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;                         
-            delta = num;
-                                       
-            %% 2. Go from coarse to fine
-            % 2.a coarse grid 1 to 0 (fine-scale)
-            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), delta);
-            % 2.b coarse grids lmax to 2
-            for i=2:maxLevel
-                obj.DefinePossibleActive(CoarseGrid(i), CoarseGrid(i-1), i);
-                obj.SelectCoarseFine(CoarseGrid(i-1), CoarseGrid(i), delta);
+            %% 1. Reset all cells to be active and compute (deltaX)^{n} 
+            n_media = length(FineGrid);
+            delta = cell(n_media, 1);
+            for m=1:n_media
+                FineGrid(m).Active = ones(FineGrid(m).N, 1);
+                if m==1
+                    % for now wells are only in the reservoir
+                    CoarseGrid(m,1).Active = obj.NoWellsCoarseCells;
+                    num = ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
+                        ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
+                    delta{m} = num;
+                else
+                    CoarseGrid(m,1).Active = ones(CoarseGrid(m).N, 1);
+                    num = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value - ...
+                        ProductionSystem.FracturesNetwork.Fractures(m-1).State_old.Properties(obj.key).Value;
+                    delta{m} = num;
+                end
+            end
+                            
+            %% 2. Select active cells
+            for l=1:max(maxLevel)
+                % 2.a choose possible active grids for level l
+                if l>1
+                    obj.DefinePossibleActive(CoarseGrid(:, l), CoarseGrid(:, l-1), l);
+                end
+                for m=1:n_media
+                    % 2.b choose active cells of level l 
+                    if l==1
+                        % coarse grid 1 to 0 (fine-scale)
+                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), delta{m});
+                    elseif l <= maxLevel(m)
+                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), delta{m});
+                    else
+                        CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
+                    end
+                end
             end
             
             %% 3. Create ADM Grid
@@ -42,7 +62,7 @@ classdef adm_grid_selector_time < adm_grid_selector
         function SelectCoarseFine(obj, FineGrid, CoarseGrid, delta)
             %Given a Fine (level l-1) and a Coarse (level l) Grids chooses the cells that have to be active
             
-            %% 1. Select Active Coarse Blocks
+            %% 2. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % fine-scale cells inside coarse block c
