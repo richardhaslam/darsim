@@ -22,46 +22,52 @@ classdef adm_grid_selector < handle
         end
         function DefinePossibleActive(obj, CoarseGrid, FineGrid, level)
             % For a given level defines possible active cells
-            
-            CoarseGrid.Active = ones(CoarseGrid.N, 1);
-            % If a cell inside the block is refined the whole block cannot be coarsened
-            Nf = FineGrid.N;
-            for i=1:Nf
-                if FineGrid.Active(i) == 0
-                    CoarseGrid.Active(FineGrid.Fathers(i, level)) = 0;
-                    %Active(FineGrid.Father(FineGrid.Neighbours(i).indexes, level)) = 0;
+            for m=1:length(FineGrid)
+                CoarseGrid(m).Active = ones(CoarseGrid(m).N, 1);
+                % If a cell inside the block is refined the whole block cannot be coarsened
+                Nf = FineGrid(m).N;
+                for i=1:Nf
+                    if FineGrid(m).Active(i) == 0
+                        CoarseGrid(m).Active(FineGrid(m).Fathers(i, level)) = 0;
+                        %Active(FineGrid.Father(FineGrid.Neighbours(i).indexes, level)) = 0;
+                    end
                 end
-            end
-            
-            % Force the jump between two neighbouring cells to be max 1 level!
-            Nc = CoarseGrid.N;
-            temp = 1 - CoarseGrid.Active;
-            for j=1:Nc
-                if CoarseGrid.Active(j) == 1
-                    vecNei = CoarseGrid.Neighbours(j).indexes;
-                    check = sum(temp(vecNei));
-                    if check > 0
-                        CoarseGrid.Active(j) = 0;
+                
+                % Force the jump between two neighbouring cells to be max 1 level!
+                Nc = CoarseGrid(m).N;
+                temp = 1 - CoarseGrid(m).Active;
+                for j=1:Nc
+                    if CoarseGrid(m).Active(j) == 1
+                        vecNei = CoarseGrid(m).Neighbours(j).indexes;
+                        check = sum(temp(vecNei));
+                        if check > 0
+                            CoarseGrid(m).Active(j) = 0;
+                        end
                     end
                 end
             end
         end
         function CreateADMGrid(obj, ADMGrid, FineGrid, CoarseGrid, maxLevel)
+            n_media = length(maxLevel);
+            NumberOfActive = zeros(n_media, max(maxLevel)+1);
+            TotalActive = 0;
+            
             % 1. Count total number of active nodes
-            TotalActive = sum(FineGrid.Active);
-            NumberOfActive = zeros(maxLevel +1, 1);
-            NumberOfActive(1) = TotalActive;
-            for x = 1:maxLevel
-                NumberOfActive(x+1) = sum(CoarseGrid(x).Active);
-                TotalActive = TotalActive + sum(CoarseGrid(x).Active);
+            for m=1:n_media
+                TotalActive = TotalActive + sum(FineGrid(m).Active);
+                NumberOfActive(m, 1) = sum(FineGrid(m).Active);
+                for x = 1:max(maxLevel)
+                    NumberOfActive(m, x+1) = sum(CoarseGrid(m, x).Active);
+                    TotalActive = TotalActive + sum(CoarseGrid(m, x).Active);
+                end
             end
             
             % 2. Initialise Grid
-            ADMGrid.Initialize(TotalActive, NumberOfActive, maxLevel);
+            ADMGrid.Initialize(TotalActive, NumberOfActive, max(maxLevel));
             
             % 3. Add fine Grid cells
             obj.AddActiveCells(ADMGrid, FineGrid, 0);
-            
+            % Working fine up to here!! 
             % 4. Add Coarse Grids cells
             for x = 1:maxLevel
                 obj.AddActiveCells(ADMGrid, CoarseGrid(x), x);

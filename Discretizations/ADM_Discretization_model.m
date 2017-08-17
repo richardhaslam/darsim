@@ -1,4 +1,4 @@
-%  ADM discretization model arrayfun(@(x)coarse_grid(), 1:n, 'UniformOutput',false)';
+%  ADM discretization model 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -116,8 +116,11 @@ classdef ADM_Discretization_model < Discretization_model
                 % Fathers and Verteces
                 obj.GridMapper.AssignFathersandVerteces(obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:obj.maxLevel(f+1)), obj.maxLevel(1+f))
                 for i=obj.maxLevel(f+1)+1:obj.maxLevel(1)
-                   obj.CoarseGrid(1+f,i) = obj.CoarseGrid(1+f,i-1);
-                   obj.CoarseGrid(1+f,i).Children = [1:obj.CoarseGrid(1+f,i).N]';
+                   obj.CoarseGrid(1+f, i).CoarseFactor = obj.Coarsening(1+f,:, i-1);
+                   obj.CoarseGrid(1+f, i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
+                   obj.CoarseGrid(1+f,i).Children = [1:obj.CoarseGrid(1+f, i).N]';
+                   obj.CoarseGrid(1+f,i).GrandChildren = obj.CoarseGrid(1+f,i-1).GrandChildren;
+                   obj.CoarseGrid(1+f,i).Fathers = [1:obj.CoarseGrid(1+f, i).N]';
                    obj.Nc(f+1, i) = obj.CoarseGrid(1+f,i).N;
                 end  
             end
@@ -144,8 +147,8 @@ classdef ADM_Discretization_model < Discretization_model
             end
         end
         function SelectADMGrid(obj, ProductionSystem)
-            % Build ADM Grid for reservoir
-            obj.ADMGridSelector.SelectGrid(obj.FineGrids, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel(1));
+            % Build ADM Grid
+            obj.ADMGridSelector.SelectGrid(obj.FineGrids, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
             obj.ADMStats.N = obj.ADMGrid.N;
             
             % Update prolongation builders
