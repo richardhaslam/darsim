@@ -56,6 +56,20 @@ classdef bf_updater_FAMS < bf_updater_ms
                 MsP = blkdiag(MsP, G'*P);
             end          
         end
+        function MsP = FullyCoupledMSP(obj, tildeA, Ni, Ne, Nv, Dimentions)
+            MsP = [];
+            switch(Dimentions)
+                case (1)
+                    % Skipping it for now
+                case (2)
+                    % Skipping it for now
+                case (3)
+                    cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);
+                    [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
+                    tildeA = G * obj.A * G';
+                    % To be continued 
+            end
+        end
         function MsP = CartesianMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
             switch(Dimensions)
                 case (1)
@@ -111,6 +125,25 @@ classdef bf_updater_FAMS < bf_updater_ms
                         -Edges;...
                         speye(Nv,Nv)];
             end
+        end
+        function [P, nii, nff, nee, nnn] = FullPermutationMatrix(obj, FineGrid, CoarseGrid, cf)
+            %% 0. Define local variables 
+            nxf = vertcat(FineGrid(1:end).Nx);
+            nyf = vertcat(FineGrid(1:end).Ny);
+            nzf = vertcat(FineGrid(1:end).Nz);
+            nf  = vertcat(FineGrid(1:end).N );
+            nxcf = cf(:,1);
+            nycf = cf(:,2);
+            nzcf = cf(:,3);
+            
+            nxc = vertcat(CoarseGrid(1:end).Nx);
+            nyc = vertcat(CoarseGrid(1:end).Ny);
+            nzc = vertcat(CoarseGrid(1:end).Nz);
+            
+            %% 1. Define number of cells of each block
+            nii =  ((nxcf-1) * (nycf-1) * (nzcf-1)) * (nxc * nyc * nzc);% interiors
+            
+            % To be continued 
         end
     end
 end

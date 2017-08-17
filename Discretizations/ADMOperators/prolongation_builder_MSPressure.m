@@ -39,6 +39,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             % Build Prolongation operator
             disp('Building Prolongation 1');
             obj.P{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
+%             obj.P{1} = obj.BFUpdater.FullyCoupledMSP(FineGrid, CoarseGrid(:,1), obj.Dimensions); % For Fully Coupled Prolongation
             %Build first coarse system (with MsFE)
             obj.BFUpdater.A = obj.P{1}' * obj.BFUpdater.A * obj.P{1};
             %obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx, CoarseGrid(1).Ny);
