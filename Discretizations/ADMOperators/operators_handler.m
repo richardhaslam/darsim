@@ -44,12 +44,13 @@ classdef operators_handler < handle
         function ADMRestriction(obj, ADMGrid, FineGrid)
               % Assemble dynamic FV restriction operator
               % Fine-scale cells
-              obj.ADMRest = sparse(ADMGrid.Ntot, FineGrid.N);
-              rows = 1:ADMGrid.N(1);
-              columns = ADMGrid.CellIndex(1:ADMGrid.N(1))';
+              obj.ADMRest = sparse(ADMGrid.Ntot, sum([FineGrid.N]));
+              Nf = sum(ADMGrid.N(:, 1)); % total number of fine-scale active grids 
+              rows = 1:Nf;
+              columns = ADMGrid.CellIndex(1:Nf)';
               obj.ADMRest(sub2ind(size(obj.ADMRest), rows, columns)) = 1;             
               % Coarse levels cells
-              for c = ADMGrid.N(1) + 1:ADMGrid.Ntot 
+              for c = Nf + 1:ADMGrid.Ntot 
                 indexes = ADMGrid.GrandChildren{c};
                 obj.ADMRest(c, indexes) = 1;
               end

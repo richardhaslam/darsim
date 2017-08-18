@@ -65,5 +65,8 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
                 ADMProl(indexes, c) = obj.P{ADMGrid.level(c)}(indexes, ADMGrid.CellIndex(c));
             end
         end
+        function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FluidModel, ADMRest)
+            % virtual call
+        end
     end
 end

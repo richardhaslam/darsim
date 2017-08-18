@@ -50,7 +50,7 @@ classdef TimeLoop_Driver < handle
                 [obj.dt, EndOfSimCriterion] = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
                 
                 % Average for ADM
-                %DiscretizationModel.AverageMassOnCoarseBlocks(ProductionSystem.Reservoir.State, FluidModel, Formulation);
+                DiscretizationModel.AverageMassOnCoarseBlocks(ProductionSystem, FluidModel, Formulation);
                 
                 % Save Stats
                 obj.Coupling.UpdateSummary(Summary, ProductionSystem.Wells, obj.Ndt, obj.dt);

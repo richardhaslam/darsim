@@ -25,7 +25,7 @@ classdef adm_grid < grid_darsim
             obj.J = zeros(Ntotal, 1);
             obj.K = zeros(Ntotal, 1);
             obj.level = zeros(Ntotal, 1);
-            obj.CoarseFactor = zeros(Ntotal, 1);
+            obj.CoarseFactor = zeros(Ntotal, 3);
             obj.CellIndex = zeros(Ntotal, 1);
             obj.Fathers = zeros(Ntotal, maxlevel);
             obj.Children = cell(Ntotal, 1);
