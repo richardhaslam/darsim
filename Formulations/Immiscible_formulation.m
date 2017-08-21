@@ -453,20 +453,32 @@ classdef Immiscible_formulation < formulation
                 end
             end
         end
-        function AverageMassOnCoarseBlocks(obj, Status, FluidModel, R)
+        function AverageMassOnCoarseBlocks(obj, ProductionSystem, FineGrid, FluidModel, R)
+            S = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'S_');
             
             % Perform Average for ADM
+            delta = zeros(sum([FineGrid.N]), obj.NofPhases);
             for ph = 1:obj.NofPhases - 1
-                S = Status.Properties(['S_', num2str(ph)]);
-                S_rest = R * S.Value;
+                S_rest = R * S(:,ph);
                 Sav = R' * (S_rest ./ sum(R, 2));
-                delta = Sav - S.Value;
-                S.update(delta);
+                delta(:, ph) = Sav - S(:,ph);
             end
-            S = Status.Properties(['S_', num2str(obj.NofPhases)]);
-            S.update(-delta);
-            % Update other unknwons as well 
-            % obj.UpdatePhaseCompositions(Status, FluidModel);
+            delta(:, end) = -sum(delta(:,1:end-1), 2);
+            
+            for ph=1:obj.NofPhases
+                Start=1;
+                End = FineGrid(1).N;
+                S = ProductionSystem.Reservoir.State.Properties(['S_', num2str(ph)]);
+                S.update(delta(Start:End, ph));
+                for frac = 1:ProductionSystem.FracturesNetwork.NumOfFrac
+                    Start = End + 1;
+                    End = Start + FineGrid(frac+1).N - 1;
+                    S = ProductionSystem.FracturesNetwork.Fractures(frac).State.Properties(['S_', num2str(ph)]);
+                    S.update(delta(Start:End, ph));
+                end
+            end
+            % Here FluidModel is useless but for compositional formulations it
+            % is important
         end
         function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)
             N = DiscretizationModel.ReservoirGrid.N;      

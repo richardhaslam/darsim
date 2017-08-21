@@ -23,9 +23,9 @@ classdef prolongation_builder_constant < prolongation_builder
             % Since it s constant interpolation it is just transpose(R)
             ADMProl = ADMRest';
         end
-        function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FluidModel, ADMRest)
+        function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FineGrid, FluidModel, ADMRest)
             % Average mass on a coarse block
-            %Formulation.AverageMassOnCoarseBlocks();
+            Formulation.AverageMassOnCoarseBlocks(ProductionSystem, FineGrid, FluidModel, ADMRest);
         end
     end
 end

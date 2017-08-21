@@ -61,7 +61,7 @@ classdef prolongation_builder_FAMSPressure < prolongation_builder_MSPressure
         end
         function Prolp = LastProlongation(obj, ADMGrid, FineGrid)
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-             % For a the first level level the prolongation operator looks like this             
+             % For the first level the prolongation operator looks like this             
              %       Nf     Nl1
              %    ----       ----
              %    |      |      |

@@ -18,7 +18,7 @@ classdef ADM_Discretization_model < Discretization_model
         ADMGridSelector
         OperatorsHandler
         ADMStats
-        FineGrids
+        FineGrid
     end
     methods
         function obj = ADM_Discretization_model(maxlevel, coarsening)
@@ -47,9 +47,9 @@ classdef ADM_Discretization_model < Discretization_model
             
             if ProductionSystem.FracturesNetwork.Active
                 obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N'];
-                obj.FineGrids = [obj.ReservoirGrid; obj.FracturesGrid.Grids];
+                obj.FineGrid = [obj.ReservoirGrid; obj.FracturesGrid.Grids];
             else
-                obj.FineGrids = obj.ReservoirGrid;
+                obj.FineGrid = obj.ReservoirGrid;
                 obj.Nf = obj.ReservoirGrid.N;
             end
             
@@ -57,7 +57,7 @@ classdef ADM_Discretization_model < Discretization_model
             disp('Static operators - start computation');
             start = tic;
             for i=1:length(obj.OperatorsHandler.ProlongationBuilders)
-                obj.OperatorsHandler.ProlongationBuilders(i).BuildStaticOperators(ProductionSystem, FluidModel, obj.FineGrids, obj.CrossConnections, ...
+                obj.OperatorsHandler.ProlongationBuilders(i).BuildStaticOperators(ProductionSystem, FluidModel, obj.FineGrid, obj.CrossConnections, ...
                     obj.maxLevel, obj.CoarseGrid);
             end
             disp('Static operators - end')
@@ -115,13 +115,19 @@ classdef ADM_Discretization_model < Discretization_model
                 end
                 % Fathers and Verteces
                 obj.GridMapper.AssignFathersandVerteces(obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:obj.maxLevel(f+1)), obj.maxLevel(1+f))
-                for i=obj.maxLevel(f+1)+1:obj.maxLevel(1)
+                for i=obj.maxLevel(f+1) + 1 :obj.maxLevel(1)
                    obj.CoarseGrid(1+f, i).CoarseFactor = obj.Coarsening(1+f,:, i-1);
                    obj.CoarseGrid(1+f, i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
-                   obj.CoarseGrid(1+f,i).Children = [1:obj.CoarseGrid(1+f, i).N]';
-                   obj.CoarseGrid(1+f,i).GrandChildren = obj.CoarseGrid(1+f,i-1).GrandChildren;
-                   obj.CoarseGrid(1+f,i).Fathers = [1:obj.CoarseGrid(1+f, i).N]';
+                   obj.CoarseGrid(1+f, i).Children = [1:obj.CoarseGrid(1+f, i).N]';
+                   obj.CoarseGrid(1+f, i).GrandChildren = obj.CoarseGrid(1+f,i-1).GrandChildren;
+                   obj.CoarseGrid(1+f, i).Fathers = zeros(obj.CoarseGrid(1+f, i).N, max(obj.maxLevel));
+                   obj.CoarseGrid(1+f, i).Fathers(:, i) = [1:obj.CoarseGrid(1+f, i).N]';
                    obj.Nc(f+1, i) = obj.CoarseGrid(1+f,i).N;
+                   obj.FracturesGrid.Grids(f).Fathers(:, i) = obj.FracturesGrid.Grids(f).Fathers(:,obj.maxLevel(f+1));
+                   obj.FracturesGrid.Grids(f).Verteces(:,i) = obj.FracturesGrid.Grids(f).Verteces(:,obj.maxLevel(f+1));
+                   for y=1:i-1
+                       obj.CoarseGrid(1+f, y).Fathers(:, i) = obj.CoarseGrid(1+f, y).Fathers(:, obj.maxLevel(f+1));
+                   end
                 end  
             end
         end
@@ -148,21 +154,21 @@ classdef ADM_Discretization_model < Discretization_model
         end
         function SelectADMGrid(obj, ProductionSystem)
             % Build ADM Grid
-            obj.ADMGridSelector.SelectGrid(obj.FineGrids, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
+            obj.ADMGridSelector.SelectGrid(obj.FineGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
             obj.ADMStats.N = obj.ADMGrid.N(1,:);
             
             % Update prolongation builders
-            obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrids, obj.CoarseGrid, ProductionSystem);
+            obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrid, obj.CoarseGrid, ProductionSystem);
         end
         function BuildADMOperators(obj)
             % Build ADM R and P operators
-            obj.OperatorsHandler.BuildADMOperators(obj.FineGrids, obj.CoarseGrid, obj.ADMGrid);
+            obj.OperatorsHandler.BuildADMOperators(obj.FineGrid, obj.CoarseGrid, obj.ADMGrid);
         end
         function [R, P] = AssembleFullOperators(obj)
             [R, P] = obj.OperatorsHandler.AssembleFullOperators();
         end
         function AverageMassOnCoarseBlocks(obj, ProductionSystem, FluidModel, Formulation)
-            obj.OperatorsHandler.ProlongationBuilders(2).AverageMassOnCoarseBlocks(Formulation, ProductionSystem, FluidModel, obj.OperatorsHandler.ADMRest);  
+            obj.OperatorsHandler.ProlongationBuilders(2).AverageMassOnCoarseBlocks(Formulation, ProductionSystem, obj.FineGrid, FluidModel, obj.OperatorsHandler.ADMRest);  
         end
     end
 end

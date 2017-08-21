@@ -40,7 +40,7 @@ classdef adm_grid_selector_time < adm_grid_selector
             %% 2. Select active cells
             for l=1:max(maxLevel)
                 % 2.a choose possible active grids for level l
-                if l>1 && l<= maxLevel(m)
+                if l>1 
                     obj.DefinePossibleActive(CoarseGrid(:, l), CoarseGrid(:, l-1), l);
                 end
                 for m=1:n_media

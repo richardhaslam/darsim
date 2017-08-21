@@ -53,10 +53,13 @@ classdef adm_grid_selector < handle
             TotalActive = 0;
             
             % 1. Count total number of active nodes
+            Nc_global = zeros(n_media, max(maxLevel) + 1);
             for m=1:n_media
                 TotalActive = TotalActive + sum(FineGrid(m).Active);
                 NumberOfActive(m, 1) = sum(FineGrid(m).Active);
+                Nc_global(m, 1) = sum([FineGrid(1:m-1).N]);
                 for x = 1:max(maxLevel)
+                    Nc_global(m, x+1) = sum([CoarseGrid(1:m-1, x).N]);
                     NumberOfActive(m, x+1) = sum(CoarseGrid(m, x).Active);
                     TotalActive = TotalActive + sum(CoarseGrid(m, x).Active);
                 end
@@ -67,24 +70,20 @@ classdef adm_grid_selector < handle
             
             % 3. Add fine Grid cells
             for m=1:n_media
-                Nf = sum([FineGrid(1:m-1).N]);
-                Nc = Nf;
-                obj.AddActiveCells(ADMGrid, FineGrid(m), 0, Nf, Nc);
+                obj.AddActiveCells(ADMGrid, FineGrid(m), 0, Nc_global(m, :));
             end
             % 4. Add Coarse Grids cells
             for l = 1:max(maxLevel)
                 for m=1:n_media
-                    Nf = sum([FineGrid(1:m-1).N]);
                     if l <= maxLevel(m)
-                        Nc = sum([CoarseGrid(1:m-1, l).N]);
-                        obj.AddActiveCells(ADMGrid, CoarseGrid(m, l), l, Nf, Nc);
+                        obj.AddActiveCells(ADMGrid, CoarseGrid(m, l), l, Nc_global(m, :));
                     end
                 end
             end
             % I need to know the maximum coarse level that was used.
             ADMGrid.MaxLevel = max(ADMGrid.level);
         end
-        function AddActiveCells(obj, ADMGrid, Grid, level, Nf, Nc)
+        function AddActiveCells(obj, ADMGrid, Grid, level, N_global)
             count = 0;
             for i=1:Grid.N
                 if(Grid.Active(i) == 1)
@@ -93,12 +92,12 @@ classdef adm_grid_selector < handle
                     ADMGrid.J(h) = Grid.J(i);
                     ADMGrid.K(h) = Grid.K(i);
                     ADMGrid.CoarseFactor(h, :) = Grid.CoarseFactor;
-                    ADMGrid.CellIndex(h) = i + Nc;
+                    ADMGrid.CellIndex(h) = i + N_global(level+1); % add current level global numbering
                     ADMGrid.level(h) = level;
-                    ADMGrid.Fathers(h, :) = Grid.Fathers(i, :);
-                    ADMGrid.Children{h} = Grid.Children(i,:);
-                    ADMGrid.GrandChildren{h} = Grid.GrandChildren(i,:) + Nf;
-                    ADMGrid.Verteces(h,:) = Grid.Verteces(i,:);
+                    ADMGrid.Fathers(h, :) = Grid.Fathers(i, :) + N_global(2:end); % add all coarse levels global numbering
+                    ADMGrid.Children{h} = Grid.Children(i,:) + N_global(max(level, 1)); % add level l-1 global numbering
+                    ADMGrid.GrandChildren{h} = Grid.GrandChildren(i,:) + N_global(1); % add fine-scale global numbering
+                    ADMGrid.Verteces(h,:) = Grid.Verteces(i,:) + N_global(2:end); % add all coarse levels global numbeirng
                     count = count + 1;
                 end
             end
