@@ -16,6 +16,7 @@ classdef output_writer_FS < output_writer
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
+            obj.Plotter.VTKindex = obj.Plotter.VTKindex + 1; 
         end
         function WriteSummary(obj, Summary)
             obj.WriteWellsData(Summary.Time, Summary.WellsData, Summary.NumberTimeSteps);

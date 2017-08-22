@@ -27,16 +27,16 @@ classdef operators_handler < handle
                 obj.ProlongationBuilders(i).UpdateProlongationOperator(ReservoirGrid, CoarseGrid, ProductionSystem);
             end
         end
-        function BuildADMOperators(obj, FineGrid, CoarseGrid, ADMGrid)
+        function BuildADMOperators(obj, GlobalGrids, ADMGrid)
             start1 = tic; 
             % Restriction
-            obj.ADMRestriction(ADMGrid, FineGrid);
+            obj.ADMRestriction(ADMGrid, GlobalGrids(1));
             restriction = toc(start1);
             disp(['Restriction built in: ', num2str(restriction), ' s']);
             % Prolongation (do the pressure last coz it modifies ADMGrid)
             start2 = tic;
             for i=length(obj.ProlongationBuilders):-1:1
-                obj.ADMProl{i} = obj.ProlongationBuilders(i).ADMProlongation(ADMGrid, FineGrid, CoarseGrid, obj.ADMRest);
+                obj.ADMProl{i} = obj.ProlongationBuilders(i).ADMProlongation(ADMGrid, GlobalGrids, obj.ADMRest);
             end
             prolongation = toc(start2);
             disp(['Prolongation built in: ', num2str(prolongation), ' s']);
@@ -44,7 +44,7 @@ classdef operators_handler < handle
         function ADMRestriction(obj, ADMGrid, FineGrid)
               % Assemble dynamic FV restriction operator
               % Fine-scale cells
-              obj.ADMRest = sparse(ADMGrid.Ntot, sum([FineGrid.N]));
+              obj.ADMRest = sparse(ADMGrid.Ntot, FineGrid.N);
               Nf = sum(ADMGrid.N(:, 1)); % total number of fine-scale active grids 
               rows = 1:Nf;
               columns = ADMGrid.CellIndex(1:Nf)';

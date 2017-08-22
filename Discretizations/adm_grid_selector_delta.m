@@ -18,7 +18,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
             FineGrid.Active = ones(FineGrid.N, 1);
             
             % Coarsen the grid where resolution is not necessary
-            S = reshape(ProductionSystem.Reservoir.State.Properties(obj.key).Value, FineGrid.Nx, FineGrid.Ny, FineGrid.Nz); % it's useful in this form for selecting the grid.
+            S = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
             
             % Choose Active Coarse cells and Flag fine ones  
             CoarseGrid(1).Active = obj.NoWellsCoarseCells;
@@ -36,26 +36,21 @@ classdef adm_grid_selector_delta < adm_grid_selector
             %1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
             for c = 1:Nc
-                I = CoarseGrid.I(c,2);
-                J = CoarseGrid.J(c,2);
-                K = CoarseGrid.K(c,2);
-                Imin = I - floor((CoarseGrid.CoarseFactor(1) - 1)/2);
-                Imax = I + ceil((CoarseGrid.CoarseFactor(1) - 1)/2);
-                Jmin = J - floor((CoarseGrid.CoarseFactor(2) - 1)/2);
-                Jmax = J + ceil((CoarseGrid.CoarseFactor(2) - 1)/2);
-                Kmin = K - floor((CoarseGrid.CoarseFactor(3) - 1)/2);
-                Kmax = K + ceil((CoarseGrid.CoarseFactor(3) - 1)/2);
-                
-                % Max e Min saturation
-                Smax = max(max(max(S(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
-                Smin = min(min(min(S(Imin:Imax, Jmin:Jmax, Kmin:Kmax))));
+                % Saturation of fine_cells belonging to coarse block c
+                S_children = S(CoarseGrid.GrandChildren(c, :));
+                % Max e Min saturation inside c
+                Smax = max(S_children);
+                Smin = min(S_children);
                 if CoarseGrid.Active(c) == 1
                     n = CoarseGrid.Neighbours(c).indexes;
                     Nn = length(n);
                     i = 1;
                     while i <= Nn
-                        if (abs(Smax-S(CoarseGrid.I(n(i), 2), CoarseGrid.J(n(i), 2), CoarseGrid.K(n(i), 2)))...
-                                > obj.tol || abs(Smin-S(CoarseGrid.I(n(i),2),CoarseGrid.J(n(i),2), CoarseGrid.K(n(i), 2))) > obj.tol)
+                        % Man mix saturation of neighbour n(i)
+                        S_children = S(CoarseGrid.GrandChildren(n(i), :));
+                        Sn_max = max(S_children);
+                        Sn_min = min(S_children);
+                        if (abs(Smax-Sn_min) > obj.tol || abs(Smin-Sn_max) > obj.tol)
                             CoarseGrid.Active(c) = 0;
                             %CoarseGrid.Active(i) = 0;
                             i = Nn + 1;

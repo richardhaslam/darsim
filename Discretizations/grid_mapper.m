@@ -81,7 +81,7 @@ classdef grid_mapper < handle
                 CoarseGrid(x).Fathers = zeros(Nf, maxLevel);
                 CoarseGrid(x).Verteces = zeros(Nf, maxLevel);
                 CoarseGrid(x).Fathers(:,x) = ones(Nf, 1) .* [1:CoarseGrid(x).N]' ;
-                CoarseGrid(x).Verteces(:,x) = ones(Nf, 1) .* [1:CoarseGrid(x).N]' ;
+                CoarseGrid(x).Verteces(:,x) = ones(Nf, 1);
                 for y = x+1:maxLevel
                     Nc = CoarseGrid(y).N;
                     for c = 1:Nc
@@ -95,7 +95,7 @@ classdef grid_mapper < handle
                 end
             end
             CoarseGrid(maxLevel).Fathers = ones(CoarseGrid(maxLevel).N, maxLevel) .* [zeros(CoarseGrid(maxLevel).N, maxLevel - 1), (1:CoarseGrid(maxLevel).N)'];
-            CoarseGrid(maxLevel).Verteces = ones(CoarseGrid(maxLevel).N, maxLevel) .* [1:CoarseGrid(maxLevel).N]';
+            CoarseGrid(maxLevel).Verteces = ones(CoarseGrid(maxLevel).N, maxLevel);
         end
     end
 end
