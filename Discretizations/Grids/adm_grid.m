@@ -37,19 +37,20 @@ classdef adm_grid < grid_darsim
              %    |      |      |
              %    ---------------
             
-            obj.N(obj.MaxLevel + 1) = 0;
+            obj.N(:, obj.MaxLevel + 1) = 0;
             obj.MaxLevel = obj.MaxLevel - 1;
-            obj.N(obj.MaxLevel + 1) = obj.N(obj.MaxLevel + 1) + Nx;
-            obj.Ntot = Nf + Nx;
+            obj.N(:, obj.MaxLevel + 1) = obj.N(:, obj.MaxLevel + 1) + Nx;
+            obj.Ntot = sum(Nf) + sum(Nx);
             
-            obj.CellIndex = [obj.CellIndex(1:Nf); zeros(Nx, 1)];
-            obj.Fathers = [obj.Fathers(1:Nf,:); zeros(Nx, 2)];
-            obj.Verteces = [obj.Verteces(1:Nf,:); zeros(Nx, 2)];
-            obj.level = [obj.level(1:Nf); ones(Nx, 1)*obj.MaxLevel];
+            obj.CellIndex = [obj.CellIndex(1:sum(Nf)); zeros(sum(Nx), 1)];
+            [~, MaxLevels] = size(obj.Fathers); 
+            obj.Fathers = [obj.Fathers(1:Nf,:); zeros(sum(Nx), MaxLevels)];
+            obj.Verteces = [obj.Verteces(1:Nf,:); zeros(sum(Nx), MaxLevels)];
+            obj.level = [obj.level(1:Nf); ones(sum(Nx), 1)*obj.MaxLevel];
             
             % Add the new cells
-            h = Nf + 1;
-            for CoarseNode = Nf+1 : Nf+Nc
+            h = sum(Nf) + 1;
+            for CoarseNode = (sum(Nf)+1) : (sum(Nf)+sum(Nc))
                 FineNodes = obj.Children{CoarseNode};
                 n_children = length(FineNodes);
                 obj.CellIndex(h:h + n_children-1) = FineNodes;

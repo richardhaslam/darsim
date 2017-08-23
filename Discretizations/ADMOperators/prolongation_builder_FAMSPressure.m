@@ -13,19 +13,19 @@ classdef prolongation_builder_FAMSPressure < prolongation_builder_MSPressure
         function obj = prolongation_builder_FAMSPressure(n, cf)
             obj@prolongation_builder_MSPressure(n, cf);
         end
-        function ADMProlp = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid, ADMRest)
+        function ADMProlp = ADMProlongation(obj, ADMGrid, GlobalGrids, ADMRest)
             % Pressure prolongation
             ADMProlp = 1;
             
             % Loop over the levels
             for level = ADMGrid.MaxLevel:-1:2
-               Prolp = obj.LevelProlongation(ADMGrid, CoarseGrid(level-1), level);
+               Prolp = obj.LevelProlongation(ADMGrid, GlobalGrids(level), level);
                % Multiply by previous objects
                ADMProlp = Prolp * ADMProlp;
             end
             
             % Last prolongation is different coz I use fine-scale ordering
-            Prolp = obj.LastProlongation(ADMGrid, FineGrid);
+            Prolp = obj.LastProlongation(ADMGrid, GlobalGrids(1));
             
             % Multiply by previous objects
             ADMProlp = Prolp * ADMProlp;
@@ -48,16 +48,16 @@ classdef prolongation_builder_FAMSPressure < prolongation_builder_MSPressure
              obj.ADMmap.Update(ADMGrid, FineGrid, level);
              
              % 1. Build the object
-             Prolp = sparse(obj.ADMmap.Nf + obj.ADMmap.Nx, obj.ADMmap.Nf + obj.ADMmap.Nc);
+             Prolp = sparse(sum(obj.ADMmap.Nf) + sum(obj.ADMmap.Nx), sum(obj.ADMmap.Nf) + sum(obj.ADMmap.Nc));
              
              % 2. Fill in top left
-             Prolp(1:obj.ADMmap.Nf, 1:obj.ADMmap.Nf) = speye(obj.ADMmap.Nf);
+             Prolp(1:sum(obj.ADMmap.Nf), 1:sum(obj.ADMmap.Nf)) = speye(sum(obj.ADMmap.Nf));
              
              % 3. Fill in Bottom left
-             Prolp(obj.ADMmap.Nf + 1 : end,  obj.ADMmap.Verteces) = obj.P{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexVerteces);
+             Prolp(sum(obj.ADMmap.Nf) + 1 : end,  obj.ADMmap.Verteces) = obj.P{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexVerteces);
              
              % 4. Fill in Bottom right
-             Prolp(obj.ADMmap.Nf + 1 :end, obj.ADMmap.Nf + 1 : end) = obj.P{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
+             Prolp(sum(obj.ADMmap.Nf) + 1 :end, sum(obj.ADMmap.Nf) + 1 : end) = obj.P{level}(obj.ADMmap.OriginalIndexNx, obj.ADMmap.OriginalIndexNc);
         end
         function Prolp = LastProlongation(obj, ADMGrid, FineGrid)
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,17 +76,17 @@ classdef prolongation_builder_FAMSPressure < prolongation_builder_MSPressure
              obj.ADMmap.Update(ADMGrid, FineGrid, 1);
            
              % 1. Build object
-             Prolp = sparse(FineGrid.N, obj.ADMmap.Nf + obj.ADMmap.Nc);
+             Prolp = sparse(FineGrid.N, sum(obj.ADMmap.Nf) + sum(obj.ADMmap.Nc));
              
              % 2. Fill in FS verteces of level 1
              Prolp(:,  obj.ADMmap.Verteces) = obj.P{1}(:, obj.ADMmap.OriginalIndexVerteces);
              
              % 3. Fill in coarse-scale nodes
-             Prolp(:, obj.ADMmap.Nf + 1 : end) = obj.P{1}(:, obj.ADMmap.OriginalIndexNc);
+             Prolp(:, sum(obj.ADMmap.Nf) + 1 : end) = obj.P{1}(:, obj.ADMmap.OriginalIndexNc);
              
              % 4. Fill in fine-scale nodes first
              rows = obj.ADMmap.OriginalIndexNf';
-             columns = 1:obj.ADMmap.Nf;
+             columns = 1:sum(obj.ADMmap.Nf);
              Prolp(rows, :) = 0; % if it s fine-scale already I get rid of useless fillings
              Prolp(sub2ind(size(Prolp), rows, columns)) = 1;
         end

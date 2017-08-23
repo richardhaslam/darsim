@@ -532,8 +532,8 @@ classdef Immiscible_formulation < formulation
                            + max(q(:,i), 0);          % Wells (injectors)
                 Mass(:,i) = rho(:,i) .* S(:,i) * pv;
             end
-            Mass = max(Mass, 1e-10);
-            ThroughPut(ThroughPut < 1e-10) = 0;
+            Mass = max(Mass, 1e-4);
+            ThroughPut(ThroughPut < 1e-4) = 0;
             Ratio = ThroughPut ./ Mass;
             CFL = dt * max(max(Ratio));
         end

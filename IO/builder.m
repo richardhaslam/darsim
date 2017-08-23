@@ -341,10 +341,10 @@ classdef builder < handle
                         prolongationbuilder = prolongation_builder_constant(maxLevel(1));
                     otherwise
                         if ~obj.Fractured
-                            prolongationbuilder = prolongation_builder_MSPressure( maxLevel(1), Coarsening(1,:,1) );
+                            prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening(:,:,1) );
                             prolongationbuilder.BFUpdater = bf_updater_ms();
                         else
-                            prolongationbuilder = prolongation_builder_FAMSPressure( maxLevel(1), Coarsening(1,:,1) );
+                            prolongationbuilder = prolongation_builder_FAMSPressure(maxLevel(1), Coarsening(:,:,1) );
                             prolongationbuilder.BFUpdater = bf_updater_FAMS();
                         end
                         if strcmp(char(SettingsMatrix(x+1)), 'Homogeneous')

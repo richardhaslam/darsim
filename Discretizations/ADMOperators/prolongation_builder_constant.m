@@ -19,7 +19,7 @@ classdef prolongation_builder_constant < prolongation_builder
         function UpdateProlongationOperator(obj, FineGrid, CoarseGrid, ProductionSystem)
             % For constant bf no update is necessary
         end
-        function ADMProl = ADMProlongation(obj, GlobalGrids, CoarseGridid, ADMRest)
+        function ADMProl = ADMProlongation(obj, ADMGrid, GlobalGrids, ADMRest)
             % Since it s constant interpolation it is just transpose(R)
             ADMProl = ADMRest';
         end

@@ -24,7 +24,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             else
                 obj.Dimensions = 3;
             end
-            obj.ADMmap = adm_map(prod(cf));
+            obj.ADMmap = adm_map(prod(cf, 2));
         end
         function BuildStaticOperators(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, maxLevel, CoarseGrid)
             % Initialise
