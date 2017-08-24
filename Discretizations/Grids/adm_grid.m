@@ -14,17 +14,17 @@ classdef adm_grid < grid_darsim
         MaxLevel
     end
     methods
-        function Initialize(obj, Ntotal, NumberOfActive, maxlevel)
+        function Initialize(obj, n_total, numofactive, maxlevel)
             obj.MaxLevel = maxlevel;
-            obj.N = NumberOfActive;
+            obj.N = numofactive;
             obj.Ntot = 0;
-            obj.level = zeros(Ntotal, 1);
-            obj.CoarseFactor = zeros(Ntotal, 3);
-            obj.CellIndex = zeros(Ntotal, 1);
-            obj.Fathers = zeros(Ntotal, maxlevel);
-            obj.Children = cell(Ntotal, 1);
-            obj.GrandChildren = cell(Ntotal, 1);
-            obj.Verteces = zeros(Ntotal, maxlevel);
+            obj.level = zeros(n_total, 1);
+            obj.CoarseFactor = zeros(n_total, 3);
+            obj.CellIndex = zeros(n_total, 1);
+            obj.Fathers = zeros(n_total, maxlevel);
+            obj.Children = cell(n_total, 1);
+            obj.GrandChildren = cell(n_total, 1);
+            obj.Verteces = zeros(n_total, maxlevel);
         end
         function Update(obj, Nx, Nf, Nc, FineGrid)
              %       Nf     Nc

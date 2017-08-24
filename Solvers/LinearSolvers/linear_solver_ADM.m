@@ -37,7 +37,7 @@ classdef linear_solver_ADM < linear_solver
             A_c = obj.R * A * obj.P;
  
             % Solve Coarse System
-            start = tic;
+            %start = tic;
             switch (obj.Name)
                 case('gmres')
                     % Set-up preconditioner
