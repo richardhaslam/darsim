@@ -52,64 +52,20 @@ classdef bf_updater_FAMS < bf_updater_ms
                 % Reorder A based on dual coarse grid partition 
                 tildeA = G * obj.Amedia{i} * G';
                 P = obj.CartesianMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(i));
-                obj.Amedia{i} = P' * obj.Amedia{i} * P;
                 MsP = blkdiag(MsP, G'*P);
             end          
         end
-        function MsP = CartesianMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
-            switch(Dimensions)
-                case (1)
-                    % 2. Define edge-edge (ee) block
-                    Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne);
-                    % 3. Define edge-node (en) block
-                    Mev = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
-                    % 4. Compute inverse of (ii), (ff) and (ee) blocks
-                    % 1D
-                    Edges = slvblk(Mee, Mev);
-                    
-                    MsP = [-Edges;...
-                        speye(Nv,Nv)];
-                case (2)
-                    % 2. Define face-face block
-                    Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf);
-                    % 3. Define edge-face (fe) block
-                    Mfe = tildeA(Ni+1:Ni+Nf, Ni+Nf+1:Ni+Nf+Ne);
-                    % 4. Define edge-edge (ee) block
-                    Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
-                    % 5. Define edge-node (en) block
-                    Mev = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
-                    % 6. Compute inverse of (ii), (ff) and (ee) blocks
-                    % 2D
-                    % when 2D there are no interiors.
-                    Edges = slvblk(Mee, Mev);
-                    Faces = slvblk(Mff, Mfe * Edges);
-                    
-                    MsP = [Faces;...
-                        -Edges;...
-                        speye(Nv,Nv)];
-                case(3)
-                    % 2. Define interior-interior (ii) block
-                    Mii = tildeA(1:Ni, 1:Ni);
-                    % 3. define interior-face (if) block
-                    Mif = tildeA(1:Ni, Ni+1:Ni+Nf);
-                    % 4. Define face-face block
-                    Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf) + diag(sum(Mif,1));
-                    % Define edge-face (fe) block
-                    Mfe = tildeA(Ni+1:Ni+Nf, Ni+Nf+1:Ni+Nf+Ne);
-                    % 5. Define edge-edge (ee) block
-                    Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
-                    % 6. Define edge-node (en) block
-                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
-                    % 3D
-                    % 7. Compute inverse of (ii), (ff) and (ee) blocks
-                    Edges = slvblk(Mee, Men);
-                    Faces = slvblk(Mff, Mfe * Edges);
-                    Interiors = slvblk(Mii, Mif * Faces);
-                    
-                    MsP = [-Interiors;...
-                        Faces;...
-                        -Edges;...
-                        speye(Nv,Nv)];
+        function UpdatePressureMatrix(obj, P, Grid)
+            Start_f = 1;
+            Start_c = 1;
+            for m=1:length(obj.Amedia)
+                [Nf, ~] = size(obj.Amedia{m});
+                End_f = Start_f + Nf - 1;
+                End_c = Start_c + Grid(m).N - 1 ;
+                obj.Amedia{m} = P(Start_f:End_f, Start_c:End_c)' * obj.Amedia{m} * P(Start_f:End_f, Start_c:End_c);
+                obj.TransformIntoTPFA(obj.Amedia{m}, Grid(m));
+                Start_f = End_f + 1;
+                Start_c = End_c + 1;
             end
         end
     end

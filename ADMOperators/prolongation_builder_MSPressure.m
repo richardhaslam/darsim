@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 August 2017
-%Last modified: 7 August 2017
+%Last modified: 24 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_MSPressure < prolongation_builder
     properties
@@ -39,9 +39,8 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             % Build Prolongation operator
             disp('Building Prolongation 1');
             obj.P{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
-            %Build first coarse system (with MsFE)
-            obj.BFUpdater.A = obj.P{1}' * obj.BFUpdater.A * obj.P{1};
-            obj.BFUpdater.TransformIntoTPFA(CoarseGrid(1).Nx, CoarseGrid(1).Ny);
+            %Build tpfa coarse system of level 1 (with MsFE)
+            obj.BFUpdater.UpdatePressureMatrix(obj.P{1}, CoarseGrid(:, 1));
             for x = 2:maxLevel(1)
                 % Build static restriction operator (FV)
                 disp(['Building Restriction ', num2str(x)]);
@@ -49,9 +48,8 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 % Build Prolongation operator
                 disp(['Building Prolongation ', num2str(x)]);
                 obj.P{x} = obj.BFUpdater.MsProlongation(CoarseGrid(:, x-1), CoarseGrid(:, x), obj.Dimensions);
-                %Build coarse system (with MsFE)
-                obj.BFUpdater.A = obj.P{x}' * obj.BFUpdater.A * obj.P{x};
-                obj.BFUpdater.TransformIntoTPFA(CoarseGrid(x).Nx, CoarseGrid(x).Ny);
+                %Build tpfa coarse system of level x (with MsFE)
+                obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(:, x));
             end
         end
         function ADMProlp = ADMProlongation(obj, ADMGrid, GlobalGrids, ADMRest)
