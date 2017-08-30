@@ -14,7 +14,7 @@ classdef bf_updater_FAMS < bf_updater_ms
         function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, Ntot)
             % Reservoir
             Km = ProductionSystem.Reservoir.K;
-            S = ProductionSystem.CreateGlobalVariables(FineGrid, Ntot, FluidModel.NofPhases, 'S_');
+            S = ProductionSystem.CreateGlobalVariables(FineGrid, FluidModel.NofPhases, 'S_');
             Mob = FluidModel.ComputePhaseMobilities(S(:,1));
             Start = 1;
             End = FineGrid(1).N;
@@ -56,7 +56,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                 MsP = blkdiag(MsP, G'*P);
             end          
         end
-        function MsP = FullyCoupledMSP(obj, tildeA, Ni, Ne, Nv, Dimentions)
+        function MsP = FullyCoupledMSP(obj, FineGrid, CoarseGrid, Dimensions)
             MsP = [];
             switch(Dimentions)
                 case (1)
