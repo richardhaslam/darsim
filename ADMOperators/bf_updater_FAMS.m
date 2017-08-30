@@ -63,7 +63,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                 End_f = Start_f + Nf - 1;
                 End_c = Start_c + Grid(m).N - 1 ;
                 obj.Amedia{m} = P(Start_f:End_f, Start_c:End_c)' * obj.Amedia{m} * P(Start_f:End_f, Start_c:End_c);
-                obj.TransformIntoTPFA(obj.Amedia{m}, Grid(m));
+                obj.Amedia{m} = obj.TransformIntoTPFA(obj.Amedia{m}, Grid(m));
                 Start_f = End_f + 1;
                 Start_c = End_c + 1;
             end
