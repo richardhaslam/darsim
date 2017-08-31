@@ -1,4 +1,4 @@
-% Incompressible pressure solver
+% Incompressible pressure solver (Not used any more)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini

@@ -1,4 +1,4 @@
-%  Sequential Formulation base class
+%  Sequential Formulation base class (Not used)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini

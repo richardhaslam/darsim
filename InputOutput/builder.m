@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 July 2016
-%Last modified: 17 March 2017
+%Last modified: 24 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef builder < handle
     properties
@@ -152,7 +152,7 @@ classdef builder < handle
             simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, FractureMatrix, SettingsMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, FractureMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
-            simulation.Formulation = obj.BuildFormulation(inputMatrix, simulation.DiscretizationModel, simulation.FluidModel, simulation.ProductionSystem);
+            simulation.Formulation = obj.BuildFormulation(simulation.DiscretizationModel, simulation.FluidModel, simulation.ProductionSystem);
             simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
             simulation.Summary = obj.BuildSummary(simulation);
             
@@ -340,11 +340,10 @@ classdef builder < handle
                     case ('Constant')
                         prolongationbuilder = prolongation_builder_constant(maxLevel(1));
                     otherwise
+                        prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening(:,:,1) );
                         if ~obj.Fractured
-                            prolongationbuilder = prolongation_builder_MSPressure( maxLevel(1), Coarsening(1,:,1) );
                             prolongationbuilder.BFUpdater = bf_updater_ms();
                         else
-                            prolongationbuilder = prolongation_builder_FAMSPressure( maxLevel(1), Coarsening(1,:,1) );
                             prolongationbuilder.BFUpdater = bf_updater_FAMS();
                         end
                         if strcmp(char(SettingsMatrix(x+1)), 'Homogeneous')
@@ -763,7 +762,7 @@ classdef builder < handle
             end
             
         end
-        function Formulation = BuildFormulation(obj, inputMatrix, Discretization, FluidModel,ProductionSystem)
+        function Formulation = BuildFormulation(obj, Discretization, FluidModel,ProductionSystem)
             switch(obj.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
@@ -780,7 +779,7 @@ classdef builder < handle
                     if strcmp(obj.ADM, 'active')
                         Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
                     end
-                case('Jeremy')
+                case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
             end
@@ -839,7 +838,7 @@ classdef builder < handle
                 case('Sequential')
                     Coupling = Sequential_Strategy('Sequential');
                     Coupling.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
-                    %pressuresolver = incompressible_pressure_solver();
+                    % pressuresolver = incompressible_pressure_solver();
                     pressuresolver = NL_Solver();
                     pressuresolver.MaxIter = 15;
                     ConvergenceChecker = convergence_checker_pressure();

@@ -122,8 +122,10 @@ classdef VTK_Plotter < Plotter
             %fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
             fwrite(fileID, Grid.GridCoords', 'double', 'b');
             fprintf(fileID, '\n');
-            fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
+            fprintf(fileID, '\n');
+            %ADD ADM coarse grids
+            obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             N_var = double(Fracture.State.Properties.Count);
             Names = Fracture.State.Properties.keys;
@@ -412,10 +414,6 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA %d\n', CoarseGrid(i).N);
-                fprintf(fileID, '\n');
-                fprintf(fileID, '\n');
-                fprintf(fileID, '\n');
-                fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
                 fprintf(fileID, '\n');
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
                 fprintf(fileID, '\n');

@@ -5,36 +5,39 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 16 August 2016
+%Last modified: 24 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef bf_updater < handle
     properties
         A
     end
-    methods
+    methods 
         function MsP = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
             cf = CoarseGrid.CoarseFactor./FineGrid.CoarseFactor;
             % Permutation Matrix
-            [G, Ni, Nf, Ne, Nn] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
-            % 1. Reorder finescale system
-            tildeA   = G * obj.A * G';
-            switch (Dimensions)
+            [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
+            % Reorder A based on dual coarse grid partition 
+            tildeA = G * obj.A * G';
+            MsP = G' * obj.CartesianMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
+        end
+        function MsP = CartesianMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
+            switch(Dimensions)
                 case (1)
                     % 2. Define edge-edge (ee) block
                     Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne);
                     % 3. Define edge-node (en) block
-                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
+                    Mev = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
                     % 4. Compute inverse of (ii), (ff) and (ee) blocks
-                    Edges = slvblk(Mee, Men);
+                    % 1D
+                    Edges = slvblk(Mee, Mev);
                     
                     MsP = [-Edges;...
-                        speye(Nn,Nn)];
-                    
+                        speye(Nv,Nv)];
 %                     Mee_inv = Mee^-1;
 %                     
 %                     % 1D
 %                     MsP = [-Mee_inv*Men;...
-%                         speye(Nn,Nn)];
+%                         speye(Nn,Nn)];                    
                 case (2)
                     % 2. Define face-face block
                     Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf);
@@ -43,24 +46,24 @@ classdef bf_updater < handle
                     % 4. Define edge-edge (ee) block
                     Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
                     % 5. Define edge-node (en) block
-                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
+                    Mev = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
                     % 6. Compute inverse of (ii), (ff) and (ee) blocks
                     % 2D
                     % when 2D there are no interiors.
-                    Edges = slvblk(Mee, Men);
+                    Edges = slvblk(Mee, Mev);
                     Faces = slvblk(Mff, Mfe * Edges);
                     
                     MsP = [Faces;...
                         -Edges;...
-                        speye(Nn,Nn)];
+                        speye(Nv,Nv)];
 %                     Mff_inv = Mff^-1;
 %                     Mee_inv = Mee^-1;
 %                     
 %                     MsP = [Mff_inv*(Mfe*Mee_inv*Men);...
 %                         -Mee_inv*Men;...
 %                         speye(Nn,Nn)];
-                otherwise
-                    % 3D
+
+                case(3)
                     % 2. Define interior-interior (ii) block
                     Mii = tildeA(1:Ni, 1:Ni);
                     % 3. define interior-face (if) block
@@ -72,7 +75,8 @@ classdef bf_updater < handle
                     % 5. Define edge-edge (ee) block
                     Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
                     % 6. Define edge-node (en) block
-                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nn);
+                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
+                    % 3D
                     % 7. Compute inverse of (ii), (ff) and (ee) blocks
                     Edges = slvblk(Mee, Men);
                     Faces = slvblk(Mff, Mfe * Edges);
@@ -81,8 +85,7 @@ classdef bf_updater < handle
                     MsP = [-Interiors;...
                         Faces;...
                         -Edges;...
-                        speye(Nn,Nn)];
-                    
+                        speye(Nv,Nv)];
 % Old version was slower
 %                     start2 = tic;
 %                     Mii_inv = Mii^-1;
@@ -94,7 +97,6 @@ classdef bf_updater < handle
 %                         speye(Nn,Nn)];
 %                     time2 =toc(start2)
             end
-            MsP = G'*MsP;
         end
         %% Permutation Matrix
         function [P, nii, nff, nee, nnn] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)
@@ -205,25 +207,31 @@ classdef bf_updater < handle
                 end
             end
         end
-        function TransformIntoTPFA(obj, Nx, Ny)
-            [N, ~] = size(obj.A);
-            x1 = [0; diag(obj.A, 1)];
-            x2 = [diag(obj.A, -1); 0];
-            diagy1 = diag(obj.A, Nx);
-            diagy2 = diag(obj.A, -Nx);
+        function UpdatePressureMatrix(obj, P, Grid)
+            obj.A = P' * obj.A * P;
+            obj.A = obj.TransformIntoTPFA(obj.A, Grid);
+        end
+        function Ac = TransformIntoTPFA(obj, Ac, Grid)
+            Nx = Grid.Nx;
+            Ny = Grid.Ny;
+            N = Grid.N;
+            x1 = [0; diag(Ac, 1)];
+            x2 = [diag(Ac, -1); 0];
+            diagy1 = diag(Ac, Nx);
+            diagy2 = diag(Ac, -Nx);
             y1 = zeros(N, 1);
             y2 = zeros(N, 1);
             y1(N - length(diagy1) + 1:end) = diagy1;
             y2(1:length(diagy1)) = diagy2;
-            diagz1 = diag(obj.A, Nx*Ny);
-            diagz2 = diag(obj.A, -Nx*Ny);
+            diagz1 = diag(Ac, Nx*Ny);
+            diagz2 = diag(Ac, -Nx*Ny);
             z1 = zeros(N, 1);
             z2 = zeros(N, 1);
             z1(N - length(diagz1) + 1:end) = diagz1;
             z2(1:length(diagz1)) = diagz2;
             DiagVecs = [z2, y2, x2, -z2-y2-x2-z1-y1-x1, x1, y1, z1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            obj.A = spdiags(DiagVecs,DiagIndx,N,N);
+            Ac = spdiags(DiagVecs,DiagIndx,N,N);
         end
     end
 end

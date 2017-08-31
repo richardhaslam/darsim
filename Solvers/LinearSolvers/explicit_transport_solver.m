@@ -1,4 +1,4 @@
-%  Explicit transport solver
+%  Explicit transport solver (Not used any more)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini

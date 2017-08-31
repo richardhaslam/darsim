@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 August 2017
-%Last modified: 7 August 2017
+%Last modified: 21 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_MSHyperbolic < prolongation_builder
     properties
@@ -57,13 +57,16 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
                 obj.P{l}(fsI, c) = epsilon(fsI)/max(epsilon(fsI));
             end
         end
-        function ADMProl = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGrid, ADMRest)
+        function ADMProl = ADMProlongation(obj, ADMGrid, GlobalGrids, ADMRest)
             ADMProl = ADMRest';
             % Coarse levels cells
             for c = ADMGrid.N(1) + 1:ADMGrid.Ntot
                 indexes = ADMGrid.GrandChildren{c};
                 ADMProl(indexes, c) = obj.P{ADMGrid.level(c)}(indexes, ADMGrid.CellIndex(c));
             end
+        end
+        function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FluidModel, ADMRest)
+            % virtual call
         end
     end
 end

@@ -16,7 +16,7 @@ classdef Run_Summary_ADM < Run_Summary
             obj.ADMStats = zeros(MaxNTimeSteps, maxLevel + 2);
         end
         function SaveGridStats(obj, Ndt, DiscretizationModel)
-            obj.ADMStats(Ndt,:) = [DiscretizationModel.ADMStats.N', sum(DiscretizationModel.ADMStats.N)/DiscretizationModel.ReservoirGrid.N *100];
+            obj.ADMStats(Ndt,:) = [DiscretizationModel.ADMStats.N, sum(DiscretizationModel.ADMStats.N)/DiscretizationModel.ReservoirGrid.N *100];
         end
     end
 end

@@ -19,9 +19,13 @@ classdef prolongation_builder_constant < prolongation_builder
         function UpdateProlongationOperator(obj, FineGrid, CoarseGrid, ProductionSystem)
             % For constant bf no update is necessary
         end
-        function ADMProl = ADMProlongation(obj, ADMGrid, FineGrid, CoarseGridid, ADMRest)
+        function ADMProl = ADMProlongation(obj, ADMGrid, GlobalGrids, ADMRest)
             % Since it s constant interpolation it is just transpose(R)
             ADMProl = ADMRest';
+        end
+        function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FineGrid, FluidModel, ADMRest)
+            % Average mass on a coarse block
+            Formulation.AverageMassOnCoarseBlocks(ProductionSystem, FineGrid, FluidModel, ADMRest);
         end
     end
 end
