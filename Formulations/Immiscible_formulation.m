@@ -533,7 +533,7 @@ classdef Immiscible_formulation < formulation
                 Mass(:,i) = rho(:,i) .* S(:,i) * pv;
             end
             Mass = max(Mass, 1e-4);
-            ThroughPut(ThroughPut < 1e-4) = 0;
+            %ThroughPut(ThroughPut < 1e-4) = 0;
             Ratio = ThroughPut ./ Mass;
             CFL = dt * max(max(Ratio));
         end
@@ -600,7 +600,6 @@ classdef Immiscible_formulation < formulation
             % Initialise residual vector (Nph * N, 1)
             Nt = DiscretizationModel.N;
             Nm = DiscretizationModel.ReservoirGrid.N;
-            Nf = DiscretizationModel.FracturesGrid.N;
             Residual = zeros(Nt, 1);
             
             % BuildResidual for Reservoir
@@ -610,6 +609,7 @@ classdef Immiscible_formulation < formulation
             Residual(Index.Start:Index.End) = MediumPressureResidual(obj, DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.State, State0, dt, phi, qw, qf, Index, 0);
             % Fractures
             if ProductionSystem.FracturesNetwork.Active
+                Nf = DiscretizationModel.FracturesGrid.N;
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Index.Start = Index.End+1;
                     Index.End = Index.Start + Nf(f) - 1;
@@ -665,7 +665,13 @@ classdef Immiscible_formulation < formulation
             Nz = DiscretizationModel.ReservoirGrid.Nz;
             Nm = DiscretizationModel.ReservoirGrid.N;
             % Global variables
-            rho = ProductionSystem.CreateGlobalVariables(DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly         
+            if ProductionSystem.FracturesNetwork.Active
+                FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+            else
+                FineGrid = DiscretizationModel.ReservoirGrid;
+            end
+            % P = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly        
             %% 1. Reservoir
             Index.Start = 1;
             Index.End = Nm;
@@ -971,15 +977,13 @@ classdef Immiscible_formulation < formulation
                 DeltaS = delta(1:Nm);
                 Sm.update(DeltaS);
                 % Remove values that are not physical
-                Sm.Value = max(Sm.Value, 0);
-                Sm.Value = min(Sm.Value, 1);
                 DeltaLast = DeltaLast + DeltaS;
             end
             Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
             Sm.update(-DeltaLast);
-            % Remove values that are not physical
-            Sm.Value = max(Sm.Value, 0);
-            Sm.Value = min(Sm.Value, 1);
+            if max(Sm.Value) > 1.01 || min(Sm.Value) < -0.01
+                error('DARSim2 error: Unphysical Saturation value: try reducing CFL number!')
+            end
         end
     end
 end
