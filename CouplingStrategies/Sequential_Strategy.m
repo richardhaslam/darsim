@@ -66,6 +66,10 @@ methods
             Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
             % Check that velocity field is conservative
             tstart2 = tic;
+            conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
+            if ~conservative
+                error('DARSim2 error: mass balance not respected');
+            end
             obj.BalanceTimer(obj.itCount) = toc(tstart2);
              
             %% 3. Solve transport            

@@ -98,7 +98,11 @@ classdef VTK_Plotter < Plotter
             N_var = double(Reservoir.State.Properties.Count);
             Names = Reservoir.State.Properties.keys;
             for i=1:N_var
-                obj.PrintScalar2VTK(fileID, Reservoir.State.Properties(Names{i}).Value, [' ',Names{i}]);
+                if strcmp(Reservoir.State.Properties(Names{i}).Type, 'scalar')
+                    obj.PrintScalar2VTK(fileID, Reservoir.State.Properties(Names{i}).Value, [' ',Names{i}]);
+                else
+                    obj.PrintVector2VTK(fileID, Reservoir.State.Properties(Names{i}).Value, [' ',Names{i}]);
+                end
                 fprintf(fileID, '\n');
             end
 
@@ -429,6 +433,13 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, 'LOOKUP_TABLE default\n');
             %fprintf(fileID,'%d ', scalar);
             fwrite(fileID, scalar','float', 'b');
+        end
+        function PrintVector2VTK(obj, fileID, vector, name)
+            %Print a vector in VTK format
+            fprintf(fileID, ' \n');
+            fprintf(fileID, strcat('VECTORS  ', name,' float \n'));
+            %fprintf(fileID,'%d ', vector);
+            fwrite(fileID, vector','float', 'b');
         end
     end
 end

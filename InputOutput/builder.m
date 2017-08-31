@@ -844,8 +844,15 @@ classdef builder < handle
                     ConvergenceChecker = convergence_checker_pressure();
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
-                    pressuresolver.SystemBuilder = pressure_system_builder();    
-                    pressuresolver.LinearSolver = linear_solver();
+                    pressuresolver.SystemBuilder = pressure_system_builder();
+                    switch (obj.LinearSolver)
+                            case ('gmres')
+                                pressuresolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
+                            case ('bicg')
+                                pressuresolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
+                            otherwise
+                                pressuresolver.LinearSolver = linear_solver();
+                    end
                     Coupling.AddPressureSolver(pressuresolver);
                     if (~isempty(obj.transport))
                         transportsolver = NL_Solver();
@@ -856,7 +863,14 @@ classdef builder < handle
                         transportsolver.SystemBuilder = transport_system_builder();
                         Coupling.ConvergenceChecker = convergence_checker_outer();
                         Coupling.ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
-                        transportsolver.LinearSolver = linear_solver();
+                        switch (obj.LinearSolver)
+                            case ('gmres')
+                                transportsolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
+                            case ('bicg')
+                                transportsolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
+                            otherwise
+                                transportsolver.LinearSolver = linear_solver();
+                        end
                     else
                         transportsolver = explicit_transport_solver();
                         transportsolver.SystemBuilder = explicit_transport_system_builder();

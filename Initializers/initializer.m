@@ -58,9 +58,9 @@ classdef initializer < handle
             
             % Output initial status:      
             disp('Initial conditions:')
-            disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('P_2').Value/1e5)), ' bar']);
-            disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
-            disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
+            disp(['reservoir pressure: ' num2str(max(ProductionSystem.Reservoir.State.Properties('P_2').Value/1e5)), ' bar']);
+            disp(['reservoir saturation: ' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
+            disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp), ' K']);
             disp('---------------------------------------------------------');
             %% Fractures
             if ProductionSystem.FracturesNetwork.Active
