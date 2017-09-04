@@ -14,20 +14,40 @@ classdef adm_grid_selector_delta < adm_grid_selector
             obj@adm_grid_selector(tol, key);
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
-            % SELECT the ADM GRID for next time-step
-            FineGrid.Active = ones(FineGrid.N, 1);
-            
-            % Coarsen the grid where resolution is not necessary
-            S = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
-            
-            % Choose Active Coarse cells and Flag fine ones  
-            CoarseGrid(1).Active = obj.NoWellsCoarseCells;
-            obj.SelectCoarseFine(FineGrid, CoarseGrid(1), S);
-            for x = 2:maxLevel
-                obj.DefinePossibleActive(CoarseGrid(x), CoarseGrid(x-1), x);
-                obj.SelectCoarseFine(CoarseGrid(x-1), CoarseGrid(x), S);
+            % SELECT the ADM GRID for next time-step based on dela x
+            %% 1. Reset all cells to be active and stor x{m} 
+            n_media = length(FineGrid);
+            S = cell(n_media, 1);
+            for m=1:n_media
+                FineGrid(m).Active = ones(FineGrid(m).N, 1);
+                if m==1
+                    % for now wells are only in the reservoir
+                    CoarseGrid(m,1).Active = obj.NoWellsCoarseCells;
+                    S{m} = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
+                else
+                    CoarseGrid(m,1).Active = ones(CoarseGrid(m).N, 1);
+                    S{m} = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value;
+                end
             end
             
+            %% 2. Select active cells
+            for l=1:max(maxLevel)
+                % 2.a choose possible active grids for level l
+                if l>1 
+                    obj.DefinePossibleActive(CoarseGrid(:, l), CoarseGrid(:, l-1), l);
+                end
+                for m=1:n_media
+                    % 2.b choose active cells of level l 
+                    if l==1
+                        % coarse grid 1 to 0 (fine-scale)
+                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), S{m});
+                    elseif l <= maxLevel(m)
+                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), S{m});
+                    else
+                        CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
+                    end
+                end
+            end
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
         
