@@ -63,8 +63,9 @@ methods
         Names = Source.Properties.keys;
         N_prop = double(Source.Properties.Count);
         for i = 1:N_prop
-            obj.Properties(Names{i}) = property(1, 1);
+            obj.Properties(Names{i}) = property(1, 1, 'scalar');
             temp = obj.Properties(Names{i});
+            temp.Type = Source.Properties(Names{i}).Type;
             temp.Plot = Source.Properties(Names{i}).Plot;
             temp.Value = Source.Properties(Names{i}).Value;
             temp.Valmax = Source.Properties(Names{i}).Valmax;
