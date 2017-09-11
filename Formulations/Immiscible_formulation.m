@@ -848,6 +848,18 @@ classdef Immiscible_formulation < formulation
             % Wells total fluxes
             q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
             obj.Qwells = sum(q, 2);
+            
+            if ProductionSystem.Reservoir.State.Properties('V_tot').Plot      
+               % Compute average between the 2 interfaces
+               ux = (obj.Utot.x(1:Nx,:,:) + obj.Utot.x(2:Nx+1,:,:))/2;
+               uy = (obj.Utot.y(:,1:Ny,:) + obj.Utot.y(:,2:Ny+1,:))/2;
+               uz = (obj.Utot.z(:,:,1:Nz) + obj.Utot.z(:,:,2:Nz+1))/2;
+               % Copy the values in the right objects
+               Ucentres = ProductionSystem.Reservoir.State.Properties('V_tot');
+               Ucentres.Value(:,1) = reshape(ux, N, 1);
+               Ucentres.Value(:,2) = reshape(uy, N, 1);
+               Ucentres.Value(:,3) = reshape(uz, N, 1);
+            end
         end
         function conservative = CheckMassConservation(obj, Grid)
             %Checks mass balance in all cells
@@ -859,16 +871,12 @@ classdef Immiscible_formulation < formulation
             maxUy = max(max(max(obj.Utot.y)));
             maxUz = max(max(max(obj.Utot.z)));
             maxU = max([maxUx, maxUy, maxUz]);
-            qWells = reshape(obj.Qwells, Nx, Ny, Nz);
-            for k=1:Nz
-                for j=1:Ny
-                    for i=1:Nx
-                        Accum = obj.Utot.x(i,j,k) - obj.Utot.x(i+1,j,k) + obj.Utot.y(i,j,k) - obj.Utot.y(i,j+1,k) + obj.Utot.z(i,j,k) - obj.Utot.z(i,j,k+1) + qWells(i,j,k);
-                        if (abs(Accum/maxU) > 10^(-5))
-                            conservative = 0;
-                        end
-                    end
-                end
+            ux = reshape(obj.Utot.x(1:Nx,:,:) - obj.Utot.x(2:Nx+1,:,:), Grid.N, 1);
+            uy = reshape(obj.Utot.y(:,1:Ny,:) - obj.Utot.y(:,2:Ny+1,:), Grid.N, 1);
+            uz = reshape(obj.Utot.z(:,:,1:Nz) - obj.Utot.z(:,:,2:Nz+1), Grid.N, 1);
+            Balance = ux + uy + uz + obj.Qwells;
+            if abs(Balance/maxU) > 1e-5
+                conservative = 0;
             end
         end
         function ViscousMatrix(obj, Grid)

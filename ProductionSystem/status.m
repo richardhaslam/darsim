@@ -34,7 +34,7 @@ methods
                     obj.Properties(['S_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 1);
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 'scalar', false, 0, 2000);
                 end
-                obj.Properties('Pc') = property(N, 1, false, 1e3, 1e6);
+                obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);
             otherwise
                 %% Saturation and Pc
                 for i=1:FluidModel.NofPhases
@@ -52,6 +52,7 @@ methods
                     end
                 end
         end
+        obj.Properties('V_tot') = property(N, 3, 'vector', true);
     end
     function AssignInitialValues(obj, VarNames, VarValues)
         for i=1:length(VarNames)
