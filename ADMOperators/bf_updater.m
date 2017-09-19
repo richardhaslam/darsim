@@ -13,14 +13,14 @@ classdef bf_updater < handle
     end
     methods 
         function MsP = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
-            cf = CoarseGrid.CoarseFactor./FineGrid.CoarseFactor;
+            cf = CoarseGrid.CoarseFactor ./ FineGrid.CoarseFactor;
             % Permutation Matrix
             [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
             % Reorder A based on dual coarse grid partition 
             tildeA = G * obj.A * G';
-            MsP = G' * obj.CartesianMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
+            MsP = G' * obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
         end
-        function MsP = CartesianMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
+        function MsP = ComputeMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
             switch(Dimensions)
                 case (1)
                     % 2. Define edge-edge (ee) block
@@ -75,10 +75,10 @@ classdef bf_updater < handle
                     % 5. Define edge-edge (ee) block
                     Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne) + diag(sum(Mfe,1));
                     % 6. Define edge-node (en) block
-                    Men = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
+                    Mev = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
                     % 3D
                     % 7. Compute inverse of (ii), (ff) and (ee) blocks
-                    Edges = slvblk(Mee, Men);
+                    Edges = slvblk(Mee, Mev);
                     Faces = slvblk(Mff, Mfe * Edges);
                     Interiors = slvblk(Mii, Mif * Faces);
                     
@@ -99,7 +99,7 @@ classdef bf_updater < handle
             end
         end
         %% Permutation Matrix
-        function [P, nii, nff, nee, nnn] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)
+        function [P, nii, nff, nee, nvv] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)
             % The ordering is done based on the dual coarse scale internal data
             %
             %     Non overlappig dual grid
@@ -142,7 +142,7 @@ classdef bf_updater < handle
             nii =  ((nxcf-1) * (nycf-1) * (nzcf-1)) * (nxc * nyc * nzc);% interiors
             nff = ((nxcf-1)*(nycf-1) + (nycf-1)*(nzcf-1) + (nxcf-1)*(nzcf-1)) * nxc * nyc * nzc; % faces
             nee = ((nxcf-1) + (nycf-1) + (nzcf-1)) * nxc * nyc * nzc; % edges
-            nnn = nxc *nyc*nzc; % verteces
+            nvv = nxc *nyc*nzc; % verteces
             
             P = sparse(nf);
             
@@ -151,7 +151,7 @@ classdef bf_updater < handle
             iii0 = 0;
             iff0 = nii;
             iee0 = nii + nff;
-            inn0 = nii + nff + nee;
+            ivv0 = nii + nff + nee;
             
             nxd = nxc + 1;
             nyd = nyc + 1;
@@ -180,8 +180,8 @@ classdef bf_updater < handle
                                             P(iii0, ijk) = 1;  
                                         elseif  (ix == 1 && jy == 1 && kz==1)
                                             % node points
-                                            inn0 = inn0 + 1;
-                                            P(inn0, ijk) = 1;
+                                            ivv0 = ivv0 + 1;
+                                            P(ivv0, ijk) = 1;
                                         elseif (ix == 1 && jy == 1 && (kz ~=1 || kz~=nzcf))
                                             % edge xy points
                                             iee0 = iee0 + 1;

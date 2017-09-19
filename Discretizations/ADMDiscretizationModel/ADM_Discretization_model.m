@@ -48,8 +48,8 @@ classdef ADM_Discretization_model < Discretization_model
             
             
             if ProductionSystem.FracturesNetwork.Active
-                obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N'];
-                obj.FineGrid = [obj.ReservoirGrid; obj.FracturesGrid.Grids];
+                obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
+                obj.FineGrid = [obj.ReservoirGrid; obj.FracturesGrid.Grids'];
             else
                 obj.FineGrid = obj.ReservoirGrid;
                 obj.Nf = obj.ReservoirGrid.N;

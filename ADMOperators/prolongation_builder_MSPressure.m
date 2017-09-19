@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 August 2017
-%Last modified: 24 August 2017
+%Last modified: 19 September 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_MSPressure < prolongation_builder
     properties
@@ -39,7 +39,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             % Build Prolongation operator
             disp('Building Prolongation 1');
             obj.P{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
-            %Build tpfa coarse system of level 1 (with MsFE)
+            % Build tpfa coarse system of level 1 (with MsFE)
             obj.BFUpdater.UpdatePressureMatrix(obj.P{1}, CoarseGrid(:, 1));
             for x = 2:maxLevel(1)
                 % Build static restriction operator (FV)
