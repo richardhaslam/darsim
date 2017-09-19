@@ -48,8 +48,8 @@ classdef ADM_Discretization_model < Discretization_model
             
             
             if ProductionSystem.FracturesNetwork.Active
-                obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N'];
-                obj.FineGrid = [obj.ReservoirGrid; obj.FracturesGrid.Grids];
+                obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
+                obj.FineGrid = [obj.ReservoirGrid, obj.FracturesGrid.Grids];
             else
                 obj.FineGrid = obj.ReservoirGrid;
                 obj.Nf = obj.ReservoirGrid.N;
@@ -132,6 +132,7 @@ classdef ADM_Discretization_model < Discretization_model
                     obj.CoarseGrid(1+f, i).Fathers = zeros(obj.CoarseGrid(1+f, i).N, max(obj.maxLevel));
                     obj.CoarseGrid(1+f, i).Fathers(:, i) = [1:obj.CoarseGrid(1+f, i).N]';
                     obj.CoarseGrid(1+f, i).Verteces = zeros(obj.CoarseGrid(1+f, i).N, obj.maxLevel(1));
+                    
                     obj.Nc(f+1, i) = obj.CoarseGrid(1+f,i).N;
                     obj.FracturesGrid.Grids(f).Fathers(:, i) = obj.FracturesGrid.Grids(f).Fathers(:,obj.maxLevel(f+1));
                     obj.FracturesGrid.Grids(f).Verteces(:,i) = obj.FracturesGrid.Grids(f).Verteces(:,obj.maxLevel(f+1));

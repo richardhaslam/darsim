@@ -52,7 +52,7 @@ methods
             end
             obj.Converged = obj.NLSolver.Converged;
         end
-        % Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);Not working for fractures
+        Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
         obj.CFL = Formulation.ComputeCFLNumber(ProductionSystem, DiscretizationModel, dt);
         disp(['CFL = ', num2str(obj.CFL)]);
         obj.TimeStepSelector.Update(dt, obj.NLSolver.itCount - 1, obj.chops);
