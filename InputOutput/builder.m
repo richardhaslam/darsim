@@ -38,6 +38,7 @@ classdef builder < handle
         flash
         ADM
         LinearSolver
+        MinMaxdt
         Formulation = 'Natural';
         StopCriterion = 'MAX TIME';
         Fractured = 0;
@@ -116,6 +117,13 @@ classdef builder < handle
             temp = strfind(SettingsMatrix{1}, 'TIMESTEPS');
             xv = find(~cellfun('isempty', temp));
             obj.MaxNumTimeSteps = str2double(SettingsMatrix{1}(xv+1));
+            temp = strfind(SettingsMatrix{1}, 'MINMAXDT');
+            xv = find(~cellfun('isempty', temp));
+            if ~isempty(xv)
+                obj.MinMaxdt = str2double(strsplit(char(SettingsMatrix{1}(xv+1))));
+            else
+                obj.MinMaxdt = [0.1, 30];
+            end
             temp = strfind(SettingsMatrix{1}, 'REPORTS');
             xv = find(~cellfun('isempty', temp));
             obj.reports = str2double(SettingsMatrix{1}(xv+1));
@@ -890,8 +898,8 @@ classdef builder < handle
                     if obj.incompressible
                         Coupling.Incompressible = 1;
                     end
-            end
-            Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)));
+            end 
+            Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)), obj.MinMaxdt(1), obj.MinMaxdt(2));
             TimeDriver.AddCouplingStrategy(Coupling);
             switch(obj.StopCriterion)
                 case('MAX TIME')
