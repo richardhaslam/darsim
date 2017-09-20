@@ -9,7 +9,7 @@
 classdef bf_updater_FAMS < bf_updater_ms
     properties
         Amedia
-        BFtype = 2;
+        BFtype = 1;
     end
     methods
         function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, Ntot)
