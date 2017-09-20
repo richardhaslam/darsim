@@ -17,9 +17,9 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             obj@prolongation_builder(n)
             obj.R = cell(1, n);
             obj.P = cell(1, n);
-            if cf(3) == 1 && cf(2) == 1
+            if cf(1,3) == 1 && cf(1,2) == 1
                 obj.Dimensions = 1;
-            elseif cf(3) == 1
+            elseif cf(1,3) == 1
                 obj.Dimensions = 2;
             else
                 obj.Dimensions = 3;

@@ -25,7 +25,6 @@ if ~exist(strcat(Directory, '/Output/'), 'dir')
 else
     delete(strcat(Directory, '/Output/*.txt'));
 end
-delete(strcat(Directory, '/Output/RunDiary.txt'));
 diary(strcat(Directory, '/Output/RunDiary.txt'));
 
 %% Print title
