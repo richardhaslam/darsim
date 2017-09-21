@@ -36,6 +36,7 @@ methods
             disp('Pressure Solver')
             disp('...............................................');
             tstart1 = tic;
+            obj.PressureSolver.SetUp(ProductionSystem, DiscretizationModel);
             obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             obj.PressureTimer = toc(tstart1);
             disp('...............................................');

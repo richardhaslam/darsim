@@ -6,7 +6,7 @@
 %Created: 16 August 2016
 %Last modified: 7 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef operators_handler < handle
+classdef operators_handler_adm < operators_handler
     properties
         ProlongationBuilders
         ADMRest
