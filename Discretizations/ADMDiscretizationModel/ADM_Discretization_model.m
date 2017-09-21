@@ -93,8 +93,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             
             % Update prolongation builders
             obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrid, obj.CoarseGrid, ProductionSystem);
-        end
-        function BuildADMOperators(obj)
+            
             % Build ADM R and P operators
             obj.OperatorsHandler.BuildADMOperators(obj.GlobalGrids, obj.ADMGrid);
         end

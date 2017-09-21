@@ -8,6 +8,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_assembler < handle
     properties
+        NumberOfEq
+    end
+    methods
+        function obj = operators_assembler(n_eq)
+            obj.NumberOfEq = n_eq;
+        end
     end
     methods (Abstract)
         obj = Assemble(obj);

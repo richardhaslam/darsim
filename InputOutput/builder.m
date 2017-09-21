@@ -40,6 +40,7 @@ classdef builder < handle
         LinearSolver
         MinMaxdt
         Formulation = 'Natural';
+        NofEq
         StopCriterion = 'MAX TIME';
         Fractured = 0;
         incompressible
@@ -342,7 +343,7 @@ classdef builder < handle
                     end
                 end
                 % Create the operatorshandler
-                operatorshandler = operators_handler(Coarsening(1,:,:));
+                operatorshandler = operators_handler_adm(Coarsening(1,:,:));
                 % a.1 Pressure prolongation builder
                 switch (char(SettingsMatrix(x+1)))
                     case ('Constant')
@@ -770,23 +771,17 @@ classdef builder < handle
             end
             
         end
-        function Formulation = BuildFormulation(obj, Discretization, FluidModel,ProductionSystem)
+        function Formulation = BuildFormulation(obj, Discretization, FluidModel, ProductionSystem)
             switch(obj.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
-                    if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
-                    end
+                    obj.NofEq = FluidModel.NofPhases;
                 case('Natural')
                     Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
-                    if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_comp();
-                    end
+                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComponents;
                 case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
-                    if strcmp(obj.ADM, 'active')
-                        Discretization.OperatorsHandler.FullOperatorsAssembler = operators_assembler_Imm();
-                    end
+                    obj.NofEq = FluidModel.NofComponents;
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
@@ -804,34 +799,36 @@ classdef builder < handle
         end
         function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
             TimeDriver = TimeLoop_Driver(obj.reports, obj.TotalTime, obj.MaxNumTimeSteps);
-            %% Construct Coupling
+            % Construct Coupling
             switch(obj.CouplingType)
+                %% FIM coupling
                 case('FIM')
                     %%%%FIM settings
                     % Build a different convergence cheker and a proper LS for ADM
-                     NLSolver = NL_Solver();
-                switch obj.ADM
-                    case('inactive')
-                        NLSolver.SystemBuilder = fim_system_builder();
-                        switch (obj.Formulation)
-                            case('Molar')
-                                ConvergenceChecker = convergence_checker_FS_molar();
-                            otherwise
-                                ConvergenceChecker = convergence_checker_FS();
-                        end
-                        switch (obj.LinearSolver)
-                            case ('gmres')
-                                NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
-                            case ('bicg')
-                                NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
-                            otherwise
-                                NLSolver.LinearSolver = linear_solver();
-                        end
-                    case ('active')
-                        NLSolver.SystemBuilder = fim_system_builder_ADM();
-                        ConvergenceChecker = convergence_checker_ADM();
-                        NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500); 
-                end
+                    NLSolver = NL_Solver();
+                    switch obj.ADM
+                        case('inactive')
+                            NLSolver.SystemBuilder = fim_system_builder();
+                            switch (obj.Formulation)
+                                case('Molar')
+                                    ConvergenceChecker = convergence_checker_FS_molar();
+                                otherwise
+                                    ConvergenceChecker = convergence_checker_FS();
+                            end
+                            switch (obj.LinearSolver)
+                                case ('gmres')
+                                    NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
+                                case ('bicg')
+                                    NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
+                                otherwise
+                                    NLSolver.LinearSolver = linear_solver();
+                            end
+                        case ('active')
+                            NLSolver.SystemBuilder = fim_system_builder_ADM();
+                            ConvergenceChecker = convergence_checker_ADM();
+                            NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
+                            NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                    end
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
                     switch (obj.Formulation)
@@ -842,7 +839,8 @@ classdef builder < handle
                     end
                     NLSolver.AddConvergenceChecker(ConvergenceChecker);
                     % Build FIM Coupling strategy
-                    Coupling = FIM_Strategy('FIM', NLSolver); 
+                    Coupling = FIM_Strategy('FIM', NLSolver);
+                %% Sequential coupling    
                 case('Sequential')
                     Coupling = Sequential_Strategy('Sequential');
                     Coupling.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
@@ -854,12 +852,12 @@ classdef builder < handle
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
                     pressuresolver.SystemBuilder = pressure_system_builder();
                     switch (obj.LinearSolver)
-                            case ('gmres')
-                                pressuresolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
-                            case ('bicg')
-                                pressuresolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
-                            otherwise
-                                pressuresolver.LinearSolver = linear_solver();
+                        case ('gmres')
+                            pressuresolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
+                        case ('bicg')
+                            pressuresolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
+                        otherwise
+                            pressuresolver.LinearSolver = linear_solver();
                     end
                     Coupling.AddPressureSolver(pressuresolver);
                     if (~isempty(obj.transport))
@@ -885,6 +883,7 @@ classdef builder < handle
                         Coupling.ConvergenceChecker = convergence_checker_impes();
                     end
                     Coupling.AddTransportSolver(transportsolver);
+                %% Single phase coupling
                 case('SinglePhase')
                     Coupling = SinglePhase_Strategy('SinglePhase');
                     pressuresolver = NL_Solver();
@@ -892,7 +891,7 @@ classdef builder < handle
                     ConvergenceChecker = convergence_checker_pressure();
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
-                    pressuresolver.SystemBuilder = pressure_system_builder();    
+                    pressuresolver.SystemBuilder = pressure_system_builder();
                     pressuresolver.LinearSolver = linear_solver();
                     Coupling.AddPressureSolver(pressuresolver);
                     if obj.incompressible

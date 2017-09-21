@@ -45,6 +45,10 @@ methods
         dt = obj.TimeStepSelector.ChooseTimeStep();
         % Phase Mobilities and total Mobility
         Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
+        
+        % Choose Grid resolution for this time-step (does nothing for FS)
+        DiscretizationModel.SelectADMGrid(ProductionSystem);
+        
         % Save initial State
         obj.PressureSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         obj.TransportSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
@@ -58,6 +62,7 @@ methods
             disp('Pressure Solver')
             disp('...............................................');
             tstart1 = tic;
+            obj.PressureSolver.LinearSolver.SetUp(DiscretizationModel);
             obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             obj.PressureTimer(obj.itCount) = toc(tstart1);
             disp('...............................................');
@@ -85,6 +90,7 @@ methods
             TempState = status();
             TempState.CopyProperties(ProductionSystem.Reservoir.State);
             while obj.TransportSolver.Converged == 0
+                obj.TransportSolver.LinearSolver.SetUp(DiscretizationModel);
                 obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
                 obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
                 if obj.TransportSolver.Converged == 0

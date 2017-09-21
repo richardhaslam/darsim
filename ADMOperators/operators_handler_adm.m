@@ -4,22 +4,17 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 16 August 2016
-%Last modified: 7 August 2017
+%Last modified: 21 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef operators_handler_adm < operators_handler
     properties
-        ProlongationBuilders
         ADMRest
         ADMProl
-        FullOperatorsAssembler
     end
     methods
-        function obj = operators_handler(cf)
-            obj.ProlongationBuilders = prolongation_builder.empty;
+        function obj = operators_handler_adm(cf)
+            obj@operators_handler(cf);
             obj.ADMProl = cell(2,1);
-        end
-        function AddProlongationBuilder(obj, prolongationbuilder, index)
-            obj.ProlongationBuilders(index) = prolongationbuilder;
         end
         function UpdateProlongationOperators(obj, ReservoirGrid, CoarseGrid, ProductionSystem)
             % Update basis functions for all variables
@@ -54,9 +49,6 @@ classdef operators_handler_adm < operators_handler
                 indexes = ADMGrid.GrandChildren{c};
                 obj.ADMRest(c, indexes) = 1;
               end
-        end
-        function [Rest, Prol] = AssembleFullOperators(obj)
-            [Rest, Prol] = obj.FullOperatorsAssembler.Assemble(obj.ADMRest, obj.ADMProl);
         end
     end
 end

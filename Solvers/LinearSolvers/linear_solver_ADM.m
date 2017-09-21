@@ -4,30 +4,19 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 15 July 2016
-%Last modified: 15 July 2016
+%Last modified: 21 September 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef linear_solver_ADM < linear_solver_MMs
     properties
-        Name
-        Tol
-        Maxit
-        Iter
-        R
-        P
-        Smooth = 0
+        OperatorsAssembler
     end
     methods
         function obj = linear_solver_ADM(name, tol, maxit)
            obj@linear_solver_MMs(name, tol, maxit)
         end
-        function SetUp(obj, ProductionSystem, DiscretizationModel)
-            % Choose where to coarsen and build ADM grid
-            DiscretizationModel.SelectADMGrid(ProductionSystem);
-            
-            % Construct R & P based on ADM grid
-            DiscretizationModel.BuildADMOperators();
-            
-            [obj.R, obj.P] = DiscretizationModel.AssembleFullOperators(); 
+        function SetUp(obj, DiscretizationModel)
+            % Get ADM Operators
+            [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel.OperatorsHandler.ADMRest, DiscretizationModel.OperatorsHandler.ADMProl); 
         end
     end
 end

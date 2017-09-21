@@ -21,14 +21,20 @@ methods
         obj.MaxChops = 10;
     end
     function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
+        
+        % Initialise
         dt = obj.TimeStepSelector.ChooseTimeStep();
         obj.Converged = 0;
         obj.chops = 0;
         End = 0;
+        
+        % Choose Grid resolution for this time-step (does nothing for FS)
+        DiscretizationModel.SelectADMGrid(ProductionSystem);
+        
         % Save initial State
         obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         % Linear Solver Setup
-        obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
+        obj.NLSolver.LinearSolver.SetUp(DiscretizationModel);
         % Save state of current time-step (it's useful for ADM to update based on time change)
         ProductionSystem.SavePreviousState();
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 

@@ -12,7 +12,7 @@ classdef linear_solver < handle
         %Preconditioner
     end
     methods
-        function SetUp(obj, ProductionSystem, DiscretizationModel)
+        function SetUp(obj, DiscretizationModel)
             %obj.Preconditioner.Setup(ProductionSystem, DiscretizationModel);
         end
         function x = Solve(obj, A, rhs)
