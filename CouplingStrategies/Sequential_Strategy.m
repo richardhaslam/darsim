@@ -52,6 +52,8 @@ methods
         % Save initial State
         obj.PressureSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         obj.TransportSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
+        % Save state of current time-step (it's useful for ADM to update based on time change)
+        ProductionSystem.SavePreviousState();
         while obj.Converged == 0 && obj.itCount < obj.MaxIter
             % copy state to check outer convergence
             State_old = status();

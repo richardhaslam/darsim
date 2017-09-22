@@ -20,7 +20,7 @@ classdef Reservoir_Simulator < handle
             obj.Simulation = Reservoir_Simulation();
         end
         function BuildObjects(obj)
-            obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix);
+            obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix, obj.Reader.FractureMatrix);
             obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1}, obj.Reader.FractureMatrix);
             obj.Writer = obj.Builder.BuildWriter(obj.Reader.Directory, obj.Simulation); 
         end

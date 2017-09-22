@@ -25,6 +25,7 @@ classdef Production_System < handle
         end
         function AssignInitialState(obj, VarNames, VarValues)
             obj.Reservoir.State.AssignInitialValues(VarNames, VarValues);
+            obj.Reservoir.State_old.AssignInitialValues(VarNames, VarValues);
             if obj.FracturesNetwork.Active
                 for f = 1:obj.FracturesNetwork.NumOfFrac
                     %% MODIFY INITIAL VALUES FOR FRAC

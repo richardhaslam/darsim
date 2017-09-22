@@ -8,7 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef convergence_checker_pressure < convergence_checker
     properties
-
+        adm = 0
+        OperatorsAssembler
     end
     methods 
         function PrintTitles(obj, Residual)
@@ -20,8 +21,15 @@ classdef convergence_checker_pressure < convergence_checker
             % Initialize
             converged = 0;
             % Compute Norms
-            Norm1 =  norm(residual, inf);
             Norm2 = norm(delta, inf);
+            if obj.adm
+               [R, ~] = obj.OperatorsAssembler.Assemble(DiscretizationModel.OperatorsHandler.ADMRest, DiscretizationModel.OperatorsHandler.ADMProl);
+               residual_c = R * residual;
+               residual_c = residual_c ./ sum(R, 2);
+               Norm1 = norm(residual_c, inf);
+            else
+               Norm1 = norm(residual, inf);
+            end
             
             disp(['Iter ' num2str(iter) '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
             

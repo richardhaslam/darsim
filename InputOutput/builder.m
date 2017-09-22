@@ -34,19 +34,22 @@ classdef builder < handle
         coupling
         transport
         plotting
-        adm
         flash
-        ADM
+        ADM = 'inactive'
+        ADMSettings
+        MMs
+        MMsSettings
         LinearSolver
         MinMaxdt
         Formulation = 'Natural';
         NofEq
         StopCriterion = 'MAX TIME';
         Fractured = 0;
+        NrOfFrac
         incompressible
     end
     methods
-        function FindKeyWords(obj, inputMatrix, SettingsMatrix)
+        function FindKeyWords(obj, inputMatrix, SettingsMatrix, FractureMatrix)
             %%%%%% Name of the Problem %%%%%%
             temp = strfind(inputMatrix{1}, 'TITLE'); % Search a specific string and find all rows containing matches
             obj.ProblemName = char(inputMatrix{1}(find(~cellfun('isempty', temp)) + 1));
@@ -110,8 +113,15 @@ classdef builder < handle
             obj.Fractured = find(~cellfun('isempty', temp));
             if isempty(obj.Fractured)
                 obj.Fractured = 0;
+                obj.NrOfFrac = 0;
             else
                 obj.Fractured = 1;
+                temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
+                index = find(~cellfun('isempty', temp));
+                temp = strsplit(FractureMatrix{1}{index},' ');
+                obj.NrOfFrac = str2double( temp{end} );
+                temp = strfind(FractureMatrix{1}, 'PROPERTIES');
+                frac_index = find(~cellfun('isempty', temp));
             end
            
             %%%%%%%%%%%%%%%SIMULATOR'S SETTINGS%%%%%%%%%%%
@@ -148,7 +158,78 @@ classdef builder < handle
             end
             
             temp = strfind(SettingsMatrix{1}, 'ADM');
-            obj.adm = find(~cellfun('isempty', temp));
+            adm = find(~cellfun('isempty', temp));
+            if str2double(SettingsMatrix{1}(adm + 1)) == 1
+                obj.ADM = 'active';
+                % ADM settings for reservoir
+                temp = strfind(SettingsMatrix{1}, 'LEVELS');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.maxlevel = zeros(1+obj.NrOfFrac, 1);
+                obj.ADMSettings.maxLevel(1) = str2double(SettingsMatrix{1}(x+1));
+                obj.ADMSettings.Coarsening = zeros( 1+obj.NrOfFrac, 3, obj.ADMSettings.maxLevel(1) );
+                temp = strfind(SettingsMatrix{1}, 'COARSENING_RATIOS');
+                x = find(~cellfun('isempty', temp));
+                cx = str2double(SettingsMatrix{1}(x+1));
+                cy = str2double(SettingsMatrix{1}(x+2));
+                cz = str2double(SettingsMatrix{1}(x+3));
+                temp = strfind(SettingsMatrix{1}, 'COARSENING_CRITERION');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.GridSelCriterion = char(SettingsMatrix{1}(x+1));
+                temp = strfind(SettingsMatrix{1}, 'VARIABLE');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.key = char(SettingsMatrix{1}(x+1));
+                temp = strfind(SettingsMatrix{1}, 'TOLERANCE');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.tol = str2double(SettingsMatrix{1}(x+1));
+                for L = 1:obj.ADMSettings.maxLevel(1)
+                    obj.ADMSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                end
+                temp = strfind(SettingsMatrix{1}, 'PRESSURE_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.PInterpolator = char(SettingsMatrix{1}(x+1));
+                if isempty(obj.ADMSettings.maxLevel(1)) || isempty(obj.ADMSettings.Coarsening(1,:,:)) || isempty(obj.ADMSettings.key) || isempty(obj.ADMSettings.tol) || isempty(obj.ADMSettings.PInterpolator)
+                    error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
+                end
+                % ADM settings in the fractures
+                if obj.Fractured
+                    for f = 1 : obj.NrOfFrac
+                        frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
+                        ADM_temp = regexprep(frac_info_split{9},' ' ,'');
+                        ADM_temp = strsplit(ADM_temp, { '[' , ',' , ']' });
+                        ADM_temp = [ str2double(ADM_temp(2)) , str2double(ADM_temp(3)) , str2double(ADM_temp(4)) , str2double(ADM_temp(5)) ];
+                        if ADM_temp(1)
+                            obj.ADMSettings.maxLevel(1+f) = ADM_temp(2);
+                        else
+                            obj.ADMSettings.maxLevel(1+f) = 0;
+                        end
+                        for L = 1:obj.ADMSettings.maxLevel(1)
+                            if L <= obj.ADMSettings.maxLevel(1+f)
+                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
+                            else
+                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^maxLevel(1+f);
+                            end
+                        end
+                    end
+                end 
+            end    
+            temp = strfind(SettingsMatrix{1}, 'MMs');
+            mms = find(~cellfun('isempty', temp));
+            if str2double(SettingsMatrix{1}(mms + 1)) == 1
+                obj.MMs = 'active';
+                temp = strfind(SettingsMatrix{1}, 'LEVELS');
+                x = find(~cellfun('isempty', temp));
+                obj.MMsSettings.maxlevel = zeros(1+obj.NrOfFrac, 1);
+                obj.MMsSettings.maxLevel(1) = str2double(SettingsMatrix{1}(x+1));
+                obj.MMsSettings.Coarsening = zeros( 1+obj.NrOfFrac, 3, obj.MMsSettings.maxLevel(1) );
+                temp = strfind(SettingsMatrix{1}, 'COARSENING_RATIOS');
+                x = find(~cellfun('isempty', temp));
+                cx = str2double(SettingsMatrix{1}(x+1));
+                cy = str2double(SettingsMatrix{1}(x+2));
+                cz = str2double(SettingsMatrix{1}(x+3));
+                 for L = 1:obj.MMsSettings.maxLevel(1)
+                    obj.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                end
+            end              
             
             %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
             temp = strfind(SettingsMatrix{1}, 'OUTPUT'); 
@@ -158,7 +239,7 @@ classdef builder < handle
         end
         function simulation = BuildSimulation(obj, inputMatrix, SettingsMatrix, FractureMatrix)
             simulation = Reservoir_Simulation();
-            simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, FractureMatrix, SettingsMatrix);
+            simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, FractureMatrix);
             simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, FractureMatrix, simulation.DiscretizationModel);            
             simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
             simulation.Formulation = obj.BuildFormulation(simulation.DiscretizationModel, simulation.FluidModel, simulation.ProductionSystem);
@@ -189,7 +270,7 @@ classdef builder < handle
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
         end
-        function Discretization = BuildDiscretization(obj, inputMatrix, FractureMatrix, SettingsMatrix)
+        function Discretization = BuildDiscretization(obj, inputMatrix, FractureMatrix)
             %% 1. Create fine-scale grids
             % 1a. Reservoir Grid
             nx = str2double(inputMatrix(obj.grid + 1));
@@ -197,19 +278,14 @@ classdef builder < handle
             nz = str2double(inputMatrix(obj.grid + 3));
             Nm = nx*ny*nz;
             ReservoirGrid = cartesian_grid(nx, ny, nz);
-            NrOfFrac = 0;
             % 1b. Fractures Grid
             if obj.Fractured
-                temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
-                index = find(~cellfun('isempty', temp));
-                temp = strsplit(FractureMatrix{1}{index},' ');
-                NrOfFrac = str2double( temp{end} );
-                FracturesGrid = fractures_grid(NrOfFrac);
+                FracturesGrid = fractures_grid(obj.NrOfFrac);
                 temp = strfind(FractureMatrix{1}, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
                 
-                Nf = zeros(NrOfFrac,1);
-                for f = 1 : NrOfFrac
+                Nf = zeros(obj.NrOfFrac,1);
+                for f = 1 : obj.NrOfFrac
                     % Creat cartesian grid in each fracture
                     frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
                     grid_temp = strsplit(frac_info_split{8}, 'x');
@@ -251,7 +327,7 @@ classdef builder < handle
                 frac_fracConn_index = find(~cellfun('isempty', temp));
                 
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
-                for f = 1 : NrOfFrac
+                for f = 1 : obj.NrOfFrac
                     % looping over all global fracture cells
                     for If = 1:length(frac_cell_index)
                         fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
@@ -286,76 +362,23 @@ classdef builder < handle
             end
             
             %% 2. Define your discretization Model (choose between FS and ADM)
-            if (str2double(SettingsMatrix(obj.adm + 1)) == 0 )
-                % Fine-scale discretization model
-                obj.ADM = 'inactive';
-                Discretization = FS_Discretization_model();
-            else
+            if  strcmp(obj.ADM, 'active')
                 % ADM discretization model
-                obj.ADM = 'active';
-                maxLevel = ones(1+NrOfFrac , 1);
-                % ADM grid for reservoir
-                temp = strfind(SettingsMatrix, 'LEVELS');
-                x = find(~cellfun('isempty', temp));
-                maxLevel(1) = str2double(SettingsMatrix(x+1));
-                Coarsening = zeros( 1+NrOfFrac, 3, maxLevel(1) );
-                temp = strfind(SettingsMatrix, 'COARSENING_RATIOS');
-                x = find(~cellfun('isempty', temp));
-                cx = str2double(SettingsMatrix(x+1));
-                cy = str2double(SettingsMatrix(x+2));
-                cz = str2double(SettingsMatrix(x+3));
-                temp = strfind(SettingsMatrix, 'COARSENING_CRITERION');
-                x = find(~cellfun('isempty', temp));
-                gridselcriterion = char(SettingsMatrix(x+1));
-                temp = strfind(SettingsMatrix, 'VARIABLE');
-                x = find(~cellfun('isempty', temp));
-                key = char(SettingsMatrix(x+1));
-                temp = strfind(SettingsMatrix, 'TOLERANCE');
-                x = find(~cellfun('isempty', temp));
-                tol = str2double(SettingsMatrix(x+1));
-                for L = 1:maxLevel(1)
-                    Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
-                end
-                temp = strfind(SettingsMatrix, 'PRESSURE_INTERPOLATOR');
-                x = find(~cellfun('isempty', temp));
-                if isempty(maxLevel(1)) || isempty(Coarsening(1,:,:)) || isempty(key) || isempty(tol) || isempty(x)
-                    error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
-                end 
-                % ADM grid for fractures
-                if obj.Fractured
-                    for f = 1 : NrOfFrac
-                        frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
-                        ADM_temp = regexprep(frac_info_split{9},' ' ,'');
-                        ADM_temp = strsplit(ADM_temp, { '[' , ',' , ']' });
-                        ADM_temp = [ str2double(ADM_temp(2)) , str2double(ADM_temp(3)) , str2double(ADM_temp(4)) , str2double(ADM_temp(5)) ];
-                        if ADM_temp(1)
-                            maxLevel(1+f) = ADM_temp(2);
-                        else
-                            maxLevel(1+f) = 0;
-                        end
-                        for L = 1:maxLevel(1)
-                            if L <= maxLevel(1+f)
-                                Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
-                            else
-                                Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^maxLevel(1+f);
-                            end
-                        end
-                    end
-                end
+                
                 % Create the operatorshandler
-                operatorshandler = operators_handler_adm(Coarsening(1,:,:));
+                operatorshandler = operators_handler_adm(obj.ADMSettings.Coarsening(1,:,:));
                 % a.1 Pressure prolongation builder
-                switch (char(SettingsMatrix(x+1)))
+                switch (obj.ADMSettings.PInterpolator)
                     case ('Constant')
-                        prolongationbuilder = prolongation_builder_constant(maxLevel(1));
+                        prolongationbuilder = prolongation_builder_constant(obj.ADMSettings.maxLevel(1));
                     otherwise
-                        prolongationbuilder = prolongation_builder_MSPressure(maxLevel(1), Coarsening(:,:,1) );
+                        prolongationbuilder = prolongation_builder_MSPressure(obj.ADMSettings.maxLevel(1), obj.ADMSettings.Coarsening(:,:,1) );
                         if ~obj.Fractured
                             prolongationbuilder.BFUpdater = bf_updater_ms();
                         else
                             prolongationbuilder.BFUpdater = bf_updater_FAMS();
                         end
-                        if strcmp(char(SettingsMatrix(x+1)), 'Homogeneous')
+                        if strcmp(obj.ADMSettings.PInterpolator, 'Homogeneous')
                             prolongationbuilder.BFUpdater.MaxContrast = 1;
                         else
                             prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
@@ -368,24 +391,42 @@ classdef builder < handle
                 for i = 2:n_phases
                     switch(test)
                         case('Constant')
-                            prolongationbuilder = prolongation_builder_constant(maxLevel(1));
+                            prolongationbuilder = prolongation_builder_constant(obj.ADMSettings.maxLevel(1));
                         case('MultiscaleSat')
-                            prolongationbuilder = prolongation_builder_MSHyperbolic(maxLevel(1));
+                            prolongationbuilder = prolongation_builder_MSHyperbolic(obj.ADMSettings.maxLevel(1));
                     end
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
                 end
                 
                 % b. Grid selection criterion (time\space based)
-                switch (gridselcriterion)
+                switch (obj.ADMSettings.GridSelCriterion)
                     case('dfdx')
-                        gridselector = adm_grid_selector_delta(tol, key);
+                        gridselector = adm_grid_selector_delta(obj.ADMSettings.tol, obj.ADMSettings.key);
                     case('dfdt')
-                        gridselector = adm_grid_selector_time(tol, key);
+                        gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key);
                 end
-                Discretization = ADM_Discretization_model(maxLevel, Coarsening);
+                Discretization = ADM_Discretization_model(obj.ADMSettings.maxLevel, obj.ADMSettings.Coarsening);
                 Discretization.AddADMGridSelector(gridselector);
                 Discretization.AddOperatorsHandler(operatorshandler);
+            elseif strcmp(obj.MMs, 'active')
+                % Create the operatorshandler
+                operatorshandler = operators_handler_ms(obj.MMsSettings.Coarsening(1,:,:));
+                prolongationbuilder = prolongation_builder_MSPressure(obj.ADMSettings.maxLevel(1), obj.ADMSettings.Coarsening(:,:,1) );
+                if ~obj.Fractured
+                    prolongationbuilder.BFUpdater = bf_updater_ms();
+                else
+                    prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                end
+                % Reduce contrast for BF computation to remove peaks
+                prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
+                % Static Multiscale for flow solver
+                Discretization = Multiscale_Discretization_Model(obj.MMsSettings.maxLevel, obj.MMsSettings.Coarsening);
+                Discretization.AddOperatorsHandler(operatorshandler);
+            else
+                % Fine-scale discretization model
+                Discretization = FS_Discretization_model();
             end
+            
             %% 3. Add Grids to the Discretization Model
             Discretization.AddReservoirGrid(ReservoirGrid);
             if obj.Fractured
@@ -804,7 +845,6 @@ classdef builder < handle
                 %% FIM coupling
                 case('FIM')
                     %%%%FIM settings
-                    % Build a different convergence cheker and a proper LS for ADM
                     NLSolver = NL_Solver();
                     switch obj.ADM
                         case('inactive')
@@ -815,17 +855,12 @@ classdef builder < handle
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
-                            switch (obj.LinearSolver)
-                                case ('gmres')
-                                    NLSolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
-                                case ('bicg')
-                                    NLSolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
-                                otherwise
-                                    NLSolver.LinearSolver = linear_solver();
-                            end
+                            NLSolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                         case ('active')
+                            % Build a different convergence cheker and a proper LS for ADM
                             NLSolver.SystemBuilder = fim_system_builder_ADM();
                             ConvergenceChecker = convergence_checker_ADM();
+                            ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                     end
@@ -851,14 +886,16 @@ classdef builder < handle
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
                     pressuresolver.SystemBuilder = pressure_system_builder();
-                    switch (obj.LinearSolver)
-                        case ('gmres')
-                            pressuresolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
-                        case ('bicg')
-                            pressuresolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
-                        otherwise
-                            pressuresolver.LinearSolver = linear_solver();
-                    end
+                    if strcmp(obj.ADM, 'active')
+                        pressuresolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
+                        pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
+                        pressuresolver.ConvergenceChecker.adm = 1;
+                        pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(1,1);
+                    elseif strcmp(obj.MMs, 'active')
+                        pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
+                    else
+                        pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
+                    end              
                     Coupling.AddPressureSolver(pressuresolver);
                     if (~isempty(obj.transport))
                         transportsolver = NL_Solver();
@@ -869,13 +906,13 @@ classdef builder < handle
                         transportsolver.SystemBuilder = transport_system_builder();
                         Coupling.ConvergenceChecker = convergence_checker_outer();
                         Coupling.ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
-                        switch (obj.LinearSolver)
-                            case ('gmres')
-                                transportsolver.LinearSolver = linear_solver_iterative('gmres', 1e-6, 500);
-                            case ('bicg')
-                                transportsolver.LinearSolver = linear_solver_iterative('bicg', 1e-6, 500);
-                            otherwise
-                                transportsolver.LinearSolver = linear_solver();
+                        if strcmp(obj.ADM, 'active')
+                            transportsolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
+                            transportsolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(2, obj.NofEq);
+                            transportsolver.ConvergenceChecker.adm = 1;
+                            transportsolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(2, obj.NofEq);
+                        else
+                            transportsolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                         end
                     else
                         transportsolver = explicit_transport_solver();
@@ -892,7 +929,17 @@ classdef builder < handle
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
                     pressuresolver.SystemBuilder = pressure_system_builder();
-                    pressuresolver.LinearSolver = linear_solver();
+                    if strcmp(obj.ADM, 'active')
+                        pressuresolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
+                        pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                        pressuresolver.ConvergenceChecker.adm = 1;
+                        pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                    elseif strcmp(obj.MMs, 'active')
+                        pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
+                        pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
+                    else
+                        pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
+                    end    
                     Coupling.AddPressureSolver(pressuresolver);
                     if obj.incompressible
                         Coupling.Incompressible = 1;

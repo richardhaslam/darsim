@@ -11,11 +11,14 @@ classdef operators_assembler_fim < operators_assembler
         
     end
     methods
+        function obj = operators_assembler_fim(n_eq)
+            obj@operators_assembler(n_eq);
+        end
         function [R, P] = Assemble(obj, ADMRest, ADMProl)
             % Build full operators
             R = ADMRest;
             P = ADMProl{1};
-            for i = 1:obj.NumberOfEq
+            for i = 2:obj.NumberOfEq
                 R = blkdiag(R, ADMRest);
                 P = blkdiag(P, ADMProl{2});
             end
