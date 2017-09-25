@@ -7,6 +7,7 @@ classdef Multiscale_Discretization_model < Discretization_model
         CoarseGrid
         OperatorsHandler
         FineGrid
+        GridMapper
     end
     methods
         function obj = Multiscale_Discretization_model(maxlevel, coarsening)
@@ -16,6 +17,10 @@ classdef Multiscale_Discretization_model < Discretization_model
             obj.maxLevel   = maxlevel;
             obj.Nf = zeros(n, 1);
             obj.Nc = zeros(n, maxlevel(1));
+            obj.GridMapper = grid_mapper();
+        end
+        function AddOperatorsHandler(obj, operatorshandler)
+            obj.OperatorsHandler = operatorshandler;
         end
         function InitializeMapping(obj, ProductionSystem, FluidModel)
             disp([num2str(obj.maxLevel), ' levels multiscale run']);
@@ -35,8 +40,8 @@ classdef Multiscale_Discretization_model < Discretization_model
             %% Pressure interpolators
             disp('Multiscale basis functions - start computation');
             start = tic;
-            obj.OperatorsHandler.ProlongationBuilders.BuildStaticOperators(ProductionSystem, FluidModel, obj.FineGrid, obj.CrossConnections, ...
-                    obj.maxLevel, obj.CoarseGrid);
+            obj.OperatorsHandler.BuildMMsOperators(ProductionSystem, FluidModel, obj.FineGrid, obj.CrossConnections, ...
+                obj.maxLevel, obj.CoarseGrid);
             disp('Multiscale basis functions - end')
             timer = toc(start);
             disp(['Multiscale basis functions computation took ', num2str(timer)])
@@ -60,24 +65,6 @@ classdef Multiscale_Discretization_model < Discretization_model
             
             % Fathers and Verteces for reservoir
             obj.GridMapper.AssignFathersandVerteces(obj.ReservoirGrid, obj.CoarseGrid(1,:), obj.maxLevel(1))
-
-            % Flag coarse blocks with wells for reservoir
-            obj.CoarseWells(Inj, Prod);
-            obj.ADMGridSelector.NoWellsCoarseCells = ones(obj.CoarseGrid(1,1).N, 1);
-            Nc1 = obj.CoarseGrid(1,1).N;
-            if obj.maxLevel(1) > 1
-               for i = 1:Nc1
-                   if obj.CoarseGrid(1,2).Wells(obj.CoarseGrid(1,1).Fathers(i, 2)) == 1
-                       obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
-                   end
-               end
-            else
-               for i =1:Nc1
-                   if obj.CoarseGrid(1,1).Wells(i) == 1
-                       obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
-                   end
-               end
-            end
             
             %% 2. Fractures
             % Construct all coarse grids for fractures
@@ -114,27 +101,9 @@ classdef Multiscale_Discretization_model < Discretization_model
                    end
                 end  
             end
-        end
-        function CoarseWells(obj, Inj, Prod)
-            for i=1:length(Inj)
-                % Flag coarse Nodes with wells
-                I = Inj(i).Cells;
-                for x = 1:obj.maxLevel(1)
-                    for j =1:length(I)
-                        [r, ~] = find(obj.CoarseGrid(1,x).GrandChildren == I(j)); % Only in reservoir for now
-                        obj.CoarseGrid(1,x).Wells(r) = 1;
-                    end
-                end
-            end
-            for i =1:length(Prod)
-                P = Prod(i).Cells;
-                for x = 1:obj.maxLevel(1)
-                    for j=1:length(P)
-                        [r, ~] = find(obj.CoarseGrid(1,x).GrandChildren == P(j));
-                        obj.CoarseGrid(1,x).Wells(r) = 1;
-                    end
-                end
-            end
+        end       
+        function SelectADMGrid(obj, ProductionSystem)
+            % virtual call
         end
     end
 end

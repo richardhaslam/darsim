@@ -11,12 +11,13 @@ classdef bf_updater_ms < bf_updater
         MaxContrast
     end
     methods
-        function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, Ntot)
+        function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections)
             % Builds fine-scale incompressible pressure system
             K = ProductionSystem.Reservoir.K;
             Sm = ProductionSystem.Reservoir.State.Properties('S_1').Value;
             Mob = FluidModel.ComputePhaseMobilities(Sm);
             obj.A = obj.MediumPressureSystem(FineGrid, K, Mob);
+            obj.AddWellsToPressureMatrix(ProductionSystem.Wells, K, Mob, FineGrid.N)
         end
         function A_Medium = MediumPressureSystem(obj, FineGrid, K, Mob)
             % Remove high contrast to avoid spikes
@@ -71,7 +72,29 @@ classdef bf_updater_ms < bf_updater
             z2 = reshape(Tz(:,:,2:Nz+1),N,1); 
             DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
             DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-            A_Medium = spdiags(DiagVecs,DiagIndx,N,N);
+            A_Medium = spdiags(DiagVecs, DiagIndx, N, N);
+        end
+        function AddWellsToPressureMatrix(obj, Wells, K, Mob, N)
+            %% Add Wells in residual form
+            Inj = Wells.Inj;
+            Prod = Wells.Prod;
+            dq = zeros(N, 1);
+            
+            %Injectors
+            for i=1:length(Inj)
+                c = Inj(i).Cells;
+                dq(c) = Inj(i).PI * sum(Inj(i).Mob, 2) * K(c, 1);
+            end
+            
+            %Producers
+            Mobt = sum(Mob, 2);
+            for i=1:length(Prod)
+                c = Prod(i).Cells;
+                dq(c) = Prod(i).PI * Mobt(c, :) * K(c,1);
+            end
+ 
+            W = spdiags(dq, 0, N, N);
+            obj.A = obj.A + W;
         end
     end
 end

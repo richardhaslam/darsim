@@ -11,15 +11,17 @@ classdef bf_updater < handle
         A
     end
     methods 
-        function MsP = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
+        function [MsP, MsC] = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
             cf = CoarseGrid.CoarseFactor ./ FineGrid.CoarseFactor;
             % Permutation Matrix
             [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
             % Reorder A based on dual coarse grid partition 
             tildeA = G * obj.A * G';
-            MsP = G' * obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
+            [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
+            MsP = G' * MsP;
+            MsC = G' * MsC * G;
         end
-        function MsP = ComputeMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
+        function [MsP, MsC] = ComputeMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
             switch(Dimensions)
                 case (1)
                     % 2. Define edge-edge (ee) block
@@ -51,9 +53,18 @@ classdef bf_updater < handle
                     Edges = -slvblk(Mee, Mev);
                     Faces = -slvblk(Mff, Mfe * Edges + Mfv);
                     
+                    % Prolongation Operator
                     MsP = [Faces;...
                            Edges;...
                            Mvv];
+                    
+                    % Correction functions operator 
+                    Mff_inv = slvblk(Mff, speye(Nf));
+                    Mee_inv = slvblk(Mee, speye(Ne));
+                    MsC = [Mff_inv        -Mff_inv*Mfe*Mee_inv      sparse(Nf,Nv);        ...
+                          sparse(Ne,Nf)               Mee_inv       sparse(Ne,Nv);        ...
+                          sparse(Nv,Nf)         sparse(Nv,Ne)       sparse(Nv,Nv)];
+                    
 %                     Mff_inv = Mff^-1;
 %                     Mee_inv = Mee^-1;
 %                     

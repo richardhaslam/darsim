@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_MSPressure < prolongation_builder
     properties
+        C % correction functions
         BFUpdater
         Dimensions
         ADMmap
@@ -38,7 +39,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(:,1));
             % Build Prolongation operator
             disp('Building Prolongation 1');
-            obj.P{1} = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
+            [obj.P{1}, obj.C{1}] = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
             % Build tpfa coarse system of level 1 (with MsFE)
             obj.BFUpdater.UpdatePressureMatrix(obj.P{1}, CoarseGrid(:, 1));
             for x = 2:maxLevel(1)
@@ -47,7 +48,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 obj.R{x} = obj.MsRestriction(CoarseGrid(:, x-1), CoarseGrid(:, x));
                 % Build Prolongation operator
                 disp(['Building Prolongation ', num2str(x)]);
-                obj.P{x} = obj.BFUpdater.MsProlongation(CoarseGrid(:, x-1), CoarseGrid(:, x), obj.Dimensions);
+                [obj.P{x}, obj.C{x}] = obj.BFUpdater.MsProlongation(CoarseGrid(:, x-1), CoarseGrid(:, x), obj.Dimensions);
                 %Build tpfa coarse system of level x (with MsFE)
                 obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(:, x));
             end

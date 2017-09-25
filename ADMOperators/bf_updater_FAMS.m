@@ -12,7 +12,7 @@ classdef bf_updater_FAMS < bf_updater_ms
         BFtype = 1;
     end
     methods
-        function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections, Ntot)
+        function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections)
             % Reservoir
             Km = ProductionSystem.Reservoir.K;
             S = ProductionSystem.CreateGlobalVariables(FineGrid, FluidModel.NofPhases, 'S_');
@@ -41,11 +41,12 @@ classdef bf_updater_FAMS < bf_updater_ms
                 obj.A(sub2ind(size(obj.A), j, j)) = obj.A(sub2ind(size(obj.A), j, j)) + T_Geo.* Mobt(i);
             end
         end
-        function MsP = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
+        function [MsP, MsC] = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
             % Prolongation operator for fractured reservoir (de-coupled)
             switch(obj.BFtype)
                 case(1)
-                    MsP = [];
+                    MsP = []; % Prolongation operator
+                    MsC = []; % Correction functions operator
                     Dimensions = Dimensions * ones(length(FineGrid), 1);
                     Dimensions(2:end) = Dimensions(2:end) - 1;
                     for i=1:length(FineGrid)
@@ -54,15 +55,18 @@ classdef bf_updater_FAMS < bf_updater_ms
                         [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid(i), CoarseGrid(i), cf);
                         % Reorder A based on dual coarse grid partition
                         tildeA = G * obj.Amedia{i} * G';
-                        P = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(i));
+                        [P, C]= obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(i));
                         %obj.Amedia{i} = P' * obj.Amedia{i} * P;
                         MsP = blkdiag(MsP, G'*P);
+                        MsC = blkdiag(MsC, G'*C*G);
                     end
                 case(2)
                     cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);
                     [G, Ni, Nf, Ne, Nv] = obj.FullyCoupledPermutationMatrix(FineGrid, CoarseGrid, cf);
                     tildeA = G * obj.A * G';
-                    MsP = G'*obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(1));
+                    [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(1));
+                    MsP = G' * MsP;
+                    MsC = G' * MsC * G;
             end
         end
         function UpdatePressureMatrix(obj, P, Grid)

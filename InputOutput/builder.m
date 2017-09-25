@@ -410,8 +410,8 @@ classdef builder < handle
                 Discretization.AddOperatorsHandler(operatorshandler);
             elseif strcmp(obj.MMs, 'active')
                 % Create the operatorshandler
-                operatorshandler = operators_handler_ms(obj.MMsSettings.Coarsening(1,:,:));
-                prolongationbuilder = prolongation_builder_MSPressure(obj.ADMSettings.maxLevel(1), obj.ADMSettings.Coarsening(:,:,1) );
+                operatorshandler = operators_handler_MMs(obj.MMsSettings.Coarsening(1,:,:));
+                prolongationbuilder = prolongation_builder_MSPressure(obj.MMsSettings.maxLevel(1), obj.MMsSettings.Coarsening(:,:,1) );
                 if ~obj.Fractured
                     prolongationbuilder.BFUpdater = bf_updater_ms();
                 else
@@ -419,8 +419,10 @@ classdef builder < handle
                 end
                 % Reduce contrast for BF computation to remove peaks
                 prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
+                % Add prolongation builder
+                operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                 % Static Multiscale for flow solver
-                Discretization = Multiscale_Discretization_Model(obj.MMsSettings.maxLevel, obj.MMsSettings.Coarsening);
+                Discretization = Multiscale_Discretization_model(obj.MMsSettings.maxLevel, obj.MMsSettings.Coarsening);
                 Discretization.AddOperatorsHandler(operatorshandler);
             else
                 % Fine-scale discretization model
@@ -791,6 +793,8 @@ classdef builder < handle
                     FluidModel.RelPermModel = relperm_model_linear();
                 case('Quadratic')
                     FluidModel.RelPermModel = relperm_model_quadratic();
+                case('Foam')
+                    FluidModel.RelPermModel = relperm_model_foam();
             end
             % Irriducible sat
             for i=1:FluidModel.NofPhases

@@ -8,19 +8,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef linear_solver_MMs < linear_solver
     properties
-        Name
-        Tol
-        Maxit
-        Iter
         R % Restriction operator
         P % Prolongation operator
         C % Correction functions operator
     end
     methods
         function obj = linear_solver_MMs(name, tol, maxit)
-            obj.Name = name;
-            obj.Tol = tol;
-            obj.Maxit = maxit;
+            obj@linear_solver(name, tol, maxit);
         end
         function SetUp(obj, DiscretizationModel)
             obj.R = DiscretizationModel.OperatorsHandler.R;
@@ -29,7 +23,7 @@ classdef linear_solver_MMs < linear_solver
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system
-            rhs_c = obj.R * rhs;
+            rhs_c = obj.R * (rhs - A * obj.C * rhs);
             A_c = obj.R * A * obj.P;
  
             % Solve Coarse System
