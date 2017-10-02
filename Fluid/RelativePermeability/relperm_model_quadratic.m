@@ -13,6 +13,7 @@ classdef relperm_model_quadratic < relperm_model
         function kr = ComputeRelPerm(obj, Phases, s)
             % Rescale saturations
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
+            S = max(S, 0);
             % Wetting phase relative permeability
             kr(:,1) = S.^2;
             kr(s < Phases(1).sr, 1) = 0;

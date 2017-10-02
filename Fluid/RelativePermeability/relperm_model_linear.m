@@ -13,6 +13,7 @@ classdef relperm_model_linear < relperm_model
         function kr = ComputeRelPerm(obj, Phases, s)
             % Rescale saturations
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
+            S = max(S, 0);
             kr(:,1) = S;
             kr(s < Phases(1).sr, 1) = 0;
             kr(:,2) = 1-S;

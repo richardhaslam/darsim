@@ -8,6 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef relperm_model_foam < relperm_model
     properties
+        fmob
+        fmdry 
     end
     methods
         function kr = ComputeRelPerm(obj, Phases, s)

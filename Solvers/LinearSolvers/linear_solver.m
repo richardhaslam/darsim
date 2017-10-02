@@ -54,6 +54,7 @@ classdef linear_solver < handle
                     [L, U] = ilu(A, setup);
                     [x, flag, relres, obj.Iter] = bicg(A, rhs, obj.Tol, obj.Maxit, L, U);
                 case('direct')
+                    flag = 0;
                     x = A\rhs;
             end
             disp(['LS time:', num2str(toc(start))]);
