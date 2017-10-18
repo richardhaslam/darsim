@@ -56,6 +56,8 @@ classdef linear_solver < handle
                 case('direct')
                     flag = 0;
                     x = A\rhs;
+                otherwise
+                    error('unsupported linear solver type');
             end
             disp(['LS time:', num2str(toc(start))]);
             if flag ~= 0

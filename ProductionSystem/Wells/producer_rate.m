@@ -56,8 +56,8 @@ classdef producer_rate < producer
                 rhs(a(ii)) = rhs(a(ii)) + obj.PI * K(a(ii)) .* Mob(a(ii)) .* obj.p;
             end
         end
-        function q = TotalFlux(obj, q, p, K, Mob)
-            q(obj.Cells) = q(obj.Cells) + obj.PI .* K(obj.Cells) .* Mob(obj.Cells,1) .* (obj.p - p(obj.Cells));
+        function Q = TotalFlux(obj, Q, p, K, Mob)
+            Q(obj.Cells) = Q(obj.Cells) + obj.PI .* K(obj.Cells) .* Mob(obj.Cells,1) .* (obj.p - p(obj.Cells));
         end  
     end
 end

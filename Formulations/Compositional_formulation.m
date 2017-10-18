@@ -25,9 +25,9 @@ classdef Compositional_formulation < formulation
             
             %% PHASE 1 
             %Apply upwind operator
-            Mupx = obj.UpWind(1).x*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1)); 
-            Mupy = obj.UpWind(1).y*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
-            Mupz = obj.UpWind(1).z*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
+            Mupx = obj.UpWind{1}.x*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1)); 
+            Mupy = obj.UpWind{1}.y*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
+            Mupz = obj.UpWind{1}.z*(obj.Mob(:,1) .* Rho(:,1) .* x(:,1));
             Mupx = reshape(Mupx, Grid.Nx, Grid.Ny, Grid.Nz);
             Mupy = reshape(Mupy, Grid.Nx, Grid.Ny, Grid.Nz);
             Mupz = reshape(Mupz, Grid.Nx, Grid.Ny, Grid.Nz);
@@ -49,9 +49,9 @@ classdef Compositional_formulation < formulation
             obj.Tph{i,1} = spdiags(DiagVecs, DiagIndx, Grid.N, Grid.N);
             
             % Gravity Matrix
-            Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt(1).x(2:Grid.Nx,:,:);
-            Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt(1).y(:,2:Grid.Ny,:);
-            Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt(1).z(:,:,2:Grid.Nz);
+            Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt{1}.x(2:Grid.Nx,:,:);
+            Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt{1}.y(:,2:Grid.Ny,:);
+            Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt{1}.z(:,:,2:Grid.Nz);
             
             %Construct matrix
             x1 = reshape(Tx(1:Grid.Nx,:,:), Grid.N, 1);
@@ -67,9 +67,9 @@ classdef Compositional_formulation < formulation
             
             %% PHASE 2 
             %Apply upwind operator
-            Mupx = obj.UpWind(2).x*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
-            Mupy = obj.UpWind(2).y*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
-            Mupz = obj.UpWind(2).z*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
+            Mupx = obj.UpWind{2}.x*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
+            Mupy = obj.UpWind{2}.y*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
+            Mupz = obj.UpWind{2}.z*(obj.Mob(:,2) .* Rho(:,2) .* x(:,2));
             Mupx = reshape(Mupx, Grid.Nx, Grid.Ny, Grid.Nz);
             Mupy = reshape(Mupy, Grid.Nx, Grid.Ny, Grid.Nz);
             Mupz = reshape(Mupz, Grid.Nx, Grid.Ny, Grid.Nz);
@@ -92,9 +92,9 @@ classdef Compositional_formulation < formulation
             
             
             % Gravity Matrix
-            Tx(2:Grid.Nx,:,:) = Tx(2:Grid.Nx,:,:) .* RhoInt(2).x(2:Grid.Nx,:,:);
-            Ty(:,2:Grid.Ny,:) = Ty(:,2:Grid.Ny,:) .* RhoInt(2).y(:,2:Grid.Ny,:);
-            Tz(:,:,2:Grid.Nz) = Tz(:,:,2:Grid.Nz) .* RhoInt(2).z(:,:,2:Grid.Nz);
+            Tx(2:Grid.Nx,:,:) = Tx(2:Grid.Nx,:,:) .* RhoInt{2}.x(2:Grid.Nx,:,:);
+            Ty(:,2:Grid.Ny,:) = Ty(:,2:Grid.Ny,:) .* RhoInt{2}.y(:,2:Grid.Ny,:);
+            Tz(:,:,2:Grid.Nz) = Tz(:,:,2:Grid.Nz) .* RhoInt{2}.z(:,:,2:Grid.Nz);
             
             %Construct matrix
             x1 = reshape(Tx(1:Grid.Nx,:,:), Grid.N, 1);
@@ -148,6 +148,10 @@ classdef Compositional_formulation < formulation
             
             %% 6. Compute Pc (Pc = Pc(S))
             FluidModel.ComputePc(Status);
+        end
+        function ComputeTotalFluxes(obj, ProductionSystem, DiscretizationModel)
+            % it does not exist for now
+           
         end
         function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)
             N = DiscretizationModel.ReservoirGrid.N;      

@@ -559,7 +559,7 @@ classdef builder < handle
                 end
                 
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 1000;
+                PI = 2000;
                 constraint = char(inputMatrix(obj.inj(i) + 7));
                 switch (constraint)
                     case('pressure')
@@ -660,7 +660,7 @@ classdef builder < handle
                     k_final = str2double(inputMatrix{obj.prod(i) + 6});
                 end                          
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 1000;
+                PI = 2000;
                 constraint = char(inputMatrix(obj.prod(i) + 7));
                 switch (constraint)
                     case('pressure')
@@ -811,6 +811,8 @@ classdef builder < handle
                     FluidModel.RelPermModel = relperm_model_quadratic();
                 case('Foam')
                     FluidModel.RelPermModel = relperm_model_foam();
+                case('BrooksCorey')
+                    FluidModel.RelPermModel = relperm_model_brookscorey();
             end
             % Irriducible sat
             for i=1:FluidModel.NofPhases
@@ -839,10 +841,10 @@ classdef builder < handle
                     obj.NofEq = FluidModel.NofPhases;
                 case('Natural')
                     Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComponents;
+                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComp;
                 case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofComponents;
+                    obj.NofEq = FluidModel.NofComp;
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();

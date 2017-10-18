@@ -39,7 +39,7 @@ classdef injector_rate < injector
 %                     end
 %             end
         end
-        function [dQdp, dQdS] = dQPhasesdPdS(obj, State, K, NofPhases)
+        function [dQdp, dQdS] = dQPhasesdPdS(obj, K, NofPhases)
             dQdp = zeros(length(obj.Cells), NofPhases);
             dQdS = zeros(length(obj.Cells), NofPhases * (NofPhases - 1));
         end
