@@ -105,9 +105,9 @@ for F = 1 : size(Frac_Input,2)
 
             end
 
-            if ( min(Frac(f).Points(1,:)) < 0 ) || ( max(Frac(f).Points(1,:)) > LX ) || ...
-               ( min(Frac(f).Points(2,:)) < 0 ) || ( max(Frac(f).Points(2,:)) > LY ) || ...
-               ( min(Frac(f).Points(3,:)) < 0 ) || ( max(Frac(f).Points(3,:)) > LZ )
+            if ( min(Frac(f).Points(1,:)) < 0 - almostZero ) || ( max(Frac(f).Points(1,:)) > LX + almostZero ) || ...
+               ( min(Frac(f).Points(2,:)) < 0 - almostZero ) || ( max(Frac(f).Points(2,:)) > LY + almostZero ) || ...
+               ( min(Frac(f).Points(3,:)) < 0 - almostZero ) || ( max(Frac(f).Points(3,:)) > LZ + almostZero )
                    error('Fracture #%1.0f does not fit in the matrix dimensions! Please check the input file.',f);
             end
 
@@ -587,6 +587,7 @@ if max([NX,NY,NZ]) <= 10
 end
 
 rotate3d on;
+view([0 90]);
 fprintf('---------------------------------------------------------\n');
 
 %% Intersections of fracture plates with each other (if any)
