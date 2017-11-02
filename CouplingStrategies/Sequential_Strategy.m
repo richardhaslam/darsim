@@ -64,7 +64,7 @@ methods
             disp('Pressure Solver')
             disp('...............................................');
             tstart1 = tic;
-            obj.PressureSolver.LinearSolver.SetUp(DiscretizationModel);
+            obj.PressureSolver.SetUp(DiscretizationModel);
             obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             obj.PressureTimer(obj.itCount) = toc(tstart1);
             disp('...............................................');
@@ -92,7 +92,7 @@ methods
             TempState = status();
             TempState.CopyProperties(ProductionSystem.Reservoir.State);
             while obj.TransportSolver.Converged == 0
-                obj.TransportSolver.LinearSolver.SetUp(DiscretizationModel);
+                obj.TransportSolver.SetUp(DiscretizationModel);
                 obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
                 obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
                 if obj.TransportSolver.Converged == 0

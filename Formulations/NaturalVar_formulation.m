@@ -26,6 +26,14 @@ classdef NaturalVar_formulation < Compositional_formulation
             obj.SinglePhase = obj.InitialPhaseState;
             obj.PreviousSinglePhase = obj.InitialPhaseState;
         end
+        function x = GetPrimaryUnknowns(obj, ProductionSystem, DiscretizationModel)
+            N =DiscretizationModel.N;
+            x = zeros(obj.NofComponents * N, 1);
+            x(1:N) = ProductionSystem.Reservoir.State.Properties('P_2').Value;
+            for i=1:obj.NofPhases
+                x(i*N + 1:(i+1)*N) = ProductionSystem.Reservoir.State.Properties(['S_', num2str(i)]).Value;
+            end
+        end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);

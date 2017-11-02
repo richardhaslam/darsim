@@ -971,12 +971,13 @@ classdef Immiscible_formulation < formulation
             % 1. Solve
             T = spdiags(dt/pv*ones(N,1),0,N,N);    % dt/pv * Cell Fluxes and producer
             B = T * obj.V;
-            injector = max(obj.Qwells,0) .* dt/pv;  % injection flux * dt/pv
+            injector = max(obj.Qwells, 0) .* dt/pv;  % injection flux * dt/pv
             
             S = ProductionSystem.Reservoir.State.Properties('S_1');
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1');
             s_old = S.Value;
             
-            delta = S.Value - s_old + (B * obj.f + injector);
+            delta = S.Value - s_old + (B * obj.f + injector) ./ rho.Value;
             
             % Now update values
             Nm = DiscretizationModel.ReservoirGrid.N;
