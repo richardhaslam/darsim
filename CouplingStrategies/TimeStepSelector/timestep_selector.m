@@ -26,10 +26,17 @@ classdef timestep_selector < handle
             %Void Volume in each cell
             pv = por * DiscretizationModel.ReservoirGrid.Volume;   
             
+            % It's an approxmiation of the real CFL condition
             %I take the worst possible scenario
             s = [FluidModel.Phases(1).sr:0.01:1-FluidModel.Phases(1).sr]';
             Mob = FluidModel.ComputePhaseMobilities(s);
             dMob = FluidModel.DMobDS(s);
+            rho = zeros(1, FluidModel.NofPhases);
+            for i=1:FluidModel.NofPhases
+                rho(i) = max(ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value);
+                Mob(:, i) = rho(i) * Mob(:, i);
+                dMob(:, i) = rho(i) * dMob(:, i); 
+            end
             df = (dMob(:,1) .* sum(Mob, 2) - sum(dMob, 2) .* Mob(:,1)) ./ sum(Mob, 2).^2;
             dfmax = max(df);
             Uxmax = max(max(max(abs(U.x))));
@@ -40,9 +47,10 @@ classdef timestep_selector < handle
             Lambdaz = dfmax * Uzmax;
             
             %Compute timestep size
-            dtx = obj.CFL*pv/Lambdax;
-            dty = obj.CFL*pv/Lambday;
-            dtz = obj.CFL*pv/Lambdaz;
+            % I multiply by mean(rho) coz U is the mass flux
+            dtx = obj.CFL*pv*mean(rho)/Lambdax;
+            dty = obj.CFL*pv*mean(rho)/Lambday;
+            dtz = obj.CFL*pv*mean(rho)/Lambdaz;
             dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt]);
         end
         function dt = ChooseTimeStep(obj)

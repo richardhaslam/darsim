@@ -11,6 +11,7 @@ classdef injector < handle
         Coord
         Cells
         p
+        qv % total volumetric rate
         T
         QPhases
         QComponents
@@ -29,11 +30,13 @@ classdef injector < handle
             obj.PI = PI;
             obj.Coord = coord;
             obj.rho = ones(1, n_phases);
+            obj.qv = 0;
         end
         function ResizeObjects(obj, n)
             obj.p =  ones(n,1) * obj.p;
             n_phases = length(obj.rho);
             obj.rho = ones(n, n_phases);
+            obj.qv = ones(n, 1) * obj.qv/n;
         end
         function residual = InjectorResidual(obj, residual)
             residual = sum(obj.QPhases);

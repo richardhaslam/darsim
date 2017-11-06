@@ -19,8 +19,7 @@ classdef Immiscible_fluid_model < fluid_model
             % Composition in this case is fixed to be 1 and 0
             SinglePhase = zeros(length(Status.Properties('S_1').Value), 1);
             SinglePhase (Status.Properties('S_1').Value == 1) = 1;
-            SinglePhase (Status.Properties('S_2').Value == 1) = 2;
-            
+            SinglePhase (Status.Properties('S_2').Value == 1) = 2;            
         end
         function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)

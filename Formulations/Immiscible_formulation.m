@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 1 August 2017
+%Last modified: 18 October 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
@@ -433,23 +433,24 @@ classdef Immiscible_formulation < formulation
             % Define Local handles
             Inj = Wells.Inj;
             Prod = Wells.Prod;
-            p = State.Properties('P_2').Value;
-            rho = State.Properties(['rho_', num2str(ph)]).Value;
+            %p = State.Properties('P_2').Value;
+            %rho = State.Properties(['rho_', num2str(ph)]).Value;
           
             %Injectors
             for i=1:length(Inj)
                 a = Inj(i).Cells;
+                [dQdp, ~] = Inj(i).dQPhasesdPdS(K, obj.NofPhases);
                 for j=1:length(a)
-                    Jp(a(j),a(j)) = Jp(a(j),a(j)) + Inj(i).PI*K(a(j))*Inj(i).Mob(:, ph)*Inj(i).rho(j, ph);
+                    Jp(a(j),a(j)) = Jp(a(j),a(j)) - dQdp(j, ph);
                 end
             end
             %Producers
             for i=1:length(Prod)
                 b = Prod(i).Cells;
+                [dQdp, dQdS] = Prod(i).dQPhasesdPdS(State, K, obj.Mob, obj.dMob, obj.drhodp, obj.NofPhases);
                 for j=1:length(b)
-                    Jp(b(j),b(j)) = Jp(b(j),b(j)) + Prod(i).PI*K(b(j)).*obj.Mob(b(j), ph) .* rho(b(j))...
-                     - Prod(i).PI * K(b(j)) * obj.Mob(b(j), ph) * obj.drhodp(b(j), ph) .* (Prod(i).p(j) - p(b(j)));                    
-                    JS(b(j),b(j)) = JS(b(j),b(j)) - Prod(i).PI*K(b(j)).* rho(b(j)) .* (Prod(i).p(j) - p(b(j))).*obj.dMob(b(j), ph);
+                    Jp(b(j),b(j)) = Jp(b(j),b(j)) - dQdp(j, ph);                    
+                    JS(b(j),b(j)) = JS(b(j),b(j)) - dQdS(j, ph);
                 end
             end
         end
@@ -780,7 +781,7 @@ classdef Immiscible_formulation < formulation
             %Injectors
             for i=1:length(Inj)
                 c = Inj(i).Cells;
-                [dq(c, :), ~] = Inj(i).dQPhasesdPdS(State, K, obj.NofPhases);
+                [dq(c, :), ~] = Inj(i).dQPhasesdPdS(K, obj.NofPhases);
             end
             
             %Producers
@@ -970,12 +971,13 @@ classdef Immiscible_formulation < formulation
             % 1. Solve
             T = spdiags(dt/pv*ones(N,1),0,N,N);    % dt/pv * Cell Fluxes and producer
             B = T * obj.V;
-            injector = max(obj.Qwells,0) .* dt/pv;  % injection flux * dt/pv
+            injector = max(obj.Qwells, 0) .* dt/pv;  % injection flux * dt/pv
             
             S = ProductionSystem.Reservoir.State.Properties('S_1');
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1');
             s_old = S.Value;
             
-            delta = S.Value - s_old + (B * obj.f + injector);
+            delta = S.Value - s_old + (B * obj.f + injector) ./ rho.Value;
             
             % Now update values
             Nm = DiscretizationModel.ReservoirGrid.N;

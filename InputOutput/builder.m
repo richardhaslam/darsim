@@ -559,9 +559,18 @@ classdef builder < handle
                 end
                 
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 1000;
-                pressure = str2double(inputMatrix(obj.inj(i) + 8));
-                Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
+                PI = 2000;
+                constraint = char(inputMatrix(obj.inj(i) + 7));
+                switch (constraint)
+                    case('pressure')
+                        pressure = str2double(inputMatrix(obj.inj(i) + 8));
+                        Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
+                    case('rate')
+                        rate = str2double(inputMatrix(obj.inj(i) + 8));
+                        rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
+                        Injector = injector_rate(PI, coord, rate, obj.Init(1), Tres, n_phases);
+                end
+                
                 Wells.AddInjector(Injector);
             end
             
@@ -642,19 +651,26 @@ classdef builder < handle
                     Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 6}, ' ');
                     if length(Well_Coord_Temp)>1
                         if Well_Coord_Temp{2}=='-',  k_final = DiscretizationModel.ReservoirGrid.Nz-1;
-                        else,  error('For prodection Well Coordination, while you can only use "NZ" with minus sign "-"!');
+                        else,  error('For production Well Coordination, while you can only use "NZ" with minus sign "-"!');
                         end
                     else
                         k_final = DiscretizationModel.ReservoirGrid.Nz;
                     end
                 else
                     k_final = str2double(inputMatrix{obj.prod(i) + 6});
-                end
-                          
+                end                          
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 1000;
-                pressure = str2double(inputMatrix(obj.prod(i) + 8));
-                Producer = producer_pressure(PI, coord, pressure);
+                PI = 2000;
+                constraint = char(inputMatrix(obj.prod(i) + 7));
+                switch (constraint)
+                    case('pressure')
+                        pressure = str2double(inputMatrix(obj.prod(i) + 8));
+                        Producer = producer_pressure(PI, coord, pressure);
+                    case('rate')
+                        rate = str2double(inputMatrix(obj.prod(i) + 8));
+                        rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
+                        Producer = producer_rate(PI, coord, rate);
+                end
                 Wells.AddProducer(Producer);
             end
             ProductionSystem.AddWells(Wells);
@@ -825,10 +841,10 @@ classdef builder < handle
                     obj.NofEq = FluidModel.NofPhases;
                 case('Natural')
                     Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComponents;
+                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComp;
                 case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofComponents;
+                    obj.NofEq = FluidModel.NofComp;
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();

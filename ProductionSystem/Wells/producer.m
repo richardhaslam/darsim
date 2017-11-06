@@ -11,6 +11,7 @@ classdef producer < handle
         Coord
         Cells
         p
+        qv % total volumetric rate
         QPhases
         QComponents
         PI
@@ -20,9 +21,11 @@ classdef producer < handle
         function obj = producer(PI, coord)
             obj.Coord = coord;
             obj.PI = PI;
+            obj.qv = 0;
         end
         function ResizeObjects(obj, n)
             obj.p =  ones(n,1) * obj.p;
+            obj.qv = ones(n,1) * obj.qv/n;
         end
     end
 end

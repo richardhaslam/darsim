@@ -32,6 +32,9 @@ methods
     function AddConvergenceChecker(obj, convcheck)
         obj.ConvergenceChecker = convcheck;
     end
+    function SetUp(obj, DiscretizationModel)
+        obj.LinearSolver.SetUp(DiscretizationModel);
+    end
     function Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt)
         % Initialise objects for new NL Solve
         obj.Converged = 0;
