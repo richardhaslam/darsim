@@ -264,7 +264,7 @@ classdef builder < handle
                     VarNames = {'P_2', 'S_1', 'S_2'};
                     %index = 1;
                     %VarValues(index, 2) = 1;
-                    simulation.Initializer = initializer(VarNames, VarValues);
+                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
@@ -795,6 +795,8 @@ classdef builder < handle
                     FluidModel.RelPermModel = relperm_model_quadratic();
                 case('Foam')
                     FluidModel.RelPermModel = relperm_model_foam();
+                case('Corey')
+                    FluidModel.RelPermModel = relperm_model_brookscorey();
             end
             % Irriducible sat
             for i=1:FluidModel.NofPhases
