@@ -813,6 +813,8 @@ classdef builder < handle
                     FluidModel.RelPermModel = relperm_model_foam();
                 case('BrooksCorey')
                     FluidModel.RelPermModel = relperm_model_brookscorey();
+                case('Gusti')
+                    FluidModel.RelPermModel = relperm_model_gusti(1);
             end
             % Irriducible sat
             for i=1:FluidModel.NofPhases
