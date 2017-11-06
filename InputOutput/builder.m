@@ -813,7 +813,7 @@ classdef builder < handle
                     FluidModel.RelPermModel = relperm_model_foam();
                 case('BrooksCorey')
                     FluidModel.RelPermModel = relperm_model_brookscorey();
-                case('Not gusti')
+                case('gusti')
                     FluidModel.RelPermModel = relperm_model_gusti(1);
             end
             % Irriducible sat
