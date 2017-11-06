@@ -3,8 +3,8 @@
 %DARSim 2 Reservoir Simulator
 %Author: All DARSim2 members
 %TU Delft
-%Created: 6 november 2017
-%Last modified: 6 november 2017
+%Created: 6 November 2017
+%Last modified: 6 November 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef relperm_model_gusti < relperm_model
     properties
@@ -12,9 +12,8 @@ classdef relperm_model_gusti < relperm_model
     end
     methods
         function obj = relperm_model_gusti(input)
-            obj.a = input;          
+            obj.a = input;
         end
-        
         function kr = ComputeRelPerm(obj, Phases, s)
             % Rescale saturations
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
