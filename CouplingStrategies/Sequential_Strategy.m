@@ -46,12 +46,12 @@ methods
         % Phase Mobilities and total Mobility
         Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
         
+        % Save initial State
+        obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+        obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+        
         % Choose Grid resolution for this time-step (does nothing for FS)
         DiscretizationModel.SelectADMGrid(ProductionSystem);
-        
-        % Save initial State
-        obj.PressureSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
-        obj.TransportSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         % Save state of current time-step (it's useful for ADM to update based on time change)
         ProductionSystem.SavePreviousState();
         while obj.Converged == 0 && obj.itCount < obj.MaxIter

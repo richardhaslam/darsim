@@ -40,11 +40,6 @@ methods
         obj.TimerInner = zeros(obj.MaxIter, 1);
         obj.itCount = 1;
         
-        % Update Derivatives
-        obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
-        % Compute residual
-        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
-        
         % Print some info
         obj.ConvergenceChecker.PrintTitles(obj.Residual);
         
@@ -98,6 +93,16 @@ methods
     end
     function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
         obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
+    end
+    function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
+        % 1. Save initial state
+        obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
+        
+        % 2. Computes initial residual 
+        % Update Derivatives
+        obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+        % Compute residual
+        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
     end
 end
 end

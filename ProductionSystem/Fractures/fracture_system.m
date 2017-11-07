@@ -11,7 +11,6 @@ classdef fracture_system < handle
         Active = 0;
         NumOfFrac
         Fractures
-        State
     end
     methods
     end
