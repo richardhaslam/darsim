@@ -46,25 +46,26 @@ methods
         % Phase Mobilities and total Mobility
         Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
         
-        % Save initial State
-        obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
-        obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
-        
-        % Choose Grid resolution for this time-step (does nothing for FS)
-        DiscretizationModel.SelectADMGrid(ProductionSystem);
         % Save state of current time-step (it's useful for ADM to update based on time change)
         ProductionSystem.SavePreviousState();
+        
+         % Set up linear solver
+        obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
+        obj.PressureSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
+        obj.TransportSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
         while obj.Converged == 0 && obj.itCount < obj.MaxIter
             % copy state to check outer convergence
             State_old = status();
             State_old.CopyProperties(ProductionSystem.Reservoir.State);
             disp(newline);
             disp(['Outer iteration: ', num2str(obj.itCount)]);
+            
             %% 1. Solve pressure equation
             disp('Pressure Solver')
             disp('...............................................');
             tstart1 = tic;
-            obj.PressureSolver.LinearSolver.SetUp(DiscretizationModel);
+            % Save initial State
+            obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
             obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             obj.PressureTimer(obj.itCount) = toc(tstart1);
             disp('...............................................');
@@ -83,6 +84,7 @@ methods
             % 3.1 Choose stable timestep
             if obj.itCount == 1
                 dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+                obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
             end
             disp('Transport Solver');
             disp('...............................................');
@@ -92,7 +94,6 @@ methods
             TempState = status();
             TempState.CopyProperties(ProductionSystem.Reservoir.State);
             while obj.TransportSolver.Converged == 0
-                obj.TransportSolver.LinearSolver.SetUp(DiscretizationModel);
                 obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
                 obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
                 if obj.TransportSolver.Converged == 0
@@ -101,6 +102,7 @@ methods
                     ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                     disp(['Chopping time-step and restarting Newton loop with dt = ', num2str(dt)])
                     dt = dt/10;
+                    obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
                 end
             end
             obj.TransportTimer(obj.itCount) = toc(tstart3);

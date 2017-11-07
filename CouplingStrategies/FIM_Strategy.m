@@ -29,11 +29,8 @@ methods
         End = 0;
         
         % Set Up non-linear solver
-        obj.NLSolver.Setup(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
-        % Choose Grid resolution for this time-step (does nothing for FS)
-        DiscretizationModel.SelectADMGrid(ProductionSystem);
-        % Linear Solver Setup
-        obj.NLSolver.LinearSolver.SetUp(DiscretizationModel);
+        obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
+        obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
         
         % Save state of current time-step (it's useful for ADM to update based on time change)
         ProductionSystem.SavePreviousState();
@@ -55,6 +52,7 @@ methods
                 Formulation.Reset();
                 obj.NLSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
                 ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
             end
             obj.Converged = obj.NLSolver.Converged;
         end

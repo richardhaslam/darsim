@@ -22,7 +22,7 @@ properties
 end
 properties (Access = private)
     Residual
-    Jacobian  
+    Jacobian
 end
 methods
     function obj = NL_Solver()
@@ -49,7 +49,7 @@ methods
             % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
             start1 = tic;
             obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
-            obj.TimerConstruct(obj.itCount) = toc(start1);           
+            obj.TimerConstruct(obj.itCount) = toc(start1);
             
             % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
             obj.SystemBuilder.SetUpSolutionChopper(obj.SolutionChopper, Formulation, ProductionSystem, DiscretizationModel);
@@ -80,7 +80,7 @@ methods
         end
     end
     function BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
-        obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt); 
+        obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
     end
     function SolveLinearSystem(obj)
         obj.Delta = obj.LinearSolver.Solve(obj.Jacobian, -obj.Residual);
@@ -89,16 +89,16 @@ methods
         obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
     end
     function CheckConvergence(obj, Formulation, DiscretizationModel, ProductionSystem)
-        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State);
+        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver);
     end
     function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
         obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
     end
-    function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
+    function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
         % 1. Save initial state
         obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
         
-        % 2. Computes initial residual 
+        % 2. Computes initial residual
         % Update Derivatives
         obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         % Compute residual

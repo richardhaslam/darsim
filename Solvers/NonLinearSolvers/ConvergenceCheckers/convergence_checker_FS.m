@@ -15,7 +15,7 @@ classdef convergence_checker_FS < convergence_checker
             disp('');
             disp('        ||Residual||   ||Equilibrium||   ||delta p||   ||delta S||');
         end
-        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State)
+        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State, LinearSolver)
             
             % Initialize
             converged = 0;
