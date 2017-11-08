@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 July 2016
-%Last modified: 18 July 2016
+%Last modified: 8 July 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef FIM_Strategy < Coupling_Strategy
 properties
@@ -28,12 +28,12 @@ methods
         obj.chops = 0;
         End = 0;
         
+        % Save state of current time-step (it's useful for ADM to update based on time change)
+        ProductionSystem.SavePreviousState();
+        
         % Set Up non-linear solver
         obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
         obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
-        
-        % Save state of current time-step (it's useful for ADM to update based on time change)
-        ProductionSystem.SavePreviousState();
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
