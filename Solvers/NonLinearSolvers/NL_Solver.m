@@ -104,5 +104,9 @@ methods
         % Compute residual
         obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
     end
+    function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
+        % Set up the linear solver
+        obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
+    end
 end
 end

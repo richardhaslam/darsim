@@ -17,6 +17,7 @@ properties
     PressureTimer
     BalanceTimer
     TransportTimer
+    Chops
 end
 methods
     function obj = Sequential_Strategy(name)
@@ -32,9 +33,9 @@ methods
         End = 0;
         
         % This is the outer loop
-        obj.itCount = 1;
         obj.Converged = 0;
         obj.NLiter = 0;
+        obj.Chops = 0;
         
         % Timers
         obj.PressureTimer = zeros(obj.MaxIter,1);
@@ -46,72 +47,101 @@ methods
         % Phase Mobilities and total Mobility
         Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
         
-        % Save state of current time-step (it's useful for ADM to update based on time change)
+        % Save state of current time-step
         ProductionSystem.SavePreviousState();
-        
-         % Set up linear solver
-        obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
-        obj.PressureSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
-        obj.TransportSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
-        while obj.Converged == 0 && obj.itCount < obj.MaxIter
-            % copy state to check outer convergence
-            State_old = status();
-            State_old.CopyProperties(ProductionSystem.Reservoir.State);
-            disp(newline);
-            disp(['Outer iteration: ', num2str(obj.itCount)]);
-            
-            %% 1. Solve pressure equation
-            disp('Pressure Solver')
-            disp('...............................................');
-            tstart1 = tic;
-            % Save initial State
+        % Set up linear solver
+        while obj.Converged == 0 && obj.Chops < 10
+            obj.itCount = 1;
             obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
-            obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
-            obj.PressureTimer(obj.itCount) = toc(tstart1);
-            disp('...............................................');
-            %% 2. Compute total fluxes 
-            Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
-            Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
-            % Check that velocity field is conservative
-            tstart2 = tic;
-            conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
-            if ~conservative
-                error('DARSim2 error: mass balance not respected');
+            if (obj.Chops == 0)
+                obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
+                obj.TransportSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
             end
-            obj.BalanceTimer(obj.itCount) = toc(tstart2);
-             
-            %% 3. Solve transport            
-            % 3.1 Choose stable timestep
-            if obj.itCount == 1
-                dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+            % Outer loop (Flow transport coupling)
+            while obj.Converged == 0 && obj.itCount < obj.MaxIter
+                % copy state to check outer convergence
+                State_old = status();
+                State_old.CopyProperties(ProductionSystem.Reservoir.State);
+                disp(newline);
+                disp(['Outer iteration: ', num2str(obj.itCount)]);
+                
+                %% 1. Solve pressure equation
+                disp('Pressure Solver')
+                disp('...............................................');
+                tstart1 = tic;
+                % Save initial State
+                obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
+                obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
+                obj.PressureTimer(obj.itCount) = toc(tstart1);
+                disp('...............................................');
+                
+                %% 2. Compute total fluxes
+                Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
+                Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
+                % Check that velocity field is conservative
+                tstart2 = tic;
+                conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
+                if ~conservative
+                    error('DARSim2 error: mass balance not respected');
+                end
+                obj.BalanceTimer(obj.itCount) = toc(tstart2);
+                
+                %% 3. Solve transport
+                % 3.1 Choose stable timestep
+                if obj.itCount == 1
+                    dt_sub = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+                end
+                n_subT = max(floor(dt/dt_sub), 1);
+                dt_sub = dt/n_subT;
+                
+                disp('Transport Solver');
+                disp('...............................................');
+                tstart3 = tic;
+                % 3.2 Solve Transport until dt of pressure is reached
+                Sync = 0;
+                SumDt_sub = 0;
+                i = 1;
+                Temp = status();
+                Temp.CopyProperties(ProductionSystem.Reservoir.State_old);
+                while Sync == 0
+                    % Save new old state
+                    disp(['SubTime-step ', num2str(i)]);
+                    obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt_sub);
+                    obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt_sub);
+                    ProductionSystem.SavePreviousState();
+                    obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
+                    if obj.TransportSolver.Converged == 0
+                        disp(['Cutting subtimestep ', num2str(i)]);
+                        % Reset initial guess to what it was before
+                        obj.TransportSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
+                        dt_sub = dt_sub / 2;
+                    else
+                        i = i + 1;
+                        SumDt_sub = SumDt_sub + dt_sub; 
+                        if SumDt_sub == dt
+                            Sync = 1;
+                            ProductionSystem.Reservoir.State_old.CopyProperties(Temp);
+                        end
+                    end
+                end
+                obj.TransportTimer(obj.itCount) = toc(tstart3);
+                disp('...............................................');
+                
+                %% 4. Check outer-loop convergence
+                obj.Converged = obj.ConvergenceChecker.Check(ProductionSystem.Reservoir.State, State_old);
+                obj.itCount = obj.itCount + 1;
+            end
+            
+            if obj.Converged == 0
+                obj.Chops = obj.Chops + 1; 
+                % Reset Initial guess
+                ProductionSystem.Reservoir.State.CopyProperties(ProductionSystem.Reservoir.State_old);
+                % UpdateWells
+                ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                disp(['Chopping time-step and restarting outer-loop with dt = ', num2str(dt)]);
+                dt = dt/2;
                 obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
             end
-            disp('Transport Solver');
-            disp('...............................................');
-            tstart3 = tic;
-            obj.TransportSolver.Converged = 0;
-            % 3.2 Solve
-            TempState = status();
-            TempState.CopyProperties(ProductionSystem.Reservoir.State);
-            while obj.TransportSolver.Converged == 0
-                obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
-                obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
-                if obj.TransportSolver.Converged == 0
-                    ProductionSystem.Reservoir.State.CopyProperties(TempState);
-                    % UpdateWells
-                    ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
-                    disp(['Chopping time-step and restarting Newton loop with dt = ', num2str(dt)])
-                    dt = dt/10;
-                    obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
-                end
-            end
-            obj.TransportTimer(obj.itCount) = toc(tstart3);
-            disp('...............................................');
-            
-            %% 4. Check outer-loop convergence
-            obj.Converged = obj.ConvergenceChecker.Check(ProductionSystem.Reservoir.State, State_old);
-            
-            obj.itCount = obj.itCount + 1;
         end
         % Compute phase fluxes after converged solution
         ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);

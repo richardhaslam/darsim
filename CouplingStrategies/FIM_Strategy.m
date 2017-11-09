@@ -33,7 +33,7 @@ methods
         
         % Set Up non-linear solver
         obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
-        obj.NLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
+        obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)

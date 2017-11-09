@@ -13,7 +13,7 @@ classdef adm_grid_selector_residual < adm_grid_selector
         function obj = adm_grid_selector_residual(tol, key)
             obj@adm_grid_selector(tol, key);
         end
-        function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
+        function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step
             % Grid is chosen based on (deltaX)^{n} = X^{n} - X^{n-1}
             
