@@ -66,6 +66,7 @@ methods
                 disp(['Outer iteration: ', num2str(obj.itCount)]);
                 
                 %% 1. Solve pressure equation
+                disp('...............................................');
                 disp('Pressure Solver')
                 disp('...............................................');
                 tstart1 = tic;
@@ -100,25 +101,30 @@ methods
                 % 3.2 Solve Transport until dt of pressure is reached
                 Sync = 0;
                 SumDt_sub = 0;
-                i = 1;
+                SubT_counter = 1;
                 Temp = status();
                 Temp.CopyProperties(ProductionSystem.Reservoir.State_old);
+                chops = 0;
                 while Sync == 0
                     % Save new old state
-                    disp(['SubTime-step ', num2str(i)]);
+                    disp(['SubTime-step ', num2str(SubT_counter)]);
                     obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt_sub);
                     obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt_sub);
-                    ProductionSystem.SavePreviousState();
                     obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
                     if obj.TransportSolver.Converged == 0
-                        disp(['Cutting subtimestep ', num2str(i)]);
+                        disp(['Cutting subtimestep ', num2str(SubT_counter)]);
                         % Reset initial guess to what it was before
                         obj.TransportSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
-                        dt_sub = dt_sub / 2;
+                        dt_sub = dt_sub / 10;
+                        chops = chops + 1;
+                        if chops >= 5
+                            break
+                        end
                     else
-                        i = i + 1;
+                        ProductionSystem.SavePreviousState();
+                        SubT_counter = SubT_counter + 1;
                         SumDt_sub = SumDt_sub + dt_sub; 
-                        if SumDt_sub == dt
+                        if norm(SumDt_sub - dt)/dt < 1e-3 
                             Sync = 1;
                             ProductionSystem.Reservoir.State_old.CopyProperties(Temp);
                         end
@@ -128,8 +134,12 @@ methods
                 disp('...............................................');
                 
                 %% 4. Check outer-loop convergence
-                obj.Converged = obj.ConvergenceChecker.Check(ProductionSystem.Reservoir.State, State_old);
-                obj.itCount = obj.itCount + 1;
+                if Sync == 1
+                    obj.Converged = obj.ConvergenceChecker.Check(ProductionSystem.Reservoir.State, State_old);
+                    obj.itCount = obj.itCount + 1;
+                else
+                    break
+                end
             end
             
             if obj.Converged == 0
@@ -145,6 +155,7 @@ methods
         end
         % Compute phase fluxes after converged solution
         ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+        obj.TimeStepSelector.Update(dt, obj.itCount - 1, obj.Chops);
     end
     function UpdateSummary(obj, Summary, Wells, Ndt, dt)
         Summary.CouplingStats.SaveStats(Ndt, obj.itCount - 1, obj.NLiter);
