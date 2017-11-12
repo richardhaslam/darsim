@@ -16,7 +16,10 @@ classdef explicit_transport_solver < handle
         function obj = explicit_transport_solver()
             obj.itCount = 1;
         end
-        function SetUp(obj, DiscretizationModel)
+        function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
+            % Virtual call
+        end
+        function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
             % Virtual call
         end
         function Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt)

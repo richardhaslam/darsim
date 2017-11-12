@@ -37,7 +37,11 @@ classdef timestep_selector < handle
                 Mob(:, i) = rho(i) * Mob(:, i);
                 dMob(:, i) = rho(i) * dMob(:, i); 
             end
-            df = (dMob(:,1) .* sum(Mob, 2) - sum(dMob, 2) .* Mob(:,1)) ./ sum(Mob, 2).^2;
+            num = rho(:, 1)  .* Mob(:, 1);
+            dnum = rho(:, 1) .* dMob(:,1);
+            den = sum(rho .* Mob, 2);
+            dden = sum(rho .* dMob, 2);  
+            df = (dnum .* den - dden .* num) ./ den.^2;
             dfmax = max(df);
             Uxmax = max(max(max(abs(U.x))));
             Uymax = max(max(max(abs(U.y))));
@@ -48,9 +52,9 @@ classdef timestep_selector < handle
             
             %Compute timestep size
             % I multiply by mean(rho) coz U is the mass flux
-            dtx = obj.CFL*pv*mean(rho)/Lambdax;
-            dty = obj.CFL*pv*mean(rho)/Lambday;
-            dtz = obj.CFL*pv*mean(rho)/Lambdaz;
+            dtx = obj.CFL*pv*max(rho)/Lambdax;
+            dty = obj.CFL*pv*max(rho)/Lambday;
+            dtz = obj.CFL*pv*max(rho)/Lambdaz;
             dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt]);
         end
         function dt = ChooseTimeStep(obj)

@@ -21,7 +21,7 @@ classdef linear_solver < handle
             obj.Tol = tol;
             obj.Maxit = maxit;
         end
-        function SetUp(obj, DiscretizationModel)
+        function SetUp(obj, ProductionSystem, DiscretizationModel)
             %obj.Preconditioner.Setup(ProductionSystem, DiscretizationModel);
         end
         function x = Solve(obj, A, rhs)
