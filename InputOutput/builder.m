@@ -133,6 +133,7 @@ classdef builder < handle
             if ~isempty(xv)
                 obj.MinMaxdt = str2double(strsplit(char(SettingsMatrix{1}(xv+1))));
             else
+                % default value
                 obj.MinMaxdt = [0.1, 30];
             end
             temp = strfind(SettingsMatrix{1}, 'REPORTS');
@@ -349,6 +350,7 @@ classdef builder < handle
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
                 for f = 1 : obj.NrOfFrac
                     % looping over all global fracture cells
+                    fprintf('Reading fracture %02d\n', f);
                     for If = 1:length(frac_cell_index)
                         fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
                         
