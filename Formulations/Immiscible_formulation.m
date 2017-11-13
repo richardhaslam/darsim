@@ -562,24 +562,28 @@ classdef Immiscible_formulation < formulation
             den = sum(rho .* obj.Mob, 2);
             dden = sum(rho .* obj.dMob, 2);  
             obj.df = (dnum .* den - dden .* num) ./ den.^2;
-            %obj.df = (obj.dMob(:,1) .* sum(obj.Mob, 2) - sum(obj.dMob, 2) .* obj.Mob(:,1)) ./ sum(obj.Mob, 2).^2;
         end
-        function dfdsds = dfdSdS(obj, s, FluidModel)
-           % f = Mob1 / (Mob1 + Mob2);
-           % df = (dMob1 * (Mob1 + Mob2) - (dMob1 + dMob2)*Mob1 )/(Mob1 +
-           % Mob2)^2
-           % d(df)
+        function dfdsds = dfdSdS(obj, s, rho, FluidModel)
+           % f = (rho1 * Mob1) / (rho1 * Mob1 + rho2 * Mob2);
+           % df = (rho1 * dMob1 * (rho1*Mob1 + rho2*Mob2) - (rho1*dMob1 + rho2*dMob2) * rho1*Mob1) / (rho1 * Mob1 + rho2 * Mob2)^2
+           % Num = A - B;
+           % A = (rho1 * dMob1 * (rho1*Mob1 + rho2*Mob2)
+           % dA = rho1 * ddMob1 * (rho1*Mob1 + rho2*Mob2) + rho1 * dMob1 * (rho1*dMob1 + rho2 * dMob2)
+           % B = (rho1*dMob1 + rho2*dMob2) * rho1*Mob1
+           % dB = (rho1*ddMob1 + rho2 * ddMob2) *  rho1*Mob1 + (rho1*dMob1 + rho2*dMob2) * rho1*dMob1 
+           % Den = (rho1 * Mob1 + rho2 * Mob2)^2;
            Mob = FluidModel.ComputePhaseMobilities(s);
            dMob = FluidModel.DMobDS(s);
            ddMob = FluidModel.DMobDSDS(s);
-           A = dMob(:,1) .* sum(Mob, 2);
-           dA = ddMob(:,1) .* sum(Mob, 2) +  sum(dMob, 2) .* dMob(:, 1);
-           B = sum(dMob, 2) .* Mob(:,1);
-           dB = sum(ddMob, 2) .* Mob(:,1) + sum(dMob, 2) .* ddMob(:,1);
+           
+           A = rho(:, 1) .* dMob(:, 1) .* sum(rho.*Mob, 2);
+           dA = rho(:, 1) .* ddMob(:,1) .* sum(rho.*Mob, 2) + rho(:,1) .* dMob(:,1) .*  sum(rho.*dMob, 2);
+           B = sum(rho.*dMob, 2) .* rho(:, 1) .* Mob(:,1);
+           dB = sum(rho.*ddMob, 2) .*  rho(:, 1).*Mob(:, 1) + sum(rho.*dMob, 2) .* rho(:, 1) .* dMob(:, 1);
            num = A - B;
            dnum = dA - dB;
-           den = sum(Mob, 2).^2;
-           dden = sum(Mob, 2) .* sum(dMob, 2);  
+           den = sum(rho.*Mob, 2).^2;
+           dden = sum(rho.*Mob, 2) .* sum(rho.*dMob, 2);  
            
            dfdsds = (dnum .* den - dden .* num) ./ den.^2;
            
@@ -933,18 +937,22 @@ classdef Immiscible_formulation < formulation
             Jacobian = D - obj.V * spdiags(obj.df,0,N,N); %+ CapJac;
         end
         function delta = UpdateSaturation(obj, ProductionSystem, delta, FluidModel, DiscretizationModel)
-            s_old = ProductionSystem.Reservoir.State.Properties('S_1').Value; 
+            s_old = ProductionSystem.Reservoir.State.Properties('S_1').Value;
+            rho = 0 * obj.Mob;
+            for i=1:obj.NofPhases
+                rho(:,i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
+            end
             
             % Update
             snew = s_old + delta;
             
             % Remove values that are not physical
-            snew = max(snew, 0);
-            snew = min(snew, 1);
+            %snew = max(snew, 0);
+            %snew = min(snew, 1);
             
             % FLUX CORRECTION - PATRICK
-            Ddf_old = obj.dfdSdS(s_old, FluidModel);
-            Ddf = obj.dfdSdS(snew, FluidModel);           
+            Ddf_old = obj.dfdSdS(s_old, rho, FluidModel);
+            Ddf = obj.dfdSdS(snew, rho, FluidModel);           
             snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
             delta = snew-s_old;
             
@@ -971,12 +979,13 @@ classdef Immiscible_formulation < formulation
             % 1. Solve
             T = spdiags(dt/pv*ones(N,1),0,N,N);    % dt/pv * Cell Fluxes and producer
             B = T * obj.V;
-            injector = max(obj.Qwells,0) .* dt/pv;  % injection flux * dt/pv
+            injector = max(obj.Qwells, 0) .* dt/pv;  % injection flux * dt/pv
             
             S = ProductionSystem.Reservoir.State.Properties('S_1');
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1');
             s_old = S.Value;
             
-            delta = S.Value - s_old + (B * obj.f + injector);
+            delta = S.Value - s_old + (B * obj.f + injector) ./ rho.Value;
             
             % Now update values
             Nm = DiscretizationModel.ReservoirGrid.N;

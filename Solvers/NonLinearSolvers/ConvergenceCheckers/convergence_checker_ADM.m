@@ -11,14 +11,14 @@ classdef convergence_checker_ADM < convergence_checker_FS
         OperatorsAssembler
     end
     methods
-        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State)
+        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State, LinearSolver)
             
             % Initialize
             converged = 0;
             
             % Restrict Residual
             % Get ADM Operators
-            [R, ~] = obj.OperatorsAssembler.Assemble(DiscretizationModel.OperatorsHandler.ADMRest, DiscretizationModel.OperatorsHandler.ADMProl);
+            R = LinearSolver.R;
             residual_c = R * residual;
             residual_c = residual_c ./ sum(R, 2); % divide by number of cells in each coarse node
             [N_adm, Nf] = size(R);

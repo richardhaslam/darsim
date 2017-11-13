@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 4 July 2016
-%Last modified: 18 July 2016
+%Last modified: 8 July 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef FIM_Strategy < Coupling_Strategy
 properties
@@ -28,15 +28,12 @@ methods
         obj.chops = 0;
         End = 0;
         
-        % Choose Grid resolution for this time-step (does nothing for FS)
-        DiscretizationModel.SelectADMGrid(ProductionSystem);
-        
-        % Save initial State
-        obj.NLSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
-        % Linear Solver Setup
-        obj.NLSolver.LinearSolver.SetUp(DiscretizationModel);
         % Save state of current time-step (it's useful for ADM to update based on time change)
         ProductionSystem.SavePreviousState();
+        
+        % Set Up non-linear solver
+        obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
+        obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)
@@ -55,6 +52,7 @@ methods
                 Formulation.Reset();
                 obj.NLSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
                 ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
             end
             obj.Converged = obj.NLSolver.Converged;
         end

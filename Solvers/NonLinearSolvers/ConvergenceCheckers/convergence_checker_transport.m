@@ -17,12 +17,12 @@ classdef convergence_checker_transport < convergence_checker
             disp('');
             disp('        ||Residual||   ||delta S||');
         end
-        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State)
+        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State, LinearSolver)
             % Initialize
             converged = 0;
             % Compute Norms
             if obj.adm
-                [R, ~] = obj.OperatorsAssembler.Assemble(DiscretizationModel.OperatorsHandler.ADMRest, DiscretizationModel.OperatorsHandler.ADMProl);
+                R = LinearSolver.R;
                 residual_c = R * residual;
                 residual_c = residual_c ./ sum(R, 2);
                 Norm1 =  norm(residual_c, inf);

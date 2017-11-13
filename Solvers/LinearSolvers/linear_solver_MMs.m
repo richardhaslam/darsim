@@ -17,7 +17,7 @@ classdef linear_solver_MMs < linear_solver
         function obj = linear_solver_MMs(name, tol, maxit)
             obj@linear_solver(name, tol, maxit);
         end
-        function SetUp(obj, DiscretizationModel)
+        function SetUp(obj, ProductionSystem, DiscretizationModel)
             obj.R = DiscretizationModel.OperatorsHandler.R;
             obj.P = DiscretizationModel.OperatorsHandler.P;
             obj.C = DiscretizationModel.OperatorsHandler.C;
