@@ -10,6 +10,7 @@ classdef convergence_checker_pressure < convergence_checker
     properties
         adm = 0
         OperatorsAssembler
+        Incompressible = 0
     end
     methods 
         function PrintTitles(obj, Residual)
@@ -34,7 +35,7 @@ classdef convergence_checker_pressure < convergence_checker
             disp(['Iter ' num2str(iter, '%2d') '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
             
             %Check convergence
-            if (Norm1 < obj.Tol) 
+            if (Norm1 < obj.Tol || obj.Incompressible == 1) 
                 converged = 1;
             end
         end
