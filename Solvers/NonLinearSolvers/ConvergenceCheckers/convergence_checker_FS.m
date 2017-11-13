@@ -23,7 +23,7 @@ classdef convergence_checker_FS < convergence_checker
             [massbalance, equilibrium] =  obj.NormCalculator.ResidualNorm(residual, DiscretizationModel.ReservoirGrid.N, Formulation);
             [dp, dS] = obj.NormCalculator.SolutionNorm(delta, DiscretizationModel.N, State);
             
-            disp(['Iter ' num2str(iter) '    ' num2str(massbalance, '%5.5e'), '    ', num2str(equilibrium,'%5.5e'), '    ', num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
+            disp(['Iter ' num2str(iter, '%02d') '    ' num2str(massbalance, '%5.5e'), '    ', num2str(equilibrium,'%5.5e'), '    ', num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
             
             % check if is stagnating
             stagnating = obj.Stagnating(massbalance);
