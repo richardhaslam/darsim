@@ -426,6 +426,8 @@ classdef builder < handle
                         gridselector = adm_grid_selector_delta(obj.ADMSettings.tol, obj.ADMSettings.key);
                     case('dfdt')
                         gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key);
+                    case('residual')
+                        gridselector = adm_grid_selector_residual(obj.ADMSettings.tol);
                 end
                 Discretization = ADM_Discretization_model(obj.ADMSettings.maxLevel, obj.ADMSettings.Coarsening);
                 Discretization.AddADMGridSelector(gridselector);

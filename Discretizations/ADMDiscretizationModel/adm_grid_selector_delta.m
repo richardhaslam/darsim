@@ -11,7 +11,8 @@ classdef adm_grid_selector_delta < adm_grid_selector
     end
     methods
         function obj = adm_grid_selector_delta(tol, key)
-            obj@adm_grid_selector(tol, key);
+            obj@adm_grid_selector(tol);
+            obj.key = key;
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
             % SELECT the ADM GRID for next time-step based on dela x
