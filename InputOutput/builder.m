@@ -206,7 +206,7 @@ classdef builder < handle
                             if L <= obj.ADMSettings.maxLevel(1+f)
                                 obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
                             else
-                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^maxLevel(1+f);
+                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^obj.ADMSettin.maxLevel(1+f);
                             end
                         end
                     end
@@ -226,8 +226,28 @@ classdef builder < handle
                 cx = str2double(SettingsMatrix{1}(x+1));
                 cy = str2double(SettingsMatrix{1}(x+2));
                 cz = str2double(SettingsMatrix{1}(x+3));
-                 for L = 1:obj.MMsSettings.maxLevel(1)
+                for L = 1:obj.MMsSettings.maxLevel(1)
                     obj.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                end
+                if obj.Fractured
+                    for f = 1 : obj.NrOfFrac
+                        frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
+                        MMs_temp = regexprep(frac_info_split{9},' ' ,'');
+                        MMs_temp = strsplit(MMs_temp, { '[' , ',' , ']' });
+                        MMs_temp = [ str2double(MMs_temp(2)) , str2double(MMs_temp(3)) , str2double(MMs_temp(4)) , str2double(MMs_temp(5)) ];
+                        if MMs_temp(1)
+                            obj.MMsSettings.maxLevel(1+f) = MMs_temp(2);
+                        else
+                            obj.MMsSettings.maxLevel(1+f) = 0;
+                        end
+                        for L = 1:obj.MMsSettings.maxLevel(1)
+                            if L <= obj.MMsSettings.maxLevel(1+f)
+                                obj.MMsSettings.Coarsening(1+f,:,L) = [MMs_temp(3), MMs_temp(4), 1].^L;
+                            else
+                                obj.MMsSettings.Coarsening(1+f,:,L) = [MMs_temp(3), MMs_temp(4), 1].^obj.MMsSettings.maxLevel(1+f);
+                            end
+                        end
+                    end
                 end
             end              
             
@@ -439,8 +459,8 @@ classdef builder < handle
         function ProductionSystem = BuildProductionSystem (obj, inputMatrix, FractureMatrix, DiscretizationModel)
             ProductionSystem = Production_System();
             %% RESERVOIR
-            Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x−direction [m]
-            Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y−direction [m]
+            Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x???direction [m]
+            Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y???direction [m]
             h  = str2double(inputMatrix(obj.size +3));  %Reservoir thickness [m]
             dx = Lx/DiscretizationModel.ReservoirGrid.Nx;
             dy = Ly/DiscretizationModel.ReservoirGrid.Ny;
@@ -454,11 +474,20 @@ classdef builder < handle
                 % load the file in a vector
                 field = load(file);
                 % reshape it to specified size
-                field = reshape(field(4:end),[field(1) field(2) field(3)]);
+                field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
-                Ky = Kx;
-                Kz = Kx;
+                Kx = reshape(field1(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                
+                % check if it is anisotropic or not
+                if size(field,2) == 1
+                    Ky = Kx;
+                    Kz = Kx;
+                else
+                    field2 = reshape(field(4:end,2),[field(1,2) field(2,2) field(3,2)]);
+                    field3 = reshape(field(4:end,3),[field(1,3) field(2,3) field(3,3)]);
+                    Ky = reshape(field2(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                    Kz = reshape(field3(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                end
             else
                 value = str2double(inputMatrix(obj.perm +1));
                 Kx = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
@@ -562,8 +591,12 @@ classdef builder < handle
                 end
                 
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                %PI = str2double(inputMatrix(obj.inj(i) + 9));
-                PI = dy*dz/(dx/2);
+                PI = inputMatrix(obj.inj(i) + 9);
+                if strcmp('Dirichlet' , PI)
+                    PI = dy*dz/(dx/2);
+                else
+                    PI = str2double(PI);
+                end
                 pressure = str2double(inputMatrix(obj.inj(i) + 8));
                 Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
                 Wells.AddInjector(Injector);
@@ -656,8 +689,12 @@ classdef builder < handle
                 end
                           
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                %PI = str2double(inputMatrix(obj.prod(i) + 9));
-                PI = dy*dz/(dx/2);
+                PI = inputMatrix(obj.prod(i) + 9);
+                if strcmp('Dirichlet' , PI)
+                    PI = dy*dz/(dx/2);
+                else
+                    PI = str2double(PI);
+                end
                 pressure = str2double(inputMatrix(obj.prod(i) + 8));
                 Producer = producer_pressure(PI, coord, pressure);
                 Wells.AddProducer(Producer);

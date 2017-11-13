@@ -58,9 +58,13 @@ classdef bf_updater_FAMS < bf_updater_ms
                         [P, C]= obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(i));
                         %obj.Amedia{i} = P' * obj.Amedia{i} * P;
                         MsP = blkdiag(MsP, G'*P);
-                        MsC = blkdiag(MsC, G'*C*G);
+                        if i==1
+                            MsC = blkdiag(MsC, G'*C*G);
+                        end
                     end
                 case(2)
+                    MsP = []; % Prolongation operator
+                    MsC = []; % Correction functions operator
                     cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);
                     [G, Ni, Nf, Ne, Nv] = obj.FullyCoupledPermutationMatrix(FineGrid, CoarseGrid, cf);
                     tildeA = G * obj.A * G';

@@ -22,7 +22,6 @@ classdef Reservoir_Simulation
             obj.Initializer.InitializeProductionSystem(obj.ProductionSystem, obj.FluidModel, obj.Formulation, obj.DiscretizationModel);
             obj.ProductionSystem.InitializeWells(obj.FluidModel, obj.Formulation.GravityModel, obj.DiscretizationModel);
             obj.DiscretizationModel.InitializeMapping(obj.ProductionSystem, obj.FluidModel)
-            
         end
         function Run(obj, Writer)        
             disp('BEGIN TIME-DEPENDENT SIMULATION');

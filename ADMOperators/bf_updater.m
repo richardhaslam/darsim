@@ -26,17 +26,20 @@ classdef bf_updater < handle
                 case (1)
                     % 2. Define edge-edge (ee) block
                     Mee = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+1:Ni+Nf+Ne);
-                    % 3. Define edge-node (en) block
+                    % 3. Define edge-vertex (ev) block
                     Mev = tildeA(Ni+Nf+1:Ni+Nf+Ne,Ni+Nf+Ne+1:Ni+Nf+Ne+Nv);
                     % 4. Compute inverse of (ii), (ff) and (ee) blocks
+                    Mvv = speye(Nv,Nv);
                     % 1D
-                    Edges = slvblk(Mee, Mev);
+                    Edges = -slvblk(Mee, Mev);
                     
-                    MsP = [-Edges;...
-                        speye(Nv,Nv)];
+                    MsP = [Edges;...
+                           Mvv];
+                    MsC = [];
+                    
+                    
+                    
 %                     Mee_inv = Mee^-1;
-%                     
-%                     % 1D
 %                     MsP = [-Mee_inv*Men;...
 %                         speye(Nn,Nn)];                    
                 case (2)

@@ -90,7 +90,7 @@ classdef bf_updater_ms < bf_updater
             Mobt = sum(Mob, 2);
             for i=1:length(Prod)
                 c = Prod(i).Cells;
-                dq(c) = Prod(i).PI * Mobt(c, :) * K(c,1);
+                dq(c) = Prod(i).PI * Mobt(c, :) .* K(c,1);
             end
  
             W = spdiags(dq, 0, N, N);

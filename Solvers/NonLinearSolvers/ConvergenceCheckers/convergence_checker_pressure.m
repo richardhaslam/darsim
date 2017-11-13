@@ -31,7 +31,7 @@ classdef convergence_checker_pressure < convergence_checker
                Norm1 = norm(residual, inf);
             end
             
-            disp(['Iter ' num2str(iter) '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
+            disp(['Iter ' num2str(iter, '%2d') '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
             
             %Check convergence
             if (Norm1 < obj.Tol) 
