@@ -591,14 +591,27 @@ classdef builder < handle
                 end
                 
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = inputMatrix(obj.inj(i) + 9);
-                if strcmp('Dirichlet' , PI)
-                    PI = dy*dz/(dx/2);
-                else
-                    PI = str2double(PI);
+                PI_type = char(inputMatrix(obj.inj(i) + 9));
+                switch(PI_type)
+                    case ('Dirichlet')
+                        PI = dy*dz/(dx/2);
+                    case ('PI')
+                        PI = inputMatrix(obj.inj(i) + 10);
+                        PI = str2double(PI);
+                    case ('Radius')
+                        radius = inputMatrix(obj.inj(i) + 10);
+                        error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
-                pressure = str2double(inputMatrix(obj.inj(i) + 8));
-                Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
+                constraint = char(inputMatrix(obj.inj(i) + 7));
+                switch (constraint)
+                    case('pressure')
+                        pressure = str2double(inputMatrix(obj.inj(i) + 8));
+                        Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
+                    case('rate')
+                        rate = str2double(inputMatrix(obj.inj(i) + 8));
+                        rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
+                        Injector = injector_rate(PI, coord, rate, obj.Init(1), Tres, n_phases);
+                end
                 Wells.AddInjector(Injector);
             end
             
@@ -689,14 +702,27 @@ classdef builder < handle
                 end
                           
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = inputMatrix(obj.prod(i) + 9);
-                if strcmp('Dirichlet' , PI)
-                    PI = dy*dz/(dx/2);
-                else
-                    PI = str2double(PI);
+                PI_type = char(inputMatrix(obj.prod(i) + 9));
+                switch(PI_type)
+                    case ('Dirichlet')
+                        PI = dy*dz/(dx/2);
+                    case ('PI')
+                        PI = inputMatrix(obj.prod(i) + 10);
+                        PI = str2double(PI);
+                    case ('Radius')
+                        radius = inputMatrix(obj.prod(i) + 10);
+                        error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
-                pressure = str2double(inputMatrix(obj.prod(i) + 8));
-                Producer = producer_pressure(PI, coord, pressure);
+                constraint = char(inputMatrix(obj.prod(i) + 7));
+                switch (constraint)
+                    case('pressure')
+                        pressure = str2double(inputMatrix(obj.prod(i) + 8));
+                        Producer = producer_pressure(PI, coord, pressure);
+                    case('rate')
+                        rate = str2double(inputMatrix(obj.prod(i) + 8));
+                        rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
+                        Producer = producer_rate(PI, coord, rate);
+                end
                 Wells.AddProducer(Producer);
             end
             ProductionSystem.AddWells(Wells);
@@ -945,7 +971,10 @@ classdef builder < handle
                         pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
-                    end              
+                    end
+                    if obj.incompressible
+                        pressuresolver.ConvergenceChecker.Incompressible = 1;
+                    end
                     Coupling.AddPressureSolver(pressuresolver);
                     if (~isempty(obj.transport))
                         transportsolver = NL_Solver();
@@ -990,10 +1019,11 @@ classdef builder < handle
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                     end    
-                    Coupling.AddPressureSolver(pressuresolver);
                     if obj.incompressible
                         Coupling.Incompressible = 1;
+                        pressuresolver.ConvergenceChecker.Incompressible = 1;
                     end
+                    Coupling.AddPressureSolver(pressuresolver);
             end 
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)), obj.MinMaxdt(1), obj.MinMaxdt(2));
             TimeDriver.AddCouplingStrategy(Coupling);
