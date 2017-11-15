@@ -21,7 +21,7 @@ classdef system_builder < handle
         end
         function SaveInitialState(obj, ProductionSystem, Formulation)
             % First the Reservoir
-            obj.State.CopyProperties(ProductionSystem.Reservoir.State_old);
+            obj.State.CopyProperties(ProductionSystem.Reservoir.State);
             Formulation.SavePhaseState();
             
             % Save fractures state

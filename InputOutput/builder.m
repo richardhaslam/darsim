@@ -188,6 +188,9 @@ classdef builder < handle
                 temp = strfind(SettingsMatrix{1}, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
                 obj.ADMSettings.PInterpolator = char(SettingsMatrix{1}(x+1));
+                temp = strfind(SettingsMatrix{1}, 'HYPERBOLIC_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.HInterpolator = char(SettingsMatrix{1}(x+1));
                 if isempty(obj.ADMSettings.maxLevel(1)) || isempty(obj.ADMSettings.Coarsening(1,:,:)) || isempty(obj.ADMSettings.key) || isempty(obj.ADMSettings.tol) || isempty(obj.ADMSettings.PInterpolator)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end
@@ -409,12 +412,11 @@ classdef builder < handle
                 operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                 % a.2 Hyperbolic variables operators builder
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
-                test = 'Constant';
                 for i = 2:n_phases
-                    switch(test)
+                    switch(obj.ADMSettings.HInterpolator)
                         case('Constant')
                             prolongationbuilder = prolongation_builder_constant(obj.ADMSettings.maxLevel(1));
-                        case('MultiscaleSat')
+                        case('MS')
                             prolongationbuilder = prolongation_builder_MSHyperbolic(obj.ADMSettings.maxLevel(1));
                     end
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
