@@ -133,6 +133,7 @@ classdef builder < handle
             if ~isempty(xv)
                 obj.MinMaxdt = str2double(strsplit(char(SettingsMatrix{1}(xv+1))));
             else
+                % default value
                 obj.MinMaxdt = [0.1, 30];
             end
             temp = strfind(SettingsMatrix{1}, 'REPORTS');
@@ -187,6 +188,9 @@ classdef builder < handle
                 temp = strfind(SettingsMatrix{1}, 'PRESSURE_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
                 obj.ADMSettings.PInterpolator = char(SettingsMatrix{1}(x+1));
+                temp = strfind(SettingsMatrix{1}, 'HYPERBOLIC_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.HInterpolator = char(SettingsMatrix{1}(x+1));
                 if isempty(obj.ADMSettings.maxLevel(1)) || isempty(obj.ADMSettings.Coarsening(1,:,:)) || isempty(obj.ADMSettings.key) || isempty(obj.ADMSettings.tol) || isempty(obj.ADMSettings.PInterpolator)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end
@@ -206,7 +210,7 @@ classdef builder < handle
                             if L <= obj.ADMSettings.maxLevel(1+f)
                                 obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
                             else
-                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^maxLevel(1+f);
+                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^obj.ADMSettin.maxLevel(1+f);
                             end
                         end
                     end
@@ -226,8 +230,28 @@ classdef builder < handle
                 cx = str2double(SettingsMatrix{1}(x+1));
                 cy = str2double(SettingsMatrix{1}(x+2));
                 cz = str2double(SettingsMatrix{1}(x+3));
-                 for L = 1:obj.MMsSettings.maxLevel(1)
+                for L = 1:obj.MMsSettings.maxLevel(1)
                     obj.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
+                end
+                if obj.Fractured
+                    for f = 1 : obj.NrOfFrac
+                        frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
+                        MMs_temp = regexprep(frac_info_split{9},' ' ,'');
+                        MMs_temp = strsplit(MMs_temp, { '[' , ',' , ']' });
+                        MMs_temp = [ str2double(MMs_temp(2)) , str2double(MMs_temp(3)) , str2double(MMs_temp(4)) , str2double(MMs_temp(5)) ];
+                        if MMs_temp(1)
+                            obj.MMsSettings.maxLevel(1+f) = MMs_temp(2);
+                        else
+                            obj.MMsSettings.maxLevel(1+f) = 0;
+                        end
+                        for L = 1:obj.MMsSettings.maxLevel(1)
+                            if L <= obj.MMsSettings.maxLevel(1+f)
+                                obj.MMsSettings.Coarsening(1+f,:,L) = [MMs_temp(3), MMs_temp(4), 1].^L;
+                            else
+                                obj.MMsSettings.Coarsening(1+f,:,L) = [MMs_temp(3), MMs_temp(4), 1].^obj.MMsSettings.maxLevel(1+f);
+                            end
+                        end
+                    end
                 end
             end              
             
@@ -264,7 +288,7 @@ classdef builder < handle
                     VarNames = {'P_2', 'S_1', 'S_2'};
                     %index = 1;
                     %VarValues(index, 2) = 1;
-                    simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                    simulation.Initializer = initializer(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
@@ -329,6 +353,7 @@ classdef builder < handle
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
                 for f = 1 : obj.NrOfFrac
                     % looping over all global fracture cells
+                    fprintf('Reading fracture %02d\n', f);
                     for If = 1:length(frac_cell_index)
                         fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
                         
@@ -387,12 +412,11 @@ classdef builder < handle
                 operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                 % a.2 Hyperbolic variables operators builder
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
-                test = 'Constant';
                 for i = 2:n_phases
-                    switch(test)
+                    switch(obj.ADMSettings.HInterpolator)
                         case('Constant')
                             prolongationbuilder = prolongation_builder_constant(obj.ADMSettings.maxLevel(1));
-                        case('MultiscaleSat')
+                        case('MS')
                             prolongationbuilder = prolongation_builder_MSHyperbolic(obj.ADMSettings.maxLevel(1));
                     end
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
@@ -404,6 +428,8 @@ classdef builder < handle
                         gridselector = adm_grid_selector_delta(obj.ADMSettings.tol, obj.ADMSettings.key);
                     case('dfdt')
                         gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key);
+                    case('residual')
+                        gridselector = adm_grid_selector_residual(obj.ADMSettings.tol);
                 end
                 Discretization = ADM_Discretization_model(obj.ADMSettings.maxLevel, obj.ADMSettings.Coarsening);
                 Discretization.AddADMGridSelector(gridselector);
@@ -439,9 +465,12 @@ classdef builder < handle
         function ProductionSystem = BuildProductionSystem (obj, inputMatrix, FractureMatrix, DiscretizationModel)
             ProductionSystem = Production_System();
             %% RESERVOIR
-            Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x−direction [m]
-            Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y−direction [m]
+            Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x???direction [m]
+            Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y???direction [m]
             h  = str2double(inputMatrix(obj.size +3));  %Reservoir thickness [m]
+            dx = Lx/DiscretizationModel.ReservoirGrid.Nx;
+            dy = Ly/DiscretizationModel.ReservoirGrid.Ny;
+            dz = h /DiscretizationModel.ReservoirGrid.Nz;
             Tres = str2double(inputMatrix(obj.temperature + 1));   %Res temperature [K]
             Reservoir = reservoir(Lx, Ly, h, Tres);
             phi = str2double(inputMatrix(obj.por + 1));
@@ -451,11 +480,20 @@ classdef builder < handle
                 % load the file in a vector
                 field = load(file);
                 % reshape it to specified size
-                field = reshape(field(4:end),[field(1) field(2) field(3)]);
+                field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
                 % make it the size of the grid
-                Kx = reshape(field(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
-                Ky = Kx;
-                Kz = Kx;
+                Kx = reshape(field1(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                
+                % check if it is anisotropic or not
+                if size(field,2) == 1
+                    Ky = Kx;
+                    Kz = Kx;
+                else
+                    field2 = reshape(field(4:end,2),[field(1,2) field(2,2) field(3,2)]);
+                    field3 = reshape(field(4:end,3),[field(1,3) field(2,3) field(3,3)]);
+                    Ky = reshape(field2(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                    Kz = reshape(field3(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                end
             else
                 value = str2double(inputMatrix(obj.perm +1));
                 Kx = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
@@ -559,7 +597,17 @@ classdef builder < handle
                 end
                 
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 2000;
+                PI_type = char(inputMatrix(obj.inj(i) + 9));
+                switch(PI_type)
+                    case ('Dirichlet')
+                        PI = dy*dz/(dx/2);
+                    case ('PI')
+                        PI = inputMatrix(obj.inj(i) + 10);
+                        PI = str2double(PI);
+                    case ('Radius')
+                        radius = inputMatrix(obj.inj(i) + 10);
+                        error('DARSim2 error: Radius calculation of PI is not implemented for now')
+                end
                 constraint = char(inputMatrix(obj.inj(i) + 7));
                 switch (constraint)
                     case('pressure')
@@ -570,7 +618,6 @@ classdef builder < handle
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Injector = injector_rate(PI, coord, rate, obj.Init(1), Tres, n_phases);
                 end
-                
                 Wells.AddInjector(Injector);
             end
             
@@ -651,16 +698,27 @@ classdef builder < handle
                     Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 6}, ' ');
                     if length(Well_Coord_Temp)>1
                         if Well_Coord_Temp{2}=='-',  k_final = DiscretizationModel.ReservoirGrid.Nz-1;
-                        else,  error('For production Well Coordination, while you can only use "NZ" with minus sign "-"!');
+                        else,  error('For prodection Well Coordination, while you can only use "NZ" with minus sign "-"!');
                         end
                     else
                         k_final = DiscretizationModel.ReservoirGrid.Nz;
                     end
                 else
                     k_final = str2double(inputMatrix{obj.prod(i) + 6});
-                end                          
+                end
+                          
                 coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI = 2000;
+                PI_type = char(inputMatrix(obj.prod(i) + 9));
+                switch(PI_type)
+                    case ('Dirichlet')
+                        PI = dy*dz/(dx/2);
+                    case ('PI')
+                        PI = inputMatrix(obj.prod(i) + 10);
+                        PI = str2double(PI);
+                    case ('Radius')
+                        radius = inputMatrix(obj.prod(i) + 10);
+                        error('DARSim2 error: Radius calculation of PI is not implemented for now')
+                end
                 constraint = char(inputMatrix(obj.prod(i) + 7));
                 switch (constraint)
                     case('pressure')
@@ -843,10 +901,10 @@ classdef builder < handle
                     obj.NofEq = FluidModel.NofPhases;
                 case('Natural')
                     Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComp;
+                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComponents;
                 case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofComp;
+                    obj.NofEq = FluidModel.NofComponents;
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
@@ -919,7 +977,10 @@ classdef builder < handle
                         pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
-                    end              
+                    end
+                    if obj.incompressible
+                        pressuresolver.ConvergenceChecker.Incompressible = 1;
+                    end
                     Coupling.AddPressureSolver(pressuresolver);
                     if (~isempty(obj.transport))
                         transportsolver = NL_Solver();
@@ -964,10 +1025,11 @@ classdef builder < handle
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                     end    
-                    Coupling.AddPressureSolver(pressuresolver);
                     if obj.incompressible
                         Coupling.Incompressible = 1;
+                        pressuresolver.ConvergenceChecker.Incompressible = 1;
                     end
+                    Coupling.AddPressureSolver(pressuresolver);
             end 
             Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)), obj.MinMaxdt(1), obj.MinMaxdt(2));
             TimeDriver.AddCouplingStrategy(Coupling);

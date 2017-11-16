@@ -11,19 +11,29 @@ classdef linear_solver_MMs < linear_solver
         R % Restriction operator
         P % Prolongation operator
         C % Correction functions operator
+        OperatorsAssembler
+        FEM = 0;
     end
     methods
         function obj = linear_solver_MMs(name, tol, maxit)
             obj@linear_solver(name, tol, maxit);
         end
         function SetUp(obj, ProductionSystem, DiscretizationModel)
-            obj.R = DiscretizationModel.OperatorsHandler.R;
+            if obj.FEM
+                obj.R = DiscretizationModel.OperatorsHandler.P';
+            else
+                obj.R = DiscretizationModel.OperatorsHandler.R;
+            end
             obj.P = DiscretizationModel.OperatorsHandler.P;
             obj.C = DiscretizationModel.OperatorsHandler.C;
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system
-            rhs_c = obj.R * (rhs - A * obj.C * rhs);
+            %if size(A,2) == size(obj.C,1)
+             %   rhs_c = obj.R * (rhs - A * obj.C * rhs);
+            %else
+                rhs_c = obj.R * rhs;
+            %end
             A_c = obj.R * A * obj.P;
  
             % Solve Coarse System
@@ -54,7 +64,11 @@ classdef linear_solver_MMs < linear_solver
             
             % Prolong to fine-scale resolution and apply correction
             % functions
-            xf = obj.P * x + obj.C * rhs;
+            %if size(obj.C,2) == size(rhs,1)
+                %xf = obj.P * x + obj.C * rhs;
+            %else
+                xf = obj.P * x;
+            %end
         end
     end
 end

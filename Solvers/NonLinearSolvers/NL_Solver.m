@@ -106,7 +106,7 @@ methods
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
         % Set up the linear solver
-        obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel);
+        obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel, obj.Residual);
     end
 end
 end

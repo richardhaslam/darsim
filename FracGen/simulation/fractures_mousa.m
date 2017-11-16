@@ -38,6 +38,7 @@ classdef fractures_mousa < handle
         D_Length_AB_vec
         D_Width_AD_vec
         CellCenterCoords
+        CellCenterCoordsV2
         GridCoords
         intersectCoord_matCell
         areaFrac_matCell
@@ -46,6 +47,7 @@ classdef fractures_mousa < handle
         T_Geo_matCell
         intersectCoord_fracObj
         intersectCoord_fracCell
+        Overlap_frac
         areaFrac_fracCell
         areaFrac_fracCell_sum
         aveDist_fracCell

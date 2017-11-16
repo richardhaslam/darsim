@@ -15,10 +15,10 @@ classdef operators_assembler_seq < operators_assembler
             obj@operators_assembler(n_eq);
             obj.VarIndex = var_index;
         end
-        function [R, P] = Assemble(obj, DiscretizationModel, ProductionSystem)
+        function [R, P] = Assemble(obj, DiscretizationModel, ProductionSystem, Residual)
             % 1. Choose grid resolution
             if obj.VarIndex == 1
-                DiscretizationModel.SelectADMGrid(ProductionSystem);
+                DiscretizationModel.SelectADMGrid(ProductionSystem, Residual);
             end
             
             % 2. Build full operators

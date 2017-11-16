@@ -48,7 +48,6 @@ classdef Fracture_Generator < handle
             else
                 Error( 'The Domain (2D or 3D) is not mentioned correctly in the input file! Is there a typo?' );
             end
-            disp( ['Number of Fractures: ', num2str( size(obj.Simulation.Fractures,2) ) ] );
             disp( '---------------------------------------------------------' );
             % Write initial state on a file
             % obj.Writer = Plot_VTK('Output/', 'EDFM_3D');

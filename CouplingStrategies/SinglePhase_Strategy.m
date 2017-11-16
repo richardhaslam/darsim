@@ -26,6 +26,12 @@ methods
         obj.Converged = 0;
         dt = obj.TimeStepSelector.ChooseTimeStep();
         obj.PressureSolver.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
+        
+        % Save state of current time-step (it's useful for ADM to update based on time change)
+        ProductionSystem.SavePreviousState();
+        
+        obj.PressureSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
+        obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
         while obj.Converged == 0  && obj.chops < 10
             if (obj.chops > 0)
                 disp('Max num. of iterations reached or stagnation detected: Time-step was chopped');
@@ -36,7 +42,6 @@ methods
             disp('Pressure Solver')
             disp('...............................................');
             tstart1 = tic;
-            obj.PressureSolver.LinearSolver.SetUp(DiscretizationModel);
             obj.PressureSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             obj.PressureTimer = toc(tstart1);
             disp('...............................................');

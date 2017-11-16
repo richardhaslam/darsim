@@ -28,12 +28,12 @@ methods
         obj.chops = 0;
         End = 0;
         
-        % Save state of current time-step (it's useful for ADM to update based on time change)
-        ProductionSystem.SavePreviousState();
-        
         % Set Up non-linear solver
         obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
         obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
+        
+        % Save state of current time-step (it's useful for ADM to update based on time change)
+        ProductionSystem.SavePreviousState();
         while (obj.Converged == 0 && obj.chops < obj.MaxChops) 
             % Print some info to the screen
             if (obj.chops > 0)

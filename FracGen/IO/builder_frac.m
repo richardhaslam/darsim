@@ -87,9 +87,69 @@ classdef builder_frac < handle
                     obj.FracInput(f).CenterCoord(3,1) = str2double(CenterCoord_temp{4}{1}) * str2double(CenterCoord_temp{4}{2}) / str2double(CenterCoord_temp{4}{3});
                 end
                 %%% Length of the fracture plate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                obj.FracInput(f).Length         = str2double( frac_temp{03} );
+                Length_temp = strsplit(frac_temp{03}, { '*' , '/' });
+                if sum( strcmp('LX' , Length_temp) ) > 0
+                    LX_Index = find( strcmp('LX' , Length_temp) == 1);
+                    Length_temp{LX_Index} = [];
+                    Length_temp{LX_Index} = num2str(inputMatrix{1}{obj.size+1});
+                end
+                if length(Length_temp) == 1
+                    obj.FracInput(f).Length = str2double(Length_temp);
+                else
+                    obj.FracInput(f).Length = str2double(Length_temp{1}) * str2double(Length_temp{2}) / str2double(Length_temp{3});
+                end
+                if sum( strcmp('LY' , Length_temp) ) > 0
+                    LY_Index = find( strcmp('LY' , Length_temp) == 1);
+                    Length_temp{LY_Index} = [];
+                    Length_temp{LY_Index} = num2str(inputMatrix{1}{obj.size+2});
+                end
+                if length(Length_temp) == 1
+                    obj.FracInput(f).Length = str2double(Length_temp);
+                else
+                    obj.FracInput(f).Length = str2double(Length_temp{1}) * str2double(Length_temp{2}) / str2double(Length_temp{3});
+                end
+                if sum( strcmp('LZ' , Length_temp) ) > 0
+                    LZ_Index = find( strcmp('LZ' , Length_temp) == 1);
+                    Length_temp{LZ_Index} = [];
+                    Length_temp{LZ_Index} = num2str(inputMatrix{1}{obj.size+3});
+                end
+                if length(Length_temp) == 1
+                    obj.FracInput(f).Length = str2double(Length_temp);
+                else
+                    obj.FracInput(f).Length = str2double(Length_temp{1}) * str2double(Length_temp{2}) / str2double(Length_temp{3});
+                end
                 %%% Width of the fracture plate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                obj.FracInput(f).Width          = str2double( frac_temp{04} );
+                Width_temp = strsplit(frac_temp{04}, { '*' , '/' });
+                if sum( strcmp('LX' , Width_temp) ) > 0
+                    LX_Index = find( strcmp('LX' , Width_temp) == 1);
+                    Width_temp{LX_Index} = [];
+                    Width_temp{LX_Index} = num2str(inputMatrix{1}{obj.size+1});
+                end
+                if length(Width_temp) == 1
+                    obj.FracInput(f).Width = str2double(Width_temp);
+                else
+                    obj.FracInput(f).Width = str2double(Width_temp{1}) * str2double(Width_temp{2}) / str2double(Width_temp{3});
+                end
+                if sum( strcmp('LY' , Width_temp) ) > 0
+                    LY_Index = find( strcmp('LY' , Width_temp) == 1);
+                    Width_temp{LY_Index} = [];
+                    Width_temp{LY_Index} = num2str(inputMatrix{1}{obj.size+2});
+                end
+                if length(Width_temp) == 1
+                    obj.FracInput(f).Width = str2double(Width_temp);
+                else
+                    obj.FracInput(f).Width = str2double(Width_temp{1}) * str2double(Width_temp{2}) / str2double(Width_temp{3});
+                end
+                if sum( strcmp('LZ' , Width_temp) ) > 0
+                    LZ_Index = find( strcmp('LZ' , Width_temp) == 1);
+                    Width_temp{LZ_Index} = [];
+                    Width_temp{LZ_Index} = num2str(inputMatrix{1}{obj.size+3});
+                end
+                if length(Width_temp) == 1
+                    obj.FracInput(f).Width = str2double(Width_temp);
+                else
+                    obj.FracInput(f).Width = str2double(Width_temp{1}) * str2double(Width_temp{2}) / str2double(Width_temp{3});
+                end
                 %%% Rotation angle along Z %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 obj.FracInput(f).RotAngleAlongZ = str2double( frac_temp{05} );
                 %%% Rotation angle along central width %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

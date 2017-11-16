@@ -8,19 +8,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector_time < adm_grid_selector
     properties
-        tol2 = 5;
+        tol2 = 2;
     end
     methods
         function obj = adm_grid_selector_time(tol, key)
-            obj@adm_grid_selector(tol, key);
+            obj@adm_grid_selector(tol);
+            obj.key = key;
         end
-        function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, maxLevel)
+        function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step
             % Grid is chosen based on (deltaX)^{n} = X^{n} - X^{n-1}
             
             %% 1. Reset all cells to be active and compute (deltaX)^{n} 
             n_media = length(FineGrid);
             delta = cell(n_media, 1);
+            S = cell(n_media, 2);
             for m=1:n_media
                 FineGrid(m).Active = ones(FineGrid(m).N, 1);
                 if m==1
@@ -29,11 +31,15 @@ classdef adm_grid_selector_time < adm_grid_selector
                     num = ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
                         ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
                     delta{m} = num;
+                    S{m, 1} = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
+                    S{m, 2} = ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
                 else
                     CoarseGrid(m,1).Active = ones(CoarseGrid(m).N, 1);
                     num = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value - ...
                         ProductionSystem.FracturesNetwork.Fractures(m-1).State_old.Properties(obj.key).Value;
                     delta{m} = num;
+                    S{m, 1} = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value;
+                    S{m, 2} = ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
                 end
             end
                             
@@ -47,9 +53,9 @@ classdef adm_grid_selector_time < adm_grid_selector
                     % 2.b choose active cells of level l 
                     if l==1
                         % coarse grid 1 to 0 (fine-scale)
-                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), delta{m});
+                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), delta{m}, S{m,:});
                     elseif l <= maxLevel(m)
-                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), delta{m});
+                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), delta{m}, S{m,:});
                     else
                         CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
                     end
@@ -59,7 +65,7 @@ classdef adm_grid_selector_time < adm_grid_selector
             %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
-        function SelectCoarseFine(obj, FineGrid, CoarseGrid, delta)
+        function SelectCoarseFine(obj, FineGrid, CoarseGrid, delta, S, S_old)
             %Given a Fine (level l-1) and a Coarse (level l) Grids chooses the cells that have to be active
             
             %% 2. Select Active Coarse Blocks
@@ -67,16 +73,27 @@ classdef adm_grid_selector_time < adm_grid_selector
             for c = 1:Nc
                 % fine-scale cells inside coarse block c
                 indexes_fs = CoarseGrid.GrandChildren(c,:);
+                S_children = S(indexes_fs);
+                % Max e Min saturation inside c
+                Smax = max(S_children);
+                Smin = min(S_children);
+                S_children_o = S_old(indexes_fs);
+                % Max e Min saturation inside c
+                Smax_o = max(S_children_o);
+                Smin_o = min(S_children_o);
                 
                 % Max delta inside block c
-                deltaSum = sum(delta(indexes_fs));
-                Max = max(delta(indexes_fs)); Max(abs(Max)<1e-4) = 0;
-                Min = min(delta(indexes_fs)); Min(abs(Min)<1e-4) = 1; 
-                deltaRatio = Max/Min;   
-                CoarseGrid.DeltaS(c) = deltaSum;
-                if CoarseGrid.Active(c) == 1 && (abs(deltaSum) > obj.tol || deltaRatio > obj.tol2 || deltaRatio<0)
-                   CoarseGrid.Active(c) = 0;
+                %deltaSum = sum(delta(indexes_fs));
+                Max = max(delta(indexes_fs)); Max(abs(Max)<1e-3) = 0;
+                Min = min(delta(indexes_fs)); Min(abs(Min)<1e-3) = 1;
+                deltaRatio = Max/Min;
+                Criterion = norm(delta(indexes_fs), inf);
+                if CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || deltaRatio > obj.tol2 || deltaRatio<0)
+                    CoarseGrid.Active(c) = 0;
+                elseif CoarseGrid.Active(c) == 1 && ((Criterion > obj.tol/10 && Smax/Smin > 1.1) || (CoarseGrid.DeltaS(c) > obj.tol/10 || Smax_o/Smin_o > 1.2))
+                    CoarseGrid.Active(c) = 0;
                 end
+                CoarseGrid.DeltaS(c) = Criterion;
             end
             
             %% 3. Set to inactive fine blocks (level l-1) belonging to active Coarse Blocks (level l)
