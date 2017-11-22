@@ -25,7 +25,9 @@ classdef relperm_model_brookscorey < relperm_model
             kr(:,2) = ((1-s)/(1-Phases(2).sr)).^2 .* ( 1 - ((s-Phases(2).sr)/(1-Phases(2).sr)).^(obj.n_nw) );
             %kr(s > 1 - Phases(1).sr, 2) = 0;
                        
-            %kr(s < Phases(2).sr, 2) = 1;
+            kr(s < Phases(2).sr, 2) = 1;
+            kr(:,2) = smooth(kr(:,2));
+            
             %kr(s > 1 - Phases(1).sr,1) = 1;
             
 %             if s > 1 - Phases(1).sr;
