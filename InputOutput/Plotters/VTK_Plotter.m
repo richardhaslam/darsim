@@ -114,7 +114,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotFractureSolution(obj, Fracture, Grid, f)
             %Write a VTK file for each
-            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f), '_', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             fprintf(fileID, 'BINARY\n');

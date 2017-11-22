@@ -23,7 +23,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             obj.OperatorsHandler = operatorshandler;
         end
         function InitializeMapping(obj, ProductionSystem, FluidModel)
-            disp([num2str(obj.maxLevel), ' levels multiscale run']);
+            disp([num2str(obj.maxLevel(1)), ' levels multiscale run']);
             % Construct Coarse Grids
             disp(char(2));
             disp('Constructing coarse grids');
@@ -68,13 +68,14 @@ classdef Multiscale_Discretization_model < Discretization_model
             
             %% 2. Fractures
             % Construct all coarse grids for fractures
-            for f = 1 : length(obj.maxLevel) - 1
+            for f = 1 : size(obj.Coarsening,1) - 1
+                min_maxLevel = min( obj.maxLevel(1) , obj.maxLevel(1+f) );
                 obj.CoarseGrid(1+f,1) = coarse_grid();
                 obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
                 obj.CoarseGrid(1+f,1).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
                 obj.GridMapper.BuildFamily(obj.CoarseGrid(1+f,1), obj.FracturesGrid.Grids(f), obj.Coarsening(1+f,:,1), 1);
                 obj.Nc(f+1, 1) = obj.CoarseGrid(1+f,1).N;
-                for i=2:obj.maxLevel(f+1)
+                for i=2:min_maxLevel
                     obj.CoarseGrid(1+f,i) = coarse_grid();
                     obj.CoarseGrid(1+f,i).CoarseFactor = obj.Coarsening(1+f,:,i);
                     obj.CoarseGrid(1+f,i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
@@ -82,8 +83,8 @@ classdef Multiscale_Discretization_model < Discretization_model
                     obj.Nc(f+1, i) = obj.CoarseGrid(1+f,i).N;
                 end
                 % Fathers and Verteces
-                obj.GridMapper.AssignFathersandVerteces(obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:obj.maxLevel(f+1)), obj.maxLevel(1+f))
-                for i=obj.maxLevel(f+1) + 1 :obj.maxLevel(1)
+                obj.GridMapper.AssignFathersandVerteces(obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:min_maxLevel), min_maxLevel)
+                for i=min_maxLevel + 1 :obj.maxLevel(1)
                     obj.CoarseGrid(1+f,i) = coarse_grid();
                     obj.CoarseGrid(1+f, i).CoarseFactor = obj.Coarsening(1+f,:, i-1);
                     obj.CoarseGrid(1+f, i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));

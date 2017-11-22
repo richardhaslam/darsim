@@ -43,8 +43,10 @@ classdef reader < handle
             if fractured 
                 FractureFile = strcat(obj.Directory, '/Fracture_Output.txt');
                 fileID = fopen(FractureFile, 'r');
+				fprintf('Reading fracture file ...');
                 obj.FractureMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
                 fclose(fileID);
+				fprintf('--> Successful.\n\n');
             end
         end
     end

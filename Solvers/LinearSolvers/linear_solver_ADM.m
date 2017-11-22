@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 15 July 2016
-%Last modified: 21 September 2017
+%Last modified: 7 November 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef linear_solver_ADM < linear_solver
     properties  
@@ -17,9 +17,9 @@ classdef linear_solver_ADM < linear_solver
         function obj = linear_solver_ADM(name, tol, maxit)
             obj@linear_solver(name, tol, maxit);
         end
-        function SetUp(obj, DiscretizationModel)
+        function SetUp(obj, ProductionSystem, DiscretizationModel, Residual)
             % Get ADM Operators
-            [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel.OperatorsHandler.ADMRest, DiscretizationModel.OperatorsHandler.ADMProl); 
+            [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel, ProductionSystem, Residual);
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system
