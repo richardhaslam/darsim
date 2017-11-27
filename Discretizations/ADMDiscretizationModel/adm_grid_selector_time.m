@@ -4,11 +4,11 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 30 June 2017
-%Last modified: 21 August 2017
+%Last modified: 27 November 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector_time < adm_grid_selector
     properties
-        tol2 = 2;
+        tol2 = .2;
     end
     methods
         function obj = adm_grid_selector_time(tol, key)
@@ -44,6 +44,8 @@ classdef adm_grid_selector_time < adm_grid_selector
             end
                             
             %% 2. Select active cells
+            Tol = obj.tol;
+            Tol2 = obj.tol2;
             for l=1:max(maxLevel)
                 % 2.a choose possible active grids for level l
                 if l>1 
@@ -60,7 +62,11 @@ classdef adm_grid_selector_time < adm_grid_selector
                         CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
                     end
                 end
+                obj.tol = obj.tol / 2;
+                %obj.tol2 = obj.tol2 / 2;
             end
+            obj.tol = Tol;
+            obj.tol2 = Tol2;
             
             %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
@@ -86,11 +92,13 @@ classdef adm_grid_selector_time < adm_grid_selector
                 %deltaSum = sum(delta(indexes_fs));
                 Max = max(delta(indexes_fs)); Max(abs(Max)<1e-3) = 0;
                 Min = min(delta(indexes_fs)); Min(abs(Min)<1e-3) = 1;
-                deltaRatio = Max/Min;
+                Deviation = max( abs(delta(indexes_fs)/mean(delta(indexes_fs))) ) - min( abs(delta(indexes_fs)/mean(delta(indexes_fs))) ); 
                 Criterion = norm(delta(indexes_fs), inf);
-                if CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || deltaRatio > obj.tol2 || deltaRatio<0)
+                if CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || Deviation > obj.tol2 || Max*Min<0)
                     CoarseGrid.Active(c) = 0;
-                elseif CoarseGrid.Active(c) == 1 && ((Criterion > obj.tol/10 && Smax/Smin > 1.1) || (CoarseGrid.DeltaS(c) > obj.tol/10 || Smax_o/Smin_o > 1.2))
+                elseif CoarseGrid.Active(c) == 1 && ((Criterion > obj.tol/2 && Smax/Smin > 1.1) || (CoarseGrid.DeltaS(c) > obj.tol/2 && Smax_o/Smin_o > 1.2))
+                    CoarseGrid.Active(c) = 0;
+                elseif CoarseGrid.Active(c) == 1 && Criterion > 1e-6 && CoarseGrid.DeltaS(c) < 1e-6
                     CoarseGrid.Active(c) = 0;
                 end
                 CoarseGrid.DeltaS(c) = Criterion;
