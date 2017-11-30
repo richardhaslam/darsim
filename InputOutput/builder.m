@@ -60,7 +60,11 @@ classdef builder < handle
             temp = strfind(inputMatrix{1}, 'SPECGRID');
             obj.grid = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'PERMX');
-            obj.perm = find(~cellfun('isempty', temp));
+            obj.perm(1) = find(~cellfun('isempty', temp));
+            temp = strfind(inputMatrix{1}, 'PERMY');
+            obj.perm(2) = find(~cellfun('isempty', temp));
+            temp = strfind(inputMatrix{1}, 'PERMZ');
+            obj.perm(3) = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'PERTURB');
             obj.pert = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'POR');
@@ -474,33 +478,22 @@ classdef builder < handle
             Tres = str2double(inputMatrix(obj.temperature + 1));   %Res temperature [K]
             Reservoir = reservoir(Lx, Ly, h, Tres);
             phi = str2double(inputMatrix(obj.por + 1));
-            if strcmp(inputMatrix(obj.perm - 1), 'INCLUDE')
-                % File name
-                file  = strcat('../Permeability/', char(inputMatrix(obj.perm +1)));
-                % load the file in a vector
-                field = load(file);
-                % reshape it to specified size
-                field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
-                % make it the size of the grid
-                Kx = reshape(field1(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
-                
-                % check if it is anisotropic or not
-                if size(field,2) == 1
-                    Ky = Kx;
-                    Kz = Kx;
+            K = zeros(DiscretizationModel.ReservoirGrid.N, 3);
+            for i=1:3
+                if strcmp(inputMatrix(obj.perm(i) - 1), 'INCLUDE')
+                    % File name
+                    file  = strcat('../Permeability/', char(inputMatrix(obj.perm(i)+1)));
+                    % load the file in a vector
+                    field = load(file);
+                    % reshape it to specified size
+                    field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
+                    % make it the size of the grid
+                    K(:, i) = reshape(field1(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
                 else
-                    field2 = reshape(field(4:end,2),[field(1,2) field(2,2) field(3,2)]);
-                    field3 = reshape(field(4:end,3),[field(1,3) field(2,3) field(3,3)]);
-                    Ky = reshape(field2(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
-                    Kz = reshape(field3(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                    value = str2double(inputMatrix(obj.perm(i) + 1));
+                    K(:, i) = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
                 end
-            else
-                value = str2double(inputMatrix(obj.perm +1));
-                Kx = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
-                Ky = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
-                Kz = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
             end
-            K = [Kx, Ky, Kz];
             Reservoir.AddPermeabilityPorosity(K, phi);
             ProductionSystem.AddReservoir(Reservoir);
             
