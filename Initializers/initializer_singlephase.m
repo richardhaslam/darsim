@@ -15,6 +15,8 @@ classdef initializer_singlephase < initializer
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started single phase initialization');
+            %% 1. Change initial 
+            
             %% 2. Update Composition of the phases (Flash)
             % Reservoir
             Formulation.SinglePhase(1) = FluidModel.Flash(ProductionSystem.Reservoir.State);

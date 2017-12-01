@@ -35,6 +35,14 @@ classdef Reservoir_Simulator < handle
             disp(['Thickness:  ', num2str(obj.Simulation.ProductionSystem.Reservoir.Thickness), ' m']);
             disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nz)]);
             disp('---------------------------------------------------------');
+            if obj.Builder.Fractured
+                for f = 1:obj.Simulation.DiscretizationModel.FracturesGrid.Nfrac
+                    fprintf('Fracture %2d: Grid= %3.0f x %3.0f\n', f, ...
+                        obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx, obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny)
+                end
+                fprintf('Total fracture grids: %3.0f\n', sum(obj.Simulation.DiscretizationModel.FracturesGrid.N));
+                disp('---------------------------------------------------------');
+            end
             disp('Fluid Model:');
             disp(['Type: ', obj.Simulation.FluidModel.name]);
             disp(['N of phases: ', num2str(obj.Simulation.FluidModel.NofPhases)]);
