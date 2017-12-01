@@ -363,8 +363,10 @@ fprintf('---------------------------------------------------------\n');
 
 %% Intersections of fracture plate with each matrix cell
 fprintf('Obtaining fractures - matrix overlaps:\n',f);
+fprintf('---> Fracture ');
 for f = 1 : length(Frac)
-    fprintf('----> Fracture %02d\n',f);
+    if (f>1),  fprintf(repmat('\b', 1, 6));  end
+    fprintf('%02d/%02d\n',f,length(Frac));
     Frac(f).  intersectCoord_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Coordinates of intersections between each fracture cell and each matrix cell
     Frac(f).        areaFrac_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Area fraction of each fracture cell inside each matrix cube
     Frac(f).         aveDist_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Average distance between each fracture cell and each matrix cube
@@ -691,7 +693,7 @@ for f = 1 : length(Frac)
     for g = f+1 : length(Frac)
         % Finding the intersections between the cells of distinct fractures
         if ~isempty(Frac(f).intersectCoord_fracObj{g})
-            fprintf('Fractures %02d <---> %02d\n',f,g);
+            fprintf('Fracture %02d <---> %02d\n',f,g);
             Frac(f).intersectCoord_fracCell{g} = cell( Frac(f).N_Length_AB * Frac(f).N_Width_AD , 1 );
             Frac(g).intersectCoord_fracCell{f} = cell( Frac(g).N_Length_AB * Frac(g).N_Width_AD , 1 );
 

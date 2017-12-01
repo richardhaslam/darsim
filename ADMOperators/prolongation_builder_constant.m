@@ -27,5 +27,8 @@ classdef prolongation_builder_constant < prolongation_builder
             % Average mass on a coarse block
             Formulation.AverageMassOnCoarseBlocks(ProductionSystem, FineGrid, FluidModel, ADMRest);
         end
+        function StaticMultilevelPressureGuess(obj, ProductionSystem, FluidModel, DiscretizationModel)
+            % virtual call
+        end
     end
 end
