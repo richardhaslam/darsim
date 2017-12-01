@@ -16,9 +16,8 @@ classdef adm_grid_selector < handle
         obj = SelectGrid(obj)
     end
     methods
-        function obj = adm_grid_selector(tol, key)
+        function obj = adm_grid_selector(tol)
             obj.tol = tol;
-            obj.key = key;
         end
         function DefinePossibleActive(obj, CoarseGrid, FineGrid, level)
             % For a given level defines possible active cells

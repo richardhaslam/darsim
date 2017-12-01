@@ -123,7 +123,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         end
         function SelectADMGrid(obj, ProductionSystem, Residual)
             % Build ADM Grid
-            obj.ADMGridSelector.SelectGrid(obj.FineGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, obj.maxLevel);
+            obj.ADMGridSelector.SelectGrid(obj.FineGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, Residual, obj.maxLevel);
             obj.ADMStats.N = obj.ADMGrid.N(1,:);
             
             % Update prolongation builders

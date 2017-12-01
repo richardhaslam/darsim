@@ -17,9 +17,9 @@ classdef linear_solver_ADM < linear_solver
         function obj = linear_solver_ADM(name, tol, maxit)
             obj@linear_solver(name, tol, maxit);
         end
-        function SetUp(obj, ProductionSystem, DiscretizationModel)
+        function SetUp(obj, ProductionSystem, DiscretizationModel, Residual)
             % Get ADM Operators
-            [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel, ProductionSystem);
+            [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel, ProductionSystem, Residual);
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system

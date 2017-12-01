@@ -53,8 +53,8 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
             obj.Pdeltac{l} = deltac;
             for c=1:CoarseGrid.N
                 fsI = CoarseGrid.GrandChildren(c,:);
-                %obj.P{l}(fsI, c) = epsilon(fsI);
-                obj.P{l}(fsI, c) = epsilon(fsI)/max(epsilon(fsI));
+                obj.P{l}(fsI, c) = epsilon(fsI);
+                %obj.P{l}(fsI, c) = epsilon(fsI)/max(epsilon(fsI));
             end
         end
         function ADMProl = ADMProlongation(obj, ADMGrid, GlobalGrids, ADMRest)
@@ -65,7 +65,7 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
                 ADMProl(indexes, c) = obj.P{ADMGrid.level(c)}(indexes, ADMGrid.CellIndex(c));
             end
         end
-        function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FluidModel, ADMRest)
+        function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FineGrid, FluidModel, ADMRest)
             % virtual call
         end
     end

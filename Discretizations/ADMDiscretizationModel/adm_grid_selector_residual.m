@@ -10,32 +10,36 @@ classdef adm_grid_selector_residual < adm_grid_selector
     properties
     end
     methods
-        function obj = adm_grid_selector_residual(tol, key)
-            obj@adm_grid_selector(tol, key);
+        function obj = adm_grid_selector_residual(tol)
+            obj@adm_grid_selector(tol);
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step
-            % Grid is chosen based on (deltaX)^{n} = X^{n} - X^{n-1}
+            % Grid is chosen based on Residual(p^nu, S^nu), with nu = 1
             
-            %% 1. Reset all cells to be active and compute (deltaX)^{n} 
+            %% 1. Reset all cells to be active 
             n_media = length(FineGrid);
-            delta = cell(n_media, 1);
+            Residuum = cell(n_media);
+            Stop = 0;
+            Ntot = sum(FineGrid(:).N);
             for m=1:n_media
                 FineGrid(m).Active = ones(FineGrid(m).N, 1);
                 if m==1
                     % for now wells are only in the reservoir
-                    CoarseGrid(m,1).Active = obj.NoWellsCoarseCells;
-                    num = ProductionSystem.Reservoir.State.Properties(obj.key).Value - ...
-                        ProductionSystem.Reservoir.State_old.Properties(obj.key).Value;
-                    delta{m} = num;
+                    CoarseGrid(m,1).Active = obj.NoWellsCoarseCells;  
                 else
                     CoarseGrid(m,1).Active = ones(CoarseGrid(m).N, 1);
-                    num = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value - ...
-                        ProductionSystem.FracturesNetwork.Fractures(m-1).State_old.Properties(obj.key).Value;
-                    delta{m} = num;
                 end
+                Start = Stop + 1; 
+                Stop = Start + FineGrid(m).N - 1;
+                AbsResidual = [abs(Residual(Start:Stop)), abs(Residual(Ntot+Start:Ntot+Stop))];
+                ScaledResidual = AbsResidual ./ max(AbsResidual);
+                Residuum{m} = max(ScaledResidual(:, 1), ScaledResidual(:, 2));
             end
-                            
+            figure(1)
+            surf(reshape(Residuum{1}, 99, 99));
+            drawnow
+            
             %% 2. Select active cells
             for l=1:max(maxLevel)
                 % 2.a choose possible active grids for level l
@@ -46,9 +50,9 @@ classdef adm_grid_selector_residual < adm_grid_selector
                     % 2.b choose active cells of level l 
                     if l==1
                         % coarse grid 1 to 0 (fine-scale)
-                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), delta{m});
+                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), Residuum{m});
                     elseif l <= maxLevel(m)
-                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), delta{m});
+                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), Residuum{m});
                     else
                         CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
                     end
@@ -68,9 +72,8 @@ classdef adm_grid_selector_residual < adm_grid_selector
                 indexes_fs = CoarseGrid.GrandChildren(c,:);
                 
                 % Max delta inside block c
-                ResidualSum = sum(Residual(indexes_fs)); 
+                ResidualSum = max(Residual(indexes_fs)); 
    
-                
                 if CoarseGrid.Active(c) == 1 && abs(ResidualSum) > obj.tol
                    CoarseGrid.Active(c) = 0;
                 end

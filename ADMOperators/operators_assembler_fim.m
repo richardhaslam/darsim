@@ -14,9 +14,9 @@ classdef operators_assembler_fim < operators_assembler
         function obj = operators_assembler_fim(n_eq)
             obj@operators_assembler(n_eq);
         end
-        function [R, P] = Assemble(obj, DiscretizationModel, ProductionSystem)
+        function [R, P] = Assemble(obj, DiscretizationModel, ProductionSystem, Residual)
             % 1. Choose grid resolution
-            DiscretizationModel.SelectADMGrid(ProductionSystem);
+            DiscretizationModel.SelectADMGrid(ProductionSystem, Residual);
             
             % 2. Build full operators
             R = DiscretizationModel.OperatorsHandler.ADMRest;
