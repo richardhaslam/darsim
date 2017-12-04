@@ -9,11 +9,13 @@
 classdef adm_grid_selector_time < adm_grid_selector
     properties
         tol2 = .2;
+        Epsilon_old;
     end
     methods
         function obj = adm_grid_selector_time(tol, key)
             obj@adm_grid_selector(tol);
             obj.key = key;
+            obj.Epsilon_old = {zeros(99*99,1), zeros(99*99,1)};
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step
@@ -55,9 +57,9 @@ classdef adm_grid_selector_time < adm_grid_selector
                     % 2.b choose active cells of level l 
                     if l==1
                         % coarse grid 1 to 0 (fine-scale)
-                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), delta{m}, S{m,:});
+                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), delta{m}, S{m,:}, l);
                     elseif l <= maxLevel(m)
-                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), delta{m}, S{m,:});
+                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), delta{m}, S{m,:}, l);
                     else
                         CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
                     end
@@ -71,7 +73,7 @@ classdef adm_grid_selector_time < adm_grid_selector
             %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
-        function SelectCoarseFine(obj, FineGrid, CoarseGrid, delta, S, S_old)
+        function SelectCoarseFine(obj, FineGrid, CoarseGrid, delta, S, S_old, l)
             %Given a Fine (level l-1) and a Coarse (level l) Grids chooses the cells that have to be active
             
             %% 2. Select Active Coarse Blocks
@@ -94,14 +96,25 @@ classdef adm_grid_selector_time < adm_grid_selector
                 Min = min(delta(indexes_fs)); Min(abs(Min)<1e-3) = 1;
                 Deviation = max( abs(delta(indexes_fs)/mean(delta(indexes_fs))) ) - min( abs(delta(indexes_fs)/mean(delta(indexes_fs))) ); 
                 Criterion = norm(delta(indexes_fs), inf);
-                if CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || Deviation > obj.tol2 || Max*Min<0)
+%                 if CoarseGrid.Active(c) == 1 && Smax> .2 && Smax<.75
+%                     CoarseGrid.Active(c) = 0;
+%                 elseif CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || Deviation > obj.tol2 || Max*Min<0)
+%                     CoarseGrid.Active(c) = 0;
+%                 elseif CoarseGrid.Active(c) == 1 && ((Criterion > obj.tol/2 && Smax/Smin > 1.1) || (CoarseGrid.DeltaS(c) > obj.tol/2 && Smax_o/Smin_o > 1.2))
+%                     CoarseGrid.Active(c) = 0;
+%                 elseif CoarseGrid.Active(c) == 1 && Criterion > 1e-6 && CoarseGrid.DeltaS(c) < 1e-6
+%                     CoarseGrid.Active(c) = 0;
+%                 end
+                Epsilon = (S(indexes_fs) - S_old(indexes_fs)) ./ (mean(S(indexes_fs)) - mean(S_old(indexes_fs)));
+                Gradient = norm(Epsilon - obj.Epsilon_old{l}(indexes_fs), inf);
+                Delta = S(indexes_fs) - S_old(indexes_fs);
+                if CoarseGrid.Active(c) == 1 && Gradient > 1e-4 && sum(~isnan(Epsilon)) && norm(Delta, inf) > 1e-3 
                     CoarseGrid.Active(c) = 0;
-                elseif CoarseGrid.Active(c) == 1 && ((Criterion > obj.tol/2 && Smax/Smin > 1.1) || (CoarseGrid.DeltaS(c) > obj.tol/2 && Smax_o/Smin_o > 1.2))
-                    CoarseGrid.Active(c) = 0;
-                elseif CoarseGrid.Active(c) == 1 && Criterion > 1e-6 && CoarseGrid.DeltaS(c) < 1e-6
+                elseif CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || Deviation > obj.tol2 || Max*Min<0)
                     CoarseGrid.Active(c) = 0;
                 end
                 CoarseGrid.DeltaS(c) = Criterion;
+                obj.Epsilon_old{l}(indexes_fs) = (S(indexes_fs) - S_old(indexes_fs)) ./ (mean(S(indexes_fs)) - mean(S_old(indexes_fs)));
             end
             
             %% 3. Set to inactive fine blocks (level l-1) belonging to active Coarse Blocks (level l)

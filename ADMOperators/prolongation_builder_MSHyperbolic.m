@@ -48,64 +48,66 @@ classdef prolongation_builder_MSHyperbolic < prolongation_builder
             epsilon = deltaf ./ deltac;
             epsilon(isnan(epsilon)) = 1;
             epsilon(epsilon == Inf) = 1;
-            epsilon(abs(deltac) < 1e-4) = 1;
-            epsilon(abs(deltaf) < 1e-4) = 1;
-            if l==1
-                cells = [10,11,12];
-                Colors = {'ro', 'bo','go', 'blacko'};
-                Names = {'cell 10 adm','cell 11 adm','cell 12 adm', 'dS coarse adm'};
-%                 Colors = {'r*', 'b*','g*', 'black*'};
-%                 Names = {'cell 10 fs','cell 11 fs','cell 12 fs', 'dS coarse fs'};                
-                if obj.nt == 1
-                    figure(1)
-                    hold on
-                    for i=1:length(cells)
-                        plot(obj.nt, deltaf(cells(i)), Colors{i}, 'DisplayName', Names{i});      
-                    end
-                    plot(obj.nt, deltac(cells(i)), Colors{i+1}, 'DisplayName', Names{i+1});
-                    xlabel('time-step');
-                    ylabel('deltaS');
-                    axis([0 210 0 5e-3]);
-                    legend('show');
-                    figure(2)
-                    hold on
-                    for i=1:length(cells)
-                        plot(obj.nt, epsilon(cells(i)), Colors{i}, 'DisplayName', Names{i})
-                    end
-                    xlabel('time-step');
-                    ylabel('epsilon');
-                    axis([0 210 0 2]);
-                    figure(3)
-                    hold on
-                    for i=1:length(cells)
-                        plot(obj.nt, sf(cells(i)), Colors{i}, 'DisplayName', Names{i});
-                    end
-                    xlabel('time-step');
-                    ylabel('Saturation');
-                    axis([0 210 0 1]);
-                    legend('show');
-                else
-                    figure(1)
-                    hold on
-                    for i=1:length(cells)
-                        plot(obj.nt, deltaf(cells(i)), Colors{i}, 'HandleVisibility','off');
-                    end
-                    plot(obj.nt, deltac(cells(i)), Colors{i+1}, 'HandleVisibility','off')
-                    figure(2)
-                    hold on
-                    for i=1:length(cells)
-                        plot(obj.nt, epsilon(cells(i)), Colors{i}, 'HandleVisibility','off');
-                    end       
-                    figure(3)
-                    hold on
-                    for i=1:length(cells)
-                        plot(obj.nt, sf(cells(i)), Colors{i}, 'HandleVisibility','off');
-                    end
-                    plot(obj.nt, Sc(cells(i)), Colors{i+1}, 'HandleVisibility','off'); 
-                end                
-                drawnow
-                obj.nt = obj.nt+1;
-            end
+            epsilon(abs(deltac) < 1e-6) = 1;
+            epsilon(abs(deltaf) < 1e-6) = 1;
+%             if l==1
+%                 cells = [10, 11, 12];
+%                 Colors = {'ro', 'bo','go', 'blacko'};
+%                 Names = {'cell 10 adm','cell 11 adm','cell 12 adm', 'dS coarse adm'};
+%                 Line = {'r+', 'b+','g+', 'k+'};
+% %                 Colors = {'r*', 'b*','g*', 'k*'};
+% %                 Names = {'cell 900 fs','cell 1000 fs','cell 1100 fs', 'dS coarse fs'};
+% %                 Line = {'r.', 'b.','g.', 'k.'};
+%                 if obj.nt == 1
+%                     figure(1)
+%                     hold on
+%                     for i=1:length(cells)
+%                         plot(obj.nt, deltaf(cells(i)), Colors{i}, 'DisplayName', Names{i});
+%                     end
+%                     plot(obj.nt, deltac(cells(i)), Colors{i+1}, 'DisplayName', Names{i+1});
+%                     xlabel('time-step');
+%                     ylabel('deltaS');
+%                     axis([0 210 0 5e-3]);
+%                     legend('show');
+%                     figure(2)
+%                     hold on
+%                     for i=1:length(cells)
+%                         yyaxis left
+%                         plot(obj.nt, epsilon(cells(i)), Colors{i}, 'DisplayName', Names{i})
+%                     end
+%                     xlabel('time-step');
+%                     ylabel('epsilon');
+%                     axis([0 210 0 2]);
+%                     legend('show');
+%                     for i=1:length(cells)
+%                         yyaxis right
+%                         plot(obj.nt, sf(cells(i)), Line{i}, 'DisplayName', Names{i});
+%                     end
+%                     plot(obj.nt, Sc(cells(i)), Line{i+1}, 'DisplayName', Names{i+1});
+%                     xlabel('time-step');
+%                     ylabel('Saturation');
+%                     axis([0 210 0 1]);
+%                     legend('show');
+%                 else
+%                     figure(1)
+%                     hold on
+%                     for i=1:length(cells)
+%                         plot(obj.nt, deltaf(cells(i)), Colors{i}, 'HandleVisibility','off');
+%                     end
+%                     plot(obj.nt, deltac(cells(i)), Colors{i+1}, 'HandleVisibility','off')
+%                     figure(2)
+%                     hold on
+%                     for i=1:length(cells)
+%                         yyaxis left
+%                         plot(obj.nt, epsilon(cells(i)), Colors{i}, 'HandleVisibility','off');
+%                         yyaxis right
+%                         plot(obj.nt, sf(cells(i)), Line{i}, 'HandleVisibility','off');
+%                     end       
+%                     plot(obj.nt, Sc(cells(i)), Line{i+1}, 'HandleVisibility','off'); 
+%                 end                
+%                 drawnow
+%                 obj.nt = obj.nt+1;
+%             end
             % 2. Update the prolongation operator
             obj.Pdelta  = deltaf;
             obj.Pdeltac{l} = deltac;
