@@ -80,37 +80,17 @@ classdef adm_grid_selector_time < adm_grid_selector
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % fine-scale cells inside coarse block c
-                indexes_fs = CoarseGrid.GrandChildren(c,:);
-                S_children = S(indexes_fs);
-                % Max e Min saturation inside c
-                Smax = max(S_children);
-                Smin = min(S_children);
-                S_children_o = S_old(indexes_fs);
-                % Max e Min saturation inside c
-                Smax_o = max(S_children_o);
-                Smin_o = min(S_children_o);
-                
-                % Max delta inside block c
-                %deltaSum = sum(delta(indexes_fs));
+                indexes_fs = CoarseGrid.GrandChildren(c,:);        
+ 
                 Max = max(delta(indexes_fs)); Max(abs(Max)<1e-3) = 0;
                 Min = min(delta(indexes_fs)); Min(abs(Min)<1e-3) = 1;
-                Deviation = max( abs(delta(indexes_fs)/mean(delta(indexes_fs))) ) - min( abs(delta(indexes_fs)/mean(delta(indexes_fs))) ); 
                 Criterion = norm(delta(indexes_fs), inf);
-%                 if CoarseGrid.Active(c) == 1 && Smax> .2 && Smax<.75
-%                     CoarseGrid.Active(c) = 0;
-%                 elseif CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || Deviation > obj.tol2 || Max*Min<0)
-%                     CoarseGrid.Active(c) = 0;
-%                 elseif CoarseGrid.Active(c) == 1 && ((Criterion > obj.tol/2 && Smax/Smin > 1.1) || (CoarseGrid.DeltaS(c) > obj.tol/2 && Smax_o/Smin_o > 1.2))
-%                     CoarseGrid.Active(c) = 0;
-%                 elseif CoarseGrid.Active(c) == 1 && Criterion > 1e-6 && CoarseGrid.DeltaS(c) < 1e-6
-%                     CoarseGrid.Active(c) = 0;
-%                 end
                 Epsilon = (S(indexes_fs) - S_old(indexes_fs)) ./ (mean(S(indexes_fs)) - mean(S_old(indexes_fs)));
                 Gradient = norm(Epsilon - obj.Epsilon_old{l}(indexes_fs), inf);
                 Delta = S(indexes_fs) - S_old(indexes_fs);
                 if CoarseGrid.Active(c) == 1 && Gradient > 1e-4 && sum(~isnan(Epsilon)) && norm(Delta, inf) > 1e-3 
                     CoarseGrid.Active(c) = 0;
-                elseif CoarseGrid.Active(c) == 1 && CoarseGrid.DeltaS(c) && (Criterion > obj.tol || Deviation > obj.tol2 || Max*Min<0)
+                elseif CoarseGrid.Active(c) == 1 && (max(CoarseGrid.DeltaS(c), Criterion) > 5e-3 || Max*Min<0)
                     CoarseGrid.Active(c) = 0;
                 end
                 CoarseGrid.DeltaS(c) = Criterion;
