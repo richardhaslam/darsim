@@ -15,7 +15,7 @@ classdef adm_grid_selector_time < adm_grid_selector
         function obj = adm_grid_selector_time(tol, key)
             obj@adm_grid_selector(tol);
             obj.key = key;
-            obj.Epsilon_old = {zeros(99*99,1), zeros(99*99,1)};
+            obj.Epsilon_old = {zeros(369*369,1), zeros(369*369,1)};
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step
@@ -84,16 +84,15 @@ classdef adm_grid_selector_time < adm_grid_selector
  
                 Max = max(delta(indexes_fs)); Max(abs(Max)<1e-3) = 0;
                 Min = min(delta(indexes_fs)); Min(abs(Min)<1e-3) = 1;
-                Criterion = norm(delta(indexes_fs), inf);
+                DeltaS = norm(delta(indexes_fs), inf);
                 Epsilon = (S(indexes_fs) - S_old(indexes_fs)) ./ (mean(S(indexes_fs)) - mean(S_old(indexes_fs)));
                 Gradient = norm(Epsilon - obj.Epsilon_old{l}(indexes_fs), inf);
-                Delta = S(indexes_fs) - S_old(indexes_fs);
-                if CoarseGrid.Active(c) == 1 && Gradient > 1e-4 && sum(~isnan(Epsilon)) && norm(Delta, inf) > 1e-3 
+                if CoarseGrid.Active(c) == 1 && Gradient > 1e-3 && sum(~isnan(Epsilon)) && norm(S_old(indexes_fs), inf) > 0.101 
                     CoarseGrid.Active(c) = 0;
-                elseif CoarseGrid.Active(c) == 1 && (max(CoarseGrid.DeltaS(c), Criterion) > 5e-3 || Max*Min<0)
+                elseif CoarseGrid.Active(c) == 1 && ( (CoarseGrid.DeltaS(c) < 1e-3 && DeltaS > 1e-3) || Max*Min<0)
                     CoarseGrid.Active(c) = 0;
                 end
-                CoarseGrid.DeltaS(c) = Criterion;
+                CoarseGrid.DeltaS(c) = DeltaS;
                 obj.Epsilon_old{l}(indexes_fs) = (S(indexes_fs) - S_old(indexes_fs)) ./ (mean(S(indexes_fs)) - mean(S_old(indexes_fs)));
             end
             

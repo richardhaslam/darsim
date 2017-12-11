@@ -23,9 +23,6 @@ classdef adm_map < handle
             obj.CF = cf;
         end
         function Update(obj, ADMGrid, FineGrid, level)
-                % This is what has to be changed to make prolongaiton work
-                % for F-ADM (good luck Matteo...) 
-            
                 % Number of cells
                 obj.Nf = sum(ADMGrid.N(:,1:level), 1);
                 obj.Nc = ADMGrid.N(:, level+1);
