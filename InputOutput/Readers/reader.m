@@ -1,4 +1,4 @@
-% Output writer base class
+% Reader base class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -19,7 +19,7 @@ classdef reader < handle
             obj.Directory = dir;
             obj.File = strcat(dir,'/',file);
         end
-        function ReadInputFile(obj)
+        function ReadInputFile(obj, Builder)
             %ReadInputFile
             fileID = fopen(obj.File, 'r');
             %// Read lines from input file

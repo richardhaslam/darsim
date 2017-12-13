@@ -15,7 +15,7 @@ classdef Reservoir_Simulator < handle
     end
     methods
         function obj = Reservoir_Simulator(Directory, File)
-            obj.Reader = reader(Directory, File);
+            obj.Reader = reader_darsim2(Directory, File);
             obj.Builder = builder();
             obj.Simulation = Reservoir_Simulation();
         end
