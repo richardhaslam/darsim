@@ -8,6 +8,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef reader_darsim2 < reader
     properties
+        InputMatrix
+        SettingsMatrix
+        FractureMatrix
     end
     methods
         function obj = reader_darsim2(dir, file)
@@ -169,9 +172,11 @@ classdef reader_darsim2 < reader
             % 7. Component properties
             temp = strfind(obj.InputMatrix, 'COMPONENT PROPERTIES');
             index = find(~cellfun('isempty', temp));
-            %FluidProperties.ComponentProperties;
+            for i = 1:FluidProperties.NofComponents
+                FluidProperties.ComponentProperties = str2double(strsplit(char(obj.InputMatrix(index + i * 2))));
+            end
             
-            % 9. Gravity
+            % 8. Gravity
             temp = strfind(obj.InputMatrix, 'GRAVITY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -318,6 +323,7 @@ classdef reader_darsim2 < reader
                 SimulatorSettings.CouplingType = 'FIM';
                 SimulatorSettings.MaxIterations = str2double(obj.SettingsMatrix(index + 1)); 
                 SimulatorSettings.Tolerance = str2double(obj.SettingsMatrix(index + 2));
+                SimulatorSettings.cfl = str2double(obj.SettingsMatrix(index + 3));
             else
                 SimulatorSettings.CouplingType ='Sequential';
                 temp = strfind(obj.SettingsMatrix, 'SEQUENTIAL'); 
@@ -486,7 +492,10 @@ classdef reader_darsim2 < reader
                         end
                     end
                 end
-            end              
+            end  
+            
+            %%%%% Stop criterion
+            SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation
             
             %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
             temp = strfind(obj.SettingsMatrix, 'OUTPUT'); 

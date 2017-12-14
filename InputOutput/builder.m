@@ -6,6 +6,7 @@
 %Created: 13 July 2016
 %Last modified: 24 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OLD VERSION: NOW FILE simulation_builder is used
 classdef builder < handle
     properties
         % for new builder

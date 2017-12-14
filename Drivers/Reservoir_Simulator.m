@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 28 July 2016
+%Last modified: 14  December 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Reservoir_Simulator < handle
     properties
@@ -24,7 +24,7 @@ classdef Reservoir_Simulator < handle
             obj.Writer = obj.Builder.BuildWriter(obj.Reader.Directory, obj.Simulation); 
         end
         function PrintInfo(obj)
-            disp(['******************', num2str(obj.Builder.ProblemName),'******************']);
+            disp(['******************', num2str(obj.Builder.SimulationInput.ProblemName),'******************']);
             disp(newline);
             disp('FORMATION CHARACTERISTICS:');
            
@@ -34,7 +34,7 @@ classdef Reservoir_Simulator < handle
             disp(['Thickness:  ', num2str(obj.Simulation.ProductionSystem.Reservoir.Thickness), ' m']);
             disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nz)]);
             disp('---------------------------------------------------------');
-            if obj.Builder.Fractured
+            if obj.Builder.SimulationInput.FracturesProperties.Fractured
                 for f = 1:obj.Simulation.DiscretizationModel.FracturesGrid.Nfrac
                     fprintf('Fracture %2d: Grid= %3.0f x %3.0f\n', f, ...
                         obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx, obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny)

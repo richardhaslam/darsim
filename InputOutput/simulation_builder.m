@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 December 2017
-%Last modified: 13 December 2017
+%Last modified: 14 December 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef simulation_builder < handle
     properties
@@ -24,7 +24,7 @@ classdef simulation_builder < handle
             simulation.Summary = obj.BuildSummary(simulation);
             
             % Add gravity model
-            simulation.Formulation.GravityModel = gravity_model(simulation.Discretization, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
+            simulation.Formulation.GravityModel = gravity_model(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
             switch (obj.SimulationInput.FluidProperties.Gravity)
                 case('ON')
                     simulation.Formulation.GravityModel.g = 9.806;
@@ -37,9 +37,9 @@ classdef simulation_builder < handle
             
             %% Define Initialization procedure
             N = simulation.DiscretizationModel.ReservoirGrid.N;
-            VarValues = ones(N, length(obj.Init));
-            for i=1:length(obj.Init)
-                VarValues(:, i) = VarValues(:, i) * obj.Init(i);
+            VarValues = ones(N, length(obj.SimulationInput.Init));
+            for i=1:length(obj.SimulationInput.Init)
+                VarValues(:, i) = VarValues(:, i) * obj.SimulationInput.Init(i);
             end
             switch(simulation.FluidModel.name)
                 case('SinglePhase') 
@@ -435,7 +435,7 @@ classdef simulation_builder < handle
                         FluidModel.AddPhase(Phase, i);
                     end
                     % Add components
-                    for i = 1:FluidModel.NofComp
+                    for i = 1:FluidModel.NofComponents
                         Prop = obj.SimulationInput.FluidProperties.ComponentProperties(i,:);
                         comp = component();
                         comp.AddCompProperties(Prop);
@@ -487,10 +487,10 @@ classdef simulation_builder < handle
                     Formulation = Immiscible_formulation();
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases;
                 case('Natural')
-                    Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
+                    Formulation = NaturalVar_formulation(sum(obj.SimulationInput.ReservoirProperties.Grid.N), obj.SimulationInput.FluidProperties.NofComponents);
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + obj.SimulationInput.FluidProperties.NofComponents;
                 case('Molar')
-                    Formulation = Overall_Composition_formulation(FluidModel.NofComp);
+                    Formulation = Overall_Composition_formulation(obj.SimulationInput.FluidProperties.NofComponents);
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases;
                 case('OBL')
                     Formulation = OBL_formualtion();
@@ -512,21 +512,21 @@ classdef simulation_builder < handle
                             NLSolver.SystemBuilder = fim_system_builder_ADM();
                             ConvergenceChecker = convergence_checker_ADM();
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
-                            NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
+                            NLSolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                         otherwise
                             NLSolver.SystemBuilder = fim_system_builder();
-                            switch (obj.Formulation)
+                            switch (obj.SimulatorSettings.Formulation)
                                 case('Molar')
                                     ConvergenceChecker = convergence_checker_FS_molar();
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
-                            NLSolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500); 
+                            NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500); 
                     end
-                    NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
-                    ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
-                    switch (obj.Formulation)
+                    NLSolver.MaxIter = obj.SimulatorSettings.MaxIterations;
+                    ConvergenceChecker.Tol = obj.SimulatorSettings.Tolerance;
+                    switch (obj.SimulatorSettings.Formulation)
                         case('Immiscible')
                             ConvergenceChecker.NormCalculator = norm_calculator_immiscible();
                         otherwise
@@ -538,7 +538,7 @@ classdef simulation_builder < handle
                 %% Sequential coupling    
                 case('Sequential')
                     Coupling = Sequential_Strategy('Sequential');
-                    Coupling.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
+                    Coupling.MaxIter = obj.SimulatorSettings.MaxIterations;
                     % pressuresolver = incompressible_pressure_solver();
                     pressuresolver = NL_Solver();
                     pressuresolver.MaxIter = 15;
@@ -546,42 +546,45 @@ classdef simulation_builder < handle
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
                     pressuresolver.SystemBuilder = pressure_system_builder();
-                    if strcmp(obj.ADM, 'active')
-                        pressuresolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
-                        pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
-                        pressuresolver.ConvergenceChecker.adm = 1;
-                        pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(1,1);
-                    elseif strcmp(obj.MMs, 'active')
-                        pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
-                        pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
-                    else
-                        pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
+                    switch obj.SimulatorSettings.DiscretizationModel
+                        case ('ADM')
+                            pressuresolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                            pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
+                            pressuresolver.ConvergenceChecker.adm = 1;
+                            pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(1,1);
+                        case('MMs')
+                            pressuresolver.LinearSolver = linear_solver_MMs(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                            pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
+                        otherwise
+                            pressuresolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                     end
                     if obj.incompressible
                         pressuresolver.ConvergenceChecker.Incompressible = 1;
                     end
                     Coupling.AddPressureSolver(pressuresolver);
-                    if (~isempty(obj.transport))
-                        transportsolver = NL_Solver();
-                        transportsolver.MaxIter = str2double(SettingsMatrix(obj.transport + 3));
-                        ConvergenceChecker = convergence_checker_transport();
-                        ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.transport + 2));
-                        transportsolver.AddConvergenceChecker(ConvergenceChecker);
-                        transportsolver.SystemBuilder = transport_system_builder();
-                        Coupling.ConvergenceChecker = convergence_checker_outer();
-                        Coupling.ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
-                        if strcmp(obj.ADM, 'active')
-                            transportsolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
-                            transportsolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(2, obj.NofEq);
-                            transportsolver.ConvergenceChecker.adm = 1;
-                            transportsolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(2, obj.NofEq);
-                        else
-                            transportsolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
-                        end
-                    else
-                        transportsolver = explicit_transport_solver();
-                        transportsolver.SystemBuilder = explicit_transport_system_builder();
-                        Coupling.ConvergenceChecker = convergence_checker_impes();
+                    switch (obj.SimulatorSettings.TransportSolver.Type)
+                        case('IMPSAT')
+                            transportsolver = NL_Solver();
+                            transportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
+                            ConvergenceChecker = convergence_checker_transport();
+                            ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                            transportsolver.AddConvergenceChecker(ConvergenceChecker);
+                            transportsolver.SystemBuilder = transport_system_builder();
+                            Coupling.ConvergenceChecker = convergence_checker_outer();
+                            Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                            switch obj.SimulatorSettings.DiscretizationModel
+                                case('ADM')
+                                    transportsolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                                    transportsolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(2, obj.NofEq);
+                                    transportsolver.ConvergenceChecker.adm = 1;
+                                    transportsolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(2, obj.NofEq);
+                                otherwise
+                                    transportsolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                            end
+                        otherwise
+                            transportsolver = explicit_transport_solver();
+                            transportsolver.SystemBuilder = explicit_transport_system_builder();
+                            Coupling.ConvergenceChecker = convergence_checker_impes();
                     end
                     Coupling.AddTransportSolver(transportsolver);
                 %% Single phase coupling
@@ -593,57 +596,58 @@ classdef simulation_builder < handle
                     ConvergenceChecker.Tol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
                     pressuresolver.SystemBuilder = pressure_system_builder();
-                    if strcmp(obj.ADM, 'active')
-                        pressuresolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
-                        pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
-                        pressuresolver.ConvergenceChecker.adm = 1;
-                        pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
-                    elseif strcmp(obj.MMs, 'active')
-                        pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
-                        pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
-                        pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
-                    else
-                        pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
-                    end    
+                    switch obj.SimulatorSettings.DiscretizationModel
+                        case('ADM')
+                            pressuresolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                            pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                            pressuresolver.ConvergenceChecker.adm = 1;
+                            pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                        case ('MMs')
+                            pressuresolver.LinearSolver = linear_solver_MMs(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                            pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
+                            pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
+                        otherwise
+                            pressuresolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                    end
                     if obj.incompressible
                         Coupling.Incompressible = 1;
                         pressuresolver.ConvergenceChecker.Incompressible = 1;
                     end
                     Coupling.AddPressureSolver(pressuresolver);
             end 
-            Coupling.TimeStepSelector = timestep_selector(str2double(SettingsMatrix(obj.coupling + 3)), obj.MinMaxdt(1), obj.MinMaxdt(2));
+            Coupling.TimeStepSelector = timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
             TimeDriver.AddCouplingStrategy(Coupling);
-            switch(obj.StopCriterion)
+            switch(obj.SimulatorSettings.StopCriterion)
                 case('MAX TIME')
-                    end_of_sim_eval = end_of_sim_evaluator(obj.TotalTime, obj.MaxNumTimeSteps);
+                    end_of_sim_eval = end_of_sim_evaluator(obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
                 case('COMPONENT CUT')
-                    end_of_sim_eval = end_of_sim_evaluator_gascut(obj.TotalTime, obj.MaxNumTimeSteps, 0.2);
+                    end_of_sim_eval = end_of_sim_evaluator_gascut(obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps, 0.2);
                 case('PV INJECTED')
-                    end_of_sim_eval = end_of_sim_evaluator_PVInjected(obj.TotalTime, obj.MaxNumTimeSteps, 3);
+                    end_of_sim_eval = end_of_sim_evaluator_PVInjected(obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps, 3);
             end
             TimeDriver.AddEndOfSimEvaluator(end_of_sim_eval);
         end
         function Summary = BuildSummary(obj, simulation)
             %%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
-            switch(obj.CouplingType)
+            switch(obj.SimulatorSettings.CouplingType)
                 case('FIM')
-                    CouplingStats = FIM_Stats(obj.MaxNumTimeSteps);
+                    CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
                 case('Sequential')
-                    CouplingStats = Sequential_Stats(obj.MaxNumTimeSteps);
+                    CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
                 case('SinglePhase')
-                    CouplingStats = SinglePhase_Stats(obj.MaxNumTimeSteps);
+                    CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
             end
-            wellsData = wells_data(obj.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
-            switch (obj.ADM)
-                case('inactive')
-                    Summary = Run_Summary(obj.MaxNumTimeSteps, CouplingStats, wellsData);
-                case('active')
-                    Summary = Run_Summary_ADM(obj.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
+            wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
+            switch (obj.SimulatorSettings.DiscretizationModel)
+                case('ADM')
+                    Summary = Run_Summary_ADM(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
+                otherwise
+                    Summary = Run_Summary(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData);
             end
         end
         function Writer = BuildWriter(obj, InputDirectory, simulation)
             % Build Plotter
-            switch(obj.plotting)
+            switch(obj.SimulatorSettings.plotting)
                 case('Matlab')
                     if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
                         plotter = Matlab_Plotter_1D();
@@ -651,22 +655,28 @@ classdef simulation_builder < handle
                         plotter = Matlab_Plotter_2D();
                     end
                 case('VTK')
-                    plotter = VTK_Plotter(InputDirectory, obj.ProblemName);
+                    plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
                 otherwise
                     warning('WARNING: NO valid Plotter was selected. Results will not be plotted.');
                     plotter = no_Plotter();
             end
             
-            switch(obj.ADM)
-                case ('inactive')
-                    Writer = output_writer_FS(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats, simulation.FluidModel.NofComp);
-                case ('active')
-                    Writer = output_writer_adm(InputDirectory, obj.ProblemName, simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats, simulation.FluidModel.NofComp);
+            switch(obj.SimulatorSettings.DiscretizationModel)
+                case ('ADM')
+                    Writer = output_writer_adm(InputDirectory, obj.SimulationInput.ProblemName,...
+                        simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, ...
+                        simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
+                        simulation.FluidModel.NofComp);
+                otherwise
+                    Writer = output_writer_FS(InputDirectory, obj.SimulationInput.ProblemName,...
+                        simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd,...
+                        simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
+                        simulation.FluidModel.NofComp);   
             end
             Writer.AddPlotter(plotter);
         end
         function DefineProperties(obj, ProductionSystem, FluidModel, DiscretizationModel)
-            switch(obj.Fractured)
+            switch(obj.SimulationInput.FracturesProperties.Fractured)
                 case(0)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                     ProductionSystem.Reservoir.State_old.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
