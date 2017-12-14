@@ -333,7 +333,7 @@ classdef builder < handle
             ny = str2double(inputMatrix(obj.grid + 2));
             nz = str2double(inputMatrix(obj.grid + 3));
             Nm = nx*ny*nz;
-            ReservoirGrid = cartesian_grid(nx, ny, nz);
+            ReservoirGrid = cartesian_grid([nx, ny, nz]);
             % 1b. Fractures Grid
             if obj.Fractured
                 fprintf('Extracting data from %02d fractures ...\n', obj.NrOfFrac);

@@ -16,12 +16,11 @@ classdef Reservoir_Simulator < handle
     methods
         function obj = Reservoir_Simulator(Directory, File)
             obj.Reader = reader_darsim2(Directory, File);
-            obj.Builder = builder();
+            obj.Builder = simulation_builder();
             obj.Simulation = Reservoir_Simulation();
         end
         function BuildObjects(obj)
-            obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix, obj.Reader.FractureMatrix);
-            obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1}, obj.Reader.FractureMatrix);
+            obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.FractureMatrix);
             obj.Writer = obj.Builder.BuildWriter(obj.Reader.Directory, obj.Simulation); 
         end
         function PrintInfo(obj)

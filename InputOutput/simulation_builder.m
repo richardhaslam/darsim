@@ -9,17 +9,28 @@
 classdef simulation_builder < handle
     properties
         SimulationInput
-        SimulatorSettings 
+        SimulatorSettings
+        incompressible = 0;
+        NofEq
     end
     methods
-        function simulation = BuildSimulation(obj, inputMatrix, SettingsMatrix, FractureMatrix)
+        function simulation = BuildSimulation(obj, FractureMatrix)
             simulation = Reservoir_Simulation();
-            simulation.DiscretizationModel = obj.BuildDiscretization(inputMatrix, FractureMatrix);
-            simulation.ProductionSystem = obj.BuildProductionSystem(inputMatrix, FractureMatrix, simulation.DiscretizationModel);            
-            simulation.FluidModel = obj.BuildFluidModel(inputMatrix, simulation.ProductionSystem);
-            simulation.Formulation = obj.BuildFormulation(simulation.DiscretizationModel, simulation.FluidModel, simulation.ProductionSystem);
-            simulation.TimeDriver = obj.BuildTimeDriver(SettingsMatrix);
+            simulation.DiscretizationModel = obj.BuildDiscretization(FractureMatrix);
+            simulation.ProductionSystem = obj.BuildProductionSystem(FractureMatrix);            
+            simulation.FluidModel = obj.BuildFluidModel();
+            simulation.Formulation = obj.BuildFormulation();
+            simulation.TimeDriver = obj.BuildTimeDriver();
             simulation.Summary = obj.BuildSummary(simulation);
+            
+            % Add gravity model
+            simulation.Formulation.GravityModel = gravity_model(simulation.Discretization, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
+            switch (obj.SimulationInput.FluidProperties.Gravity)
+                case('ON')
+                    simulation.Formulation.GravityModel.g = 9.806;
+                case('OFF')
+                    simulation.Formulation.GravityModel.g = 0;
+            end
             
             % Define Properties
             obj.DefineProperties(simulation.ProductionSystem, simulation.FluidModel, simulation.DiscretizationModel);
@@ -45,16 +56,13 @@ classdef simulation_builder < handle
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
         end
-        function Discretization = BuildDiscretization(obj, inputMatrix, FractureMatrix)
+        function Discretization = BuildDiscretization(obj, FractureMatrix)
             %% 1. Create fine-scale grids
             % 1a. Reservoir Grid
-            nx = str2double(inputMatrix(obj.grid + 1));
-            ny = str2double(inputMatrix(obj.grid + 2));
-            nz = str2double(inputMatrix(obj.grid + 3));
-            Nm = nx*ny*nz;
-            ReservoirGrid = cartesian_grid(nx, ny, nz);
+            ReservoirGrid = cartesian_grid(obj.SimulationInput.ReservoirProperties.Grid.N);
+            Nm = ReservoirGrid.N;
             % 1b. Fractures Grid
-            if obj.Fractured
+            if obj.SimulationInput.FracturesProperties.Fractured
                 fprintf('Extracting data from %02d fractures ...\n', obj.NrOfFrac);
                 FracturesGrid = fractures_grid(obj.NrOfFrac);
                 temp = strfind(FractureMatrix{1}, 'PROPERTIES');
@@ -141,356 +149,177 @@ classdef simulation_builder < handle
             end
             
             %% 2. Define your discretization Model (choose between FS and ADM)
-            if  strcmp(obj.ADM, 'active')
-                % ADM discretization model
-                
-                % Create the operatorshandler
-                operatorshandler = operators_handler_adm(obj.ADMSettings.Coarsening(1,:,:));
-                % a.1 Pressure prolongation builder
-                switch (obj.ADMSettings.PInterpolator)
-                    case ('Constant')
-                        prolongationbuilder = prolongation_builder_constant(obj.ADMSettings.maxLevel(1));
-                    otherwise
-                        prolongationbuilder = prolongation_builder_MSPressure(obj.ADMSettings.maxLevel(1), obj.ADMSettings.Coarsening(:,:,1) );
-                        if ~obj.Fractured
-                            prolongationbuilder.BFUpdater = bf_updater_ms();
-                        else
-                            prolongationbuilder.BFUpdater = bf_updater_FAMS();
-                            if strcmp(obj.ADMSettings.BFtype , 'COUPLED')
-                                prolongationbuilder.BFUpdater.BFtype = 'COUPLED';
+            switch (obj.SimulatorSettings.DiscretizationModel)
+                case('ADM')
+                    % ADM discretization model (dynamic gridding)
+                    ADMSettings = obj.SimulatorSettings.ADMSettings;
+                    % Create the operatorshandler
+                    operatorshandler = operators_handler_adm(ADMSettings.Coarsening(1,:,:));
+                    % a.1 Pressure prolongation builder
+                    switch (ADMSettings.PInterpolator)
+                        case ('Constant')
+                            prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
+                        otherwise
+                            prolongationbuilder = prolongation_builder_MSPressure(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1) );
+                            if ~obj.SimulationInput.FracturesProperties.Fractured
+                                prolongationbuilder.BFUpdater = bf_updater_ms();
                             else
-                                prolongationbuilder.BFUpdater.BFtype = 'DECOUPLED';
+                                prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                                if strcmp(ADMSettings.BFtype , 'COUPLED')
+                                    prolongationbuilder.BFUpdater.BFtype = 'COUPLED';
+                                else
+                                    prolongationbuilder.BFUpdater.BFtype = 'DECOUPLED';
+                                end
                             end
-                        end
-                        if strcmp(obj.ADMSettings.PInterpolator, 'Homogeneous')
-                            prolongationbuilder.BFUpdater.MaxContrast = 1;
-                        else
-                            prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
-                        end
-                end
-                
-                operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
-                % a.2 Hyperbolic variables operators builder
-                n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
-                for i = 2:n_phases
-                    switch(obj.ADMSettings.HInterpolator)
-                        case('Constant')
-                            prolongationbuilder = prolongation_builder_constant(obj.ADMSettings.maxLevel(1));
-                        case('MS')
-                            prolongationbuilder = prolongation_builder_MSHyperbolic(obj.ADMSettings.maxLevel(1));
+                            if strcmp(ADMSettings.PInterpolator, 'Homogeneous')
+                                prolongationbuilder.BFUpdater.MaxContrast = 1;
+                            else
+                                prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
+                            end
                     end
-                    operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
-                end
-                
-                % b. Grid selection criterion (time\space based)
-                switch (obj.ADMSettings.GridSelCriterion)
-                    case('dfdx')
-                        gridselector = adm_grid_selector_delta(obj.ADMSettings.tol, obj.ADMSettings.key);
-                    case('dfdt')
-                        gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key, ReservoirGrid.N, obj.ADMSettings.maxLevel(1));
-                    case('residual')
-                        gridselector = adm_grid_selector_residual(obj.ADMSettings.tol);
-                end
-                Discretization = ADM_Discretization_model(obj.ADMSettings.maxLevel, obj.ADMSettings.Coarsening);
-                Discretization.AddADMGridSelector(gridselector);
-                Discretization.AddOperatorsHandler(operatorshandler);
-            elseif strcmp(obj.MMs, 'active')
-                % Create the operatorshandler
-                operatorshandler = operators_handler_MMs(obj.MMsSettings.Coarsening(1,:,:));
-                prolongationbuilder = prolongation_builder_MSPressure(obj.MMsSettings.maxLevel(1), obj.MMsSettings.Coarsening(:,:,1) );
-                if ~obj.Fractured
-                    prolongationbuilder.BFUpdater = bf_updater_ms();
-                else
-                    prolongationbuilder.BFUpdater = bf_updater_FAMS();
-                    if strcmp(obj.MMsSettings.BFtype , 'COUPLED')
-                        prolongationbuilder.BFUpdater.BFtype = 'COUPLED';
+                    
+                    operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
+                    % a.2 Hyperbolic variables operators builder
+                    n_phases = obj.SimulationInput.FluidProperties.NofPhases;
+                    for i = 2:n_phases
+                        switch(ADMSettings.HInterpolator)
+                            case('Constant')
+                                prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
+                            case('MS')
+                                prolongationbuilder = prolongation_builder_MSHyperbolic(ADMSettings.maxLevel(1));
+                        end
+                        operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
+                    end
+                    
+                    % b. Grid selection criterion (time\space based)
+                    switch (ADMSettings.GridSelCriterion)
+                        case('dfdx')
+                            gridselector = adm_grid_selector_delta(ADMSettings.tol, ADMSettings.key);
+                        case('dfdt')
+                            gridselector = adm_grid_selector_time(ADMSettings.tol, ADMSettings.key, ReservoirGrid.N, ADMSettings.maxLevel(1));
+                        case('residual')
+                            gridselector = adm_grid_selector_residual(ADMSettings.tol);
+                    end
+                    Discretization = ADM_Discretization_model(ADMSettings.maxLevel, ADMSettings.Coarsening);
+                    Discretization.AddADMGridSelector(gridselector);
+                    Discretization.AddOperatorsHandler(operatorshandler);
+                case ('MMs')
+                    % Multilevel multiscale discretization model (static multiscale)
+                    MMsSettings = obj.SimulatorSettings.MMsSettings;
+                    % Create the operatorshandler
+                    operatorshandler = operators_handler_MMs(MMsSettings.Coarsening(1,:,:));
+                    prolongationbuilder = prolongation_builder_MSPressure(MMsSettings.maxLevel(1), MMsSettings.Coarsening(:,:,1) );
+                    if ~obj.Fractured
+                        prolongationbuilder.BFUpdater = bf_updater_ms();
                     else
-                        prolongationbuilder.BFUpdater.BFtype = 'DECOUPLED';
+                        prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                        if strcmp(MMsSettings.BFtype , 'COUPLED')
+                            prolongationbuilder.BFUpdater.BFtype = 'COUPLED';
+                        else
+                            prolongationbuilder.BFUpdater.BFtype = 'DECOUPLED';
+                        end
                     end
-                end
-                % Reduce contrast for BF computation to remove peaks
-                prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
-                % Add prolongation builder
-                operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
-                % Static Multiscale for flow solver
-                Discretization = Multiscale_Discretization_model(obj.MMsSettings.maxLevel, obj.MMsSettings.Coarsening);
-                Discretization.AddOperatorsHandler(operatorshandler);
-            else
-                % Fine-scale discretization model
-                Discretization = FS_Discretization_model();
+                    % Reduce contrast for BF computation to remove peaks
+                    prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
+                    % Add prolongation builder
+                    operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
+                    % Static Multiscale for flow solver
+                    Discretization = Multiscale_Discretization_model(MMsSettings.maxLevel, MMsSettings.Coarsening);
+                    Discretization.AddOperatorsHandler(operatorshandler);
+                case('FS')
+                    % Fine-scale discretization model
+                    Discretization = FS_Discretization_model();
             end
             
             %% 3. Add Grids to the Discretization Model
             Discretization.AddReservoirGrid(ReservoirGrid);
-            if obj.Fractured
+            if obj.SimulationInput.FracturesProperties.Fractured
                 Discretization.AddFracturesGrid(FracturesGrid);
                 Discretization.AddCrossConnections(CrossConnections);
             end
         end
-        function ProductionSystem = BuildProductionSystem (obj, inputMatrix, FractureMatrix, DiscretizationModel)
+        function ProductionSystem = BuildProductionSystem (obj, FractureMatrix)
             ProductionSystem = Production_System();
             %% RESERVOIR
-            Lx = str2double(inputMatrix(obj.size +1));  %Dimension in x???direction [m]
-            Ly = str2double(inputMatrix(obj.size +2));  %Dimension in y???direction [m]
-            h  = str2double(inputMatrix(obj.size +3));  %Reservoir thickness [m]
-            dx = Lx/DiscretizationModel.ReservoirGrid.Nx;
-            dy = Ly/DiscretizationModel.ReservoirGrid.Ny;
-            dz = h /DiscretizationModel.ReservoirGrid.Nz;
-            Tres = str2double(inputMatrix(obj.temperature + 1));   %Res temperature [K]
+            Lx = obj.SimulationInput.ReservoirProperties.size(1);       %Dimension in x-direction [m]
+            Ly = obj.SimulationInput.ReservoirProperties.size(2);       %Dimension in y-direction [m]
+            h  = obj.SimulationInput.ReservoirProperties.size(3);       %Reservoir thickness (z-direction) [m]
+            Tres = obj.SimulationInput.ReservoirProperties.Temperature; %Res temperature [K]
             Reservoir = reservoir(Lx, Ly, h, Tres);
-            phi = str2double(inputMatrix(obj.por + 1));
-            if strcmp(inputMatrix(obj.perm - 1), 'INCLUDE')
-                % File name
-                file  = strcat('../Permeability/', char(inputMatrix(obj.perm +1)));
-                % load the file in a vector
-                field = load(file);
-                % reshape it to specified size
-                field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
-                % make it the size of the grid
-                Kx = reshape(field1(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
-                
-                % check if it is anisotropic or not
-                if size(field,2) == 1
-                    Ky = Kx;
-                    Kz = Kx;
+            phi = obj.SimulationInput.ReservoirProperties.phi;
+            nx = obj.SimulationInput.ReservoirProperties.Grid.N(1); 
+            ny = obj.SimulationInput.ReservoirProperties.Grid.N(2);
+            nz = obj.SimulationInput.ReservoirProperties.Grid.N(3);
+            K = ones(nx*ny*nz, 3);
+            for i=1:3
+                if obj.SimulationInput.ReservoirProperties.PermInclude(i)
+                    % load the file in a vector
+                    field = obj.SimulationInput.ReservoirProperties.PermFile{i};
+                    % reshape it to specified size
+                    field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
+                    % make it the size of the grid
+                    K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
                 else
-                    field2 = reshape(field(4:end,2),[field(1,2) field(2,2) field(3,2)]);
-                    field3 = reshape(field(4:end,3),[field(1,3) field(2,3) field(3,3)]);
-                    Ky = reshape(field2(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
-                    Kz = reshape(field3(1:DiscretizationModel.ReservoirGrid.Nx,1:DiscretizationModel.ReservoirGrid.Ny, 1:DiscretizationModel.ReservoirGrid.Nz)*1e-15, DiscretizationModel.ReservoirGrid.N, 1);
+                    value = obj.SimulationInput.ReservoirProperties.Perm(i);
+                    K(:, i)= K(:,i) * value;
                 end
-            else
-                value = str2double(inputMatrix(obj.perm +1));
-                Kx = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
-                Ky = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
-                Kz = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
             end
-            K = [Kx, Ky, Kz];
             Reservoir.AddPermeabilityPorosity(K, phi);
             ProductionSystem.AddReservoir(Reservoir);
             
             %% WELLS
             Wells = wells();
-            Wells.NofInj = length(obj.inj);
-            Wells.NofProd = length(obj.prod);
-            n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
+            Wells.NofInj = obj.SimulationInput.WellsInfo.NofInj;
+            Wells.NofProd = obj.SimulationInput.WellsInfo.NofProd;
+            n_phases = obj.SimulationInput.FluidProperties.NofPhases;
+            
+            % Useful to compute PI
+            dx = Lx/nx;
+            dy = Ly/ny;
+            dz = h /nz;
             %Injectors
             for i=1:Wells.NofInj
-                %i_init
-                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 1}, ' ');
-                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 1}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  i_init = DiscretizationModel.ReservoirGrid.Nx-1;
-                        else,  error('For Injection Well Coordination, you can only use "NX" with minus sign "-"!');
-                        end
-                    else
-                        i_init = DiscretizationModel.ReservoirGrid.Nx;   
-                    end
-                else
-                    i_init = str2double(inputMatrix{obj.inj(i) + 1});
-                end
-                %i_final
-                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 2}, ' ');
-                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 2}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  i_final = DiscretizationModel.ReservoirGrid.Nx-1;
-                        else,  error('For Injection Well Coordination, you can only use "NX" with minus sign "-"!');
-                        end
-                    else
-                        i_final = DiscretizationModel.ReservoirGrid.Nx;   
-                    end
-                else
-                    i_final = str2double(inputMatrix{obj.inj(i) + 2});
-                end
-                %j_init
-                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 3}, ' ');
-                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 3}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  j_init = DiscretizationModel.ReservoirGrid.Ny-1;
-                        else,  error('For Injection Well Coordination, you can only use "NY" with minus sign "-"!');
-                        end
-                    else
-                        j_init = DiscretizationModel.ReservoirGrid.Ny;   
-                    end
-                else
-                    j_init = str2double(inputMatrix{obj.inj(i) + 3});
-                end
-                %j_final
-                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 4}, ' ');
-                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 4}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  j_final = DiscretizationModel.ReservoirGrid.Ny-1;
-                        else,  error('For Injection Well Coordination, while you can only use "NY" with minus sign "-"!');
-                        end
-                    else
-                        j_final = DiscretizationModel.ReservoirGrid.Ny;   
-                    end
-                else
-                    j_final = str2double(inputMatrix{obj.inj(i) + 4});
-                end
-                %k_init
-                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 5}, ' ');
-                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 5}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  k_init = DiscretizationModel.ReservoirGrid.Nz-1;
-                        else,  error('For Injection Well Coordination, you can only use "NZ" with minus sign "-"!');
-                        end
-                    else
-                        k_init = DiscretizationModel.ReservoirGrid.Nz;
-                    end
-                else
-                    k_init = str2double(inputMatrix{obj.inj(i) + 5});
-                end
-                Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 6}, ' ');
-                %k_final
-                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.inj(i) + 6}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  k_final = DiscretizationModel.ReservoirGrid.Nz-1;
-                        else,  error('For Injection Well Coordination, while you can only use "NZ" with minus sign "-"!');
-                        end
-                    else
-                        k_final = DiscretizationModel.ReservoirGrid.Nz;
-                    end
-                else
-                    k_final = str2double(inputMatrix{obj.inj(i) + 6});
-                end
-                
-                coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI_type = char(inputMatrix(obj.inj(i) + 9));
-                switch(PI_type)
+                switch(obj.SimulationInput.WellsInfo.Inj(i).PI.type)
                     case ('Dirichlet')
                         PI = dy*dz/(dx/2);
                     case ('PI')
-                        PI = inputMatrix(obj.inj(i) + 10);
-                        PI = str2double(PI);
+                        PI = obj.SimulationInput.WellsInfo.Inj(i).PI.value;
                     case ('Radius')
-                        radius = inputMatrix(obj.inj(i) + 10);
+                        radius = obj.SimulationInput.WellsInfo.Inj(i).PI.value;
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
-                constraint = char(inputMatrix(obj.inj(i) + 7));
-                switch (constraint)
+                coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
+                switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.name)
                     case('pressure')
-                        pressure = str2double(inputMatrix(obj.inj(i) + 8));
+                        pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
                     case('rate')
-                        rate = str2double(inputMatrix(obj.inj(i) + 8));
+                        rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
+                        p_init = obj.SimulationInput.Init(1);
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
-                        Injector = injector_rate(PI, coord, rate, obj.Init(1), Tres, n_phases);
+                        Injector = injector_rate(PI, coord, rate, p_init, Tres, n_phases);
                 end
                 Wells.AddInjector(Injector);
             end
             
             %Producers
             for i=1:Wells.NofProd
-                %i_init
-                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 1}, ' ');
-                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 1}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  i_init = DiscretizationModel.ReservoirGrid.Nx-1;
-                        else,  error('For Production Well Coordination, you can only use "NX" with minus sign "-"!');
-                        end
-                    else
-                        i_init = DiscretizationModel.ReservoirGrid.Nx;   
-                    end
-                else
-                    i_init = str2double(inputMatrix{obj.prod(i) + 1});
-                end
-                %i_final
-                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 2}, ' ');
-                if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 2}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  i_final = DiscretizationModel.ReservoirGrid.Nx-1;
-                        else,  error('For Production Well Coordination, you can only use "NX" with minus sign "-"!');
-                        end
-                    else
-                        i_final = DiscretizationModel.ReservoirGrid.Nx;   
-                    end
-                else
-                    i_final = str2double(inputMatrix{obj.prod(i) + 2});
-                end
-                %j_init
-                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 3}, ' ');
-                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  j_init = DiscretizationModel.ReservoirGrid.Ny-1;
-                        else,  error('For Production Well Coordination, you can only use "NY" with minus sign "-"!');
-                        end
-                    else
-                        j_init = DiscretizationModel.ReservoirGrid.Ny;   
-                    end
-                else
-                    j_init = str2double(inputMatrix{obj.prod(i) + 3});
-                end
-                %j_final
-                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 4}, ' ');
-                if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 4}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  j_final = DiscretizationModel.ReservoirGrid.Ny-1;
-                        else,  error('For Production Well Coordination, while you can only use "NY" with minus sign "-"!');
-                        end
-                    else
-                        j_final = DiscretizationModel.ReservoirGrid.Ny;   
-                    end
-                else
-                    j_final = str2double(inputMatrix{obj.prod(i) + 4});
-                end
-                %k_init
-                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 5}, ' ');
-                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 5}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  k_init = DiscretizationModel.ReservoirGrid.Nz-1;
-                        else,  error('For Production Well Coordination, you can only use "NZ" with minus sign "-"!');
-                        end
-                    else
-                        k_init = DiscretizationModel.ReservoirGrid.Nz;
-                    end
-                else
-                    k_init = str2double(inputMatrix{obj.prod(i) + 5});
-                end
-                %k_final
-                Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 6}, ' ');
-                if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
-                    Well_Coord_Temp = strsplit(inputMatrix{obj.prod(i) + 6}, ' ');
-                    if length(Well_Coord_Temp)>1
-                        if Well_Coord_Temp{2}=='-',  k_final = DiscretizationModel.ReservoirGrid.Nz-1;
-                        else,  error('For prodection Well Coordination, while you can only use "NZ" with minus sign "-"!');
-                        end
-                    else
-                        k_final = DiscretizationModel.ReservoirGrid.Nz;
-                    end
-                else
-                    k_final = str2double(inputMatrix{obj.prod(i) + 6});
-                end
-                          
-                coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-                PI_type = char(inputMatrix(obj.prod(i) + 9));
-                switch(PI_type)
+                switch(obj.SimulationInput.WellsInfo.Prod(i).PI.type)
                     case ('Dirichlet')
                         PI = dy*dz/(dx/2);
                     case ('PI')
-                        PI = inputMatrix(obj.prod(i) + 10);
-                        PI = str2double(PI);
+                        PI = obj.SimulationInput.WellsInfo.Prod(i).PI.value;
                     case ('Radius')
-                        radius = inputMatrix(obj.prod(i) + 10);
+                        radius = obj.SimulationInput.WellsInfo.Prod(i).PI.value;
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
-                constraint = char(inputMatrix(obj.prod(i) + 7));
-                switch (constraint)
+                coord = obj.SimulationInput.WellsInfo.Prod(i).Coord;
+                switch (obj.SimulationInput.WellsInfo.Prod(i).Constraint.name)
                     case('pressure')
-                        pressure = str2double(inputMatrix(obj.prod(i) + 8));
+                        pressure = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
                         Producer = producer_pressure(PI, coord, pressure);
                     case('rate')
-                        rate = str2double(inputMatrix(obj.prod(i) + 8));
+                        rate = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Producer = producer_rate(PI, coord, rate);
                 end
@@ -499,7 +328,7 @@ classdef simulation_builder < handle
             ProductionSystem.AddWells(Wells);
             
             %% FRACTURE NETWORK
-            if obj.Fractured == 1
+            if obj.SimulationInput.FracturesProperties.Fractured
                 FracturesNetwork = fracture_system();
                 FracturesNetwork.Active = 1;
                 temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
@@ -529,27 +358,23 @@ classdef simulation_builder < handle
                 ProductionSystem.AddFractures(FracturesNetwork);
             end
         end
-        function FluidModel = BuildFluidModel(obj, inputMatrix, ProductionSystem)
-            n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
+        function FluidModel = BuildFluidModel(obj)
+            n_phases = obj.SimulationInput.FluidProperties.NofPhases;
             if n_phases == 1
-                fluidmodel = 'SinglePhase';
-                obj.CouplingType = 'SinglePhase';
-            else
-                fluidmodel = char(inputMatrix(obj.Comp_Type+1));
+                obj.SimulatorSettings.CouplingType = 'SinglePhase';
             end
-            switch(fluidmodel)
+            switch(obj.SimulationInput.FluidProperties.FluidModel)
                 case('SinglePhase')
                     FluidModel = single_phase_fluid_model();
                     % Add phase
                     Phase = comp_phase();
                     %Gets all densities [kg/m^3]
-                    Phase.rho0 = str2double(inputMatrix(obj.density + 2));
+                    Phase.rho0 = obj.SimulationInput.FluidProperties.Density;
                     %Gets all viscosities [Pa sec]
-                    Phase.mu = str2double(inputMatrix(obj.viscosity + 2));
+                    Phase.mu = obj.SimulationInput.FluidProperties.mu;
                     % Compressibility
-                    Phase.cf = str2double(inputMatrix(obj.compressibility + 2));
+                    Phase.cf = obj.SimulationInput.FluidProperties.Comp;
                     FluidModel.AddPhase(Phase, 1);
-                    obj.Formulation = 'Immiscible';
                     if Phase.cf == 0
                         obj.incompressible = 1;
                     end
@@ -559,14 +384,14 @@ classdef simulation_builder < handle
                     for i = 1:FluidModel.NofPhases
                         Phase = comp_phase();
                         %Gets all densities [kg/m^3]
-                        Phase.rho0 = str2double(inputMatrix(obj.density + 2*i));
+                        Phase.rho0 = obj.SimulationInput.FluidProperties.Density(i);
                         %Gets all viscosities [Pa sec]
-                        Phase.mu = str2double(inputMatrix(obj.viscosity + 2*i));
+                        Phase.mu = obj.SimulationInput.FluidProperties.mu(i);
                         % Compressibility
-                        Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
+                        Phase.cf = obj.SimulationInput.FluidProperties.Comp(i);
                         FluidModel.AddPhase(Phase, i);
                     end
-                    obj.Formulation = 'Immiscible';
+                    obj.SimulatorSettings.Formulation = 'Immiscible';
                 case('BlackOil')
                     n_comp = n_phases;
                     % Black oil phases
@@ -595,31 +420,30 @@ classdef simulation_builder < handle
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator;
                 case('Compositional')
-                    n_comp = str2double(inputMatrix(obj.Comp_Type + 5));
+                    n_comp = obj.SimulationInput.FluidProperties.NofComp;
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
-                    
                     %FlashCalculator = Standard_flash_calculator();
                     % Add phases
                     for i = 1:FluidModel.NofPhases
                         Phase = comp_phase();
                         %Gets all densities [kg/m^3]
-                        Phase.rho0 = str2double(inputMatrix(obj.density + 2*i));
+                        Phase.rho0 = obj.SimulationInput.FluidProperties.Density(i);
                         %Gets all viscosities [Pa sec]
-                        Phase.mu = str2double(inputMatrix(obj.viscosity + 2*i));
+                        Phase.mu = obj.SimulationInput.FluidProperties.mu(i);
                         % Compressibility
-                        Phase.cf = str2double(inputMatrix(obj.compressibility + 2*i));
+                        Phase.cf = obj.SimulationInput.FluidProperties.Comp(i);
                         FluidModel.AddPhase(Phase, i);
                     end
                     % Add components
                     for i = 1:FluidModel.NofComp
-                        Prop = str2double(strsplit(char(inputMatrix(obj.Comp_Prop + i * 2))));
+                        Prop = obj.SimulationInput.FluidProperties.ComponentProperties(i,:);
                         comp = component();
                         comp.AddCompProperties(Prop);
                         FluidModel.AddComponent(comp, i);
                     end
                     FlashCalculator = Rachford_Rice_flash_calculator();
                     if length(Prop) > 2
-                        FlashCalculator.KvaluesCalculator = Wilson_Kvalues_calculator(str2double(inputMatrix(obj.temperature + 1)));
+                        FlashCalculator.KvaluesCalculator = Wilson_Kvalues_calculator(obj.SimulationInput.ReservoirProperties.Temperature);
                     else
                         FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     end
@@ -627,7 +451,7 @@ classdef simulation_builder < handle
             end
             
             %%  RelPerm model
-            switch(char(inputMatrix(obj.relperm + 1)))
+            switch(obj.SimulationInput.FluidProperties.RelPerm.name)
                 case('Linear')
                     FluidModel.RelPermModel = relperm_model_linear();
                 case('Quadratic')
@@ -636,18 +460,16 @@ classdef simulation_builder < handle
                     FluidModel.RelPermModel = relperm_model_foam();
                 case('BrooksCorey')
                     FluidModel.RelPermModel = relperm_model_brookscorey();
-                case('gusti')
-                    FluidModel.RelPermModel = relperm_model_gusti(1);
             end
             % Irriducible sat
             for i=1:FluidModel.NofPhases
-                FluidModel.Phases(i).sr = str2double(inputMatrix(obj.relperm + 1 + 2*i));
+                FluidModel.Phases(i).sr = obj.SimulationInput.FluidProperties.RelPerm.s_irr(i);
             end
             %% Capillary pressure model
-            switch (char(inputMatrix(obj.capillarity + 1)))
+            switch (obj.SimulationInput.FluidProperties.Capillarity.name)
                 case('JLeverett')
                     FluidModel.CapillaryModel = J_Function_model(ProductionSystem);
-                    FluidModel.WettingPhaseIndex = str2double(inputMatrix(obj.capillarity + 2));
+                    FluidModel.WettingPhaseIndex = obj.SimulationInput.FluidProperties.Capillarity.wetting;
                 case('Linear')
                     FluidModel.CapillaryModel = 'Not implemented';
                 case('BrooksCorey')
@@ -659,42 +481,40 @@ classdef simulation_builder < handle
             end
             
         end
-        function Formulation = BuildFormulation(obj, Discretization, FluidModel, ProductionSystem)
-            switch(obj.Formulation)
+        function Formulation = BuildFormulation(obj)
+            switch(obj.SimulatorSettings.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
-                    obj.NofEq = FluidModel.NofPhases;
+                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases;
                 case('Natural')
                     Formulation = NaturalVar_formulation(Discretization.ReservoirGrid.N, FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofPhases + FluidModel.NofComponents;
+                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + obj.SimulationInput.FluidProperties.NofComponents;
                 case('Molar')
                     Formulation = Overall_Composition_formulation(FluidModel.NofComp);
-                    obj.NofEq = FluidModel.NofComponents;
+                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases;
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
             end
-            Formulation.NofPhases = FluidModel.NofPhases;
-            
-            % Gravity model
-            Formulation.GravityModel = gravity_model(Discretization, FluidModel.NofPhases, ProductionSystem.FracturesNetwork.NumOfFrac);
-            switch (obj.Gravity)
-                case('ON')
-                    Formulation.GravityModel.g = 9.806;
-                case('OFF')
-                    Formulation.GravityModel.g = 0;
-            end
+            Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
-        function TimeDriver = BuildTimeDriver(obj, SettingsMatrix)
-            TimeDriver = TimeLoop_Driver(obj.reports, obj.TotalTime, obj.MaxNumTimeSteps);
+        function TimeDriver = BuildTimeDriver(obj)
+            TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             % Construct Coupling
-            switch(obj.CouplingType)
+            switch(obj.SimulatorSettings.CouplingType)
                 %% FIM coupling
                 case('FIM')
                     %%%%FIM settings
                     NLSolver = NL_Solver();
-                    switch obj.ADM
-                        case('inactive')
+                    switch obj.SimulatorSettings.DiscretizationModel
+                        case ('ADM')
+                            % Build a different convergence cheker and a proper LS for ADM
+                            NLSolver.SystemBuilder = fim_system_builder_ADM();
+                            ConvergenceChecker = convergence_checker_ADM();
+                            ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                            NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
+                            NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                        otherwise
                             NLSolver.SystemBuilder = fim_system_builder();
                             switch (obj.Formulation)
                                 case('Molar')
@@ -702,14 +522,7 @@ classdef simulation_builder < handle
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
-                            NLSolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
-                        case ('active')
-                            % Build a different convergence cheker and a proper LS for ADM
-                            NLSolver.SystemBuilder = fim_system_builder_ADM();
-                            ConvergenceChecker = convergence_checker_ADM();
-                            ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
-                            NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
-                            NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                            NLSolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500); 
                     end
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));
@@ -740,7 +553,7 @@ classdef simulation_builder < handle
                         pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(1,1);
                     elseif strcmp(obj.MMs, 'active')
                         pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
-                        pressuresolver.LinearSolver.MSFE = obj.MMsSettings.MSFE;
+                        pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                     end
@@ -788,7 +601,7 @@ classdef simulation_builder < handle
                     elseif strcmp(obj.MMs, 'active')
                         pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
                         pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
-                        pressuresolver.LinearSolver.MSFE = obj.MMsSettings.MSFE;
+                        pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                     end    

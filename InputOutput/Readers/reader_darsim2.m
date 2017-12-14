@@ -4,13 +4,10 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 13 December 2017
-%Last modified: 13 December 2017
+%Last modified: 14 December 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef reader_darsim2 < reader
     properties
-        %InputMatrix
-        %SettingsMatrix
-        %FractureMatrix
     end
     methods
         function obj = reader_darsim2(dir, file)
@@ -111,7 +108,7 @@ classdef reader_darsim2 < reader
             for i=1:3
                 if strcmp(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
                     ReservoirProperties.PermInclude(i) = 1;
-                    ReservoirProperties.PermFile(i) = strcat('../Permeability/', char(obj.InputMatrix(perm(i) +1)));
+                    ReservoirProperties.PermFile{i} = strcat('../Permeability/', char(obj.InputMatrix(perm(i) +1)));
                 else
                     ReservoirProperties.PermInclude(i) = 0;
                     ReservoirProperties.Perm(i) = str2double(obj.InputMatrix(perm(i) +1));
@@ -133,7 +130,7 @@ classdef reader_darsim2 < reader
             % 1. Fluid model
             temp = strfind(obj.InputMatrix, 'FLUID MODEL');
             index = find(~cellfun('isempty', temp));
-            FluidProperties.FluidModel = str2double(obj.InputMatrix{index+1});
+            FluidProperties.FluidModel = char(obj.InputMatrix{index+1});
             FluidProperties.NofPhases = str2double(obj.InputMatrix{index+3});
             FluidProperties.NofComponents = str2double(obj.InputMatrix{index+5});
             % 2. Density
@@ -361,11 +358,14 @@ classdef reader_darsim2 < reader
             xv = find(~cellfun('isempty', temp));
             SimulatorSettings.LinearSolver =  char(obj.SettingsMatrix(xv+1));
             
+            % Default value is fine-scale 
+            SimulatorSettings.DiscretizationModel = 'FS';
+            
             %% ADM settings
             temp = strfind(obj.SettingsMatrix, 'ADM');
             adm = find(~cellfun('isempty', temp));
             if str2double(obj.SettingsMatrix(adm + 1)) == 1
-                SimulatorSettings.ADM = 'active';
+                SimulatorSettings.DiscretizationModel = 'ADM';
                 % ADM settings for reservoir
                 temp = strfind(obj.SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
@@ -434,7 +434,7 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.SettingsMatrix, 'MMs');
             mms = find(~cellfun('isempty', temp));
             if str2double(obj.SettingsMatrix(mms + 1)) == 1
-                SimulatorSettings.MMs = 'active';
+                SimulatorSettings.DiscretizationModel = 'MMs';
                 temp = strfind(obj.SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.MMsSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
