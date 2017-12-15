@@ -330,7 +330,8 @@ classdef reader_darsim2 < reader
                 index = find(~cellfun('isempty', temp));
                 SimulatorSettings.MaxIterations = str2double(obj.SettingsMatrix(index + 1)); 
                 SimulatorSettings.Tolerance     = str2double(obj.SettingsMatrix(index + 2));
-                SimulatorSettings.cfl           = str2double(obj.SettingsMatrix(index + 3)); 
+                SimulatorSettings.cfl           = str2double(obj.SettingsMatrix(index + 3));
+                SimulatorSettings.TransportSolver.Type = 'EXPLICIT';
                 temp = strfind(obj.SettingsMatrix, 'IMPSAT');
                 index = find(~cellfun('isempty', temp));
                 if ~isempty(index)
