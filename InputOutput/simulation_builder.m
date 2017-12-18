@@ -254,7 +254,7 @@ classdef simulation_builder < handle
             for i=1:3
                 if obj.SimulationInput.ReservoirProperties.PermInclude(i)
                     % load the file in a vector
-                    field = obj.SimulationInput.ReservoirProperties.PermFile{i};
+                    field = load(obj.SimulationInput.ReservoirProperties.PermFile{i});
                     % reshape it to specified size
                     field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
                     % make it the size of the grid

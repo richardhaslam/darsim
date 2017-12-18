@@ -4,18 +4,22 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 30 June 2017
-%Last modified: 27 November 2017
+%Last modified: 18 December 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector_time < adm_grid_selector
     properties
-        tol2 = .2;
-        Epsilon_old;
+        Epsilon_old
+        S_init
     end
     methods
         function obj = adm_grid_selector_time(tol, key, N, maxLevels)
             obj@adm_grid_selector(tol);
             obj.key = key;
             obj.Epsilon_old = zeros(N, maxLevels);
+        end
+        function Initialise(obj,ProductionSystem, FineGrid, n_phases)
+             S = ProductionSystem.CreateGlobalVariables(FineGrid, n_phases, 'S_');
+             obj.S_init = S(:, 1);
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step
@@ -46,8 +50,6 @@ classdef adm_grid_selector_time < adm_grid_selector
             end
                             
             %% 2. Select active cells
-            Tol = obj.tol;
-            Tol2 = obj.tol2;
             for l=1:max(maxLevel)
                 % 2.a choose possible active grids for level l
                 if l>1 
@@ -64,11 +66,7 @@ classdef adm_grid_selector_time < adm_grid_selector
                         CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
                     end
                 end
-                obj.tol = obj.tol / 2;
-                %obj.tol2 = obj.tol2 / 2;
             end
-            obj.tol = Tol;
-            obj.tol2 = Tol2;
             
             %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
@@ -87,7 +85,7 @@ classdef adm_grid_selector_time < adm_grid_selector
                 DeltaS = norm(delta(indexes_fs), inf);
                 Epsilon = (S(indexes_fs) - S_old(indexes_fs)) ./ (mean(S(indexes_fs)) - mean(S_old(indexes_fs)));
                 Gradient = norm(Epsilon - obj.Epsilon_old(indexes_fs, l), inf);
-                if CoarseGrid.Active(c) == 1 && Gradient > 1e-3 && sum(~isnan(Epsilon)) && norm(S_old(indexes_fs), inf) > 0.101 
+                if CoarseGrid.Active(c) == 1 && Gradient > obj.tol && sum(~isnan(Epsilon)) && sum(S_old(indexes_fs) > obj.S_init(indexes_fs)*1.01)
                     CoarseGrid.Active(c) = 0;
                 elseif CoarseGrid.Active(c) == 1 && ( (CoarseGrid.DeltaS(c) < 1e-3 && DeltaS > 1e-3) || Max*Min<0)
                     CoarseGrid.Active(c) = 0;

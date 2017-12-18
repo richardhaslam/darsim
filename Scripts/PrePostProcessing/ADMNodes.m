@@ -1,4 +1,4 @@
-Directory = '../Input/FieldFiveSpot/Output/';
+Directory = '../Input/ImmHetero/Output/';
 
 %% Rescale for latex plot
 Time = load(strcat(Directory, 'Inj_Phase1.txt'));
