@@ -41,6 +41,9 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             % Global grids (based on global ordering)
             obj.ConstructGlobalGrids();
             
+            % Initialise ADM Grid Selector
+            obj.ADMGridSelector.Initialise(ProductionSystem, obj.FineGrid, FluidModel.NofPhases);
+            
             %% Pressure interpolators
             disp('Static operators - start computation');
             start = tic;

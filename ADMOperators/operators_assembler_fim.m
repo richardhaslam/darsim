@@ -15,10 +15,10 @@ classdef operators_assembler_fim < operators_assembler
             obj@operators_assembler(n_eq);
         end
         function [R, P] = Assemble(obj, DiscretizationModel, ProductionSystem, Residual)
-            % 1. Choose grid resolution
+            % 1. Choose grid resolution and create operators
             DiscretizationModel.SelectADMGrid(ProductionSystem, Residual);
             
-            % 2. Build full operators
+            % 2. Build full operators (the block diagonal matrices)
             R = DiscretizationModel.OperatorsHandler.ADMRest;
             P = DiscretizationModel.OperatorsHandler.ADMProl{1};
             for i = 2:obj.NumberOfEq

@@ -6,8 +6,12 @@
 %Created: 13 July 2016
 %Last modified: 24 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OLD VERSION: NOW FILE simulation_builder is used
 classdef builder < handle
     properties
+        % for new builder
+        SimulationInput
+        SimulatorSettings 
         ProblemName
         TotalTime
         size
@@ -194,6 +198,15 @@ classdef builder < handle
                 if isempty(obj.ADMSettings.maxLevel(1)) || isempty(obj.ADMSettings.Coarsening(1,:,:)) || isempty(obj.ADMSettings.key) || isempty(obj.ADMSettings.tol) || isempty(obj.ADMSettings.PInterpolator)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end
+                
+                temp = strfind(SettingsMatrix{1}, 'COUPLED');
+                temp = find(~cellfun('isempty', temp));
+                if isempty(temp)
+                    obj.ADMSettings.BFtype = 'decoupled';
+                else
+                    obj.ADMSettings.BFtype = 'coupled';
+                end
+                
                 % ADM settings in the fractures
                 if obj.Fractured
                     for f = 1 : obj.NrOfFrac
@@ -214,8 +227,10 @@ classdef builder < handle
                             end
                         end
                     end
-                end 
-            end    
+                end
+            end
+            
+            % MMs settings
             temp = strfind(SettingsMatrix{1}, 'MMs');
             mms = find(~cellfun('isempty', temp));
             if str2double(SettingsMatrix{1}(mms + 1)) == 1
@@ -233,6 +248,24 @@ classdef builder < handle
                 for L = 1:obj.MMsSettings.maxLevel(1)
                     obj.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
+                
+                temp = strfind(SettingsMatrix{1}, 'MSFE');
+                temp = find(~cellfun('isempty', temp));
+                if isempty(temp)
+                    obj.MMsSettings.MSFE = 0;
+                else
+                    obj.MMsSettings.MSFE = 1;
+                end
+                
+                temp = strfind(SettingsMatrix{1}, 'COUPLED');
+                temp = find(~cellfun('isempty', temp));
+                if isempty(temp)
+                    obj.MMsSettings.BFtype = 'DECOUPLED';
+                else
+                    obj.MMsSettings.BFtype = 'COUPLED';
+                end
+                
+                % MMs settings in fractures
                 if obj.Fractured
                     for f = 1 : obj.NrOfFrac
                         frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
@@ -301,9 +334,10 @@ classdef builder < handle
             ny = str2double(inputMatrix(obj.grid + 2));
             nz = str2double(inputMatrix(obj.grid + 3));
             Nm = nx*ny*nz;
-            ReservoirGrid = cartesian_grid(nx, ny, nz);
+            ReservoirGrid = cartesian_grid([nx, ny, nz]);
             % 1b. Fractures Grid
             if obj.Fractured
+                fprintf('Extracting data from %02d fractures ...\n', obj.NrOfFrac);
                 FracturesGrid = fractures_grid(obj.NrOfFrac);
                 temp = strfind(FractureMatrix{1}, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
@@ -351,9 +385,11 @@ classdef builder < handle
                 frac_fracConn_index = find(~cellfun('isempty', temp));
                 
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
+                fprintf('---> Fracture ');
                 for f = 1 : obj.NrOfFrac
+                    if (f>1),  fprintf(repmat('\b', 1, 6));  end
+                    fprintf('%02d/%02d\n',f,obj.NrOfFrac);
                     % looping over all global fracture cells
-                    fprintf('Reading fracture %02d\n', f);
                     for If = 1:length(frac_cell_index)
                         fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
                         
@@ -402,6 +438,11 @@ classdef builder < handle
                             prolongationbuilder.BFUpdater = bf_updater_ms();
                         else
                             prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                            if strcmp(obj.ADMSettings.BFtype , 'COUPLED')
+                                prolongationbuilder.BFUpdater.BFtype = 'COUPLED';
+                            else
+                                prolongationbuilder.BFUpdater.BFtype = 'DECOUPLED';
+                            end
                         end
                         if strcmp(obj.ADMSettings.PInterpolator, 'Homogeneous')
                             prolongationbuilder.BFUpdater.MaxContrast = 1;
@@ -409,6 +450,7 @@ classdef builder < handle
                             prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
                         end
                 end
+                
                 operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                 % a.2 Hyperbolic variables operators builder
                 n_phases = str2double(inputMatrix(obj.Comp_Type + 3));
@@ -427,7 +469,7 @@ classdef builder < handle
                     case('dfdx')
                         gridselector = adm_grid_selector_delta(obj.ADMSettings.tol, obj.ADMSettings.key);
                     case('dfdt')
-                        gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key);
+                        gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key, ReservoirGrid.N, obj.ADMSettings.maxLevel(1));
                     case('residual')
                         gridselector = adm_grid_selector_residual(obj.ADMSettings.tol);
                 end
@@ -442,6 +484,11 @@ classdef builder < handle
                     prolongationbuilder.BFUpdater = bf_updater_ms();
                 else
                     prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                    if strcmp(obj.MMsSettings.BFtype , 'COUPLED')
+                        prolongationbuilder.BFUpdater.BFtype = 'COUPLED';
+                    else
+                        prolongationbuilder.BFUpdater.BFtype = 'DECOUPLED';
+                    end
                 end
                 % Reduce contrast for BF computation to remove peaks
                 prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
@@ -975,6 +1022,7 @@ classdef builder < handle
                         pressuresolver.ConvergenceChecker.OperatorsAssembler = operators_assembler_seq(1,1);
                     elseif strcmp(obj.MMs, 'active')
                         pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
+                        pressuresolver.LinearSolver.MSFE = obj.MMsSettings.MSFE;
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                     end
@@ -1022,6 +1070,7 @@ classdef builder < handle
                     elseif strcmp(obj.MMs, 'active')
                         pressuresolver.LinearSolver = linear_solver_MMs(obj.LinearSolver, 1e-6, 500);
                         pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
+                        pressuresolver.LinearSolver.MSFE = obj.MMsSettings.MSFE;
                     else
                         pressuresolver.LinearSolver = linear_solver(obj.LinearSolver, 1e-6, 500);
                     end    

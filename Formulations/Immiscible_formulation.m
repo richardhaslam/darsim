@@ -611,6 +611,7 @@ classdef Immiscible_formulation < formulation
             Index.Start = 1;
             Index.End = Nm;
             phi = ProductionSystem.Reservoir.Por;
+
             Residual(Index.Start:Index.End) = MediumPressureResidual(obj, DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.State, State0, dt, phi, qw, qf, Index, 0);
             % Fractures
             if ProductionSystem.FracturesNetwork.Active
@@ -628,7 +629,7 @@ classdef Immiscible_formulation < formulation
                     phi = ProductionSystem.FracturesNetwork.Fractures(f).Por;
                     Residual(Index.Start:Index.End) = MediumPressureResidual(obj, DiscretizationModel.FracturesGrid.Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).State, State0, dt, phi, qw, qf, Index, f);
                 end
-            end     
+            end
         end
         function Residual = MediumPressureResidual(obj, Grid, State, State0, dt, phi, qw, qf, Index, f)
             % Initialise local variables
@@ -776,7 +777,7 @@ classdef Immiscible_formulation < formulation
             end            
             %% Jacobian: Put them together
             J = A + C;
-        end       
+        end
         function W = AddWellsToPressureSystem(obj, N, State, Wells, K, rho)
             %% Add Wells in residual form
             Inj = Wells.Inj;

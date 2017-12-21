@@ -9,7 +9,7 @@
 classdef bf_updater_FAMS < bf_updater_ms
     properties
         Amedia
-        BFtype = 2;
+        BFtype
     end
     methods
         function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections)
@@ -21,11 +21,12 @@ classdef bf_updater_FAMS < bf_updater_ms
             End = FineGrid(1).N;
             obj.Amedia{1} = obj.MediumPressureSystem(FineGrid(1), Km, Mob(Start:End,:));
             obj.A = obj.Amedia{1};
+            obj.AddWellsToPressureMatrix(ProductionSystem.Wells, Km, Mob(Start:End,:), FineGrid(1).N)
             % Fractures
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Start = End + 1;
                 End = Start + FineGrid(1+f).N - 1;
-                Kf = ProductionSystem.FracturesNetwork.Fractures(f).K;
+                Kf = ProductionSystem.FracturesNetwork.Fractures(f).K*obj.MaxContrast^2;
                 obj.Amedia{1+f} = obj.MediumPressureSystem(FineGrid(1+f), Kf, Mob(Start:End,:));
                 obj.A = blkdiag(obj.A, obj.Amedia{1+f});
             end
@@ -40,11 +41,12 @@ classdef bf_updater_FAMS < bf_updater_ms
                 obj.A(j,i) = obj.A(j,i) - T_Geo.* Mobt(i);
                 obj.A(sub2ind(size(obj.A), j, j)) = obj.A(sub2ind(size(obj.A), j, j)) + T_Geo.* Mobt(i);
             end
+            
         end
         function [MsP, MsC] = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
             % Prolongation operator for fractured reservoir (de-coupled)
             switch(obj.BFtype)
-                case(1)
+                case('DECOUPLED')
                     MsP = []; % Prolongation operator
                     MsC = []; % Correction functions operator
                     Dimensions = Dimensions * ones(length(FineGrid), 1);
@@ -62,7 +64,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                             MsC = blkdiag(MsC, G'*C*G);
                         end
                     end
-                case(2)
+                case('COUPLED')
                     MsP = []; % Prolongation operator
                     MsC = []; % Correction functions operator
                     cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);

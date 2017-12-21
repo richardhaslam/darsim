@@ -26,15 +26,15 @@ classdef cartesian_grid < grid_darsim
         K
     end
     methods
-        function obj = cartesian_grid(nx, ny, nz)
-            obj.Nx = nx;
-            obj.Ny = ny;
-            obj.Nz = nz;
-            obj.N = nx * ny * nz;
+        function obj = cartesian_grid(n)
+            obj.Nx = n(1);
+            obj.Ny = n(2);
+            obj.Nz = n(3);
+            obj.N = prod(n);
             obj.Active = ones(obj.N, 1);
-            obj.Tx = zeros(nx+1, ny, nz);
-            obj.Ty = zeros(nx, ny+1, nz);
-            obj.Tz = zeros(nx, ny, nz+1);
+            obj.Tx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
+            obj.Ty = zeros(obj.Nx, obj.Ny+1, obj.Nz);
+            obj.Tz = zeros(obj.Nx, obj.Ny, obj.Nz+1);
         end
         function Initialize(obj, Reservoir)
             obj.dx = Reservoir.Length/obj.Nx;

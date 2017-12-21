@@ -59,7 +59,7 @@ classdef coarse_grid < grid_darsim
             else
                 obj.AssignNeighbours();
             end
-            obj.AddGridCoordinates(FineGrid);
+            obj.AddGridCoordinates(FineGrid); 
         end
         function AddGridCoordinates(obj, FineGrid)
             % Computes coordinates of corners of the coarse grid
@@ -337,6 +337,25 @@ classdef coarse_grid < grid_darsim
                 g = i;
                 obj.Neighbours(g).indexes = [g-1, g+1];
             end  
+        end
+        function AddWells(obj, Inj, Prod)
+            for c = 1:obj.N
+                Well_Index = [];
+                for w = 1:length(Inj)
+                    if ismember(Inj(w).Cells, obj.Children(c,:))
+                        Well_Index = [Well_Index; w];
+                    end
+                end
+                for w = length(Inj)+1 : length(Inj)+length(Prod)
+                    if ismember(Prod(w-length(Inj)).Cells, obj.Children(c,:))
+                        Well_Index = [Well_Index; w];
+                    end
+                end
+                obj.Wells{c} = Well_Index;
+                if isempty(obj.Wells{c})
+                    obj.Wells{c} = 0;
+                end
+            end
         end
     end
 end
