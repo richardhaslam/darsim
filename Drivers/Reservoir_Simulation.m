@@ -23,7 +23,7 @@ classdef Reservoir_Simulation
             obj.ProductionSystem.InitializeWells(obj.FluidModel, obj.Formulation.GravityModel, obj.DiscretizationModel);
             obj.DiscretizationModel.InitializeMapping(obj.ProductionSystem, obj.FluidModel);
             % For multiscale to avoid having well functions
-            obj.DiscretizationModel.AddWellsToInitialPressure(obj.ProductionSystem, obj.FluidModel);
+            % obj.DiscretizationModel.AddWellsToInitialPressure(obj.ProductionSystem, obj.FluidModel);
         end
         function Run(obj, Writer)
             disp('BEGIN TIME-DEPENDENT SIMULATION');

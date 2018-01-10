@@ -50,7 +50,7 @@ classdef coarse_grid < grid_darsim
                 obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny, 1) = i*ones(obj.Nx*obj.Ny, 1);
             end
             obj.Active = zeros(obj.N, 1);
-            obj.Wells = cell(obj.N, 1);
+            obj.Wells = zeros(obj.N, 1);
             obj.Fathers = zeros(obj.N, 1);
             if obj.Nz == 1 && obj.Ny == 1
                 obj.AssignNeighbours1D();

@@ -6,8 +6,12 @@
 %Created: 13 July 2016
 %Last modified: 24 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OLD VERSION: NOW FILE simulation_builder is used
 classdef builder < handle
     properties
+        % for new builder
+        SimulationInput
+        SimulatorSettings 
         ProblemName
         TotalTime
         size
@@ -330,7 +334,7 @@ classdef builder < handle
             ny = str2double(inputMatrix(obj.grid + 2));
             nz = str2double(inputMatrix(obj.grid + 3));
             Nm = nx*ny*nz;
-            ReservoirGrid = cartesian_grid(nx, ny, nz);
+            ReservoirGrid = cartesian_grid([nx, ny, nz]);
             % 1b. Fractures Grid
             if obj.Fractured
                 fprintf('Extracting data from %02d fractures ...\n', obj.NrOfFrac);
@@ -465,7 +469,7 @@ classdef builder < handle
                     case('dfdx')
                         gridselector = adm_grid_selector_delta(obj.ADMSettings.tol, obj.ADMSettings.key);
                     case('dfdt')
-                        gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key);
+                        gridselector = adm_grid_selector_time(obj.ADMSettings.tol, obj.ADMSettings.key, ReservoirGrid.N, obj.ADMSettings.maxLevel(1));
                     case('residual')
                         gridselector = adm_grid_selector_residual(obj.ADMSettings.tol);
                 end

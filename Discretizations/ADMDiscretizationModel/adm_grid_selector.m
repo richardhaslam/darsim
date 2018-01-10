@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 30 June 2017
-%Last modified: 21 August 2017
+%Last modified: 18 December 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector < handle
     properties
@@ -18,6 +18,9 @@ classdef adm_grid_selector < handle
     methods
         function obj = adm_grid_selector(tol)
             obj.tol = tol;
+        end
+        function Initialise(obj,ProductionSystem, FineGrid, n_phases)
+            % virtual call
         end
         function DefinePossibleActive(obj, CoarseGrid, FineGrid, level)
             % For a given level defines possible active cells

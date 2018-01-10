@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 28 July 2016
+%Last modified: 14  December 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Reservoir_Simulator < handle
     properties
@@ -15,17 +15,16 @@ classdef Reservoir_Simulator < handle
     end
     methods
         function obj = Reservoir_Simulator(Directory, File)
-            obj.Reader = reader(Directory, File);
-            obj.Builder = builder();
+            obj.Reader = reader_darsim2(Directory, File);
+            obj.Builder = simulation_builder();
             obj.Simulation = Reservoir_Simulation();
         end
         function BuildObjects(obj)
-            obj.Builder.FindKeyWords(obj.Reader.InputMatrix, obj.Reader.SettingsMatrix, obj.Reader.FractureMatrix);
-            obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.InputMatrix{1}, obj.Reader.SettingsMatrix{1}, obj.Reader.FractureMatrix);
+            obj.Simulation = obj.Builder.BuildSimulation(obj.Reader.FractureMatrix);
             obj.Writer = obj.Builder.BuildWriter(obj.Reader.Directory, obj.Simulation); 
         end
         function PrintInfo(obj)
-            disp(['******************', num2str(obj.Builder.ProblemName),'******************']);
+            disp(['******************', num2str(obj.Builder.SimulationInput.ProblemName),'******************']);
             disp(newline);
             disp('FORMATION CHARACTERISTICS:');
            
@@ -36,7 +35,7 @@ classdef Reservoir_Simulator < handle
             disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x ', ...
                             num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nz), ' = ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.N)]);
             disp('---------------------------------------------------------');
-            if obj.Builder.Fractured
+            if obj.Builder.SimulationInput.FracturesProperties.Fractured
                 for f = 1:obj.Simulation.DiscretizationModel.FracturesGrid.Nfrac
                     fprintf('Fracture %2d: Grid= %3.0f x %3.0f\n', f, ...
                         obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx, obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny)

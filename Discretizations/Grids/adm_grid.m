@@ -44,16 +44,21 @@ classdef adm_grid < grid_darsim
             
             obj.CellIndex = [obj.CellIndex(1:sum(Nf)); zeros(sum(Nx), 1)];
             [~, MaxLevels] = size(obj.Fathers); 
-            obj.Fathers = [obj.Fathers(1:Nf,:); zeros(sum(Nx), MaxLevels)];
-            obj.Verteces = [obj.Verteces(1:Nf,:); zeros(sum(Nx), MaxLevels)];
-            obj.level = [obj.level(1:Nf); ones(sum(Nx), 1)*obj.MaxLevel];
+            obj.Fathers = [obj.Fathers(1:sum(Nf),:); zeros(sum(Nx), MaxLevels)];
+            obj.Verteces = [obj.Verteces(1:sum(Nf),:); zeros(sum(Nx), MaxLevels)];
+            obj.level = [obj.level(1:sum(Nf)); ones(sum(Nx), 1)*obj.MaxLevel];
             
-            % Add the new cells
+            % Make a new vector to store the new children
+            ChildrenOfNc = obj.Children;
+            obj.Children = reshape({obj.Children{1:sum(Nf)}}, sum(Nf), 1); cell(sum(Nx), 1);
+            
+            % Add the new cells to the new ADM grid
             h = sum(Nf) + 1;
             for CoarseNode = (sum(Nf)+1) : (sum(Nf)+sum(Nc))
-                FineNodes = obj.Children{CoarseNode};
+                FineNodes = ChildrenOfNc{CoarseNode}; % if level l children belong to l-1
                 n_children = length(FineNodes);
                 obj.CellIndex(h:h + n_children-1) = FineNodes;
+                obj.Children = [obj.Children; reshape({FineGrid.Children{FineNodes}}, n_children, 1)];
                 obj.Fathers(h:h + n_children-1,:) = FineGrid.Fathers(FineNodes,:);
                 obj.Verteces(h:h + n_children-1,:) = FineGrid.Verteces(FineNodes,:);
                 h = h + n_children;
