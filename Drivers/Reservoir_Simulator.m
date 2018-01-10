@@ -33,7 +33,8 @@ classdef Reservoir_Simulator < handle
             disp(['Lx: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Length), ' m']);
             disp(['Ly: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Width), ' m']);
             disp(['Thickness:  ', num2str(obj.Simulation.ProductionSystem.Reservoir.Thickness), ' m']);
-            disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nz)]);
+            disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x ', ...
+                            num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nz), ' = ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.N)]);
             disp('---------------------------------------------------------');
             if obj.Builder.Fractured
                 for f = 1:obj.Simulation.DiscretizationModel.FracturesGrid.Nfrac

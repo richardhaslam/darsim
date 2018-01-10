@@ -104,9 +104,12 @@ classdef Multiscale_Discretization_model < Discretization_model
                 end  
             end
             
+			fprintf('Coarsening ratio in reservoir: %d x %d x %d\n' , obj.Coarsening(1,1,1), obj.Coarsening(1,2,1), obj.Coarsening(1,3,1) );
             for L = 1 : obj.maxLevel(1)
                 fprintf('Number of reservoir coarse nodes at level %d: %d\n' , L, obj.Nc(1,L) );
-                fprintf('Number of fractures coarse nodes at level %d: %d\n' , L, sum(obj.Nc(2:end,L)));
+                if (size(obj.Coarsening,1) - 1) > 0
+                    fprintf('Number of fractures coarse nodes at level %d: %d\n' , L, sum(obj.Nc(2:end,L)));
+                end
             end
         end
         function AddWellsToInitialPressure(obj, ProductionSystem, FluidModel)

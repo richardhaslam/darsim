@@ -60,7 +60,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             Nc1 = obj.CoarseGrid(1,1).N;
             if obj.maxLevel(1) > 1
                for i = 1:Nc1
-                   if obj.CoarseGrid(1,2).Wells(obj.CoarseGrid(1,1).Fathers(i, 2)) == 1
+                   if obj.CoarseGrid(1,2).Wells{obj.CoarseGrid(1,1).Fathers(i, 2)} == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
@@ -79,7 +79,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 for x = 1:obj.maxLevel(1)
                     for j =1:length(I)
                         [r, ~] = find(obj.CoarseGrid(1,x).GrandChildren == I(j)); % Only in reservoir for now
-                        obj.CoarseGrid(1,x).Wells(r) = 1;
+                        obj.CoarseGrid(1,x).Wells{r} = 1;
                     end
                 end
             end
@@ -88,7 +88,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 for x = 1:obj.maxLevel(1)
                     for j=1:length(P)
                         [r, ~] = find(obj.CoarseGrid(1,x).GrandChildren == P(j));
-                        obj.CoarseGrid(1,x).Wells(r) = 1;
+                        obj.CoarseGrid(1,x).Wells{r} = 1;
                     end
                 end
             end
