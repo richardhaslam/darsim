@@ -23,6 +23,9 @@ classdef linear_solver_ADM < linear_solver
             
             % modify permeability field to use upscaled perm.
             
+            % Display the number of active grids
+            fprintf('Number of ADM Active Grids: %1.0f (%2.2f Percent of nodes)\n', ...
+                    DiscretizationModel.ADMGrid.Ntot, 100*DiscretizationModel.ADMGrid.Ntot/DiscretizationModel.GlobalGrids(1).N);
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system

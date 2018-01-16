@@ -223,7 +223,7 @@ classdef builder < handle
                             if L <= obj.ADMSettings.maxLevel(1+f)
                                 obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
                             else
-                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^obj.ADMSettings.maxLevel(1+f);
+                                obj.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^obj.ADMSettin.maxLevel(1+f);
                             end
                         end
                     end

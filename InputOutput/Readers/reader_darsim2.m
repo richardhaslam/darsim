@@ -79,7 +79,7 @@ classdef reader_darsim2 < reader
                 SimulationInput.FracturesProperties.Fractured = 0;
                 SimulationInput.FracturesProperties.NrOfFrac = 0;
             else
-                SimulationInput.FracturesProperties = obj.ReadFracturesProperties();
+                 SimulationInput.FracturesProperties = obj.ReadFracturesProperties();
             end
             
             %% SIMULATOR'S SETTINGS
@@ -127,6 +127,14 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.InputMatrix, 'TEMPERATURE (K)');
             index = find(~cellfun('isempty', temp));
             ReservoirProperties.Temperature = str2double(obj.InputMatrix(index + 1));;
+        end
+        function FracturesProperties = ReadFracturesProperties(obj)
+            %%%%%%%%%%%%%PROPERTIES OF THE FRACTURES%%%%%%%%%%%%%%%%
+            FracturesProperties.Fractured = 1;
+            temp = strfind(obj.FractureMatrix, 'NUM_FRACS');
+            index = find(~cellfun('isempty', temp));
+            temp = strsplit(obj.FractureMatrix{index},' ');
+            FracturesProperties.NrOfFrac = str2double( temp{end} );
         end
         function FluidProperties = ReadFluidProperties(obj)
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
@@ -416,8 +424,11 @@ classdef reader_darsim2 < reader
                 
                 % ADM settings in the fractures
                 if SimulationInput.FracturesProperties.Fractured
-                    for f = 1 : SimulationInput.FracturesProperties.NrOfFrac
-                        frac_info_split = strsplit(obj.FractureMatrix{1}{frac_index(f)},' ');
+                    NrOfFrac = SimulationInput.FracturesProperties.NrOfFrac;
+                    temp = strfind(obj.FractureMatrix, 'PROPERTIES');
+                    frac_index = find(~cellfun('isempty', temp));
+                    for f = 1 : NrOfFrac
+                        frac_info_split = strsplit(obj.FractureMatrix{frac_index(f)},' ');
                         ADM_temp = regexprep(frac_info_split{9},' ' ,'');
                         ADM_temp = strsplit(ADM_temp, { '[' , ',' , ']' });
                         ADM_temp = [ str2double(ADM_temp(2)) , str2double(ADM_temp(3)) , str2double(ADM_temp(4)) , str2double(ADM_temp(5)) ];
@@ -430,7 +441,7 @@ classdef reader_darsim2 < reader
                             if L <= SimulatorSettings.ADMSettings.maxLevel(1+f)
                                 SimulatorSettings.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
                             else
-                                SimulatorSettings.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^obj.ADMSettin.maxLevel(1+f);
+                                SimulatorSettings.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^SimulatorSettings.ADMSettings.maxLevel(1+f);
                             end
                         end
                     end
