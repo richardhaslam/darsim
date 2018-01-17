@@ -169,11 +169,7 @@ classdef simulation_builder < handle
                                 prolongationbuilder.BFUpdater = bf_updater_ms();
                             else
                                 prolongationbuilder.BFUpdater = bf_updater_FAMS();
-                                if strcmp(ADMSettings.BFtype , 'COUPLED')
-                                    prolongationbuilder.BFUpdater.BFtype = 'COUPLED';
-                                else
-                                    prolongationbuilder.BFUpdater.BFtype = 'DECOUPLED';
-                                end
+                                prolongationbuilder.BFUpdater.BFtype = ADMSettings.BFtype;
                             end
                             if strcmp(ADMSettings.PInterpolator, 'Homogeneous')
                                 prolongationbuilder.BFUpdater.MaxContrast = 1;
