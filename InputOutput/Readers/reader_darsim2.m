@@ -111,7 +111,7 @@ classdef reader_darsim2 < reader
             for i=1:3
                 if strcmp(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
                     ReservoirProperties.PermInclude(i) = 1;
-                    ReservoirProperties.PermFile{i} = strcat('../Permeability/', char(obj.InputMatrix(perm(i) +1)));
+                    ReservoirProperties.PermFile{i} = strcat(obj.Directory, '../../Permeability/', char(obj.InputMatrix(perm(i) +1)));
                 else
                     ReservoirProperties.PermInclude(i) = 0;
                     ReservoirProperties.Perm(i) = str2double(obj.InputMatrix(perm(i) +1));
