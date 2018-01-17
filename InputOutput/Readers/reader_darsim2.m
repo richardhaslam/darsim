@@ -417,9 +417,9 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'COUPLED');
                 temp = find(~cellfun('isempty', temp));
                 if isempty(temp)
-                    SimulatorSettings.ADMSettings.BFtype = 'decoupled';
+                    SimulatorSettings.ADMSettings.BFtype = 'DECOUPLED';
                 else
-                    SimulatorSettings.ADMSettings.BFtype = 'coupled';
+                    SimulatorSettings.ADMSettings.BFtype = 'COUPLED';
                 end
                 
                 % ADM settings in the fractures

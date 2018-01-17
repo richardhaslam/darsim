@@ -30,7 +30,7 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         function CopyGridEntries(obj, Grid, Nc_global, level)
             for c = 1:Grid.N
                 obj.Fathers(c + Nc_global(level), :) = Grid.Fathers(c, :) + Nc_global(2:end);
-                obj.Children{c + Nc_global(level)} = Grid.Children(c,:) + Nc_global(1);
+                obj.Children{c + Nc_global(level)} = Grid.Children(c,:) + Nc_global(level);
                 obj.GrandChildren{c + Nc_global(level)} = Grid.GrandChildren(c,:) + Nc_global(1);
                 obj.Verteces(c + Nc_global(level), :) = Grid.Verteces(c,:);
                 obj.CoarseFactor(c + Nc_global(level), :) = Grid.CoarseFactor;
