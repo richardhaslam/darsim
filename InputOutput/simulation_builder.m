@@ -17,7 +17,7 @@ classdef simulation_builder < handle
         function simulation = BuildSimulation(obj, FractureMatrix)
             simulation = Reservoir_Simulation();
             simulation.DiscretizationModel = obj.BuildDiscretization(FractureMatrix);
-            simulation.ProductionSystem = obj.BuildProductionSystem(FractureMatrix);            
+            simulation.ProductionSystem = obj.BuildProductionSystem(FractureMatrix,simulation.DiscretizationModel.FracturesGrid);            
             simulation.FluidModel = obj.BuildFluidModel();
             simulation.Formulation = obj.BuildFormulation();
             simulation.TimeDriver = obj.BuildTimeDriver();
@@ -63,31 +63,32 @@ classdef simulation_builder < handle
             Nm = ReservoirGrid.N;
             % 1b. Fractures Grid
             if obj.SimulationInput.FracturesProperties.Fractured
-                fprintf('Extracting data from %02d fractures ...\n', obj.NrOfFrac);
-                FracturesGrid = fractures_grid(obj.NrOfFrac);
-                temp = strfind(FractureMatrix{1}, 'PROPERTIES');
+                NrOfFrac = obj.SimulationInput.FracturesProperties.NrOfFrac;
+                fprintf('Extracting data from %02d fractures ...\n', NrOfFrac);
+                FracturesGrid = fractures_grid(NrOfFrac);
+                temp = strfind(FractureMatrix, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
                 
-                Nf = zeros(obj.NrOfFrac,1);
-                for f = 1 : obj.NrOfFrac
+                Nf = zeros(NrOfFrac,1);
+                for f = 1 : NrOfFrac
                     % Creat cartesian grid in each fracture
-                    frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');
+                    frac_info_split = strsplit(FractureMatrix{frac_index(f)},' ');
                     grid_temp = strsplit(frac_info_split{8}, 'x');
                     nx = str2double(grid_temp{1});
                     ny = str2double(grid_temp{2});
                     nz = 1;
-                    FractureGrid = cartesian_grid(nx, ny, nz);
+                    FractureGrid = cartesian_grid([nx;ny;nz]);
                     
                     % Add fracture grid coordinates (it's for plotting purposes) 
-                    temp = strfind(FractureMatrix{1}, 'GRID_COORDS_X');
+                    temp = strfind(FractureMatrix, 'GRID_COORDS_X');
                     frac_grid_coords_x = find(~cellfun('isempty', temp));
-                    temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Y');
+                    temp = strfind(FractureMatrix, 'GRID_COORDS_Y');
                     frac_grid_coords_y = find(~cellfun('isempty', temp));
-                    temp = strfind(FractureMatrix{1}, 'GRID_COORDS_Z');
+                    temp = strfind(FractureMatrix, 'GRID_COORDS_Z');
                     frac_grid_coords_z = find(~cellfun('isempty', temp));
-                    frac_grid_coords_x_split = strsplit(FractureMatrix{1}{frac_grid_coords_x(f)},' ');
-                    frac_grid_coords_y_split = strsplit(FractureMatrix{1}{frac_grid_coords_y(f)},' ');
-                    frac_grid_coords_z_split = strsplit(FractureMatrix{1}{frac_grid_coords_z(f)},' ');
+                    frac_grid_coords_x_split = strsplit(FractureMatrix{frac_grid_coords_x(f)},' ');
+                    frac_grid_coords_y_split = strsplit(FractureMatrix{frac_grid_coords_y(f)},' ');
+                    frac_grid_coords_z_split = strsplit(FractureMatrix{frac_grid_coords_z(f)},' ');
                     frac_grid_coords_x_split = str2double(frac_grid_coords_x_split);
                     frac_grid_coords_y_split = str2double(frac_grid_coords_y_split);
                     frac_grid_coords_z_split = str2double(frac_grid_coords_z_split);
@@ -101,31 +102,32 @@ classdef simulation_builder < handle
                 
                 % Reading the non-neighboring connectivities of frac-frac and frac-matrix
                 CrossConnections = cross_connections();
-                temp = strfind(FractureMatrix{1}, 'FRACCELL');
+                temp = strfind(FractureMatrix, 'FRACCELL');
                 frac_cell_index = find(~cellfun('isempty', temp));
                 
-                temp = strfind(FractureMatrix{1}, 'ROCK_CONN');
+                temp = strfind(FractureMatrix, 'ROCK_CONN');
                 frac_rockConn_index = find(~cellfun('isempty', temp));
                 
-                temp = strfind(FractureMatrix{1}, 'FRAC_CONN');
+                temp = strfind(FractureMatrix, 'FRAC_CONN');
                 frac_fracConn_index = find(~cellfun('isempty', temp));
                 
-                n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
+                %n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
+                n_phases = obj.SimulationInput.FluidProperties.NofPhases;
                 fprintf('---> Fracture ');
-                for f = 1 : obj.NrOfFrac
+                for f = 1 : NrOfFrac
                     if (f>1),  fprintf(repmat('\b', 1, 6));  end
-                    fprintf('%02d/%02d\n',f,obj.NrOfFrac);
+                    fprintf('%02d/%02d\n',f,NrOfFrac);
                     % looping over all global fracture cells
                     for If = 1:length(frac_cell_index)
-                        fracCell_info_split = strsplit(FractureMatrix{1}{frac_cell_index(If)},{' ','	'});
+                        fracCell_info_split = strsplit(FractureMatrix{frac_cell_index(If)},{' ','	'});
                         
                         % frac-marix conn
                         temp = frac_rockConn_index - frac_cell_index(If); temp(temp<0) = max(temp) +1;
                         [~ , frac_rockConn_index_start] = min(temp);
                         for Im = 1:str2double(fracCell_info_split{3})
-                            frac_rockConn_info_split = strsplit(FractureMatrix{1}{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
+                            frac_rockConn_info_split = strsplit(FractureMatrix{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
                             CrossConnections(If,1).Cells(Im,1) = str2double(frac_rockConn_info_split{2})+1;
-                            CrossConnections(If,1).T_Geo(Im,1) = str2double(frac_rockConn_info_split{3});
+                            CrossConnections(If,1).ConnIndex(Im,1) = str2double(frac_rockConn_info_split{3});
                         end
                         
                         % frac-frac conn
@@ -134,18 +136,20 @@ classdef simulation_builder < handle
                         
                         Counter = 1;
                         for Ig = 1:str2double(fracCell_info_split{5})
-                            frac_fracConn_info_split = strsplit(FractureMatrix{1}{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
+                            frac_fracConn_info_split = strsplit(FractureMatrix{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
                             If_Other_Global = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +1-1 ) ) + str2double(frac_fracConn_info_split{3})+1;
                             if If_Other_Global > If + Nm
                                 CrossConnections(If,1).Cells(Im+Counter,1) = If_Other_Global;
-                                CrossConnections(If,1).T_Geo(Im+Counter,1) = str2double(frac_fracConn_info_split{4});
+                                CrossConnections(If,1).ConnIndex(Im+Counter,1) = str2double(frac_fracConn_info_split{4});
                                 Counter = Counter + 1;
                             end
                         end
                         CrossConnections(If,1).UpWind = zeros(length(CrossConnections(If,1).Cells), n_phases);
                         CrossConnections(If,1).U_Geo = zeros(length(CrossConnections(If,1).Cells), n_phases);
+                        CrossConnections(If,1).T_Geo = zeros(size(CrossConnections(If,1).ConnIndex));
                     end
                 end
+                
             end
             
             %% 2. Define your discretization Model (choose between FS and ADM)
@@ -238,7 +242,7 @@ classdef simulation_builder < handle
                 Discretization.AddCrossConnections(CrossConnections);
             end
         end
-        function ProductionSystem = BuildProductionSystem (obj, FractureMatrix)
+        function ProductionSystem = BuildProductionSystem (obj, FractureMatrix, FracturesGrid)
             ProductionSystem = Production_System();
             %% RESERVOIR
             Lx = obj.SimulationInput.ReservoirProperties.size(1);       %Dimension in x-direction [m]
@@ -331,25 +335,25 @@ classdef simulation_builder < handle
             if obj.SimulationInput.FracturesProperties.Fractured
                 FracturesNetwork = fracture_system();
                 FracturesNetwork.Active = 1;
-                temp = strfind(FractureMatrix{1}, 'NUM_FRACS');
+                temp = strfind(FractureMatrix, 'NUM_FRACS');
                 index = find(~cellfun('isempty', temp));
-                temp = strsplit(FractureMatrix{1}{index},' ');
+                temp = strsplit(FractureMatrix{index},' ');
                 NrOfFrac = temp{end};
                 FracturesNetwork.NumOfFrac = str2double( NrOfFrac );
                 
-                temp = strfind(FractureMatrix{1}, 'PROPERTIES');
+                temp = strfind(FractureMatrix, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
 
                 FracturesNetwork.Fractures = fracture();
                 for f = 1 : FracturesNetwork.NumOfFrac
-                    frac_info_split = strsplit(FractureMatrix{1}{frac_index(f)},' ');                   % Splitted data for each fracture
+                    frac_info_split = strsplit(FractureMatrix{frac_index(f)},' ');                      % Splitted data for each fracture
                     FracturesNetwork.Fractures(f).Length = str2double( frac_info_split{3} );            % Length of each fracture
                     FracturesNetwork.Fractures(f).Width = str2double( frac_info_split{4} );             % Width of each fracture
                     FracturesNetwork.Fractures(f).Thickness = str2double( frac_info_split{5} );         % Thickness of each fracture
                     
                     Porosity = str2double( frac_info_split{6} );                                        % Porosity  of each fracture 
                     Permeability = str2double( frac_info_split{7} );                                    % Permeability of each fracture
-                    Kx = ones(DiscretizationModel.FracturesGrid.N(f), 1)*Permeability;
+                    Kx = ones(FracturesGrid.N(f), 1)*Permeability;
                     Ky = Kx;
                     Kz = Kx;
                     K = [Kx, Ky, Kz];

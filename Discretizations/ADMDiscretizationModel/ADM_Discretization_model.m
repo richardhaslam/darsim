@@ -34,6 +34,16 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             if ProductionSystem.FracturesNetwork.Active
                 obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
                 obj.FineGrid = [obj.ReservoirGrid, obj.FracturesGrid.Grids];
+                
+                % Modify Fracture Permeability to limit contrast for
+                % coupled bf computation
+                ratio = cell(ProductionSystem.FracturesNetwork.NumOfFrac, 1);
+                for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
+                    ratio{f} = max(ProductionSystem.Reservoir.K(:, 1)) * 1e4 ./ ProductionSystem.FracturesNetwork.Fractures(f).K;
+                    ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K .* ratio{f};
+                end
+                % Adding the harmonic permeabilities to CrossConnections
+                obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
             else
                 obj.FineGrid = obj.ReservoirGrid;
                 obj.Nf = obj.ReservoirGrid.N;
@@ -50,6 +60,16 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             for i=1:length(obj.OperatorsHandler.ProlongationBuilders)
                 obj.OperatorsHandler.ProlongationBuilders(i).BuildStaticOperators(ProductionSystem, FluidModel, obj.FineGrid, obj.CrossConnections, ...
                     obj.maxLevel, obj.CoarseGrid);
+            end
+            
+            % We reset the permeability of the fractures to the original
+            % value
+            if ProductionSystem.FracturesNetwork.Active
+                for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
+                    ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K ./ ratio{f};
+                end
+                % Adding the harmonic permeabilities to CrossConnections
+                obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
             end
             disp('Static operators - end')
             timer = toc(start);
