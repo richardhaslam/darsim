@@ -204,6 +204,7 @@ classdef reader_darsim2 < reader
                 WellsInfo.Inj(i).Constraint.value = str2double(obj.InputMatrix(inj(i) + 8));
                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
                 WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
+                WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12));
             end
             
             temp = regexp(obj.InputMatrix, 'PROD\d', 'match');
@@ -358,6 +359,8 @@ classdef reader_darsim2 < reader
                         SimulatorSettings.Formulation = 'Immiscible';
                     case('Immiscible')
                         SimulatorSettings.Formulation = 'Immiscible';
+                    case('Geothermal')
+                        SimulatorSettings.Formulation = 'Thermal';
                     otherwise
                         SimulatorSettings.Formulation = 'Molar';
                 end

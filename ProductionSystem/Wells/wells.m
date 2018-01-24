@@ -24,11 +24,13 @@ classdef wells < handle
             % Injectors
             for i=1:obj.NofInj
                 obj.Inj(i).QPhases = zeros(length(obj.Inj(i).Cells), n_phases);
+                obj.Inj(i).Qh = zeros(length(obj.Inj(i).Cells), n_phases);
                 obj.Inj(i).QComponents = zeros(length(obj.Inj(i).Cells), n_comp);
             end
             % Producers
             for i=1:obj.NofProd
                 obj.Prod(i).QPhases = zeros(length(obj.Prod(i).Cells), n_phases);
+                obj.Prod(i).Qh = zeros(length(obj.Prod(i).Cells), n_phases);
                 obj.Prod(i).QComponents = zeros(length(obj.Prod(i).Cells), n_comp);
             end
         end

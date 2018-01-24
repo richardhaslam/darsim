@@ -906,6 +906,9 @@ classdef builder < handle
                         FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     end
                     FluidModel.FlashCalculator = FlashCalculator;
+                case('Geothermal')
+                    % build geothermal fluid model
+                    
             end
             
             %%  RelPerm model
@@ -918,8 +921,6 @@ classdef builder < handle
                     FluidModel.RelPermModel = relperm_model_foam();
                 case('BrooksCorey')
                     FluidModel.RelPermModel = relperm_model_brookscorey();
-                case('gusti')
-                    FluidModel.RelPermModel = relperm_model_gusti(1);
             end
             % Irriducible sat
             for i=1:FluidModel.NofPhases

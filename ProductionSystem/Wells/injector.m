@@ -15,6 +15,7 @@ classdef injector < handle
         T
         QPhases
         QComponents
+        Qh % enthalpy flux
         PI
         BHPDepth
         z
