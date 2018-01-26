@@ -268,19 +268,17 @@ classdef simulation_builder < handle
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
                     % This is for DLGR type ADM: it reads coarse permeabilities
-                    if strcmp(obj.ADM, 'active')
-                        K_coarse = cell(obj.ADMSettings.maxLevel + 1, 1);
-                        K_coarse{1} = K;
-                        for l=2:obj.ADMSettings.maxLevel + 1
-                            for d=1:2
-                                % load the file in a vector
-                                field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{l,d});
-                                % reshape it to specified size
-                                k = field(4:end)*1e-15;
-                                K_coarse{l}(:, d) = k;
-                            end
-                            K_coarse{l}(:, 3) = k;
+                    K_coarse = cell(obj.SimulatorSettings.ADMSettings.maxLevel + 1, 1);
+                    K_coarse{1} = K;
+                    for l=2:obj.SimulatorSettings.ADMSettings.maxLevel + 1
+                        for d=1:2
+                            % load the file in a vector
+                            field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{l-1,d});
+                            % reshape it to specified size
+                            k = field(4:end)*1e-15;
+                            K_coarse{l}(:, d) = k;
                         end
+                        K_coarse{l}(:, 3) = k;
                     end
                     % Save them in ProductionSystem.
                     Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
@@ -485,7 +483,7 @@ classdef simulation_builder < handle
                     FluidModel.RelPermModel = relperm_model_quadratic();
                 case('Foam')
                     FluidModel.RelPermModel = relperm_model_foam();
-                case('BrooksCorey')
+                case('Corey')
                     FluidModel.RelPermModel = relperm_model_brookscorey();
             end
             % Irriducible sat
@@ -499,7 +497,7 @@ classdef simulation_builder < handle
                     FluidModel.WettingPhaseIndex = obj.SimulationInput.FluidProperties.Capillarity.wetting;
                 case('Linear')
                     FluidModel.CapillaryModel = 'Not implemented';
-                case('BrooksCorey')
+                case('Corey')
                     FluidModel.CapillaryModel = 'Not implemented';
                 case('Table')
                     FluidModel.CapillaryModel = 'Not implemented';

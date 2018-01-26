@@ -439,7 +439,7 @@ classdef reader_darsim2 < reader
                 if isempty(temp)
                     SimulatorSettings.ADMSettings.DLGR = 0;
                 else
-                    SimulatorSettings.ADMSettings.BFtype = str2double(obj.SettingsMatrix(x+1));
+                    SimulatorSettings.ADMSettings.DLGR = str2double(obj.SettingsMatrix(x+1));
                 end
                                 
                 temp = strfind(obj.SettingsMatrix, 'COUPLED');
