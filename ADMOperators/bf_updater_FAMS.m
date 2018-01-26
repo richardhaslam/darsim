@@ -47,7 +47,6 @@ classdef bf_updater_FAMS < bf_updater_ms
             % Prolongation operator for fractured reservoir (de-coupled)
             switch(obj.BFtype)
                 case('DECOUPLED')
-                    fprintf('Basis functions are decoupled.\n');
                     MsP = []; % Prolongation operator
                     MsC = []; % Correction functions operator
                     Dimensions = Dimensions * ones(length(FineGrid), 1);
@@ -66,7 +65,6 @@ classdef bf_updater_FAMS < bf_updater_ms
                         end
                     end
                 case('COUPLED')
-                    fprintf('Basis functions are coupled.\n');
                     MsP = []; % Prolongation operator
                     MsC = []; % Correction functions operator
                     cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);

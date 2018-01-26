@@ -72,6 +72,10 @@ classdef output_writer < handle
             cells = 1:length(ProductionSystem.Reservoir.State.Properties('P_1').Value);
             fileID = fopen(strcat(obj.Directory, 'Solution/', obj.ProblemName,'_Sol',num2str(index),'.txt'),'w');
             fprintf(fileID, obj.FormatSol, [cells', ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5, ProductionSystem.Reservoir.State.Properties('S_1').Value]');
+            for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
+                cells = cells(end)+1:cells(end)+length(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_1').Value);
+                fprintf(fileID, obj.FormatSol, [cells', ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_1').Value/1e5, ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value]');
+            end
             fclose(fileID);
         end
         function WriteWellsData(obj, Time, WellsData, Ndt)

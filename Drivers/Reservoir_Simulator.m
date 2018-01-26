@@ -39,8 +39,9 @@ classdef Reservoir_Simulator < handle
             disp('---------------------------------------------------------');
             if obj.Builder.SimulationInput.FracturesProperties.Fractured
                 for f = 1:obj.Simulation.DiscretizationModel.FracturesGrid.Nfrac
-                    fprintf('Fracture %2d: Grid= %3.0f x %3.0f\n', f, ...
-                        obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx, obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny)
+                    Nx = obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx;
+                    Ny = obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny;
+                    fprintf('Fracture %2d: Grid= %3.0f x %3.0f = %3.0f\n', f, Nx, Ny, Nx*Ny);
                 end
                 fprintf('Total fracture grids: %3.0f\n', sum(obj.Simulation.DiscretizationModel.FracturesGrid.N));
                 disp('---------------------------------------------------------');

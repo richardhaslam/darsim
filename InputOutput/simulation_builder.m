@@ -149,7 +149,6 @@ classdef simulation_builder < handle
                         CrossConnections(If,1).T_Geo = zeros(size(CrossConnections(If,1).ConnIndex));
                     end
                 end
-                
             end
             
             %% 2. Define your discretization Model (choose between FS and ADM)

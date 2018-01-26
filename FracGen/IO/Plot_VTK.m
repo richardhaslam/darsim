@@ -30,7 +30,7 @@ classdef Plot_VTK < handle
         end
         function PlotReservoirSolution(obj, Reservoir)
             %Write a VTK file for Reservoir
-            fileID = fopen(strcat(obj.FileName, '_Matrix', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, '_Matrix_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             fprintf(fileID, 'ASCII\n');
@@ -50,10 +50,11 @@ classdef Plot_VTK < handle
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Reservoir.NX*Reservoir.NY*Reservoir.NZ);
             fprintf(fileID, '\n');
+            fclose(fileID);
         end
         function PlotFracturesSolution(obj, Fracture, f)
             %Write a VTK file for each
-            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f), '_', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             fprintf(fileID, 'ASCII\n');
@@ -70,6 +71,7 @@ classdef Plot_VTK < handle
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA %d\n', Fracture.N_Length_AB*Fracture.N_Width_AD);
             fprintf(fileID, '\n');
+            fclose(fileID);
         end
     end
     methods (Access = private)

@@ -99,6 +99,8 @@ classdef bf_updater < handle
                            Faces    ;...
                            Edges    ;...
                            Mvv     ];
+                       
+                    MsC = [];
 % Old version was slower
 %                     start2 = tic;
 %                     Mii_inv = Mii^-1;

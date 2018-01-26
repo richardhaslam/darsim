@@ -38,6 +38,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(:,1));
             % Build Prolongation operator
             disp('Building Prolongation 1');
+            fprintf(strcat('The Basis Functions are ',obj.BFUpdater.BFtype,'.\n');
             [obj.P{1}, obj.C{1}] = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
             % Build tpfa coarse system of level 1 (with MsFE)
             obj.BFUpdater.UpdatePressureMatrix(obj.P{1}, CoarseGrid(:, 1));
