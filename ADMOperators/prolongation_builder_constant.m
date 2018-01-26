@@ -8,6 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_constant < prolongation_builder
     properties
+        Pdelta
+        Pdeltac
     end
     methods
         function obj = prolongation_builder_constant(n)
@@ -26,6 +28,9 @@ classdef prolongation_builder_constant < prolongation_builder
         function AverageMassOnCoarseBlocks(obj, Formulation, ProductionSystem, FineGrid, FluidModel, ADMRest)
             % Average mass on a coarse block
             Formulation.AverageMassOnCoarseBlocks(ProductionSystem, FineGrid, FluidModel, ADMRest);
+        end
+        function StaticMultilevelPressureGuess(obj, ProductionSystem, FluidModel, DiscretizationModel)
+            % virtual call
         end
     end
 end

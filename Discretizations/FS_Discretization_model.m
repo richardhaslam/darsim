@@ -20,5 +20,8 @@ classdef FS_Discretization_model < Discretization_model
         function SelectADMGrid(obj, ProductionSystem)
             % virtual call
         end
+        function AddWellsToInitialPressure(obj, ProductionSystem, FluidModel)
+            % virtual call
+        end
     end
 end

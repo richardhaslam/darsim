@@ -16,7 +16,7 @@ classdef output_writer_adm < output_writer
         function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp)
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
             obj.basisfunctions = false;
-            obj.dynamicBF = false;
+            obj.dynamicBF = true;
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
@@ -50,7 +50,13 @@ classdef output_writer_adm < output_writer
         function WriteADMStats(obj, ADMStats, Ndt)
             % Stats
             fileID = fopen(strcat(obj.Directory,'ADMStats.txt'),'w');
-            fprintf(fileID, '%8d %8d %8d %8.2f\n', ADMStats(1:Ndt, :)');
+            [~, nc] = size(ADMStats);
+            format = '%8d';
+            for i =1:nc-2
+                format = [format, ' %8d'];
+            end
+            format = [format, ' %8.2f\n'];
+            fprintf(fileID, format, ADMStats(1:Ndt, :)');
             fclose(fileID);
         end
     end

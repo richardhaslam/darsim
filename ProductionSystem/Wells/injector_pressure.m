@@ -29,6 +29,8 @@ classdef injector_pressure < injector
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
+                case('Geothermal')
+                    % update also Qh flux
                 otherwise
                     for j=1:FluidModel.NofComp
                         for phase=1:FluidModel.NofPhases
@@ -44,6 +46,10 @@ classdef injector_pressure < injector
                 dQdp(:, i) = - obj.rho(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells);
                 dQdS(:, i) = 0;
             end
+        end
+        function [dQdp, dQdT] = dQdPdT(obj, K, NofPhases)
+        end
+        function [dQhdp, dQhdT] = dQhdPdT(obj, K, NofPhases)
         end
 %         function [A, rhs] = AddToPressureSystem(obj, K, A, rhs)
 %             a = obj.Cells;

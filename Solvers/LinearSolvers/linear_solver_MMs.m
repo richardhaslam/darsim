@@ -12,14 +12,14 @@ classdef linear_solver_MMs < linear_solver
         P % Prolongation operator
         C % Correction functions operator
         OperatorsAssembler
-        FEM = 0;
+        MSFE = 0;
     end
     methods
         function obj = linear_solver_MMs(name, tol, maxit)
             obj@linear_solver(name, tol, maxit);
         end
         function SetUp(obj, ProductionSystem, DiscretizationModel)
-            if obj.FEM
+            if obj.MSFE
                 obj.R = DiscretizationModel.OperatorsHandler.P';
             else
                 obj.R = DiscretizationModel.OperatorsHandler.R;

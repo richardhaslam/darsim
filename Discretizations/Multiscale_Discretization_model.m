@@ -36,7 +36,7 @@ classdef Multiscale_Discretization_model < Discretization_model
                 obj.FineGrid = obj.ReservoirGrid;
                 obj.Nf = obj.ReservoirGrid.N;
             end
-            
+
             %% Pressure interpolators
             disp('Multiscale basis functions - start computation');
             start = tic;
@@ -54,6 +54,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             obj.CoarseGrid(1,1).CoarseFactor = obj.Coarsening(1,:,1);
             obj.CoarseGrid(1,1).BuildCoarseGrid(obj.ReservoirGrid);
             obj.GridMapper.BuildFamily(obj.CoarseGrid(1,1), obj.ReservoirGrid, obj.Coarsening(1,:,1), 1);
+            %obj.CoarseGrid(1,1).AddWells(Inj, Prod);
             obj.Nc(1, 1) = obj.CoarseGrid(1,1).N;
             for i=2:obj.maxLevel(1)
                 obj.CoarseGrid(1,i) = coarse_grid();
@@ -102,7 +103,35 @@ classdef Multiscale_Discretization_model < Discretization_model
                    end
                 end  
             end
-        end       
+            
+			fprintf('Coarsening ratio in reservoir: %d x %d x %d\n' , obj.Coarsening(1,1,1), obj.Coarsening(1,2,1), obj.Coarsening(1,3,1) );
+            for L = 1 : obj.maxLevel(1)
+                fprintf('Number of reservoir coarse nodes at level %d: %d\n' , L, obj.Nc(1,L) );
+                if (size(obj.Coarsening,1) - 1) > 0
+                    fprintf('Number of fractures coarse nodes at level %d: %d\n' , L, sum(obj.Nc(2:end,L)));
+                end
+            end
+        end
+        function AddWellsToInitialPressure(obj, ProductionSystem, FluidModel)
+            % Improving the first pressure guess for multilevel/multiscale method
+            deltaP_w = obj.OperatorsHandler.ProlongationBuilders(1).StaticMultilevelPressureGuess(ProductionSystem, FluidModel, obj.FineGrid, obj.CoarseGrid(:, end), obj.CrossConnections);
+            %% 1. Updating Reservoir Pressure with Well Correction
+            Pm = ProductionSystem.Reservoir.State.Properties(['P_', num2str(FluidModel.NofPhases)]);
+            Pm.update(deltaP_w(1:obj.ReservoirGrid.N));
+            
+            %% 2. Update fractures pressure and densities
+            if ProductionSystem.FracturesNetwork.Active
+                for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
+                    % Update Pressure
+                    index1 = obj.ReservoirGrid.N + sum(obj.FracturesGrid.N(1:f-1)) + 1;
+                    index2 = index1 - 1 + obj.FracturesGrid.N(f);
+                    Pf = ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['P_', num2str(FluidModel.NofPhases)]);
+                    Pf.update(deltaP_w(index1:index2));
+                end
+            end
+            
+            ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+        end
         function SelectADMGrid(obj, ProductionSystem)
             % virtual call
         end

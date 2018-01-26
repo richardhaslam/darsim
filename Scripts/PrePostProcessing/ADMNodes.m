@@ -7,6 +7,8 @@ Time = Time(:, 1);
 Nodes = load(strcat(Directory, 'ADMStats.txt'));
 Nodes = Nodes(:, end);
 
-fid = fopen(strcat('Nodes_ImmFractured.txt'), 'w');
+plot(Time, Nodes, 'r');
+
+fid = fopen(strcat('FieldFiveSpot_nodes.txt'), 'w');
 fprintf(fid, '%10.4f %10.4f\n', [Time, Nodes]');
 fclose(fid);

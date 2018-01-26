@@ -24,14 +24,17 @@ classdef linear_solver_ADM < linear_solver
             % Modify permeability field (for upscaling option)
             if obj.DLGR
                 DiscretizationModel.ModifyPerm(ProductionSystem); 
-            end
-%           
+            end            
+            
+            % Display the number of active grids
+            fprintf('Number of ADM Active Grids: %1.0f (%2.2f Percent of nodes)\n', ...
+                    DiscretizationModel.ADMGrid.Ntot, 100*DiscretizationModel.ADMGrid.Ntot/DiscretizationModel.GlobalGrids(1).N);
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system
             rhs_c = obj.R * rhs;
             A_c = obj.R * A * obj.P;
- 
+            
             % Solve Coarse System
             %start = tic;
             switch (obj.Name)
@@ -39,7 +42,7 @@ classdef linear_solver_ADM < linear_solver
                     % Set-up preconditioner
                     setup.type = 'nofill';
                     setup.milu = 'off';
-                    setup.droptol = 0.1; 
+                    setup.droptol = 0.1;
                     [L, U] = ilu(A_c, setup);
                     [x, flag, relres, obj.Iter] = gmres(A_c, rhs_c, [], obj.Tol, min(obj.Maxit, size(A_c,1)), L, U);
                 case('bicg')
@@ -57,9 +60,11 @@ classdef linear_solver_ADM < linear_solver
             if flag == 1
                 disp(['WARNING: Linear solver did not converge. The residual norm is ', num2str(relres)]);
             end
-
+            
             % Prolong to fine-scale resolution
             xf = obj.P * x;
+
+            % xf = A\rhs;
             
             % Should be ilu(0) smoothing but it's not working
             if obj.Smooth

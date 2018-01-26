@@ -30,6 +30,8 @@ classdef producer_pressure < producer
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
+                case('Geothermal')
+                    % update also Qh flux
                 otherwise
                     for j=1:FluidModel.NofComp
                         for phase=1:FluidModel.NofPhases
@@ -48,6 +50,10 @@ classdef producer_pressure < producer
                 dQdp(:, i) = - rho.Value(obj.Cells) .* Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) + drho(obj.Cells, i) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
                 dQdS(:, i) = rho.Value(obj.Cells) .* dMob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
+        end
+        function [dQdp, dQdT] = dQdPdT(obj, K, NofPhases) % need perforated cell properties
+        end
+        function [dQhdp, dQhdT] = dQhdPdT(obj, K, NofPhases) % need perforated cell properties
         end
 %         function [A, rhs] = AddToPressureSystem(obj, Mob, K, A, rhs)
 %             a = obj.Cells;
