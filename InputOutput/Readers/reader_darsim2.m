@@ -419,9 +419,12 @@ classdef reader_darsim2 < reader
                 
                 temp = strfind(obj.SettingsMatrix, 'DLGR');
                 x = find(~cellfun('isempty', temp));
-                SimulatorSettings.ADMSettings.DLGR = str2double(obj.SettingsMatrix(x+1));
-                
-                
+                if isempty(temp)
+                    SimulatorSettings.ADMSettings.DLGR = 0;
+                else
+                    SimulatorSettings.ADMSettings.BFtype = str2double(obj.SettingsMatrix(x+1));
+                end
+                                
                 temp = strfind(obj.SettingsMatrix, 'COUPLED');
                 temp = find(~cellfun('isempty', temp));
                 if isempty(temp)

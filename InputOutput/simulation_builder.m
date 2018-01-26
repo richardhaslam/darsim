@@ -266,7 +266,7 @@ classdef simulation_builder < handle
             end
             Reservoir.AddPermeabilityPorosity(K, phi);
             % This is for DLGR type ADM: it reads coarse permeabilities
-            if obj.ADMSettings.DLGR == 1
+            if obj.SimulatorSettings.ADMSettings.DLGR
              K_coarse = cell(obj.ADMSettings.maxLevel + 1, 1);
                 K_coarse{1} = K;
                 l=2;
