@@ -593,6 +593,7 @@ classdef builder < handle
                         end
                     end
                 end
+                
                 % Save them in ProductionSystem.
                 Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
             end

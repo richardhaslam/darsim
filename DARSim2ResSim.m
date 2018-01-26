@@ -6,7 +6,7 @@
 %Created: 13 July 2016
 %Last modified: 28 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function ResSimulator = DARSim2ResSim(Directory, File)
+function ResSimulator = DARSim2ResSim(Directory, File, PermDirectory)
 clc;
 % addpath(genpath(pwd));
 % Example of Directory and File
@@ -37,7 +37,7 @@ disp(newline);
 
 %% Build objects
 % Build Simulator
-ResSimulator = Reservoir_Simulator(Directory, File);
+ResSimulator = Reservoir_Simulator(Directory, File, PermDirectory);
 % Read Input File
 ResSimulator.Reader.ReadInputFile(ResSimulator.Builder);
 % Build objects

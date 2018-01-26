@@ -268,39 +268,22 @@ classdef simulation_builder < handle
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
                     % This is for DLGR type ADM: it reads coarse permeabilities
-                    if obj.SimulatorSettings.ADMSettings.DLGR
+                    if strcmp(obj.ADM, 'active')
                         K_coarse = cell(obj.ADMSettings.maxLevel + 1, 1);
                         K_coarse{1} = K;
-                        l=2;
-                        for i=4:7
-                            if strcmp(inputMatrix(obj.perm(i) - 1), 'INCLUDE')
-                                % File name
-                                file  = strcat('../Permeability/', char(inputMatrix(obj.perm(i)+1)));
+                        for l=2:obj.ADMSettings.maxLevel + 1
+                            for d=1:2
                                 % load the file in a vector
-                                field = load(file);
+                                field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{l,d});
                                 % reshape it to specified size
                                 k = field(4:end)*1e-15;
-                                if i == 4
-                                    K_coarse{l} = [k,k,k];         %%% Solve permeability storing in K_coarse
-                                end
-                                
-                                if i == 5
-                                    K_coarse{l,1}(:,2) = k;
-                                    l = l+1;
-                                end
-                                
-                                if i == 6
-                                    K_coarse{l} = [k,k,k];         %%% Solve permeability storing in K_coarse
-                                end
-                                
-                                if i == 7
-                                    K_coarse{l,1}(:,2) = k;
-                                end
+                                K_coarse{l}(:, d) = k;
                             end
+                            K_coarse{l}(:, 3) = k;
                         end
-                        % Save them in ProductionSystem.
-                        Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
                     end
+                    % Save them in ProductionSystem.
+                    Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
                 otherwise
             end
             % Add reservoir to production system            
