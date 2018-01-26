@@ -29,6 +29,7 @@ classdef linear_solver_MMs < linear_solver
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system
+            % not using correction functions atm
             %if size(A,2) == size(obj.C,1)
              %   rhs_c = obj.R * (rhs - A * obj.C * rhs);
             %else
