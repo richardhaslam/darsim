@@ -13,10 +13,13 @@ classdef reservoir < handle
         Thickness
         Temp
         K
+        K_coarse
         Por
         TotalPV
         State
+        level
         State_old
+        MaxLevel
     end
     methods
         function obj = reservoir(length, width, thickness, temp)
@@ -31,6 +34,9 @@ classdef reservoir < handle
             obj.K = k;
             obj.Por = por;
             obj.TotalPV = obj.Length * obj.Width * obj.Thickness * obj.Por;
+        end
+        function AddCoarsePermeability(obj, k_coarse)
+            obj.K_coarse = k_coarse;
         end
     end
 end

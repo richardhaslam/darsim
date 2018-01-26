@@ -47,6 +47,8 @@ classdef builder < handle
         Fractured = 0;
         NrOfFrac
         incompressible
+        DLGR = 0;
+        
     end
     methods
         function FindKeyWords(obj, inputMatrix, SettingsMatrix, FractureMatrix)
@@ -65,6 +67,21 @@ classdef builder < handle
             obj.perm(2) = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'PERMZ');
             obj.perm(3) = find(~cellfun('isempty', temp));
+
+                        temp = strfind(SettingsMatrix{1}, 'ADM');
+            adm = find(~cellfun('isempty', temp));
+            if str2double(SettingsMatrix{1}(adm + 1)) == 1
+            %%%% UPSCALING LEVEL PERM UPSCALING %%%%%%%
+                temp = strfind(inputMatrix{1}, 'PERM_X1');
+                obj.perm(4) = find(~cellfun('isempty', temp));
+                temp = strfind(inputMatrix{1}, 'PERM_Y1');
+                obj.perm(5) = find(~cellfun('isempty', temp))
+                temp = strfind(inputMatrix{1}, 'PERM-X2');
+                obj.perm(6) = find(~cellfun('isempty', temp));
+                temp = strfind(inputMatrix{1}, 'PERM-Y2');
+                obj.perm(7) = find(~cellfun('isempty', temp))
+            end
+            
             temp = strfind(inputMatrix{1}, 'PERTURB');
             obj.pert = find(~cellfun('isempty', temp));
             temp = strfind(inputMatrix{1}, 'POR');
@@ -198,6 +215,10 @@ classdef builder < handle
                 if isempty(obj.ADMSettings.maxLevel(1)) || isempty(obj.ADMSettings.Coarsening(1,:,:)) || isempty(obj.ADMSettings.key) || isempty(obj.ADMSettings.tol) || isempty(obj.ADMSettings.PInterpolator)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end
+                temp = strfind(SettingsMatrix{1}, 'DLGR');
+                x = find(~cellfun('isempty', temp));
+                obj.ADMSettings.DLGR = str2double(SettingsMatrix{1}(x+1));
+                
                 % ADM settings in the fractures
                 if obj.Fractured
                     for f = 1 : obj.NrOfFrac
@@ -476,7 +497,7 @@ classdef builder < handle
             dy = Ly/DiscretizationModel.ReservoirGrid.Ny;
             dz = h /DiscretizationModel.ReservoirGrid.Nz;
             Tres = str2double(inputMatrix(obj.temperature + 1));   %Res temperature [K]
-            Reservoir = reservoir(Lx, Ly, h, Tres);
+            Reservoir = reservoir(Lx, Ly, h, Tres); % create a reservoir
             phi = str2double(inputMatrix(obj.por + 1));
             K = zeros(DiscretizationModel.ReservoirGrid.N, 3);
             for i=1:3
@@ -494,8 +515,72 @@ classdef builder < handle
                     K(:, i) = ones(DiscretizationModel.ReservoirGrid.N, 1)*value;
                 end
             end
+         
+            %% Add upscaled permeability: 
             Reservoir.AddPermeabilityPorosity(K, phi);
+            if strcmp(obj.ADM, 'active')
+             K_coarse = cell(obj.ADMSettings.maxLevel + 1, 1);
+                K_coarse{1} = K;
+                l=2;
+                for i=4:7
+                    if strcmp(inputMatrix(obj.perm(i) - 1), 'INCLUDE')   
+                        % File name
+                        file  = strcat('../Permeability/', char(inputMatrix(obj.perm(i)+1)));
+                        % load the file in a vector
+                        field = load(file);
+                        % reshape it to specified size
+                        k = field(4:end)*1e-15;
+                        if i == 4
+                            K_coarse{l} = [k,k,k];         %%% Solve permeability storing in K_coarse
+                        end
+                        
+                        if i == 5
+                            K_coarse{l,1}(:,2) = k;
+                            l = l+1;
+                        end
+                        
+                        if i == 6
+                            K_coarse{l} = [k,k,k];         %%% Solve permeability storing in K_coarse
+                        end
+                        
+                        if i == 7
+                            K_coarse{l,1}(:,2) = k;
+                        end
+                    end
+                end
+                % Save them in ProductionSystem.
+                Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
+            end
+%             
+%             if strcmp(obj.ADM, 'active')
+%                 %K_coarse_x= cell(obj.ADMSettings.maxLevel, 1);
+%                 %K_coarse_y= cell(obj.ADMSettings.maxLevel, 1);  % first column is x permeabilities, 2nd is y permeabilities
+%                 K_coarse = cell(obj.ADMSettings.maxLevel + 1, 1);
+%                 K_coarse{1} = K;
+%                 %for l=1:length(K_coarse_x)
+%                 for l=1:obj.ADMSettings.maxLevel
+%                     % for i=1:2      % can adjust the file name to x=1 & y=2
+%                     % to loop over it...
+%                         % read coarse permeabilities
+%                         
+%                         % File name
+%                         file  = strcat('../src/LocalPermeability/Text_files/K_x_eff',num2str(l),'.txt');
+%                         file2  = strcat('../src/LocalPermeability/Text_files/K_y_eff',num2str(l),'.txt');
+%                         % load the file in a vector
+%                         field = load(file);
+%                         field2 = load(file2);
+%                         kx = field(4:end)*1e-15;
+%                         ky = field2(4:end)*1e-15;
+%                         kz = kx;
+%                         K_coarse{l+1} = [kx, ky, kz];
+%                      %end
+%                 end
+%                 % Save them in ProductionSystem.
+%                 Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
+%             end
+%             
             ProductionSystem.AddReservoir(Reservoir);
+           
             
             %% WELLS
             Wells = wells();
@@ -938,6 +1023,9 @@ classdef builder < handle
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                            if obj.ADMSettings.DLGR
+                                NLSolver.LinearSolver.DLGR = 1;
+                            end
                     end
                     NLSolver.MaxIter = str2double(SettingsMatrix(obj.coupling + 1));
                     ConvergenceChecker.Tol = str2double(SettingsMatrix(obj.coupling + 2));

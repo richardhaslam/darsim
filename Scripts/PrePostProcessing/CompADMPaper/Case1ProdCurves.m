@@ -5,7 +5,6 @@ Directory_FS = '../Results/4_Papers_Results/AWR_paper/Case1/AWR_Case1_FS/';
 Directory_ADM_ms = '../Results/4_Papers_Results/AWR_paper/Case1/AWR_Case1_ADM_MS/';
 Directory_ADM_const = '../Results/4_Papers_Results/AWR_paper/Case1/AWR_Case1_ADM_Constant/';
 
-
 PlotProductionCurves(Directory_FS, 'red', 1);
 PlotProductionCurves(Directory_ADM_ms, 'blue', 1);
 PlotProductionCurves(Directory_ADM_const, 'green', 1);

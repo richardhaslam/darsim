@@ -12,6 +12,7 @@ classdef linear_solver_ADM < linear_solver
         P
         Smooth = 0
         OperatorsAssembler
+        DLGR = false
     end
     methods
         function obj = linear_solver_ADM(name, tol, maxit)
@@ -20,6 +21,11 @@ classdef linear_solver_ADM < linear_solver
         function SetUp(obj, ProductionSystem, DiscretizationModel, Residual)
             % Get ADM Operators
             [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel, ProductionSystem, Residual);
+            % Modify permeability field (for upscaling option)
+            if obj.DLGR
+                DiscretizationModel.ModifyPerm(ProductionSystem); 
+            end
+%           
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system
@@ -71,5 +77,6 @@ classdef linear_solver_ADM < linear_solver
                 end
             end
         end
+        
     end
 end

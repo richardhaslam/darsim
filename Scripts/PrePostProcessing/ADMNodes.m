@@ -1,4 +1,4 @@
-Directory = '../Input/ImmFractured/Output/';
+Directory = '../Input/ImmHomo_ADM/Output/';
 
 %% Rescale for latex plot
 Time = load(strcat(Directory, 'Inj_Phase1.txt'));
