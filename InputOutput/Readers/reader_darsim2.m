@@ -417,6 +417,11 @@ classdef reader_darsim2 < reader
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end
                 
+                temp = strfind(obj.SettingsMatrix, 'DLGR');
+                x = find(~cellfun('isempty', temp));
+                SimulatorSettings.ADMSettings.DLGR = str2double(obj.SettingsMatrix(x+1));
+                
+                
                 temp = strfind(obj.SettingsMatrix, 'COUPLED');
                 temp = find(~cellfun('isempty', temp));
                 if isempty(temp)

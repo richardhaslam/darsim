@@ -265,6 +265,41 @@ classdef simulation_builder < handle
                 end
             end
             Reservoir.AddPermeabilityPorosity(K, phi);
+            % This is for DLGR type ADM: it reads coarse permeabilities
+            if obj.ADMSettings.DLGR == 1
+             K_coarse = cell(obj.ADMSettings.maxLevel + 1, 1);
+                K_coarse{1} = K;
+                l=2;
+                for i=4:7
+                    if strcmp(inputMatrix(obj.perm(i) - 1), 'INCLUDE')   
+                        % File name
+                        file  = strcat('../Permeability/', char(inputMatrix(obj.perm(i)+1)));
+                        % load the file in a vector
+                        field = load(file);
+                        % reshape it to specified size
+                        k = field(4:end)*1e-15;
+                        if i == 4
+                            K_coarse{l} = [k,k,k];         %%% Solve permeability storing in K_coarse
+                        end
+                        
+                        if i == 5
+                            K_coarse{l,1}(:,2) = k;
+                            l = l+1;
+                        end
+                        
+                        if i == 6
+                            K_coarse{l} = [k,k,k];         %%% Solve permeability storing in K_coarse
+                        end
+                        
+                        if i == 7
+                            K_coarse{l,1}(:,2) = k;
+                        end
+                    end
+                end
+                % Save them in ProductionSystem.
+                Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
+            end
+            % Add reservoir to production system            
             ProductionSystem.AddReservoir(Reservoir);
             
             %% WELLS
@@ -522,6 +557,11 @@ classdef simulation_builder < handle
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                            if obj.SimulatorSettings.ADMSettings.DLGR
+                                % it will change perm during ADM
+                                % simulaiton to use upscaled ones
+                                NLSolver.LinearSolver.DLGR = 1;
+                            end
                         otherwise
                             NLSolver.SystemBuilder = fim_system_builder();
                             switch (obj.SimulatorSettings.Formulation)
