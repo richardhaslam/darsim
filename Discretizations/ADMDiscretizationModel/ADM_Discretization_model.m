@@ -161,5 +161,22 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         function AverageMassOnCoarseBlocks(obj, ProductionSystem, FluidModel, Formulation)
             obj.OperatorsHandler.ProlongationBuilders(2).AverageMassOnCoarseBlocks(Formulation, ProductionSystem, obj.FineGrid, FluidModel, obj.OperatorsHandler.ADMRest);  
         end
+        %% MODIFY PERM:
+        function ModifyPerm(obj, ProductionSystem)         % or should I select the ADMgrid?
+            ProductionSystem.Reservoir.K = ProductionSystem.Reservoir.K_coarse{1};
+            for level = 1:length(obj.CoarseGrid)
+                for c =1: obj.CoarseGrid(1, level).N
+                    if obj.CoarseGrid(1, level).Active(c) == 1
+                        FineCells = obj.CoarseGrid(1, level).GrandChildren(c, :);
+                        ProductionSystem.Reservoir.K(FineCells, 1) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 1);
+                        ProductionSystem.Reservoir.K(FineCells, 2) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 2);
+                        ProductionSystem.Reservoir.K(FineCells, 3) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 3);
+                    end
+                end
+            end
+            obj.ReservoirGrid.ComputeRockTransmissibilities(ProductionSystem.Reservoir.K);
+        end
     end
 end
+
+

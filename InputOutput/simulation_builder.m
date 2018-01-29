@@ -264,6 +264,26 @@ classdef simulation_builder < handle
                 end
             end
             Reservoir.AddPermeabilityPorosity(K, phi);
+            switch obj.SimulatorSettings.DiscretizationModel
+                case('ADM')
+                    % This is for DLGR type ADM: it reads coarse permeabilities
+                    K_coarse = cell(obj.SimulatorSettings.ADMSettings.maxLevel + 1, 1);
+                    K_coarse{1} = K;
+                    for l=2:obj.SimulatorSettings.ADMSettings.maxLevel + 1
+                        for d=1:2
+                            % load the file in a vector
+                            field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{l-1,d});
+                            % reshape it to specified size
+                            k = field(4:end)*1e-15;
+                            K_coarse{l}(:, d) = k;
+                        end
+                        K_coarse{l}(:, 3) = k;
+                    end
+                    % Save them in ProductionSystem.
+                    Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
+                otherwise
+            end
+            % Add reservoir to production system            
             ProductionSystem.AddReservoir(Reservoir);
             
             %% WELLS
@@ -291,7 +311,8 @@ classdef simulation_builder < handle
                 switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.name)
                     case('pressure')
                         pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
-                        Injector = injector_pressure(PI, coord, pressure, Tres, n_phases);
+                        temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
+                        Injector = injector_pressure(PI, coord, pressure, temperature, n_phases);
                     case('rate')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         p_init = obj.SimulationInput.Init(1);
@@ -359,9 +380,6 @@ classdef simulation_builder < handle
         end
         function FluidModel = BuildFluidModel(obj)
             n_phases = obj.SimulationInput.FluidProperties.NofPhases;
-            if n_phases == 1
-                obj.SimulatorSettings.CouplingType = 'SinglePhase';
-            end
             switch(obj.SimulationInput.FluidProperties.FluidModel)
                 case('SinglePhase')
                     FluidModel = single_phase_fluid_model();
@@ -377,6 +395,7 @@ classdef simulation_builder < handle
                     if Phase.cf == 0
                         obj.incompressible = 1;
                     end
+                    obj.SimulatorSettings.CouplingType = 'SinglePhase';
                 case('Immiscible')
                     FluidModel = Immiscible_fluid_model(n_phases);
                     % Add phases
@@ -447,6 +466,12 @@ classdef simulation_builder < handle
                         FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     end
                     FluidModel.FlashCalculator = FlashCalculator;
+                case('Geothermal')
+                    % build the geothermal fluid model
+                    FluidModel = Geothermal_fluid_model();
+                    Phase = therm_comp_phase();
+                    FluidModel.AddPhase(Phase, 1);
+                    obj.SimulatorSettings.CouplingType = 'FIM';
             end
             
             %%  RelPerm model
@@ -457,7 +482,7 @@ classdef simulation_builder < handle
                     FluidModel.RelPermModel = relperm_model_quadratic();
                 case('Foam')
                     FluidModel.RelPermModel = relperm_model_foam();
-                case('BrooksCorey')
+                case('Corey')
                     FluidModel.RelPermModel = relperm_model_brookscorey();
             end
             % Irriducible sat
@@ -471,7 +496,7 @@ classdef simulation_builder < handle
                     FluidModel.WettingPhaseIndex = obj.SimulationInput.FluidProperties.Capillarity.wetting;
                 case('Linear')
                     FluidModel.CapillaryModel = 'Not implemented';
-                case('BrooksCorey')
+                case('Corey')
                     FluidModel.CapillaryModel = 'Not implemented';
                 case('Table')
                     FluidModel.CapillaryModel = 'Not implemented';
@@ -494,6 +519,9 @@ classdef simulation_builder < handle
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
+                case('Thermal')
+                    Formulation = Thermal_formulation();
+                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 1;
             end
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
@@ -513,6 +541,11 @@ classdef simulation_builder < handle
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                            if obj.SimulatorSettings.ADMSettings.DLGR
+                                % it will change perm during ADM
+                                % simulaiton to use upscaled ones
+                                NLSolver.LinearSolver.DLGR = 1;
+                            end
                         otherwise
                             NLSolver.SystemBuilder = fim_system_builder();
                             switch (obj.SimulatorSettings.Formulation)

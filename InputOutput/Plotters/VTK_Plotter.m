@@ -146,6 +146,8 @@ classdef VTK_Plotter < Plotter
             %Permeability
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), Grid.N, 1), ' PERMX');
+            obj.PrintScalar2VTK(fileID, reshape(K(:,2), Grid.N, 1), ' PERMY');
+            obj.PrintScalar2VTK(fileID, reshape(K(:,3), Grid.N, 1), ' PERMZ');
             fprintf(fileID, '\n');
             fclose(fileID);
         end

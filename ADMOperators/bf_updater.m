@@ -99,7 +99,7 @@ classdef bf_updater < handle
                            Faces    ;...
                            Edges    ;...
                            Mvv     ];
-                       
+                    % 8. Correction functions
                     MsC = [];
 % Old version was slower
 %                     start2 = tic;

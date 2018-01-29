@@ -8,28 +8,29 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef relperm_model_quadratic < relperm_model
     properties
+        n = [1, 1]
     end
     methods
         function kr = ComputeRelPerm(obj, Phases, s)
             % Rescale saturations
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
             S = max(S, 0);
-            % Wetting phase relative permeability
-            kr(:,1) = S.^2;
+            % Phase 1 relative permeability
+            kr(:,1) = S.^obj.n(1);
             kr(s < Phases(1).sr, 1) = 0;
             kr(s < Phases(1).sr, 2) = 1;
-            % Non-Wetting phase relative permeability
-            kr(:,2) = (1-S).^2;
+            % Phase 2 relative permeability
+            kr(:,2) = (1-S).^obj.n(2);
             kr(s > 1 - Phases(2).sr, 2) = 0;
             kr(s > 1 - Phases(2).sr, 1) = 1;
         end
         function dkr = ComputeDerivative(obj, Phases, s)
-            S = zeros(length(s), 1);
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
-            dkr(:,1) = (1-Phases(1).sr-Phases(2).sr)^(-1)*2*S;
+            
+            dkr(:,1) = (1-Phases(1).sr-Phases(2).sr)^(-1)* obj.n(1) * S.^(obj.n(1)-1);
             dkr(s < Phases(1).sr, 1) = 0;
             dkr(s < Phases(1).sr, 2) = 0;
-            dkr(:,2) = -(1-Phases(1).sr-Phases(2).sr)^(-1)*2*(1-S);
+            dkr(:,2) = -(1-Phases(1).sr-Phases(2).sr)^(-1)*obj.n(2)*(1-S).^(obj.n(2)-1);
             dkr(s > 1 - Phases(2).sr, 2) = 0;
             dkr(s > 1 - Phases(2).sr, 1) = 0;
         end

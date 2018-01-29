@@ -13,8 +13,8 @@ classdef reader_darsim2 < reader
         FractureMatrix
     end
     methods
-        function obj = reader_darsim2(dir, file)
-            obj@reader(dir, file);
+        function obj = reader_darsim2(dir, file, permdirectory)
+            obj@reader(dir, file, permdirectory);          
         end
         function ReadInputFile(obj, Builder)
             %ReadInputFile
@@ -111,13 +111,30 @@ classdef reader_darsim2 < reader
             for i=1:3
                 if strcmp(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
                     ReservoirProperties.PermInclude(i) = 1;
-                    ReservoirProperties.PermFile{i} = strcat(obj.Directory, '../../Permeability/', char(obj.InputMatrix(perm(i) +1)));
+                    ReservoirProperties.PermFile{i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
                 else
                     ReservoirProperties.PermInclude(i) = 0;
                     ReservoirProperties.Perm(i) = str2double(obj.InputMatrix(perm(i) +1));
                 end
             end
-
+            %%%% UPSCALING LEVEL PERM UPSCALING %%%%%%%
+            % level 1
+            temp = strfind(obj.InputMatrix, 'PERM_X1');
+            perm(1) = find(~cellfun('isempty', temp));
+            temp = strfind(obj.InputMatrix, 'PERM_Y1');
+            perm(2) = find(~cellfun('isempty', temp));
+            for i=1:2
+                ReservoirProperties.CoarsePermFile{1, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
+            end
+            % level 2
+            temp = strfind(obj.InputMatrix, 'PERM-X2');
+            perm(1) = find(~cellfun('isempty', temp));
+            temp = strfind(obj.InputMatrix, 'PERM-Y2');
+            perm(2) = find(~cellfun('isempty', temp));
+            for i=1:2
+                ReservoirProperties.CoarsePermFile{2, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
+            end
+            
             % 4. Porosity 
             temp = strfind(obj.InputMatrix, 'POR');
             index = find(~cellfun('isempty', temp));
@@ -204,6 +221,7 @@ classdef reader_darsim2 < reader
                 WellsInfo.Inj(i).Constraint.value = str2double(obj.InputMatrix(inj(i) + 8));
                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
                 WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
+                WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12));
             end
             
             temp = regexp(obj.InputMatrix, 'PROD\d', 'match');
@@ -358,6 +376,8 @@ classdef reader_darsim2 < reader
                         SimulatorSettings.Formulation = 'Immiscible';
                     case('Immiscible')
                         SimulatorSettings.Formulation = 'Immiscible';
+                    case('Geothermal')
+                        SimulatorSettings.Formulation = 'Thermal';
                     otherwise
                         SimulatorSettings.Formulation = 'Molar';
                 end
@@ -414,6 +434,14 @@ classdef reader_darsim2 < reader
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
                 end
                 
+                temp = strfind(obj.SettingsMatrix, 'DLGR');
+                x = find(~cellfun('isempty', temp));
+                if isempty(temp)
+                    SimulatorSettings.ADMSettings.DLGR = 0;
+                else
+                    SimulatorSettings.ADMSettings.DLGR = str2double(obj.SettingsMatrix(x+1));
+                end
+                                
                 temp = strfind(obj.SettingsMatrix, 'COUPLED');
                 temp = find(~cellfun('isempty', temp));
                 if isempty(temp)

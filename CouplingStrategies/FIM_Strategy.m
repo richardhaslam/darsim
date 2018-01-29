@@ -29,8 +29,8 @@ methods
         End = 0;
         
         % Set Up non-linear solver
-        obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
         obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
+        obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
         
         % Save state of current time-step (it's useful for ADM to update based on time change)
         ProductionSystem.SavePreviousState();

@@ -35,6 +35,16 @@ methods
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 'scalar', false, 0, 2000);
                 end
                 obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);
+            case('Geothermal')
+                %%% Add properties
+                for i=1:FluidModel.NofPhases % for now this will be only 1
+                    obj.Properties(['P_', num2str(i)]) = property(N, 1, 'scalar', true, 1e7, 2e7);
+                    obj.Properties(['T_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
+                    obj.Properties(['S_', num2str(i)]) = property(N, 1, 'scalar', false, 0, 1);
+                    obj.Properties(['rho_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
+                    obj.Properties(['h_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
+                    obj.Properties(['mu_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
+                end
             otherwise
                 %% Saturation and Pc
                 for i=1:FluidModel.NofPhases

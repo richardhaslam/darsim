@@ -8,6 +8,7 @@
 % This function creates a vtk comparison file between 2 runs. It can be
 %opened in Paraview to create plots of the errors of the different
 %variables. 
+
 function VTKErrorFile(Case1, Case2, ComparisonDir, n_files)
 %Read the input file to acquire info about geometry etc.
 InputFile = strcat(Case1, 'BOHetero.txt');
