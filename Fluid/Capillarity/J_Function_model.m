@@ -14,7 +14,7 @@ classdef  J_Function_model < capillary_pressure_model
         sigma = 4.361e-2;
     end
     methods 
-        function obj = J_Function_model(ProductionSystem)
+        function Initialise(obj, ProductionSystem)
             K = ProductionSystem.Reservoir.K(:,1);
             por = ProductionSystem.Reservoir.Por;
             obj.PorPermTerm = (por./K).^(0.5);

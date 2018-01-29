@@ -10,6 +10,8 @@ classdef  No_Pc_model < capillary_pressure_model
     properties
     end
     methods 
+        function Initialise(obj, ProductionSystem)
+        end
         function Pc = ComputePc(obj, S)
             %Compute Pc and dPc analytically
             Pc = zeros(length(S), 1); 

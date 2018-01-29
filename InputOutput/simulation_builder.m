@@ -163,7 +163,7 @@ classdef simulation_builder < handle
                         case ('Constant')
                             prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
                         otherwise
-                            prolongationbuilder = prolongation_builder_MSPressure(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1) );
+                            prolongationbuilder = prolongation_builder_MSPressure(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
                             if ~obj.SimulationInput.FracturesProperties.Fractured
                                 prolongationbuilder.BFUpdater = bf_updater_ms();
                             else
@@ -267,20 +267,22 @@ classdef simulation_builder < handle
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
                     % This is for DLGR type ADM: it reads coarse permeabilities
-                    K_coarse = cell(obj.SimulatorSettings.ADMSettings.maxLevel + 1, 1);
-                    K_coarse{1} = K;
-                    for l=2:obj.SimulatorSettings.ADMSettings.maxLevel + 1
-                        for d=1:2
-                            % load the file in a vector
-                            field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{l-1,d});
-                            % reshape it to specified size
-                            k = field(4:end)*1e-15;
-                            K_coarse{l}(:, d) = k;
+                    if obj.SimulatorSettings.ADMSettings.DLGR
+                        K_coarse = cell(obj.SimulatorSettings.ADMSettings.maxLevel + 1, 1);
+                        K_coarse{1} = K;
+                        for l=2:obj.SimulatorSettings.ADMSettings.maxLevel + 1
+                            for d=1:2
+                                % load the file in a vector
+                                field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{l-1,d});
+                                % reshape it to specified size
+                                k = field(4:end)*1e-15;
+                                K_coarse{l}(:, d) = k;
+                            end
+                            K_coarse{l}(:, 3) = k;
                         end
-                        K_coarse{l}(:, 3) = k;
+                        % Save them in ProductionSystem.
+                        Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
                     end
-                    % Save them in ProductionSystem.
-                    Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
                 otherwise
             end
             % Add reservoir to production system            
@@ -492,7 +494,7 @@ classdef simulation_builder < handle
             %% Capillary pressure model
             switch (obj.SimulationInput.FluidProperties.Capillarity.name)
                 case('JLeverett')
-                    FluidModel.CapillaryModel = J_Function_model(ProductionSystem);
+                    FluidModel.CapillaryModel = J_Function_model();
                     FluidModel.WettingPhaseIndex = obj.SimulationInput.FluidProperties.Capillarity.wetting;
                 case('Linear')
                     FluidModel.CapillaryModel = 'Not implemented';
