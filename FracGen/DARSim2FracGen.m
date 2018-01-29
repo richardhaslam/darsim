@@ -9,9 +9,6 @@
 
 function FracGenerator = DARSim2FracGen(Directory, File)
 clc;
-% Example of Directory and File
-% ImmDirectory = '../Input/ImmHomo'
-% ImmFile = 'ImmHomo';
 
 % Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');

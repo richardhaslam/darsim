@@ -14,8 +14,8 @@ classdef Reservoir_Simulator < handle
         Writer
     end
     methods
-        function obj = Reservoir_Simulator(Directory, File)
-            obj.Reader = reader_darsim2(Directory, File);
+        function obj = Reservoir_Simulator(Directory, File, PermDirectory)
+            obj.Reader = reader_darsim2(Directory, File, PermDirectory);
             obj.Builder = simulation_builder();
             obj.Simulation = Reservoir_Simulation();
         end
@@ -32,12 +32,16 @@ classdef Reservoir_Simulator < handle
             disp(['Lx: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Length), ' m']);
             disp(['Ly: ', num2str(obj.Simulation.ProductionSystem.Reservoir.Width), ' m']);
             disp(['Thickness:  ', num2str(obj.Simulation.ProductionSystem.Reservoir.Thickness), ' m']);
-            disp(['Grid: ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nx), ' x ',  num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Ny), ' x ', num2str(obj.Simulation.DiscretizationModel.ReservoirGrid.Nz)]);
+            Nx = obj.Simulation.DiscretizationModel.ReservoirGrid.Nx;
+            Ny = obj.Simulation.DiscretizationModel.ReservoirGrid.Ny;
+            Nz = obj.Simulation.DiscretizationModel.ReservoirGrid.Nz;
+            disp(['Grid: ', num2str(Nx), ' x ',  num2str(Ny), ' x ', num2str(Nz), ' = ', num2str(Nx*Ny*Nz)]);
             disp('---------------------------------------------------------');
             if obj.Builder.SimulationInput.FracturesProperties.Fractured
                 for f = 1:obj.Simulation.DiscretizationModel.FracturesGrid.Nfrac
-                    fprintf('Fracture %2d: Grid= %3.0f x %3.0f\n', f, ...
-                        obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx, obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny)
+                    Nx = obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx;
+                    Ny = obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny;
+                    fprintf('Fracture %2d: Grid= %3.0f x %3.0f = %3.0f\n', f, Nx, Ny, Nx*Ny);
                 end
                 fprintf('Total fracture grids: %3.0f\n', sum(obj.Simulation.DiscretizationModel.FracturesGrid.N));
                 disp('---------------------------------------------------------');

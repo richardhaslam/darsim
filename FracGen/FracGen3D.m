@@ -25,7 +25,7 @@ Frac_Input = obj.Builder.FracInput;
 almostZero = obj.Simulation.Reservoir.almostZero;
 
 Frac = fractures_mousa();
-
+Nt = 0;
 %% Reporting ADM status of FracGen
 
 %% Fractures Construction with Geometry Input
@@ -224,16 +224,18 @@ for F = 1 : size(Frac_Input,2)
         end
         
         % Reporting fracture properties:
-        fprintf('Fracture %2d: Dimension= %5.2f x %5.2f [m2] , Grid= %3.0fx%3.0f , ADM lvl= %1.0f\n', ...
-        f, Frac(f).Length_AB, Frac(f).Width_AD, Frac(f).N_Length_AB, Frac(f).N_Width_AD, Frac(f).ADM(1)*Frac(f).ADM(2) );
+        fprintf('Fracture %2d: Dimension= %5.2f x %5.2f [m2] , Grid= %3.0f x %3.0f = %4.0f , ADM lvl= %1.0f\n', ...
+        f, Frac(f).Length_AB, Frac(f).Width_AD, Frac(f).N_Length_AB, Frac(f).N_Width_AD, Frac(f).N_Length_AB*Frac(f).N_Width_AD, Frac(f).ADM(1)*Frac(f).ADM(2) );
         
+        Nt = Nt + Frac(f).N_Length_AB*Frac(f).N_Width_AD;
     end
 end
 % Row-wise to column-wise
 Frac = Frac';
 %
 fprintf('\n');
-disp( ['Total number of fractures: ', num2str( length(Frac) ) ] );
+fprintf('Total number of fractures: %3.0f\n',length(Frac));
+fprintf('Total number of fractures cells: %3.0f\n',Nt);
 fprintf('---------------------------------------------------------\n');
 
 %% Plotting fracture plates
@@ -308,6 +310,7 @@ for f = 1 : length(Frac)
     Frac(f).  intersectCoord_fracObj = cell( length(Frac) , 1 );           % Coordinates of intersections between each two whole fracture plates
     Frac(f).            Overlap_frac = cell( length(Frac) , 1 );           % Overlap status of fracture f cells due to intersection with fracture g
 end
+%return;
 %% Intersections of fracture plates with each other (if any)
 fprintf('Obtaining the intersection of fracture plates ...\n');
 dummy = LX*10;                                                             % A dummy value (an abnormal value)
@@ -686,9 +689,10 @@ for f = 1 : length(Frac)
     
 end % End of main fracture for-loop
 fprintf('---------------------------------------------------------\n');
-
+%load 'D:\SURFdrive\Simulation\DARSim2\Input_Desktop_Dell\ImmHomo\FracGen_3D_Workspace_Temp_All.mat';
 %% Intersections of fracture cells of distinct fractures with each other (if any)
 fprintf('Obtaining fracture - fracture connectivities:\n');
+almostZero = almostZero * 10;
 for f = 1 : length(Frac)
     for g = f+1 : length(Frac)
         % Finding the intersections between the cells of distinct fractures
@@ -791,7 +795,6 @@ for f = 1 : length(Frac)
                             
                             [ Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} , Frac(f).aveDist_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} , Collinearity1 ] = ...
                                 Line_Plane_Connectivity_3D( Plane_fracCell_1 , intersectCoord_fracCell_final(:,1) , intersectCoord_fracCell_final(:,2) , almostZero );
-                            
                             [ Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} , Frac(g).aveDist_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} , Collinearity2 ] = ...
                                 Line_Plane_Connectivity_3D( Plane_fracCell_2 , intersectCoord_fracCell_final(:,1) , intersectCoord_fracCell_final(:,2) , almostZero );
                             

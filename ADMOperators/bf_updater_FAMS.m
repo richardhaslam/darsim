@@ -21,12 +21,12 @@ classdef bf_updater_FAMS < bf_updater_ms
             End = FineGrid(1).N;
             obj.Amedia{1} = obj.MediumPressureSystem(FineGrid(1), Km, Mob(Start:End,:));
             obj.A = obj.Amedia{1};
-            obj.AddWellsToPressureMatrix(ProductionSystem.Wells, Km, Mob(Start:End,:), FineGrid(1).N)
+            obj.AddWellsToPressureMatrix(ProductionSystem.Wells, Km, Mob(Start:End,:), FineGrid(1).N);
             % Fractures
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Start = End + 1;
                 End = Start + FineGrid(1+f).N - 1;
-                Kf = ProductionSystem.FracturesNetwork.Fractures(f).K*obj.MaxContrast^2;
+                Kf = ProductionSystem.FracturesNetwork.Fractures(f).K;
                 obj.Amedia{1+f} = obj.MediumPressureSystem(FineGrid(1+f), Kf, Mob(Start:End,:));
                 obj.A = blkdiag(obj.A, obj.Amedia{1+f});
             end

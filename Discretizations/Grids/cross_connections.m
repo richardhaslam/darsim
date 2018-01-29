@@ -3,6 +3,7 @@ classdef cross_connections < handle
     %   Detailed explanation goes here
     properties
         Cells
+        ConnIndex
         T_Geo
         UpWind
         U_Geo

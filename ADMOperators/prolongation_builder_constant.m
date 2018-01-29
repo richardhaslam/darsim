@@ -8,6 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_constant < prolongation_builder
     properties
+        Pdelta
+        Pdeltac
     end
     methods
         function obj = prolongation_builder_constant(n)

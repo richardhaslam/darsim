@@ -14,11 +14,22 @@ well = well + 1;
 figure(1)
 title('Prod ph1');
 plot(Ph1_prod(:,1), Ph1_prod(:,well), color);
+legend('FS','ADM','UPS')
 hold on
+
 figure(2)
-title('Prod ph2');
+title('Brine Production');
 plot(Ph2_prod(:,1), Ph2_prod(:,well), color);
+xlabel('Days')
+ylabel('PV production')
+%legend('FS','ADM','UPS')
+[hleg1, hobj1] = legend('FS','ADM','UPS');
+textobj = findobj(hobj1, 'type', 'text');
+set(textobj, 'Interpreter', 'latex', 'fontsize', 15);
 hold on
+
+
+
 % figure(3)
 % title('Prod comp1');
 % plot(Comp1_prod(:,1), Comp1_prod(:,end), color);

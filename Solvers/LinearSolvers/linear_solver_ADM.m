@@ -12,6 +12,7 @@ classdef linear_solver_ADM < linear_solver
         P
         Smooth = 0
         OperatorsAssembler
+        DLGR = false
     end
     methods
         function obj = linear_solver_ADM(name, tol, maxit)
@@ -20,9 +21,14 @@ classdef linear_solver_ADM < linear_solver
         function SetUp(obj, ProductionSystem, DiscretizationModel, Residual)
             % Get ADM Operators
             [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel, ProductionSystem, Residual);
+            % Modify permeability field (for upscaling option)
+            if obj.DLGR
+                DiscretizationModel.ModifyPerm(ProductionSystem); 
+            end            
             
-            % modify permeability field to use upscaled perm.
-            
+            % Display the number of active grids
+            fprintf('Number of ADM Active Grids: %1.0f (%2.2f Percent of nodes)\n', ...
+                    DiscretizationModel.ADMGrid.Ntot, 100*DiscretizationModel.ADMGrid.Ntot/DiscretizationModel.GlobalGrids(1).N);
         end
         function xf = Solve(obj, A, rhs)
             % Restrict system
@@ -76,5 +82,6 @@ classdef linear_solver_ADM < linear_solver
                 end
             end
         end
+        
     end
 end

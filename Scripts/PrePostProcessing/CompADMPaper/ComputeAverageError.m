@@ -10,6 +10,7 @@ Av_nodes = zeros(5, 3, 20);
 max_nodes = zeros(5, 3, 20);
 min_nodes = zeros(5, 3, 20);
 MaxTimeStep=10;
+
 for i = 1:5
     disp(Angle(i,:));
     for j=1:20

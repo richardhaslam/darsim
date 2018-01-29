@@ -14,6 +14,7 @@ classdef producer < handle
         qv % total volumetric rate
         QPhases
         QComponents
+        Qh % enthalpy flux
         PI
         BHPDepth
     end
