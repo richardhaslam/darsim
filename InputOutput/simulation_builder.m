@@ -115,40 +115,44 @@ classdef simulation_builder < handle
                 n_phases = obj.SimulationInput.FluidProperties.NofPhases;
                 fprintf('---> Fracture ');
                 for f = 1 : NrOfFrac
-                    if (f>1),  fprintf(repmat('\b', 1, 6));  end
-                    fprintf('%02d/%02d\n',f,NrOfFrac);
+                    if (f>1),  fprintf(repmat('\b', 1, 5+27));  end
+                    fprintf('%02d/%02d',f,NrOfFrac);
                     % looping over all global fracture cells
-                    for If = 1:length(frac_cell_index)
-                        fracCell_info_split = strsplit(FractureMatrix{frac_cell_index(If)},{' ','	'});
+					fprintf(' ---> Grid cell ');
+                    for If = 1:Nf(f)
+						if (If>1),  fprintf(repmat('\b', 1, 11));  end
+						fprintf('%05d/%05d',If,Nf(f));
+                        fracCell_info_split = strsplit(FractureMatrix{frac_cell_index(sum(Nf(1:f-1))+If)},{' ','	'});
                         
                         % frac-marix conn
-                        temp = frac_rockConn_index - frac_cell_index(If); temp(temp<0) = max(temp) +1;
+                        temp = frac_rockConn_index - frac_cell_index(sum(Nf(1:f-1))+If); temp(temp<0) = max(temp) +1;
                         [~ , frac_rockConn_index_start] = min(temp);
                         for Im = 1:str2double(fracCell_info_split{3})
                             frac_rockConn_info_split = strsplit(FractureMatrix{frac_rockConn_index(frac_rockConn_index_start+Im-1)},{' ','	'});
-                            CrossConnections(If,1).Cells(Im,1) = str2double(frac_rockConn_info_split{2})+1;
-                            CrossConnections(If,1).ConnIndex(Im,1) = str2double(frac_rockConn_info_split{3});
+                            CrossConnections(sum(Nf(1:f-1))+If,1).Cells(Im,1) = str2double(frac_rockConn_info_split{2})+1;
+                            CrossConnections(sum(Nf(1:f-1))+If,1).ConnIndex(Im,1) = str2double(frac_rockConn_info_split{3});
                         end
                         
                         % frac-frac conn
-                        temp = frac_fracConn_index - frac_cell_index(If); temp(temp<0) = max(temp)+1;
+                        temp = frac_fracConn_index - frac_cell_index(sum(Nf(1:f-1))+If); temp(temp<0) = max(temp)+1;
                         [~ , frac_fracConn_index_start] = min(temp);
                         
                         Counter = 1;
                         for Ig = 1:str2double(fracCell_info_split{5})
                             frac_fracConn_info_split = strsplit(FractureMatrix{frac_fracConn_index(frac_fracConn_index_start+Ig-1)},{' ','	'});
                             If_Other_Global = Nm + sum( Nf( 1 : str2double(frac_fracConn_info_split{2}) +1-1 ) ) + str2double(frac_fracConn_info_split{3})+1;
-                            if If_Other_Global > If + Nm
-                                CrossConnections(If,1).Cells(Im+Counter,1) = If_Other_Global;
-                                CrossConnections(If,1).ConnIndex(Im+Counter,1) = str2double(frac_fracConn_info_split{4});
+                            if If_Other_Global > sum(Nf(1:f-1))+If + Nm
+                                CrossConnections(sum(Nf(1:f-1))+If,1).Cells(Im+Counter,1) = If_Other_Global;
+                                CrossConnections(sum(Nf(1:f-1))+If,1).ConnIndex(Im+Counter,1) = str2double(frac_fracConn_info_split{4});
                                 Counter = Counter + 1;
                             end
                         end
-                        CrossConnections(If,1).UpWind = zeros(length(CrossConnections(If,1).Cells), n_phases);
-                        CrossConnections(If,1).U_Geo = zeros(length(CrossConnections(If,1).Cells), n_phases);
-                        CrossConnections(If,1).T_Geo = zeros(size(CrossConnections(If,1).ConnIndex));
+                        CrossConnections(sum(Nf(1:f-1))+If,1).UpWind = zeros(length(CrossConnections(sum(Nf(1:f-1))+If,1).Cells), n_phases);
+                        CrossConnections(sum(Nf(1:f-1))+If,1).U_Geo = zeros(length(CrossConnections(sum(Nf(1:f-1))+If,1).Cells), n_phases);
+                        CrossConnections(sum(Nf(1:f-1))+If,1).T_Geo = zeros(size(CrossConnections(sum(Nf(1:f-1))+If,1).ConnIndex));
                     end
                 end
+				fprintf('\n');
             end
             
             %% 2. Define your discretization Model (choose between FS and ADM)

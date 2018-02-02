@@ -368,8 +368,8 @@ fprintf('---------------------------------------------------------\n');
 fprintf('Obtaining fractures - matrix overlaps:\n',f);
 fprintf('---> Fracture ');
 for f = 1 : length(Frac)
-    if (f>1),  fprintf(repmat('\b', 1, 6));  end
-    fprintf('%02d/%02d\n',f,length(Frac));
+    if (f>1),  fprintf(repmat('\b', 1, 5+27));  end
+    fprintf('%02d/%02d',f,length(Frac));
     Frac(f).  intersectCoord_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Coordinates of intersections between each fracture cell and each matrix cell
     Frac(f).        areaFrac_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Area fraction of each fracture cell inside each matrix cube
     Frac(f).         aveDist_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Average distance between each fracture cell and each matrix cube
@@ -381,10 +381,12 @@ for f = 1 : length(Frac)
     Frac(f).          T_Geo_fracCell = cell( length(Frac) , 1 );                             % Geometrical Transmissibility between each two non-neighboring fracture cells of distinct fracture plates
     Frac(f).      NumOf_fracCellConn = zeros( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1);   % Number of non-neighboring fracture cells connections
     
+	fprintf(' ---> Grid cell ');
     for j_f = 1 : Frac(f).N_Width_AD
         for i_f = 1 : Frac(f).N_Length_AB
-            
             If = Index_Fracture_2D( Frac(f).N_Length_AB , Frac(f).N_Width_AD , i_f , j_f );
+			if (If>1),  fprintf(repmat('\b', 1, 11));  end
+			fprintf('%05d/%05d',If,Frac(f).N_Length_AB*Frac(f).N_Width_AD);
             Index_matIntersect = 0;
             
             % The matrix cell closest to fracture cell for the first intersection check
@@ -688,8 +690,7 @@ for f = 1 : length(Frac)
     end % End of fractre 2nd for-loop
     
 end % End of main fracture for-loop
-fprintf('---------------------------------------------------------\n');
-%load 'D:\SURFdrive\Simulation\DARSim2\Input_Desktop_Dell\ImmHomo\FracGen_3D_Workspace_Temp_All.mat';
+fprintf('\n---------------------------------------------------------\n');
 %% Intersections of fracture cells of distinct fractures with each other (if any)
 fprintf('Obtaining fracture - fracture connectivities:\n');
 almostZero = almostZero * 10;

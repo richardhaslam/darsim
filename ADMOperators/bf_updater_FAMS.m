@@ -40,8 +40,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                 obj.A(i,i) = obj.A(i,i) + sum(T_Geo.* Mobt(j));
                 obj.A(j,i) = obj.A(j,i) - T_Geo.* Mobt(i);
                 obj.A(sub2ind(size(obj.A), j, j)) = obj.A(sub2ind(size(obj.A), j, j)) + T_Geo.* Mobt(i);
-            end
-            
+            end 
         end
         function [MsP, MsC] = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
             % Prolongation operator for fractured reservoir (de-coupled)
@@ -60,7 +59,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                         [P, C]= obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(i));
                         %obj.Amedia{i} = P' * obj.Amedia{i} * P;
                         MsP = blkdiag(MsP, G'*P);
-                        if i==1
+                        if i==1 && ~isempty(MsC)
                             MsC = blkdiag(MsC, G'*C*G);
                         end
                     end

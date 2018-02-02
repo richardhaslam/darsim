@@ -51,11 +51,11 @@ classdef Fracture_Generator < handle
             end
             disp( '---------------------------------------------------------' );
             % Write initial state on a file
-            obj.Writer = Plot_VTK(strcat(obj.Reader.Directory,'Output'), 'EDFM_3D');
+            obj.Writer = Plot_VTK(strcat(obj.Reader.Directory,'/Output'), 'EDFM_3D');
             obj.Writer.PlotSolution(obj.Simulation);
         end
         function OutputResults(obj)
-            Output_File = strcat(obj.Reader.Directory,'Fracture_Output.txt');
+            Output_File = strcat(obj.Reader.Directory,'/Fracture_Output.txt');
             Fracture_Writer(Output_File, obj);
         end
     end
