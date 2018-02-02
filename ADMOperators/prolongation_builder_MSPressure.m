@@ -33,6 +33,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             obj.P = cell(maxLevel(1), 1);
             % Build Pressure system
             obj.BFUpdater.ConstructPressureSystem(ProductionSystem, FluidModel, FineGrid, CrossConnections);
+            % Printing BF type on console
             if isprop(obj.BFUpdater,'BFtype')
                 fprintf(char(strcat({'The Basis Functions are '},obj.BFUpdater.BFtype,'.\n')));
             end
