@@ -100,7 +100,7 @@ classdef bf_updater < handle
                            Edges    ;...
                            Mvv     ];
                     % 8. Correction functions
-                    % MsC = [];
+                    MsC = [];
 % Old version was slower
 %                     start2 = tic;
 %                     Mii_inv = Mii^-1;

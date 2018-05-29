@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 8 November 2016
-%Last modified: 8 November 2016
+%Last modified: 29 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef initializer < handle
     properties
@@ -17,9 +17,11 @@ classdef initializer < handle
             obj.VarValues = values;
         end
         function InitializeProductionSystem(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
-            % Initialize Reservoir state           
+            % Initialise state           
             % 1. Assign initial values 
             ProductionSystem.AssignInitialState(obj.VarNames, obj.VarValues);
+            % Initialise capillary model
+            FluidModel.CapillaryModel.Initialise(ProductionSystem);
             
             % 2. Compute initial phase and component distribution
             ProductionSystem.Reservoir.State.T = ProductionSystem.Reservoir.Temp; % For now it's fine like this

@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef relperm_model_quadratic < relperm_model
     properties
-        n = [1, 1]
+        n = [2, 2]
     end
     methods
         function kr = ComputeRelPerm(obj, Phases, s)

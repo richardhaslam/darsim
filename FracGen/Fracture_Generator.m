@@ -33,7 +33,8 @@ classdef Fracture_Generator < handle
                 disp( ['Grid  : ', num2str(obj.Simulation.Reservoir.NX), ' x ',  num2str(obj.Simulation.Reservoir.NY)] );
             elseif obj.Simulation.Domain == '3D'
                 disp( ['Depth : ', num2str(obj.Simulation.Reservoir.LZ), ' [m]'] );
-                disp( ['Grid  : ', num2str(obj.Simulation.Reservoir.NX), ' x ',  num2str(obj.Simulation.Reservoir.NY), ' x ', num2str(obj.Simulation.Reservoir.NZ)] );
+                disp( ['Grid  : ', num2str(obj.Simulation.Reservoir.NX), ' x ',  num2str(obj.Simulation.Reservoir.NY), ' x ', num2str(obj.Simulation.Reservoir.NZ),...
+                      ' = ', num2str(obj.Simulation.Reservoir.NX*obj.Simulation.Reservoir.NY*obj.Simulation.Reservoir.NZ)] );
             else
                 Error( 'The Domain (2D or 3D) is not mentioned correctly in the input file! Is there a typo?' );
             end
@@ -50,11 +51,11 @@ classdef Fracture_Generator < handle
             end
             disp( '---------------------------------------------------------' );
             % Write initial state on a file
-            % obj.Writer = Plot_VTK('Output/', 'EDFM_3D');
-            % obj.Writer.PlotSolution(obj.Simulation);
+            obj.Writer = Plot_VTK(strcat(obj.Reader.Directory,'/Output'), 'EDFM_3D');
+            obj.Writer.PlotSolution(obj.Simulation);
         end
         function OutputResults(obj)
-            Output_File = '../FracGen_IO/Fracture_Output.txt';
+            Output_File = strcat(obj.Reader.Directory,'/Fracture_Output.txt');
             Fracture_Writer(Output_File, obj);
         end
     end
