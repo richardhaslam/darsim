@@ -1,7 +1,7 @@
 %%% Run simulations %%%
 %disp('Run 1D')
 % DARSim2ResSim('../Input/SATINTERPOLATOR/Homogeneous_1D/Small_dt/Homo1D_fs/','ImmHomo.txt');
-DARSim2ResSim('../Input/SATINTERPOLATOR/Homogeneous_1D/Small_dt/Homo1D_adm_dfdt/','ImmHomo.txt');
+DARSim2ResSim('../Input/SATINTERPOLATOR/Homogeneous_1D/Small_dt/Homo1D_adm_dfdt/','ImmHomo.txt', '../Permeability/');
 % DARSim2ResSim('../Input/SATINTERPOLATOR/Homogeneous_1D/Small_dt/Homo1D_adm_dfdx/','ImmHomo.txt');
 
 % DARSim2ResSim('../Input/SATINTERPOLATOR/Homogeneous_1D/Large_dt/Homo1D_fs/','ImmHomo.txt');

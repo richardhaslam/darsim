@@ -118,22 +118,22 @@ classdef reader_darsim2 < reader
                 end
             end
             %%%% UPSCALING LEVEL PERM UPSCALING %%%%%%%
-            % level 1
-            temp = strfind(obj.InputMatrix, 'PERM_X1');
-            perm(1) = find(~cellfun('isempty', temp));
-            temp = strfind(obj.InputMatrix, 'PERM_Y1');
-            perm(2) = find(~cellfun('isempty', temp));
-            for i=1:2
-                ReservoirProperties.CoarsePermFile{1, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
-            end
-            % level 2
-            temp = strfind(obj.InputMatrix, 'PERM-X2');
-            perm(1) = find(~cellfun('isempty', temp));
-            temp = strfind(obj.InputMatrix, 'PERM-Y2');
-            perm(2) = find(~cellfun('isempty', temp));
-            for i=1:2
-                ReservoirProperties.CoarsePermFile{2, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
-            end
+%             % level 1
+%             temp = strfind(obj.InputMatrix, 'PERM_X1');
+%             perm(1) = find(~cellfun('isempty', temp));
+%             temp = strfind(obj.InputMatrix, 'PERM_Y1');
+%             perm(2) = find(~cellfun('isempty', temp));
+%             for i=1:2
+%                 ReservoirProperties.CoarsePermFile{1, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
+%             end
+%             % level 2
+%             temp = strfind(obj.InputMatrix, 'PERM-X2');
+%             perm(1) = find(~cellfun('isempty', temp));
+%             temp = strfind(obj.InputMatrix, 'PERM-Y2');
+%             perm(2) = find(~cellfun('isempty', temp));
+%             for i=1:2
+%                 ReservoirProperties.CoarsePermFile{2, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
+%             end
             
             % 4. Porosity 
             temp = strfind(obj.InputMatrix, 'POR');
