@@ -520,9 +520,12 @@ classdef reader_darsim2 < reader
                 end
                 
                 % MMs settings in fractures
-                if obj.Fractured
-                    for f = 1 : SimulationInput.FracturesProperties.NrOfFrac
-                        frac_info_split = strsplit(obj.FractureMatrix{1}{frac_index(f)},' ');
+                if SimulationInput.FracturesProperties.Fractured
+                    NrOfFrac = SimulationInput.FracturesProperties.NrOfFrac;
+                    temp = strfind(obj.FractureMatrix, 'PROPERTIES');
+                    frac_index = find(~cellfun('isempty', temp));
+                    for f = 1 : NrOfFrac
+                        frac_info_split = strsplit(obj.FractureMatrix{frac_index(f)},' ');
                         MMs_temp = regexprep(frac_info_split{9},' ' ,'');
                         MMs_temp = strsplit(MMs_temp, { '[' , ',' , ']' });
                         MMs_temp = [ str2double(MMs_temp(2)) , str2double(MMs_temp(3)) , str2double(MMs_temp(4)) , str2double(MMs_temp(5)) ];

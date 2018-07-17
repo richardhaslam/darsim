@@ -182,14 +182,14 @@ classdef builder_frac < handle
         end
         
         function Simulation = BuildSimulation(obj, inputMatrix)
-            Simulation = simulation_mousa();
+            Simulation = simulation_FracGen();
             Simulation.Reservoir = obj.BuildReservoir(inputMatrix);
             Simulation.Fractures = obj.BuildFractures(inputMatrix);
             Simulation.Domain = inputMatrix{1}{obj.dim+1};
         end
         
         function Reservoir = BuildReservoir(obj, inputMatrix)
-            Reservoir = reservoir_mousa();
+            Reservoir = reservoir_FracGen();
             Reservoir.LX = str2double( inputMatrix{1}{obj.size+1} );
             Reservoir.LY = str2double( inputMatrix{1}{obj.size+2} );
             Reservoir.LZ = str2double( inputMatrix{1}{obj.size+3} );
@@ -202,7 +202,7 @@ classdef builder_frac < handle
         end
         
         function Fractures = BuildFractures(obj, inputMatrixLX)
-            Fractures = fractures_mousa();       
+            Fractures = fractures_FracGen();       
         end
     end
 end

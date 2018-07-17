@@ -21,10 +21,13 @@ classdef bf_updater_ms < bf_updater
         end
         function A_Medium = MediumPressureSystem(obj, FineGrid, K, Mob)
             % Remove high contrast to avoid spikes
-            lambdaMax = max(K(:,1));
-            K(K(:,1)./lambdaMax < obj.MaxContrast, 1) = obj.MaxContrast * lambdaMax;
-            K(K(:,2)./lambdaMax < obj.MaxContrast, 2) = obj.MaxContrast * lambdaMax;
-            K(K(:,3)./lambdaMax < obj.MaxContrast, 3) = obj.MaxContrast * lambdaMax;
+            % If MaxContrast is intentially set to 0, avoid this step
+            if obj.MaxContrast ~=0
+                lambdaMax = max(K(:,1));
+                K(K(:,1)./lambdaMax < obj.MaxContrast, 1) = obj.MaxContrast * lambdaMax;
+                K(K(:,2)./lambdaMax < obj.MaxContrast, 2) = obj.MaxContrast * lambdaMax;
+                K(K(:,3)./lambdaMax < obj.MaxContrast, 3) = obj.MaxContrast * lambdaMax;
+            end
             
             % Initialize local variables
             Nx = FineGrid.Nx;

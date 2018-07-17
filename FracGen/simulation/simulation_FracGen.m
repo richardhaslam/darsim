@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 17 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef simulation_mousa
+classdef simulation_FracGen
     properties
         Domain
         Reservoir

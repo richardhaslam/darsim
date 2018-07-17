@@ -152,6 +152,7 @@ classdef simulation_builder < handle
                         CrossConnections(sum(Nf(1:f-1))+If,1).T_Geo = zeros(size(CrossConnections(sum(Nf(1:f-1))+If,1).ConnIndex));
                     end
                 end
+                fprintf(' ---> Completed');
 				fprintf('\n');
             end
             
@@ -212,7 +213,7 @@ classdef simulation_builder < handle
                     % Create the operatorshandler
                     operatorshandler = operators_handler_MMs(MMsSettings.Coarsening(1,:,:));
                     prolongationbuilder = prolongation_builder_MSPressure(MMsSettings.maxLevel(1), MMsSettings.Coarsening(:,:,1) );
-                    if ~obj.Fractured
+                    if ~obj.SimulationInput.FracturesProperties.Fractured
                         prolongationbuilder.BFUpdater = bf_updater_ms();
                     else
                         prolongationbuilder.BFUpdater = bf_updater_FAMS();
@@ -257,11 +258,25 @@ classdef simulation_builder < handle
             for i=1:3
                 if obj.SimulationInput.ReservoirProperties.PermInclude(i)
                     % load the file in a vector
-                    field = load(obj.SimulationInput.ReservoirProperties.PermFile{i});
+                    if i==1
+                        fprintf('\n---> Reading permeability file #%d ...',i);
+                        field = load(obj.SimulationInput.ReservoirProperties.PermFile{i});
+                        fprintf(' ---> Completed.\n');
+                    else
+                        % loading the permeability file only if different
+                        % than previous one
+                        if ~strcmp(obj.SimulationInput.ReservoirProperties.PermFile{i},obj.SimulationInput.ReservoirProperties.PermFile{i-1})
+                            fprintf('---> Reading permeability file #%d ...',i);
+                            field = load(obj.SimulationInput.ReservoirProperties.PermFile{i});
+                            fprintf(' ---> Completed.\n');
+                        end
+                    end
                     % reshape it to specified size
                     field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
                     % make it the size of the grid
-                    K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
+                    %K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
+                    % In case the data is in logarithmic scale
+                    K(:,i) = reshape(2.^field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
                 else
                     value = obj.SimulationInput.ReservoirProperties.Perm(i);
                     K(:, i)= K(:,i) * value;
@@ -643,7 +658,7 @@ classdef simulation_builder < handle
                         case ('MMs')
                             pressuresolver.LinearSolver = linear_solver_MMs(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
-                            pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
+                            pressuresolver.LinearSolver.MSFE = obj.SimulatorSettings.MMsSettings.MSFE;
                         otherwise
                             pressuresolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                     end

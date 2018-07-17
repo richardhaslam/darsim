@@ -1,12 +1,12 @@
-% Fracture system
+% class fracturers for DARSim2FracGen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
+%Author: Mousa HosseiniMehr
 %TU Delft
-%Created: 12 July 2016
-%Last modified: 12 July 2016
+%Created: 2016-07-12
+%Last modified: 2017-03-01
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef fractures_mousa < handle
+classdef fractures_FracGen < handle
     properties
         Length_AB
         Width_AD
@@ -55,6 +55,4 @@ classdef fractures_mousa < handle
         NumOf_fracCellConn
         StarDelta2D_Neighbor
     end
-    
-    
 end

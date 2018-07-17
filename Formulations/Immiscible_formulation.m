@@ -278,6 +278,28 @@ classdef Immiscible_formulation < formulation
                 %Jacobian_noconn = vertcat(Jacobian_noconn, Jphnoconn{i});
             end
         end
+        function Residual = ImproveStaticMultilevelPressureGuess(obj, ProductionSystem, FluidModel, DiscretizationModel)
+            FineGrid = DiscretizationModel.FineGrid;
+            CoarseGrid = DiscretizationModel.CoarseGrid;
+            CrossConnections = DiscretizationModel.CrossConnections;
+            
+            % Obtaining deltaP to improve the initial guess due to including of well functions in
+            % static multilevel method
+            [deltaP_w , Residual] = DiscretizationModel.OperatorsHandler.ProlongationBuilders.StaticMultilevelPressureGuess(ProductionSystem, FluidModel, FineGrid, CoarseGrid, CrossConnections);
+            
+            % Updating the intitial guess for matrix
+            Nm = DiscretizationModel.ReservoirGrid.N;
+            Pm = ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]);
+            Pm.update(deltaP_w(1:Nm));
+            % Update Phase Densities
+            FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
+            % Update total density
+            FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
+            if obj.NofPhases > 1
+            % Update Pc
+                FluidModel.ComputePc(ProductionSystem.Reservoir.State);
+            end
+        end
         function delta = UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
             if sum(isnan(delta))
                 % if the solution makes no sense, skip this step
@@ -364,6 +386,8 @@ classdef Immiscible_formulation < formulation
             Mupx = reshape(Mupx, Nx, Ny, Nz);
             Mupy = reshape(Mupy, Nx, Ny, Nz);
             Mupz = reshape(Mupz, Nx, Ny, Nz);
+            
+            % Transmisibility Matrix
             Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
             Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
             Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
@@ -382,7 +406,6 @@ classdef Immiscible_formulation < formulation
             Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt.x(2:Grid.Nx,:,:);
             Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt.y(:,2:Grid.Ny,:);
             Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt.z(:,:,2:Grid.Nz);
-            
             % Construct matrix
             x1 = reshape(Tx(1:Nx,:,:), N, 1);
             x2 = reshape(Tx(2:Nx+1,:,:), N, 1);

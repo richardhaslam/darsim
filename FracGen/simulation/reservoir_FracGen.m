@@ -1,12 +1,12 @@
-% Reservoir 
+% class reservoir for DARSim2FracGen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
+%Author: Matteo Cusini & Mousa HosseiniMehr
 %TU Delft
-%Created: 4 July 2016
-%Last modified: 14 July 2016
+%Created: 2016-07-04
+%Last modified: 2017-03-01
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef reservoir_mousa < handle
+classdef reservoir_FracGen < handle
     properties
         LX
         LY

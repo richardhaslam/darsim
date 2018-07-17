@@ -6,37 +6,45 @@
 % Modified on: 2017-03-17
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Frac = FracGen3D(obj)
-
+%% Assigning reservoir properties
+% Dimensions of Reservoir in each direction
 LX = obj.Simulation.Reservoir.LX;
 LY = obj.Simulation.Reservoir.LY;
 LZ = obj.Simulation.Reservoir.LZ;
+% Number of reservoir grid cells in each direction
 NX = obj.Simulation.Reservoir.NX;
 NY = obj.Simulation.Reservoir.NY;
 NZ = obj.Simulation.Reservoir.NZ;
+% Coordinates of reservoir cell centers in each direction
 Xcm = obj.Simulation.Reservoir.Xcm;
 Ycm = obj.Simulation.Reservoir.Ycm;
 Zcm = obj.Simulation.Reservoir.Zcm;
+% Coordinates of reservoir grid nodes in each direction
 Xim = obj.Simulation.Reservoir.Xim;
 Yim = obj.Simulation.Reservoir.Yim;
 Zim = obj.Simulation.Reservoir.Zim;
 
+%% Reading fractures input
 Frac_Input = obj.Builder.FracInput;
 
+% The level of accuracy for distance comparison between the points is not
+% zero, but a value close to zero (almost zero). This is needed because of
+% machine's non-zero accuracy
 almostZero = obj.Simulation.Reservoir.almostZero;
 
-Frac = fractures_mousa();
-Nt = 0;
-%% Reporting ADM status of FracGen
+Frac = fractures_FracGen(); % Defining "Frac" as 
+
+Nt = 0; % Initializing total number of fracture grids
 
 %% Fractures Construction with Geometry Input
 f = 0;
 for F = 1 : size(Frac_Input,2)
-    if Frac_Input(F).isActive == 1
+    % "F" is counter for all the fractures in the input file (whether
+    % active or not), but "f" is the counter for all the active fractures.
+    if Frac_Input(F).isActive
             f = f + 1;
-
-            if isnan( Frac_Input(F).CenterCoord(1) )
-                % Fractures construction with three Points input type
-
+            if isnan( Frac_Input(F).CenterCoord(1) ) % Fractures construction with three Points input type
+                
                 % The three vectors connecting 3 corners of the fracture plate (forming a triangle)
                 Vec12 = Frac_Input(F).CornerCoords(:,2) - Frac_Input(F).CornerCoords(:,1);
                 Vec23 = Frac_Input(F).CornerCoords(:,3) - Frac_Input(F).CornerCoords(:,2);
@@ -44,11 +52,8 @@ for F = 1 : size(Frac_Input,2)
 
                 % Finding which of the three Points is the corner with the 90 deg angle              
                 dotProduct = [ dot( Vec31 , Vec12 ) ; dot( Vec12 , Vec23 ) ; dot( Vec23 , Vec31 ) ];
-
-                % Continue Here!!!
                 PointRightAngle   = find( dotProduct==0 , 1 );
                 PointSalientAngle = find( dotProduct~=0     );
-
                 if isempty(PointRightAngle),  error('Fracture # %02d is not a rectangle! Please check the input file.',f);  end
 
                 % Setting attributes to the corners (A is the corner with 90 deg angle)
@@ -56,16 +61,17 @@ for F = 1 : size(Frac_Input,2)
                 Frac(f).PointB   = Frac_Input(F).CornerCoords( : , PointSalientAngle(1) );
                 Frac(f).PointD   = Frac_Input(F).CornerCoords( : , PointSalientAngle(2) );
 
-                % The centeral Point of the plate 
+                % The central Point of the plate
                 Frac(f).PointM = ( Frac(f).PointB + Frac(f).PointD ) /2;
 
                 % Obtaining the 4th corner (by using the centeral Point)                         
                 Frac(f).PointC = Frac(f).PointA + 2* ( Frac(f).PointM - Frac(f).PointA );
 
-                % The coordinates of all Points in one variable (matrix) for Plotting
+                % The coordinates of all Points in one variable (matrix) useful for Plotting
                 Frac(f).Points = [ Frac(f).PointA , Frac(f).PointB , Frac(f).PointC , Frac(f).PointD , Frac(f).PointM ];
 
             else
+                
                 % Fracture construction with central Point and angles input type
                 Frac(f).PointM = Frac_Input(F).CenterCoord;
 
@@ -103,11 +109,12 @@ for F = 1 : size(Frac_Input,2)
                 Frac(f).PointC     = Rotate_Point_Around_Line_3D( PointC_Rot_Length , RotAxis_Width , Frac(f).PointM , RotAxis_Width_Rad );
                 Frac(f).PointD     = Rotate_Point_Around_Line_3D( PointD_Rot_Length , RotAxis_Width , Frac(f).PointM , RotAxis_Width_Rad );
 
-                % The coordinates of all Points in one variable (matrix) for Plotting
+                % The coordinates of all Points in one variable (matrix) useful for Plotting
                 Frac(f).Points = [ Frac(f).PointA , Frac(f).PointB , Frac(f).PointC , Frac(f).PointD , Frac(f).PointM ];
 
             end
 
+            % Checking if fracture fits inside the matrix box
             if ( min(Frac(f).Points(1,:)) < 0 - almostZero ) || ( max(Frac(f).Points(1,:)) > LX + almostZero ) || ...
                ( min(Frac(f).Points(2,:)) < 0 - almostZero ) || ( max(Frac(f).Points(2,:)) > LY + almostZero ) || ...
                ( min(Frac(f).Points(3,:)) < 0 - almostZero ) || ( max(Frac(f).Points(3,:)) > LZ + almostZero )
@@ -138,7 +145,7 @@ for F = 1 : size(Frac_Input,2)
         Frac(f).Equation.d = Frac(f).Equation.a*Frac(f).PointM(1) + Frac(f).Equation.b*Frac(f).PointM(2) + Frac(f).Equation.c*Frac(f).PointM(3);
 
         % Check if the fracture plate is paralel to any of X,Y,Z axes
-        Frac(f).isParallel = string('None');
+        Frac(f).isParallel = "None";
         if ( Frac(f).Equation.b == 0 ) && ( Frac(f).Equation.c == 0), Frac(f).isParallel = string('AlongX');  end
         if ( Frac(f).Equation.a == 0 ) && ( Frac(f).Equation.c == 0), Frac(f).isParallel = string('AlongY');  end
         if ( Frac(f).Equation.a == 0 ) && ( Frac(f).Equation.b == 0), Frac(f).isParallel = string('AlongZ');  end
@@ -184,9 +191,9 @@ for F = 1 : size(Frac_Input,2)
         
         % The size of each fracture plate grid cell in AB and AD directions with their vectors
         Frac(f).D_Length_AB     = Frac(f).Length_AB / Frac(f).N_Length_AB;
-        Frac(f).D_Width_AD     = Frac(f).Width_AD  / Frac(f).N_Width_AD;
+        Frac(f).D_Width_AD      = Frac(f).Width_AD  / Frac(f).N_Width_AD;
         Frac(f).D_Length_AB_vec = Frac(f).AB_vec    / Frac(f).N_Length_AB;
-        Frac(f).D_Width_AD_vec = Frac(f).AD_vec    / Frac(f).N_Width_AD;
+        Frac(f).D_Width_AD_vec  = Frac(f).AD_vec    / Frac(f).N_Width_AD;
 
         % Aperture, Porosity and Permeability of The fracture plate
         Frac(f).Aperture     = Frac_Input(F).Aperture;
@@ -227,12 +234,14 @@ for F = 1 : size(Frac_Input,2)
         fprintf('Fracture %2d: Dimension= %5.2f x %5.2f [m2] , Grid= %3.0f x %3.0f = %4.0f , ADM lvl= %1.0f\n', ...
         f, Frac(f).Length_AB, Frac(f).Width_AD, Frac(f).N_Length_AB, Frac(f).N_Width_AD, Frac(f).N_Length_AB*Frac(f).N_Width_AD, Frac(f).ADM(1)*Frac(f).ADM(2) );
         
+        % Cumulative number of all fractures cells
         Nt = Nt + Frac(f).N_Length_AB*Frac(f).N_Width_AD;
     end
 end
 % Row-wise to column-wise
 Frac = Frac';
-%
+
+% Reporting number of fractures and all fractures cells
 fprintf('\n');
 fprintf('Total number of fractures: %3.0f\n',length(Frac));
 fprintf('Total number of fractures cells: %3.0f\n',Nt);
@@ -240,7 +249,7 @@ fprintf('---------------------------------------------------------\n');
 
 %% Plotting fracture plates
 fprintf('Plotting fractures ...\n');
-figure(1); 
+figure(); 
 for f = 1 : length(Frac)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Plotting the boundaries of each fracture plate
@@ -305,12 +314,12 @@ rotate3d on;
 view([0 90]);
 fprintf('---------------------------------------------------------\n');
 
-%% Intializing
+%% Intializing necessary variables
 for f = 1 : length(Frac)
     Frac(f).  intersectCoord_fracObj = cell( length(Frac) , 1 );           % Coordinates of intersections between each two whole fracture plates
     Frac(f).            Overlap_frac = cell( length(Frac) , 1 );           % Overlap status of fracture f cells due to intersection with fracture g
 end
-%return;
+
 %% Intersections of fracture plates with each other (if any)
 fprintf('Obtaining the intersection of fracture plates ...\n');
 dummy = LX*10;                                                             % A dummy value (an abnormal value)
@@ -691,6 +700,7 @@ for f = 1 : length(Frac)
     
 end % End of main fracture for-loop
 fprintf('\n---------------------------------------------------------\n');
+
 %% Intersections of fracture cells of distinct fractures with each other (if any)
 fprintf('Obtaining fracture - fracture connectivities:\n');
 almostZero = almostZero * 10;
@@ -799,10 +809,6 @@ for f = 1 : length(Frac)
                             [ Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} , Frac(g).aveDist_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} , Collinearity2 ] = ...
                                 Line_Plane_Connectivity_3D( Plane_fracCell_2 , intersectCoord_fracCell_final(:,1) , intersectCoord_fracCell_final(:,2) , almostZero );
                             
-                            %                                     if Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} ~= Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2}
-                            %                                         error('WTF!');
-                            %                                     end
-                            
                             if ( Collinearity1 == 1 ),  Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} = Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2} /2;  end
                             if ( Collinearity2 == 1 ),  Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} = Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2} /2;  end
                             
@@ -815,36 +821,13 @@ for f = 1 : length(Frac)
                             
                             Frac(f).areaFrac_fracCell_sum{g} = Frac(f).areaFrac_fracCell_sum{g} + Frac(f).areaFrac_fracCell{g}{If}{Frac(f).NumOf_fracCellConn(If),2};
                             Frac(g).areaFrac_fracCell_sum{f} = Frac(g).areaFrac_fracCell_sum{f} + Frac(g).areaFrac_fracCell{f}{Ig}{Frac(g).NumOf_fracCellConn(Ig),2};
-                            
                         end
-                        
-                        
                     end
-                    
                 end
-                
             end
-            
         end
- 
     end
 end
 
-%% Obtaining the number frac-frac connectivities for each fracture cell
-% for f = 1 : length(Frac)
-%     Frac(f).NumOf_fracCellConn = zeros( Frac(f).N_Length_AB * Frac(f).N_Width_AD , 1 );
-%     for g = 1 : length(Frac)  
-%         if f ~= g
-%             for If = 1 : length( Frac(f).areaFrac_fracCell{g} )
-%                 if ~isempty( Frac(f).areaFrac_fracCell{g}{If} )
-%                     temp = Frac(f).areaFrac_fracCell{g}{If};
-%                     temp(all(cellfun(@isempty,temp),2), : ) = [];
-%                     Frac(f).areaFrac_fracCell{g}{If} = temp;
-%                 end
-%                 Frac(f).NumOf_fracCellConn(If) = Frac(f).NumOf_fracCellConn(If) + size( Frac(f).areaFrac_fracCell{g}{If},1 );
-%             end
-%         end
-%     end
-% end
 %% End of Function
 end
