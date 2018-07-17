@@ -48,8 +48,17 @@ classdef simulation_builder < handle
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    %index = 1;
-                    %VarValues(index, 2) = 1;
+%                     % Perturb initial S
+%                     nx = simulation.DiscretizationModel.ReservoirGrid.Nx;
+%                     rng(0);
+%                     perturbations = rand(20, 1);
+%                     np = nx / 20;
+%                     for i=1:20
+%                         newval((i-1)*np + 1:i*np) = perturbations(i);
+%                     end
+%                     index = 1:nx:N;
+%                     VarValues(index, 2) = newval;
+%                     VarValues(:, 3) = 1 - VarValues(:, 2);
                     simulation.Initializer = initializer(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
