@@ -56,7 +56,10 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(:, x));
             end
         end
-        function ADMProlp = ADMProlongation(obj, ADMGrid, GlobalGrids, ADMRest)
+        function ADMProlp = ADMProlongation(obj, ADMGrid_original, GlobalGrids, ADMRest)
+            % Copy ADM Grid
+            ADMGrid = ADMGrid_original.copy();
+            
             % Pressure prolongation
             ADMProlp = 1;
             

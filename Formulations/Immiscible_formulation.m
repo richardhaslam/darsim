@@ -93,11 +93,11 @@ classdef Immiscible_formulation < formulation
             AS = speye(N)*pv/dt;
 
             % RESIDUAL
-            Residual  = AS*(rho .* s - rho_old .* s_old)...
-                + obj.Tph{ph, 1+f} * P...
-                - obj.Gph{ph, 1+f} * depth...
-                - qw(Index.Start:Index.End, ph)...
-                - qf(Index.Start:Index.End, ph);
+            Residual  = AS*(rho .* s - rho_old .* s_old)... % accummulation
+                + obj.Tph{ph, 1+f} * P... % pressure
+                - obj.Gph{ph, 1+f} * depth... % gravity
+                - qw(Index.Start:Index.End, ph)... % wells
+                - qf(Index.Start:Index.End, ph); % frac-matrix 
         end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute vector of qs

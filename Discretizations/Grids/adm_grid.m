@@ -6,7 +6,7 @@
 %Created: 12 July 2016
 %Last modified: 22 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef adm_grid < grid_darsim
+classdef adm_grid < grid_darsim & matlab.mixin.Copyable
     properties
         Ntot
         level
