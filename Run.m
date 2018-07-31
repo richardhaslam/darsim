@@ -21,3 +21,4 @@ DARSim2ResSim('../Input/SATINTERPOLATOR/Homogeneous_2D/Small_dt/Homo2D_fs/','Imm
 % DARSim2ResSim('../Input/SATINTERPOLATOR/Heterogeneous_noPc/Small_dt/Hetero2D_fs/','ImmHetero.txt');
 % DARSim2ResSim('../Input/SATINTERPOLATOR/Heterogeneous_noPc/Small_dt/Hetero2D_adm_dfdt/','ImmHetero.txt');
 % DARSim2ResSim('../Input/SATINTERPOLATOR/Heterogeneous_noPc/Small_dt/Hetero2D_adm_dfdx/','ImmHetero.txt');
+DARSim2ResSim('D:/SURFdrive/Simulation/DARSim2/Input_Desktop_Dell/ImmHomo/', 'ImmHomo.txt', []);

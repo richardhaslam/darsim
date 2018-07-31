@@ -23,6 +23,7 @@ end
 properties (Access = private)
     Residual
     Jacobian
+    InitialTimeStep = true;
 end
 methods
     function obj = NL_Solver()
@@ -103,6 +104,12 @@ methods
         obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         % Compute residual
         obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
+        % Adding a preconditioner to improve the pressure guess in case of
+        % single phase multilevel multiscale with well functions
+        if (strcmp(FluidModel.name,'SinglePhase')) && (isprop(DiscretizationModel,'Coarsening')) && obj.InitialTimeStep
+            obj.Residual = Formulation.ImproveStaticMultilevelPressureGuess(ProductionSystem, FluidModel, DiscretizationModel);
+            obj.InitialTimeStep = false;
+        end
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
         % Set up the linear solver

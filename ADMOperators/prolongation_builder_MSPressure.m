@@ -139,7 +139,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
         function UpdateProlongationOperator(obj, FineGrid, CoarseGrid, ProductionSystem)
             % for now I do not update pressure basis functions
         end
-        function deltaP_w = StaticMultilevelPressureGuess(obj, ProductionSystem, FluidModel, FineGrid, CoarseGrid, CrossConnections)
+        function [deltaP_w , Residual] = StaticMultilevelPressureGuess(obj, ProductionSystem, FluidModel, FineGrid, CoarseGrid, CrossConnections)
             function Im = Index_Matrix( Nx,Ny,Nz, i,j,k )
                 if (i>Nx),   error('Current "i" index exceeds Nx.');  end
                 if (j>Ny),   error('Current "j" index exceeds Ny.');  end
@@ -147,19 +147,22 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 Im = (k-1)*Nx*Ny + (j-1)*Nx + i;
             end
             %% Initializing Variables
-            obj.BFUpdater.MaxContrast = obj.BFUpdater.MaxContrast/obj.BFUpdater.MaxContrast;
+            InitialMaxContrast = obj.BFUpdater.MaxContrast;
+            obj.BFUpdater.MaxContrast = 0;
             obj.BFUpdater.ConstructPressureSystem(ProductionSystem, FluidModel, FineGrid, CrossConnections);
             A = obj.BFUpdater.A;
-            CF = [CoarseGrid(1).CoarseFactor(1);CoarseGrid(1).CoarseFactor(2);CoarseGrid(1).CoarseFactor(3)];
+            obj.BFUpdater.MaxContrast = InitialMaxContrast;
+            CF = [CoarseGrid(1,end).CoarseFactor(1);CoarseGrid(1,end).CoarseFactor(2);CoarseGrid(1,end).CoarseFactor(3)];
             Nmx = FineGrid(1).Nx;
             Nmy = FineGrid(1).Ny;
             Nmz = FineGrid(1).Nz;
             Nmt = Nmx*Nmy*Nmz;
             deltaP_w = zeros(size(A,1) , 1);
+            q_w = zeros(size(A,1) , 1);
             P_init = ProductionSystem.Reservoir.State_old.Properties('P_1').Value;
-            CIx = CoarseGrid(1).I(:,2);
-            CIy = CoarseGrid(1).J(:,2);
-            CIz = CoarseGrid(1).K(:,2);
+            CIx = CoarseGrid(1,end).I(:,2);
+            CIy = CoarseGrid(1,end).J(:,2);
+            CIz = CoarseGrid(1,end).K(:,2);
             Inj = ProductionSystem.Wells.Inj;
             Prod = ProductionSystem.Wells.Prod;
             K = ProductionSystem.Reservoir.K;
@@ -196,7 +199,6 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                     else,                                 ex = Well.Coord(1,2) + CF(1);
                     end
                 end
-                
                 % by
                 if ~any( CIy == Well.Coord(2,1) )
                     if     Well.Coord(2,1) < min(CIy),    by = 1;
@@ -221,7 +223,6 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                     else,                                 ey = Well.Coord(2,2) + CF(2);
                     end
                 end
-                
                 % bz
                 if ~any( CIz == Well.Coord(3,1) )
                     if     Well.Coord(3,1) < min(CIz),    bz = 1;
@@ -1104,7 +1105,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
 
                 %% Obtaining Solution:
                 pL3D = AL3D\qL3D;
-                
+   
                 % Adding solutions to pressure vector
                 for kL = 1 : NzL
                     k = bz+kL-1;
@@ -1115,10 +1116,14 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                             Im    = Index_Matrix( Nmx,Nmy,Nmz , i ,j ,k  );
                             ImL3D = Index_Matrix( NxL,NyL,NzL , iL,jL,kL );
                             deltaP_w( Im ) = pL3D( ImL3D );
+                            q_w( Im ) = qL3D(ImL3D);
                         end
                     end
                 end
+                deltaP_w( frac ) = pL3D( NtL+1 : NtL+Nf );
+                q_w( frac ) = qL3D( NtL+1 : NtL+Nf );
             end % End of loop over the wells
+            Residual = A * deltaP_w - q_w;
         end % End of StaticMultilevelPressureGuess
     end
 end

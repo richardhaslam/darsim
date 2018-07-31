@@ -63,7 +63,7 @@ classdef Thermal_formulation < formulation
                 deltaT = delta(N+1: end);
                 %% Update reservoir state
                 % 1. Update Pressure
-                Pm = ProductionSystem.Reservoir.State.Properties(['P_1');
+                Pm = ProductionSystem.Reservoir.State.Properties(['P_1']);
                 Pm.update(deltaP);
                 % 2. Update Temperature
                 Tm = ProductionSystem.Reservoir.State.Properties('T');

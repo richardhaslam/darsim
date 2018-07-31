@@ -409,7 +409,7 @@ classdef VTK_Plotter < Plotter
         function PlotFractureADMGrid(obj, Grid, CoarseGrid, f)
             %Write a VTK file for each
             for i=1:length(CoarseGrid)
-                fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f),...
+                fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'),...
                     '_',num2str(i),'Level_',num2str(obj.VTKindex),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
                 fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');

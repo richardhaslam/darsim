@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef therm_comp_phase < phase
     properties
+        rho0 % Reference density
         cf % Compressibility
     end
     methods
