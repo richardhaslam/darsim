@@ -187,8 +187,9 @@ classdef Immiscible_formulation < formulation
             JS = spdiags(DiagVecs,DiagIndx,N,N);
             
             %Add capillarity
-            JS = JS - Jp * spdiags(obj.dPc, 0, N, N);
-            
+            if ph == 1 
+                JS = JS - Jp * spdiags(obj.dPc, 0, N, N);
+            end
             % Add Wells
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian
             if f == 0 % only for reservoir

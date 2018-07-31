@@ -29,7 +29,7 @@ classdef convergence_checker_FS < convergence_checker
             stagnating = obj.Stagnating(massbalance);
             
             %Check convergence
-            if (massbalance < obj.Tol && equilibrium < obj.Tol && dp < obj.Tol * 1e2 && dS < obj.Tol * 1e2)
+            if (massbalance < obj.Tol && equilibrium < obj.Tol && dp < obj.Tol * 1e2 && dS < obj.Tol * 1e4)
                 converged = 1;
             elseif (isnan(massbalance) || stagnating || isnan(dp) || isnan(dS))
                 converged = -1;
