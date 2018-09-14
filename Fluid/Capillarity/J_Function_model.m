@@ -11,7 +11,7 @@ classdef  J_Function_model < capillary_pressure_model
         PorPermTerm
     end
     properties (Constant)
-        sigma = 4.361e-2;
+        sigma = 4.361e-1;
     end
     methods 
         function Initialise(obj, ProductionSystem)
@@ -23,7 +23,7 @@ classdef  J_Function_model < capillary_pressure_model
             % Capillary Pressure
             
             %J-leverett curve
-            J = 0.1.*(S).^(-0.5);
+            J = 0.1.* ((S).^(-0.5) - 1);
             
             %Compute Pc and dPc analytically
             Pc = obj.sigma .* obj.PorPermTerm.*J; 
