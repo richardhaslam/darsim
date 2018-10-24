@@ -1,3 +1,9 @@
+%  MS discretization model
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%DARSim 2 Reservoir Simulator
+%Author: Matteo Cusini
+%TU Delft
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Multiscale_Discretization_model < Discretization_model
     properties
         Nf

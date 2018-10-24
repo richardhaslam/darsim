@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 13 December 2017
-%Last modified: 14 December 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef simulation_builder < handle
     properties
@@ -285,7 +283,7 @@ classdef simulation_builder < handle
                     % make it the size of the grid
                     %K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
                     % In case the data is in logarithmic scale
-                    K(:,i) = reshape(2.^field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
+                    K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
                 else
                     value = obj.SimulationInput.ReservoirProperties.Perm(i);
                     K(:, i)= K(:,i) * value;

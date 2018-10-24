@@ -3,13 +3,10 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 11 July 2016
-%Last modified: 17 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef VTK_Plotter < Plotter
     properties
-        FileName
-        VTKindex 
+        FileName 
     end
     methods
         function obj = VTK_Plotter(Directory, Problem)

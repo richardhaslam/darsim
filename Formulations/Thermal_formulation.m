@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Rhadytio
 %TU Delft
-%Created: 24 January 2018
-%Last modified: 24 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Thermal_formulation < formulation
     properties
