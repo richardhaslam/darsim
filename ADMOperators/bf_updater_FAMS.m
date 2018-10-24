@@ -69,7 +69,9 @@ classdef bf_updater_FAMS < bf_updater_ms
                     tildeA = G * obj.A * G';
                     [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(1));
                     MsP = G' * MsP;
-                    MsC = G' * MsC * G;
+                    if ~isempty(MsC)
+                        MsC = G' * MsC * G;
+                    end
             end
         end
         function UpdatePressureMatrix(obj, P, Grid)

@@ -11,7 +11,6 @@ classdef phase < matlab.mixin.Heterogeneous & handle
         mu % Reference Viscosity
         sr % Irriducible saturation
     end
-    
     methods
         function [A, U] = UpWindAndRockFluxes(obj, Grid, P, RhoInt)
             Nx = Grid.Nx;
