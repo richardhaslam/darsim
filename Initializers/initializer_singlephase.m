@@ -54,7 +54,7 @@ classdef initializer_singlephase < initializer
                 end
             end
             
-            disp(char(5));
+            disp(newline);
         end
     end
 end

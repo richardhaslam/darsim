@@ -17,7 +17,7 @@ classdef bf_updater < handle
             tildeA = G * obj.A * G';
             [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
             MsP = G' * MsP;
-            %MsC = G' * MsC * G;
+            MsC = G' * MsC * G;
         end
         function [MsP, MsC] = ComputeMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
             switch(Dimensions)

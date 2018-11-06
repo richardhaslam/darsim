@@ -34,7 +34,7 @@ classdef initializer < handle
             obj.ComputeInitialState(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
             initialization = toc(start);
             disp(['Initialization took ', num2str(initialization), ' s']);
-            disp(char(5));
+            disp(newline);
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started simple initialization');
@@ -89,7 +89,7 @@ classdef initializer < handle
                     disp('---------------------------------------------------------');
                 end
             end
-            disp(char(5));
+            disp(newline);
         end
     end
 end

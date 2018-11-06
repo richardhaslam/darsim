@@ -31,7 +31,7 @@ classdef Multiscale_Discretization_model < Discretization_model
         function InitializeMapping(obj, ProductionSystem, FluidModel)
             disp([num2str(obj.maxLevel(1)), ' levels multiscale run']);
             % Construct Coarse Grids
-            disp(char(2));
+            disp(newline);
             disp('Constructing coarse grids');
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             
@@ -51,7 +51,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             disp('Multiscale basis functions - end')
             timer = toc(start);
             disp(['Multiscale basis functions computation took ', num2str(timer)])
-            disp(char(2));
+            disp(newline);
         end
         function ConstructCoarseGrids(obj, Inj, Prod)
             %% 1. Reservoir
@@ -121,6 +121,7 @@ classdef Multiscale_Discretization_model < Discretization_model
         function AddWellsToInitialPressure(obj, ProductionSystem, FluidModel)
             % Improving the first pressure guess for multilevel/multiscale method
             deltaP_w = obj.OperatorsHandler.ProlongationBuilders(1).StaticMultilevelPressureGuess(ProductionSystem, FluidModel, obj.FineGrid, obj.CoarseGrid(:, end), obj.CrossConnections);
+
             %% 1. Updating Reservoir Pressure with Well Correction
             Pm = ProductionSystem.Reservoir.State.Properties(['P_', num2str(FluidModel.NofPhases)]);
             Pm.update(deltaP_w(1:obj.ReservoirGrid.N));

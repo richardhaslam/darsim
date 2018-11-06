@@ -11,6 +11,7 @@ classdef linear_solver_MMs < linear_solver
         C % Correction functions operator
         OperatorsAssembler
         MSFE = 0;
+        CorrectionFunctions = false;
     end
     methods
         function obj = linear_solver_MMs(name, tol, maxit)
@@ -28,13 +29,16 @@ classdef linear_solver_MMs < linear_solver
         function xf = Solve(obj, A, rhs)
             % Restrict system
             % not using correction functions atm
-            %if size(A,2) == size(obj.C,1)
-             %   rhs_c = obj.R * (rhs - A * obj.C * rhs);
-            %else
+            if obj.CorrectionFunctions
+                if size(A,2) ~= size(obj.C,1)
+                    error('No correction functions for fractured reservoir');
+                end
+                rhs_c = obj.R * (rhs - A * obj.C * rhs);
+            else
                 rhs_c = obj.R * rhs;
-            %end
-            A_c = obj.R * A * obj.P;
- 
+            end
+            A_c = obj.R * A * obj.P; % Coarse system
+
             % Solve Coarse System
             %start = tic;
             switch (obj.Name)
@@ -63,11 +67,11 @@ classdef linear_solver_MMs < linear_solver
             
             % Prolong to fine-scale resolution and apply correction
             % functions
-            %if size(obj.C,2) == size(rhs,1)
-                %xf = obj.P * x + obj.C * rhs;
-            %else
+            if obj.CorrectionFunctions
+                xf = obj.P * x + obj.C * rhs;
+            else
                 xf = obj.P * x;
-            %end
+            end
         end
     end
 end

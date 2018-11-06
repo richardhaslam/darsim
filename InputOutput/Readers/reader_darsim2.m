@@ -503,12 +503,22 @@ classdef reader_darsim2 < reader
                     SimulatorSettings.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
                 
+                % If you write any of these keywords in the input file the
+                % options will be active (thus default values are 0)
                 temp = strfind(obj.SettingsMatrix, 'MSFE');
                 temp = find(~cellfun('isempty', temp));
                 if isempty(temp)
                     SimulatorSettings.MMsSettings.MSFE = 0;
                 else
                     SimulatorSettings.MMsSettings.MSFE = 1;
+                end
+                
+                temp = strfind(obj.SettingsMatrix, 'CORRECTION FUNCTIONS');
+                temp = find(~cellfun('isempty', temp));
+                if isempty(temp)
+                    SimulatorSettings.MMsSettings.CorrectionFunctions = 0;
+                else
+                    SimulatorSettings.MMsSettings.CorrectionFunctions = 1;
                 end
                 
                 temp = strfind(obj.SettingsMatrix, 'COUPLED');
@@ -545,10 +555,13 @@ classdef reader_darsim2 < reader
                 end
             end  
             
-            %%%%% Stop criterion
+            %% %%% LTS
+            SimulatorSettings.LTS = 1; % 1 or 0. If 1 LTS is used.
+            
+            %% %%% Stop criterion
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation
             
-            %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
+            %% %%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
             temp = strfind(obj.SettingsMatrix, 'OUTPUT'); 
             xv = find(~cellfun('isempty', temp));
             SimulatorSettings.plotting = char(obj.SettingsMatrix(xv+1)); %Matlab or VTK

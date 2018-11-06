@@ -232,6 +232,10 @@ classdef simulation_builder < handle
                     end
                     % Reduce contrast for BF computation to remove peaks
                     prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
+                    if MMsSettings.CorrectionFunctions
+                        prolongationbuilder.BFUpdater.CorrectionFunctions = true;
+                    end
+                    
                     % Add prolongation builder
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                     % Static Multiscale for flow solver
@@ -557,8 +561,8 @@ classdef simulation_builder < handle
             TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             % Construct Coupling
             switch(obj.SimulatorSettings.CouplingType)
-                %% FIM coupling
                 case('FIM')
+                    % FIM coupling
                     %%%%FIM settings
                     NLSolver = NL_Solver();
                     switch obj.SimulatorSettings.DiscretizationModel
@@ -582,7 +586,7 @@ classdef simulation_builder < handle
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
-                            NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500); 
+                            NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                     end
                     NLSolver.MaxIter = obj.SimulatorSettings.MaxIterations;
                     ConvergenceChecker.Tol = obj.SimulatorSettings.Tolerance;
@@ -594,9 +598,14 @@ classdef simulation_builder < handle
                     end
                     NLSolver.AddConvergenceChecker(ConvergenceChecker);
                     % Build FIM Coupling strategy
-                    Coupling = FIM_Strategy('FIM', NLSolver);
-                %% Sequential coupling    
+                    if obj.SimulatorSettings.LTS
+                        Coupling = FIM_Strategy_LTS('FIM', NLSolver);
+                    else
+                        Coupling = FIM_Strategy('FIM', NLSolver);
+                    end
+                
                 case('Sequential')
+                    % Sequential coupling
                     Coupling = Sequential_Strategy('Sequential');
                     Coupling.MaxIter = obj.SimulatorSettings.MaxIterations;
                     % pressuresolver = incompressible_pressure_solver();
@@ -615,6 +624,9 @@ classdef simulation_builder < handle
                         case('MMs')
                             pressuresolver.LinearSolver = linear_solver_MMs(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             pressuresolver.LinearSolver.MSFE = MMsSettings.MSFE;
+                            if MMsSettings.CorrectionFunctions
+                                pressuresolver.LinearSolver.CorrectionFunctions = true;
+                            end
                         otherwise
                             pressuresolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                     end
@@ -623,7 +635,7 @@ classdef simulation_builder < handle
                     end
                     Coupling.AddPressureSolver(pressuresolver);
                     switch (obj.SimulatorSettings.TransportSolver.Type)
-                        case('IMPSAT')
+                        case('IMPSAT') 
                             transportsolver = NL_Solver();
                             transportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
                             ConvergenceChecker = convergence_checker_transport();
@@ -647,8 +659,8 @@ classdef simulation_builder < handle
                             Coupling.ConvergenceChecker = convergence_checker_impes();
                     end
                     Coupling.AddTransportSolver(transportsolver);
-                %% Single phase coupling
                 case('SinglePhase')
+                    % Single phase coupling
                     Coupling = SinglePhase_Strategy('SinglePhase');
                     pressuresolver = NL_Solver();
                     pressuresolver.MaxIter = 15;
@@ -666,6 +678,9 @@ classdef simulation_builder < handle
                             pressuresolver.LinearSolver = linear_solver_MMs(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             pressuresolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(1, 1);
                             pressuresolver.LinearSolver.MSFE = obj.SimulatorSettings.MMsSettings.MSFE;
+                            if obj.SimulatorSettings.MMsSettings.CorrectionFunctions
+                                pressuresolver.LinearSolver.CorrectionFunctions = true;
+                            end
                         otherwise
                             pressuresolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                     end
@@ -674,7 +689,7 @@ classdef simulation_builder < handle
                         pressuresolver.ConvergenceChecker.Incompressible = 1;
                     end
                     Coupling.AddPressureSolver(pressuresolver);
-            end 
+            end
             Coupling.TimeStepSelector = timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
             TimeDriver.AddCouplingStrategy(Coupling);
             switch(obj.SimulatorSettings.StopCriterion)
@@ -686,7 +701,7 @@ classdef simulation_builder < handle
                     end_of_sim_eval = end_of_sim_evaluator_PVInjected(obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps, 3);
             end
             TimeDriver.AddEndOfSimEvaluator(end_of_sim_eval);
-        end
+    end
         function Summary = BuildSummary(obj, simulation)
             %%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
             switch(obj.SimulatorSettings.CouplingType)

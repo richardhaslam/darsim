@@ -277,28 +277,6 @@ classdef Immiscible_formulation < formulation
                 %Jacobian_noconn = vertcat(Jacobian_noconn, Jphnoconn{i});
             end
         end
-        function Residual = ImproveStaticMultilevelPressureGuess(obj, ProductionSystem, FluidModel, DiscretizationModel)
-            FineGrid = DiscretizationModel.FineGrid;
-            CoarseGrid = DiscretizationModel.CoarseGrid;
-            CrossConnections = DiscretizationModel.CrossConnections;
-            
-            % Obtaining deltaP to improve the initial guess due to including of well functions in
-            % static multilevel method
-            [deltaP_w , Residual] = DiscretizationModel.OperatorsHandler.ProlongationBuilders.StaticMultilevelPressureGuess(ProductionSystem, FluidModel, FineGrid, CoarseGrid, CrossConnections);
-            
-            % Updating the intitial guess for matrix
-            Nm = DiscretizationModel.ReservoirGrid.N;
-            Pm = ProductionSystem.Reservoir.State.Properties(['P_', num2str(obj.NofPhases)]);
-            Pm.update(deltaP_w(1:Nm));
-            % Update Phase Densities
-            FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
-            % Update total density
-            FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
-            if obj.NofPhases > 1
-            % Update Pc
-                FluidModel.ComputePc(ProductionSystem.Reservoir.State);
-            end
-        end
         function delta = UpdateState(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
             if sum(isnan(delta))
                 % if the solution makes no sense, skip this step
@@ -674,7 +652,7 @@ classdef Immiscible_formulation < formulation
             
             Residual = zeros(N, 1);
             for i=1:obj.NofPhases
-            Residual(:) = ...
+                Residual(:) = ...
                     Residual(:) - ...
                     pv/dt * (rho_old(:, i) .* s_old(:, i) ./ rho(:, i)) ...
                     + obj.Tph{i, f+1} * P(:, i) ...

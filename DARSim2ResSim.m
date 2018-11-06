@@ -1,16 +1,22 @@
-% DARSim 2 Reservoir Simulator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%DARSim2ResSim: Reservoir Simulator main file
+%
+% Requires Matlab 2016b or newer
+%
+% Run instructions:
+% Run from the folder src
+% Use addpath(genpath(pwd)); to add all folders to the path
+% DARSim2ResSim('Directory', 'FileName', 'PermeabilityDirectory');
+% Example of Directory and File
+% ImmDirectory = '../Input/ImmHomo/'
+% ImmFile = 'ImmHomo';
+% PermDir = '../Permeability/'
 function ResSimulator = DARSim2ResSim(Directory, File, PermDirectory)
 clc;
-% addpath(genpath(pwd));
-% Example of Directory and File
-%ImmDirectory = '../Input/ImmHomo'
-%ImmFile = 'ImmHomo';
-
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
