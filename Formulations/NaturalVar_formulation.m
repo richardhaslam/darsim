@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini and Barnaby Fryer
 %TU Delft
-%Created: 12 September 2016
-%Last modified: 18 October 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef NaturalVar_formulation < Compositional_formulation
     properties

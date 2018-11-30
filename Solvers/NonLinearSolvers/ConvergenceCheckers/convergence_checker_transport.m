@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 26 July 2016
-%Last modified: 26 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef convergence_checker_transport < convergence_checker
     properties

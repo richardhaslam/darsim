@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 13 July 2016
-%Last modified: 17 October 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef injector_rate < injector
     properties

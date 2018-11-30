@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 26 May 2017
-%Last modified: 26 May 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef solution_chopper < handle
     properties

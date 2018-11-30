@@ -17,26 +17,26 @@ classdef reader_darsim2 < reader
             obj@reader(dir, file, permdirectory);          
         end
         function ReadInputFile(obj, Builder)
-            %ReadInputFile
+            % ReadInputFile
             fileID = fopen(obj.File, 'r');
-            %// Read lines from input file
+            % Read lines from input file
             matrix = textscan(fileID, '%s', 'Delimiter', '\n');
             obj.InputMatrix = matrix{1};
             fclose(fileID);
+            % Remove lines which are commented (contain --)
+            Commented = startsWith(obj.InputMatrix, '--');
+            obj.InputMatrix(Commented) = {'--'}; % removing the string if it is commented.
             %ReadSettingFile
             SettingsFile = strcat(obj.Directory, '/SimulatorSettings.txt');
             fileID = fopen(SettingsFile, 'r');
             matrix = textscan(fileID, '%s', 'Delimiter', '\n');
             obj.SettingsMatrix = matrix{1};
             fclose(fileID);
+            % Remove lines which are commented (contain --)
+            Commented = startsWith(obj.SettingsMatrix, '--');
+            obj.SettingsMatrix(Commented) = {'--'}; % removing the string if it is commented.
             %ReadSettingFile
-            temp = strfind(obj.InputMatrix, 'FRACTURED');
-            fractured = find(~cellfun('isempty', temp));
-            if isempty(fractured)
-                fractured = 0;
-            else
-                fractured = 1;
-            end
+            fractured = sum(contains(obj.InputMatrix, 'FRACTURED'));
             if fractured 
                 FractureFile = strcat(obj.Directory, '/Fracture_Output.txt');
                 fileID = fopen(FractureFile, 'r');
@@ -450,12 +450,11 @@ classdef reader_darsim2 < reader
                     SimulatorSettings.ADMSettings.DLGR = str2double(obj.SettingsMatrix(x+1));
                 end
                                 
-                temp = strfind(obj.SettingsMatrix, 'COUPLED');
-                temp = find(~cellfun('isempty', temp));
-                if isempty(temp)
-                    SimulatorSettings.ADMSettings.BFtype = 'DECOUPLED';
+                temp = sum(contains(obj.SettingsMatrix, 'COUPLED'));
+                if temp
+                    SimulatorSettings.MMsSettings.BFtype = 'COUPLED';
                 else
-                    SimulatorSettings.ADMSettings.BFtype = 'COUPLED';
+                    SimulatorSettings.MMsSettings.BFtype = 'DECOUPLED';
                 end
                 
                 % ADM settings in the fractures
@@ -503,20 +502,27 @@ classdef reader_darsim2 < reader
                     SimulatorSettings.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
                 
-                temp = strfind(obj.SettingsMatrix, 'MSFE');
-                temp = find(~cellfun('isempty', temp));
-                if isempty(temp)
-                    SimulatorSettings.MMsSettings.MSFE = 0;
-                else
+                % If you write any of these keywords in the input file the
+                % options will be active (thus default values are 0)
+                temp = sum(contains(obj.SettingsMatrix, 'MSFE'));
+                if temp
                     SimulatorSettings.MMsSettings.MSFE = 1;
+                else
+                    SimulatorSettings.MMsSettings.MSFE = 0;
                 end
                 
-                temp = strfind(obj.SettingsMatrix, 'COUPLED');
-                temp = find(~cellfun('isempty', temp));
-                if isempty(temp)
-                    SimulatorSettings.MMsSettings.BFtype = 'DECOUPLED';
+                temp = sum(contains(obj.SettingsMatrix, 'CORRECTION FUNCTIONS'));
+                if temp
+                    SimulatorSettings.MMsSettings.CorrectionFunctions = 1;
                 else
+                    SimulatorSettings.MMsSettings.CorrectionFunctions = 0;
+                end
+                
+                temp = sum(contains(obj.SettingsMatrix, 'COUPLED'));
+                if temp
                     SimulatorSettings.MMsSettings.BFtype = 'COUPLED';
+                else
+                    SimulatorSettings.MMsSettings.BFtype = 'DECOUPLED';
                 end
                 
                 % MMs settings in fractures
@@ -545,10 +551,18 @@ classdef reader_darsim2 < reader
                 end
             end  
             
-            %%%%% Stop criterion
+            %% %%% LTS
+            temp = sum(contains(obj.SettingsMatrix, 'LTS'));
+            if temp
+                SimulatorSettings.LTS = 1; % 1 or 0. If 1 LTS is used.
+            else
+                SimulatorSettings.LTS = 0; % 1 or 0. If 1 LTS is used.
+            end
+            
+            %% %%% Stop criterion
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation
             
-            %%%%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
+            %% %%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
             temp = strfind(obj.SettingsMatrix, 'OUTPUT'); 
             xv = find(~cellfun('isempty', temp));
             SimulatorSettings.plotting = char(obj.SettingsMatrix(xv+1)); %Matlab or VTK

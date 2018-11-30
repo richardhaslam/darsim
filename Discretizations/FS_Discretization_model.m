@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 12 July 2016
-%Last modified: 21 September 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef FS_Discretization_model < Discretization_model
     properties

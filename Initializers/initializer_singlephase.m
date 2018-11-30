@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 8 November 2016
-%Last modified: 8 November 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef initializer_singlephase < initializer
     properties
@@ -56,7 +54,7 @@ classdef initializer_singlephase < initializer
                 end
             end
             
-            disp(char(5));
+            disp(newline);
         end
     end
 end

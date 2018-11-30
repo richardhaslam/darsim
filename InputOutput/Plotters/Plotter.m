@@ -3,11 +3,10 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 11 July 2016
-%Last modified: 11 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Plotter < handle
     properties
+        VTKindex
     end
     methods (Abstract)
        obj = PlotSolution(obj) 

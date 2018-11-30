@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 8 November 2016
-%Last modified: 29 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef initializer < handle
     properties
@@ -36,7 +34,7 @@ classdef initializer < handle
             obj.ComputeInitialState(ProductionSystem, FluidModel, Formulation, DiscretizationModel);
             initialization = toc(start);
             disp(['Initialization took ', num2str(initialization), ' s']);
-            disp(char(5));
+            disp(newline);
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started simple initialization');
@@ -91,7 +89,7 @@ classdef initializer < handle
                     disp('---------------------------------------------------------');
                 end
             end
-            disp(char(5));
+            disp(newline);
         end
     end
 end

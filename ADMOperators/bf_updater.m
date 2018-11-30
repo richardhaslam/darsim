@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 16 August 2016
-%Last modified: 24 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef bf_updater < handle
     properties
@@ -19,7 +17,7 @@ classdef bf_updater < handle
             tildeA = G * obj.A * G';
             [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
             MsP = G' * MsP;
-            %MsC = G' * MsC * G;
+            MsC = G' * MsC * G;
         end
         function [MsP, MsC] = ComputeMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
             switch(Dimensions)

@@ -3,12 +3,11 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 16 August 2016
-%Last modified: 09 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef bf_updater_ms < bf_updater
     properties
         MaxContrast
+        CorrectionFunctions = false;
     end
     methods
         function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections)
@@ -17,7 +16,9 @@ classdef bf_updater_ms < bf_updater
             Sm = ProductionSystem.Reservoir.State.Properties('S_1').Value;
             Mob = FluidModel.ComputePhaseMobilities(Sm);
             obj.A = obj.MediumPressureSystem(FineGrid, K, Mob);
-            obj.AddWellsToPressureMatrix(ProductionSystem.Wells, K, Mob, FineGrid.N)
+            if obj.CorrectionFunctions
+                obj.AddWellsToPressureMatrix(ProductionSystem.Wells, K, Mob, FineGrid.N);
+            end
         end
         function A_Medium = MediumPressureSystem(obj, FineGrid, K, Mob)
             % Remove high contrast to avoid spikes

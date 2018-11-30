@@ -68,7 +68,7 @@ classdef TimeLoop_Driver < handle
                 disp(['end of time-step ' num2str(obj.Ndt)]);
                 disp(newline);
                 obj.Ndt = obj.Ndt + 1;
-                
+
                 % Saves the total time of the timestep in the run summary
                 Summary.Time(obj.Ndt-1) = obj.Time/(24*3600);
                 Summary.NumberTimeSteps = obj.Ndt - 1;

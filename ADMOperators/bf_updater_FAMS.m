@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Mousa HosseiniMehr & Matteo Cusini
 %TU Delft
-%Created: 07 August 2017
-%Last modified: 14 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef bf_updater_FAMS < bf_updater_ms
     properties

@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Jeremy Yong
 %TU Delft
-%Created: 21 October 2016
-%Last modified: 21 October 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef OBL_formulation < fim_formulation
     properties

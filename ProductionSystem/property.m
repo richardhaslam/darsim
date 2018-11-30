@@ -1,3 +1,9 @@
+% Production System class
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%DARSim 2 Reservoir Simulator
+%Author: Matteo Cusini
+%TU Delft
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef property < matlab.mixin.Copyable
     % This is a generic Property
     properties

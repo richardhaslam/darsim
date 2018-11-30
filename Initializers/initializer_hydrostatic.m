@@ -3,8 +3,6 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
-%Created: 8 November 2016
-%Last modified: 6 March 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef initializer_hydrostatic < initializer
     properties
@@ -25,7 +23,7 @@ classdef initializer_hydrostatic < initializer
             disp(['reservoir saturation:' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
             disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
             disp('---------------------------------------------------------');
-            disp(char(5));
+            disp(newline);
         end
         function Equilibrate(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             equilibrium = 0;

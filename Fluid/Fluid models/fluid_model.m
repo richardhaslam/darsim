@@ -114,7 +114,8 @@ classdef fluid_model < handle
                     S = 1 - S;
                     s = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr);
                     s = max(s, 0.05);
-                    dPc =  - obj.CapillaryModel.dPcdS(s);
+                    % There is a double negative sign. P1 = P2 - Pc. Pc = -Pc so dPc = -dPc and dPcdS1 = -dPcdS2
+                    dPc = obj.CapillaryModel.dPcdS(s);  
                     dPc (S < obj.Phases(2).sr) = 0.0;
             end
             
