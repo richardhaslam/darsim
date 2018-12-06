@@ -52,8 +52,8 @@ for F = 1 : size(Frac_Input,2)
 
                 % Finding which of the three Points is the corner with the 90 deg angle              
                 dotProduct = [ dot( Vec31 , Vec12 ) ; dot( Vec12 , Vec23 ) ; dot( Vec23 , Vec31 ) ];
-                PointRightAngle   = find( dotProduct==0 , 1 );
-                PointSalientAngle = find( dotProduct~=0     );
+                PointRightAngle   = find( abs(dotProduct) <= almostZero , 1 );
+                PointSalientAngle = find( abs(dotProduct) >  almostZero     );
                 if isempty(PointRightAngle),  error('Fracture # %02d is not a rectangle! Please check the input file.',f);  end
 
                 % Setting attributes to the corners (A is the corner with 90 deg angle)
@@ -174,7 +174,7 @@ for F = 1 : size(Frac_Input,2)
                 Frac(f).N_Width_AD = max( Frac(f).N_Width_AD , 3*Frac(f).ADM(4)^Frac(f).ADM(2) ); % At least 3 Coarse Cells
             end
             if NZ == 1,  Frac(f).N_Width_AD = 1;  end
-            Frac(f).N_Length_AB = max( Frac(f).N_Length_AB , 1);
+            Frac(f).N_Length_AB = max( Frac(f).N_Length_AB , 3);  % At least 3 cells
             Frac(f).N_Width_AD  = max( Frac(f).N_Width_AD  , 1);
         else
             Frac(f).N_Length_AB = Frac_Input(F).GridNumAlongL;
@@ -231,7 +231,7 @@ for F = 1 : size(Frac_Input,2)
         end
         
         % Reporting fracture properties:
-        fprintf('Fracture %2d: Dimension= %5.2f x %5.2f [m2] , Grid= %3.0f x %3.0f = %4.0f , ADM lvl= %1.0f\n', ...
+        fprintf('Fracture %4d: Dimension= %5.2f x %5.2f [m2] , Grid= %3.0f x %3.0f = %4.0f , ADM lvl= %1.0f\n', ...
         f, Frac(f).Length_AB, Frac(f).Width_AD, Frac(f).N_Length_AB, Frac(f).N_Width_AD, Frac(f).N_Length_AB*Frac(f).N_Width_AD, Frac(f).ADM(1)*Frac(f).ADM(2) );
         
         % Cumulative number of all fractures cells
@@ -377,8 +377,8 @@ fprintf('---------------------------------------------------------\n');
 fprintf('Obtaining fractures - matrix overlaps:\n',f);
 fprintf('---> Fracture ');
 for f = 1 : length(Frac)
-    if (f>1),  fprintf(repmat('\b', 1, 5+27));  end
-    fprintf('%02d/%02d',f,length(Frac));
+    if (f>1),  fprintf(repmat('\b', 1, 9+27));  end
+    fprintf('%04d/%04d',f,length(Frac));
     Frac(f).  intersectCoord_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Coordinates of intersections between each fracture cell and each matrix cell
     Frac(f).        areaFrac_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Area fraction of each fracture cell inside each matrix cube
     Frac(f).         aveDist_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Average distance between each fracture cell and each matrix cube
