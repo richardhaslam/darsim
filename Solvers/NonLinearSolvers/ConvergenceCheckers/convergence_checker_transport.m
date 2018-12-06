@@ -32,7 +32,7 @@ classdef convergence_checker_transport < convergence_checker
             disp(['Iter ' num2str(iter) '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
             
             %Check convergence
-            if (Norm1 < obj.Tol && Norm2 < obj.Tol)
+            if (Norm1 < obj.Tol && Norm2 < obj.Tol * 1e3)
                 converged = 1;
             end
         end

@@ -643,7 +643,7 @@ classdef simulation_builder < handle
                             transportsolver.AddConvergenceChecker(ConvergenceChecker);
                             transportsolver.SystemBuilder = transport_system_builder();
                             Coupling.ConvergenceChecker = convergence_checker_outer();
-                            Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                            Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.Tolerance;
                             switch obj.SimulatorSettings.DiscretizationModel
                                 case('ADM')
                                     transportsolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);

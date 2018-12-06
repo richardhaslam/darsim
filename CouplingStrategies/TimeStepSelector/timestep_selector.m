@@ -29,16 +29,11 @@ classdef timestep_selector < handle
             s = [FluidModel.Phases(1).sr:0.01:1-FluidModel.Phases(1).sr]';
             Mob = FluidModel.ComputePhaseMobilities(s);
             dMob = FluidModel.DMobDS(s);
-            rho = zeros(1, FluidModel.NofPhases);
-            for i=1:FluidModel.NofPhases
-                rho(i) = max(ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value);
-                Mob(:, i) = rho(i) * Mob(:, i);
-                dMob(:, i) = rho(i) * dMob(:, i); 
-            end
-            num = rho(:, 1)  .* Mob(:, 1);
-            dnum = rho(:, 1) .* dMob(:,1);
-            den = sum(rho .* Mob, 2);
-            dden = sum(rho .* dMob, 2);  
+           
+            num =  Mob(:, 1);
+            dnum = dMob(:,1);
+            den = sum(Mob, 2);
+            dden = sum(dMob, 2);  
             df = (dnum .* den - dden .* num) ./ den.^2;
             dfmax = max(df);
             Uxmax = max(max(max(abs(U.x))));
@@ -50,10 +45,10 @@ classdef timestep_selector < handle
             
             %Compute timestep size
             % I multiply by mean(rho) coz U is the mass flux
-            dtx = obj.CFL*pv*max(rho)/Lambdax;
-            dty = obj.CFL*pv*max(rho)/Lambday;
-            dtz = obj.CFL*pv*max(rho)/Lambdaz;
-            dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt]);
+            dtx = obj.CFL*pv/Lambdax;
+            dty = obj.CFL*pv/Lambday;
+            dtz = obj.CFL*pv/Lambdaz;
+            dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt, obj.NextDt]);
         end
         function dt = ChooseTimeStep(obj)
             if obj.ReportDt <= 0
@@ -66,6 +61,16 @@ classdef timestep_selector < handle
             if itCount <= 4 && chops < 1
                obj.NextDt = 2*dt;
             elseif itCount > 12 || chops > 1
+               obj.NextDt = dt/2;
+            else
+               obj.NextDt = dt;
+            end
+        end
+        function UpdateSequential(obj, dt, itCount, chops)
+            % Outer iterations should be only a few!
+            if itCount <= 2 && chops < 1
+               obj.NextDt = 2*dt;
+            elseif itCount > 4 || chops > 1
                obj.NextDt = dt/2;
             else
                obj.NextDt = dt;

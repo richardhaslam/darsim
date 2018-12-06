@@ -40,6 +40,12 @@ methods
         obj.TimerInner = zeros(obj.MaxIter, 1);
         obj.itCount = 1;
         
+        % 0. Computes initial residual
+        % Update Derivatives
+        obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+        % Compute residual
+        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
+        
         % Print some info
         obj.ConvergenceChecker.PrintTitles(obj.Residual);
         
@@ -97,16 +103,10 @@ methods
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
         % 1. Save initial state
         obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
-        
-        % 2. Computes initial residual
-        % Update Derivatives
-        obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
-        % Compute residual
-        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
         % Set up the linear solver
-        obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel, obj.Residual);
+        obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel, 0); % We may need the residual for ADM but for now let's pass a 0.
     end
 end
 end

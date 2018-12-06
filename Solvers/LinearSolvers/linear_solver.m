@@ -57,7 +57,7 @@ classdef linear_solver < handle
                 otherwise
                     error('unsupported linear solver type');
             end
-            disp(['LS time:', num2str(toc(start))]);
+            % disp(['LS time:', num2str(toc(start))]);
             if flag ~= 0
                 disp(['WARNING: Linear solver did not converge. The residual norm is ', num2str(relres)]);
             end

@@ -17,7 +17,7 @@ classdef linear_solver_ADM < linear_solver
             obj@linear_solver(name, tol, maxit);
         end
         function SetUp(obj, ProductionSystem, DiscretizationModel, Residual)
-            % Get ADM Operators
+            % Select grid and get ADM Operators 
             [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel, ProductionSystem, Residual);
             % Modify permeability field (for upscaling option)
             if obj.DLGR
