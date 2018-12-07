@@ -25,7 +25,7 @@ classdef BO_oil_phase < phase
             %Bo_r = obj.m .* p + obj.q;
             rho = (Components(2).rho + Components(1).rho .* Rs)./Bo_r;
         end
-        function drho = DrhoDp(obj, p, Components, Rs, dRs)
+        function drho = ComputeDrhoDp(obj, p, Components, Rs, dRs)
             %Bo_r = obj.m .* p + obj.q;
             %dBo_r = obj.m;
             Bo_r = 1;
@@ -38,7 +38,7 @@ classdef BO_oil_phase < phase
             Rs = 100 * p/obj.Pb + 0.2;
             dRs = 100 / obj.Pb;
         end
-        function drho = DrhoDz(obj, p, z, Components, SinglePhase)
+        function drho = ComputeDrhoDz(obj, p, z, Components, SinglePhase)
             %Bo_r = obj.m .* p + obj.q;
             Bo_r = ones(length(p), 1);
             drho = zeros(length(p), 1);

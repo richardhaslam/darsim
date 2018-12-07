@@ -51,7 +51,6 @@ methods
             start1 = tic;
             obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
             obj.TimerConstruct(obj.itCount) = toc(start1);
-            
             % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
             obj.SystemBuilder.SetUpSolutionChopper(obj.SolutionChopper, Formulation, ProductionSystem, DiscretizationModel);
             start2 = tic;

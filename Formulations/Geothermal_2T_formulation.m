@@ -13,6 +13,8 @@ classdef Geothermal_2T_formulation < formulation
         dh % first column is dhdp second column is dhdT
         Cp % fluid specific heat
         Kf % fluid conductivity
+        Tk % transmisibility of rock conductivity
+        Th % transmisibility of rho .* h
         AveragedTemperature
     end
     methods
@@ -272,12 +274,12 @@ classdef Geothermal_2T_formulation < formulation
                 else
                     Re = 1./(1-Por) .* rho .* v(:) .* Medium.Dp .* obj.Mob(Index.Start:Index.End);
                 end
-                if ~isreal(Re)
-                    error('Reynold is not real!');
-                end
-                if ~isreal(Pr)
-                    error('Prandtl is not real!');
-                end
+%                 if ~isreal(Re)
+%                     error('Reynold is not real!');
+%                 end
+%                 if ~isreal(Pr)
+%                     error('Prandtl is not real!');
+%                 end
                 Nu = 0.225./Por .* Pr.^0.33 .* Re.^0.67;
                 
                 function v = ComputeVelocity(obj, Medium, Index, Grid, f)

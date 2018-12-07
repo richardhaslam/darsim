@@ -26,7 +26,7 @@ classdef BO_gas_phase < phase
             Bg_r = 0.5*(p./obj.Pst).^-1;  
             rho = Components(1).rho./Bg_r;
         end
-        function drho = DrhoDp(obj, p, Components, rs, drs)
+        function drho = ComputeDrhoDp(obj, p, Components, rs, drs)
             %Bg_r = exp(obj.alpha .* (p - obj.Pst));
             %Num = -obj.alpha * Bg_r;
             %drho = zeros(length(Bg_r), 1);

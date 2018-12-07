@@ -60,12 +60,14 @@ classdef Geothermal_2T_fluid_model < fluid_model
             dMob = -dmu./(mu.^2);
         end
         function drho = ComputeDrho(obj, Status)
-            drhodp = obj.Phases.DrhoDp(Status.Properties('P_1').Value, Status.Properties('Tf').Value);
-            drhodT = obj.Phases.DrhoDT(Status.Properties('P_1').Value, Status.Properties('Tf').Value);
+            drhodp = obj.Phases.ComputeDrhoDp(Status.Properties('P_1').Value, Status.Properties('Tf').Value);
+            drhodT = obj.Phases.ComputeDrhoDT(Status.Properties('P_1').Value, Status.Properties('Tf').Value);
             drho = [drhodp, drhodT];
         end
         function dh = ComputeDh(obj, Status)
-            dh = obj.Phases.ComputeDh(Status.Properties('P_1').Value, Status.Properties('Tf').Value);
+            dhdp = obj.Phases.ComputeDhDp(Status.Properties('P_1').Value, Status.Properties('Tf').Value);
+            dhdT = obj.Phases.ComputeDhDT(Status.Properties('P_1').Value, Status.Properties('Tf').Value);
+            dh = [dhdp, dhdT];
         end
         function v = ComputeVelocity(obj, Reservoir, mu)
 %             virtual call

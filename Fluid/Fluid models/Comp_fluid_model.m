@@ -191,11 +191,11 @@ classdef Comp_fluid_model < fluid_model
             dxdz(SinglePhase == 2, 5) = 0;
             
         end
-        function drho = DrhoDz(obj, Status, SinglePhase)
+        function drhodz = ComputeDrhoDz(obj, Status, SinglePhase)
             N = length(Status.Properties('P_2').Value);
-            drho = zeros(N, obj.NofPhases);
+            drhodz = zeros(N, obj.NofPhases);
         end
-        function dSdp = DSDp(obj, Status, drhodp, dni)
+        function dSdp = ComputeDSDp(obj, Status, drhodp, dni)
             ni = Status.Properties('ni_1').Value;
             rhov = Status.Properties('rho_1').Value;
             rhol = Status.Properties('rho_2').Value;
@@ -208,11 +208,11 @@ classdef Comp_fluid_model < fluid_model
             % final derivative
             dSdp = (dNum .* Den - dDen .* Num)./Den.^2;
         end
-        function dMobdp = DMobDp(obj, Status, dSdp)
-            dMobdS = obj.DMobDS(Status.Properties('S_1').Value); 
+        function dMobdp = ComputeDMobDp(obj, Status, dSdp)
+            dMobdS = obj.ComputeDMobDS(Status.Properties('S_1').Value); 
             dMobdp = dMobdS .* dSdp;
         end
-        function dSdz = DSDz(obj, Status, dni)
+        function dSdz = ComputeDSDz(obj, Status, dni)
             % Derivative of S with respect to overall composition
             rhov = Status.Properties('rho_1').Value;
             rhol = Status.Properties('rho_2').Value;
@@ -230,7 +230,7 @@ classdef Comp_fluid_model < fluid_model
             dSdz(Status.Properties('S_1').Value == 1, 2) = 0;
             dSdz(Status.Properties('S_1').Value == 1, 1) = 0;
         end
-        function drhotdz = DrhotDz(obj, Status, drho, dS)
+        function drhotdz = ComputeDrhotDz(obj, Status, drho, dS)
             N = length(Status.Properties('rho_1').Value);
             rho = zeros(N, obj.NofPhases);
             S = zeros(N, obj.NofPhases);
@@ -245,8 +245,8 @@ classdef Comp_fluid_model < fluid_model
             % When it s one phase
             drhotdz(S(:,1) == 1, :) = 0;
         end
-        function dPc = DPcDz(obj, Status, dSdz)
-            dPcdS = obj.DPcDS(Status.Properties('S_1').Value);
+        function dPc = ComputeDPcDz(obj, Status, dSdz)
+            dPcdS = obj.ComputeDPcDS(Status.Properties('S_1').Value);
             dPc = zeros(length(dPcdS), obj.NofComp-1);
             for j=1:obj.NofComp-1
                 % Use chain rule

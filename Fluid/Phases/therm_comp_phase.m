@@ -22,23 +22,13 @@ classdef therm_comp_phase < phase
             cf =  (0.0839*T.^2 - 64.593*T + 12437)*1e-12;
             rho_fs = -0.0032*T.^2 + 1.7508*T + 757.5; 
             rho = rho_fs.*(1+cf.*(p-obj.Psat));
-            % fill in whatever you like
         end
-%         function drho = ComputeDrho(obj, p, T)
-%             cf =  (0.0839*T.^2 - 64.593*T + 12437)*1e-12;
-%             dcwdT = (2*0.0839*T - 64.593)*1e-12;
-%             rho_fs = -0.0032*T.^2 + 1.7508*T + 757.5;
-%             drho_fs_dT = 2*-0.0032.*T + 1.7508;
-%             drhodT = drho_fs_dT + (p-obj.Psat).*(rho_fs.*dcwdT + cf.*drho_fs_dT);
-%             drhodP = rho_fs.*cf;
-%             drho = [drhodP, drhodT];
-%         end
-        function drhodp = DrhoDp(obj, p, T)
+        function drhodp = ComputeDrhoDp(obj, p, T)
             cf =  (0.0839*T.^2 - 64.593*T + 12437)*1e-12;
             rho_fs = -0.0032*T.^2 + 1.7508*T + 757.5;
             drhodp = rho_fs.*cf;
         end
-        function drhodT = DrhoDT(obj, p, T)
+        function drhodT = ComputeDrhoDT(obj, p, T)
             cf =  (0.0839*T.^2 - 64.593*T + 12437)*1e-12;
             dcwdT = (2*0.0839*T - 64.593)*1e-12;
             rho_fs = -0.0032*T.^2 + 1.7508*T + 757.5;
@@ -73,12 +63,15 @@ classdef therm_comp_phase < phase
         function v = ComputeVelocity(obj, p, mu)
 %             virtual call
         end
-        function dh = ComputeDh(obj, p, T)
+        function dhdp = ComputeDhDp(obj, p, T)
             rho = obj.ComputeDensity(p, T);
-            drho = obj.ComputeDrho(p, T);
-            dhdp = ((rho - p.*drho(:,1))./rho.^2);
-            dhdT = obj.Cp + p.*(-drho(:,2)./rho.^2);
-            dh = [dhdp, dhdT];
+            drhodp = obj.ComputeDrhoDp(p, T);
+            dhdp = ((rho - p.*drhodp)./rho.^2);
+        end
+        function dhdT = ComputeDhDT(obj, p, T)
+            rho = obj.ComputeDensity(p, T);
+            drhodT = obj.ComputeDrhoDT(p, T);
+            dhdT = obj.Cp + p.*(-drhodT./rho.^2);
         end
     end
 end

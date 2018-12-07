@@ -13,7 +13,7 @@ classdef operators_handler < handle
             obj.ProlongationBuilders = prolongation_builder.empty;
         end
         function AddProlongationBuilder(obj, prolongationbuilder, index)
-            obj.ProlongationBuilders(index) = prolongationbuilder;
+            obj.ProlongationBuilders(index,1) = prolongationbuilder;
         end
     end
 end

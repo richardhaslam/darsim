@@ -51,33 +51,33 @@ classdef fluid_model < handle
             RhoT = State.Properties('rhoT');
             RhoT.Value = rhoT;
         end
-        function dMob = DMobDS(obj, s)
-            dMob = zeros(length(s), obj.NofPhases);
+        function dMobdS = ComputeDMobDS(obj, s)
+            dMobdS = zeros(length(s), obj.NofPhases);
             dkr = obj.RelPermModel.ComputeDerivative(obj.Phases, s);
             for i=1:obj.NofPhases
-                dMob(:,i) = dkr(:,i)/obj.Phases(i).mu;
+                dMobdS(:,i) = dkr(:,i)/obj.Phases(i).mu;
             end
         end
-        function dMobdsds = DMobDSDS(obj, s)
-            dMobdsds = zeros(length(s), obj.NofPhases);
+        function dMobdSdS = ComputeDMobDSDS(obj, s)
+            dMobdSdS = zeros(length(s), obj.NofPhases);
             ddkr = obj.RelPermModel.ComputeSecondDerivative(obj.Phases, s);
             for i=1:obj.NofPhases
-                dMobdsds(:,i) = ddkr(:,i)/obj.Phases(i).mu;
+                dMobdSdS(:,i) = ddkr(:,i)/obj.Phases(i).mu;
             end
         end
-        function dMob = DMobDz(obj, Status, dSdz)
-            dMobdS = obj.DMobDS(Status.Properties('S_1').Value);
-            dMob = zeros(length(dMobdS), obj.NofComp-1);
+        function dMobdz = ComputeDMobDz(obj, Status, dSdz)
+            dMobdS = obj.ComputeDMobDS(Status.Properties('S_1').Value);
+            dMobdz = zeros(length(dMobdS), obj.NofComp-1);
             for j=1:obj.NofComp-1
                 % Use chain rule
-                dMob(:,1,j) = dMobdS(:,1) .* dSdz(:,j);
-                dMob(:,2,j) = dMobdS(:,2) .* dSdz(:,j);
+                dMobdz(:,1,j) = dMobdS(:,1) .* dSdz(:,j);
+                dMobdz(:,2,j) = dMobdS(:,2) .* dSdz(:,j);
             end
         end
-        function drho = DrhoDp(obj, Status, SinglePhase)
+        function drho = ComputeDrhoDp(obj, Status, SinglePhase)
             drho = zeros(length(Status.Properties('P_1').Value), obj.NofPhases);
             for i=1:obj.NofPhases
-                drho(:, i) = obj.Phases(i).DrhoDp(Status.Properties(strcat('P_', num2str(obj.NofPhases))).Value);
+                drho(:, i) = obj.Phases(i).ComputeDrhoDp(Status.Properties(strcat('P_', num2str(obj.NofPhases))).Value);
             end
         end
         function ComputePc(obj, Status)
@@ -103,24 +103,24 @@ classdef fluid_model < handle
             % Update P_1
             P1.Value = P2.Value - Pc.Value;
         end
-        function dPc = DPcDS(obj, S)
+        function dPcdS = ComputeDPcDS(obj, S)
             switch(obj.WettingPhaseIndex)
                 case(1)
                     s = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr);
                     s = max(s, 0.05);
-                    dPc = obj.CapillaryModel.dPcdS(s);
-                    dPc (S < obj.Phases(1).sr) = 0.0;
+                    dPcdS = obj.CapillaryModel.dPcdS(s);
+                    dPcdS (S < obj.Phases(1).sr) = 0.0;
                 case(2)
                     S = 1 - S;
                     s = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr);
                     s = max(s, 0.05);
                     % There is a double negative sign. P1 = P2 - Pc. Pc = -Pc so dPc = -dPc and dPcdS1 = -dPcdS2
-                    dPc = obj.CapillaryModel.dPcdS(s);  
-                    dPc (S < obj.Phases(2).sr) = 0.0;
+                    dPcdS = obj.CapillaryModel.dPcdS(s);  
+                    dPcdS (S < obj.Phases(2).sr) = 0.0;
             end
             
         end
-        function drhotdp = DrhotDp(obj, Status, drho, dS)
+        function drhotdp = ComputeDrhotDp(obj, Status, drho, dS)
             N = length(Status.Properties('rho_1').Value);
             rho = zeros(N, obj.NofPhases);
             S = zeros(N, obj.NofPhases);

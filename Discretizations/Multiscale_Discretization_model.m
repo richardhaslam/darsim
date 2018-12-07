@@ -99,7 +99,7 @@ classdef Multiscale_Discretization_model < Discretization_model
                 end
                 
                 for i=min_maxLevel + 1 :obj.maxLevel(1)
-                    obj.CoarseGrid(1+f,i) = coarse_grid();
+                    obj.CoarseGrid(1+f, i) = coarse_grid();
                     obj.CoarseGrid(1+f, i).CoarseFactor = obj.Coarsening(1+f,:, i-1);
                     obj.CoarseGrid(1+f, i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
                     obj.CoarseGrid(1+f, i).Children = [1:obj.CoarseGrid(1+f, i).N]';

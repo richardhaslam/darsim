@@ -31,15 +31,15 @@ classdef Overall_Composition_formulation < Compositional_formulation
             % This is the bitchy part!! 
             [obj.dxdp, obj.dxdz] = FluidModel.DxDpDz(ProductionSystem.Reservoir.State, obj.SinglePhase);
             % %%%%%%%%%%%%%%%%%%%%%%%%
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State, obj.SinglePhase);
-            obj.drhodz = FluidModel.DrhoDz(ProductionSystem.Reservoir.State, obj.SinglePhase);
-            dSdp = FluidModel.DSDp(ProductionSystem.Reservoir.State, obj.drhodp, -obj.dxdp(:,5));
-            dSdz = FluidModel.DSDz(ProductionSystem.Reservoir.State, -obj.dxdz(:, end));
-            obj.drhoTdz = FluidModel.DrhotDz(ProductionSystem.Reservoir.State, obj.drhodz, dSdz);
-            obj.drhoTdp = FluidModel.DrhotDp(ProductionSystem.Reservoir.State,obj.drhodp, dSdp);
-            obj.dMobdp = FluidModel.DMobDp(ProductionSystem.Reservoir.State, [dSdp, dSdp]); % I am not using it !
-            obj.dMob = FluidModel.DMobDz(ProductionSystem.Reservoir.State, dSdz);
-            obj.dPc = FluidModel.DPcDz(ProductionSystem.Reservoir.State, dSdz);
+            obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State, obj.SinglePhase);
+            obj.drhodz = FluidModel.ComputeDrhoDz(ProductionSystem.Reservoir.State, obj.SinglePhase);
+            dSdp = FluidModel.ComputeDSDp(ProductionSystem.Reservoir.State, obj.drhodp, -obj.dxdp(:,5));
+            dSdz = FluidModel.ComputeDSDz(ProductionSystem.Reservoir.State, -obj.dxdz(:, end));
+            obj.drhoTdz = FluidModel.ComputeDrhotDz(ProductionSystem.Reservoir.State, obj.drhodz, dSdz);
+            obj.drhoTdp = FluidModel.ComputeDrhotDp(ProductionSystem.Reservoir.State,obj.drhodp, dSdp);
+            obj.dMobdp = FluidModel.ComputeDMobDp(ProductionSystem.Reservoir.State, [dSdp, dSdp]); % I am not using it !
+            obj.dMob = FluidModel.ComputeDMobDz(ProductionSystem.Reservoir.State, dSdz);
+            obj.dPc = FluidModel.ComputeDPcDz(ProductionSystem.Reservoir.State, dSdz);
          end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             %Create local variables
