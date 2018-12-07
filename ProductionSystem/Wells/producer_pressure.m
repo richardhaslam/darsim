@@ -28,8 +28,11 @@ classdef producer_pressure < producer
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
-                case('Geothermal')
-                    % update also Qh flux
+                case('Geothermal_2T')
+                    for i = 1:FluidModel.NofPhases
+                        h = State.Properties(['h_', num2str(i)]);
+                        obj.Qh(:,i) = h.Value(obj.Cells) .* obj.QPhases(:,i);
+                    end
                 otherwise
                     for j=1:FluidModel.NofComp
                         for phase=1:FluidModel.NofPhases
@@ -49,9 +52,38 @@ classdef producer_pressure < producer
                 dQdS(:, i) = rho.Value(obj.Cells) .* dMob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
         end
-        function [dQdp, dQdT] = dQdPdT(obj, K, NofPhases) % need perforated cell properties
+        function [dQdp, dQdT] = dQdPdT(obj, State, K, Mob, dMob, drho, NofPhases) % need perforated cell properties
+            p = State.Properties(['P_',num2str(NofPhases)]);
+            drhodP = drho(:,1);
+            drhodT = drho(:,2);
+            dQdp = zeros(length(obj.Cells), NofPhases);
+            dQdT = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                rho = State.Properties(['rho_',num2str(i)]);
+                dQdp = Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) .* ( rho.Value(obj.Cells) * (-1) + (obj.p - p.Value(obj.Cells)) .* drhodP(obj.Cells,i) ); 
+                dQdT = obj.PI .* K(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* ( rho.Value(obj.Cells) .* dMob(obj.Cells,i) + Mob(obj.Cells,i) .* drhodT(obj.Cells,i));
+            end
         end
-        function [dQhdp, dQhdT] = dQhdPdT(obj, K, NofPhases) % need perforated cell properties
+        function [dQhdp, dQhdT] = dQhdPdT(obj, State, K, Mob, dMob, drho, dh, NofPhases) % need perforated cell properties
+            p = State.Properties(['P_',num2str(NofPhases)]);
+            drhodP = drho(:,1);
+            drhodT = drho(:,2);
+            dhdP = dh(:,1);
+            dhdT = dh(:,2);
+            dQhdp = zeros(length(obj.Cells), NofPhases);
+            dQhdT = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                rho = State.Properties(['rho_',num2str(i)]);
+                h = State.Properties(['h_',num2str(i)]);
+                dQhdp = Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) .* ...
+                    ( h.Value(obj.Cells) .* rho.Value(obj.Cells) .* (-1) + ...
+                    (obj.p - p.Value(obj.Cells)) .* h.Value(obj.Cells) .* drhodP(obj.Cells,i) +...
+                    rho.Value(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* dhdP(obj.Cells,i)); 
+                dQhdT = obj.PI .* K(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* ...
+                    ( h.Value(obj.Cells) .* rho.Value(obj.Cells) .* dMob(obj.Cells,i) + ...
+                    h.Value(obj.Cells) .* Mob(obj.Cells,i) .* drhodT(obj.Cells,i) + ...
+                    rho.Value(obj.Cells) .*  Mob(obj.Cells,i) .* dhdT(obj.Cells,i));
+            end
         end
 %         function [A, rhs] = AddToPressureSystem(obj, Mob, K, A, rhs)
 %             a = obj.Cells;

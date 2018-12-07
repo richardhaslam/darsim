@@ -12,12 +12,20 @@ classdef reservoir < handle
         Temp
         K
         K_coarse
-        Por
+        Por0 % initial porosity
+        Por % current porosity
+        DPor
         TotalPV
         State
         level
         State_old
         MaxLevel
+        P0
+        Cr % rock compressibility
+        k_cond % rock conductivity
+        Cpr % rock specific heat
+        Rho % density of reservoir rock
+        Dp = 1e-3;% grain diameter
     end
     methods
         function obj = reservoir(length, width, thickness, temp)
@@ -28,9 +36,16 @@ classdef reservoir < handle
             obj.State = status();
             obj.State_old = status();
         end
-        function AddPermeabilityPorosity(obj, k, por)
+        function ComputePorosity(obj, P)
+            obj.Por = obj.Por0.*exp(obj.Cr.*(P-obj.P0));
+        end
+        function ComputeDerPorosity(obj, P)
+            obj.DPor = obj.Cr.*obj.Por0.*exp(obj.Cr.*(P-obj.P0));
+        end
+        function AddPermeabilityPorosity(obj, k, por0)
             obj.K = k;
-            obj.Por = por;
+            obj.Por0 = por0;
+            obj.Por = por0;
             obj.TotalPV = obj.Length * obj.Width * obj.Thickness * obj.Por;
         end
         function AddCoarsePermeability(obj, k_coarse)

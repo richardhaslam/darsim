@@ -17,12 +17,11 @@ properties
     TimerSolve
     TimerInner
     Delta
-    InitialTimeStep = true;
 end
 properties (Access = private)
     Residual
     Jacobian
-%     InitialTimeStep = true;
+    InitialTimeStep = true;
 end
 methods
     function obj = NL_Solver()
@@ -40,8 +39,10 @@ methods
         obj.TimerInner = zeros(obj.MaxIter, 1);
         obj.itCount = 1;
         
+        % Compute the first residual norm
+        obj.ConvergenceChecker.ComputeFirstResidualNorm(obj.Residual, DiscretizationModel, obj.LinearSolver);
         % Print some info
-        obj.ConvergenceChecker.PrintTitles(obj.Residual);
+        obj.ConvergenceChecker.PrintTitles();
         
         % NEWTON-RAPHSON LOOP
         while ((obj.Converged==0)  && (obj.itCount <= obj.MaxIter))
@@ -97,10 +98,21 @@ methods
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
         % 1. Save initial state
         obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
-        
+     
         % 2. Computes initial residual
         % Update Derivatives
         obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+        
+        % Use CPR for Pressure (only for geothermal)
+        if obj.InitialTimeStep
+            switch(FluidModel.name)
+                case ('Geothermal_2T')
+                    Formulation.ConstrainedPressureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
+                    obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel); 
+                obj.InitialTimeStep = false;
+            end
+        end
+        
         % Compute residual
         obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
     end

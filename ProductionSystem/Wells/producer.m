@@ -15,6 +15,7 @@ classdef producer < handle
         Qh % enthalpy flux
         PI
         BHPDepth
+        h
     end
     methods
         function obj = producer(PI, coord)

@@ -58,6 +58,11 @@ classdef simulation_builder < handle
 %                     VarValues(index, 2) = newval;
 %                     VarValues(:, 3) = 1 - VarValues(:, 2);
                     simulation.Initializer = initializer(VarNames, VarValues);
+                case("Geothermal_2T")
+                    VarNames = {'P_1', 'Tf', 'Tr' ,'S_1'};
+                    VarValues(:, 4) = 1;
+                    VarValues(:, 2:3) = obj.SimulationInput.ReservoirProperties.Temperature;
+                    simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
@@ -122,8 +127,8 @@ classdef simulation_builder < handle
                 n_phases = obj.SimulationInput.FluidProperties.NofPhases;
                 fprintf('---> Fracture ');
                 for f = 1 : NrOfFrac
-                    if (f>1),  fprintf(repmat('\b', 1, 5+27));  end
-                    fprintf('%02d/%02d',f,NrOfFrac);
+                    if (f>1),  fprintf(repmat('\b', 1, 9+27));  end
+                    fprintf('%04d/%04d',f,NrOfFrac);
                     % looping over all global fracture cells
 					fprintf(' ---> Grid cell ');
                     for If = 1:Nf(f)
@@ -159,8 +164,7 @@ classdef simulation_builder < handle
                         CrossConnections(sum(Nf(1:f-1))+If,1).T_Geo = zeros(size(CrossConnections(sum(Nf(1:f-1))+If,1).ConnIndex));
                     end
                 end
-                fprintf(' ---> Completed');
-				fprintf('\n');
+				fprintf(' ---> Complete!\n');
             end
             
             %% 2. Define your discretization Model (choose between FS and ADM)
@@ -170,6 +174,7 @@ classdef simulation_builder < handle
                     ADMSettings = obj.SimulatorSettings.ADMSettings;
                     % Create the operatorshandler
                     operatorshandler = operators_handler_adm(ADMSettings.Coarsening(1,:,:));
+                    
                     % a.1 Pressure prolongation builder
                     switch (ADMSettings.PInterpolator)
                         case ('Constant')
@@ -177,9 +182,17 @@ classdef simulation_builder < handle
                         otherwise
                             prolongationbuilder = prolongation_builder_MSPressure(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
                             if ~obj.SimulationInput.FracturesProperties.Fractured
-                                prolongationbuilder.BFUpdater = bf_updater_ms();
-                            else
-                                prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                                if obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                                    prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
+                                else
+                                    prolongationbuilder.BFUpdater = bf_updater_ms();
+                                end
+                            else % Fractured
+                                if obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                                    prolongationbuilder.BFUpdater = bf_updater_FAMS_geothermal();
+                                else
+                                    prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                                end
                                 prolongationbuilder.BFUpdater.BFtype = ADMSettings.BFtype;
                             end
                             if strcmp(ADMSettings.PInterpolator, 'Homogeneous')
@@ -187,9 +200,9 @@ classdef simulation_builder < handle
                             else
                                 prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
                             end
-                    end
-                    
+                    end       
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
+                    
                     % a.2 Hyperbolic variables operators builder
                     n_phases = obj.SimulationInput.FluidProperties.NofPhases;
                     for i = 2:n_phases
@@ -198,14 +211,48 @@ classdef simulation_builder < handle
                                 prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
                             case('MS')
                                 prolongationbuilder = prolongation_builder_MSHyperbolic(ADMSettings.maxLevel(1));
+                                prolongationbuilder.key = strcat('S_',num2str(i-1));
                         end
                         operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
+                    end    
+                    if obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                        switch(ADMSettings.HInterpolator)
+                            case('Constant')
+                                prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
+                            case('MS')
+                                prolongationbuilder = prolongation_builder_MSHyperbolic(ADMSettings.maxLevel(1));
+                                prolongationbuilder.key = 'T';
+                        end
+                        i = length(operatorshandler.ProlongationBuilders);
+                        operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
                     end
                     
+                    % a.3 Rock Temperature operator builder
+                    if obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                        switch (ADMSettings.TrInterpolator)
+                            case ('Constant')
+                                prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
+                            otherwise
+                                prolongationbuilder = prolongation_builder_MSRockTemperature(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
+                                prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
+                                if strcmp(ADMSettings.TrInterpolator, 'Homogeneous')
+                                    prolongationbuilder.BFUpdater.MaxContrast = 1;
+                                else
+                                    prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
+                                end
+                        end
+                        i = length(operatorshandler.ProlongationBuilders);
+                        operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
+                    end
+ 
                     % b. Grid selection criterion (time\space based)
                     switch (ADMSettings.GridSelCriterion)
                         case('dfdx')
-                            gridselector = adm_grid_selector_delta(ADMSettings.tol, ADMSettings.key);
+                            if obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                                gridselector = adm_grid_selector_temperature(ADMSettings.tol, ADMSettings.key);
+                            else
+                                gridselector = adm_grid_selector_delta(ADMSettings.tol, ADMSettings.key);
+                            end
                         case('dfdt')
                             gridselector = adm_grid_selector_time(ADMSettings.tol, ADMSettings.key, ReservoirGrid.N, ADMSettings.maxLevel(1));
                         case('residual')
@@ -221,7 +268,11 @@ classdef simulation_builder < handle
                     operatorshandler = operators_handler_MMs(MMsSettings.Coarsening(1,:,:));
                     prolongationbuilder = prolongation_builder_MSPressure(MMsSettings.maxLevel(1), MMsSettings.Coarsening(:,:,1) );
                     if ~obj.SimulationInput.FracturesProperties.Fractured
-                        prolongationbuilder.BFUpdater = bf_updater_ms();
+                        if obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                            prolongationbuilder.BFUpdater = bf_updater_ms_P_geothermal();
+                        else
+                            prolongationbuilder.BFUpdater = bf_updater_ms();
+                        end
                     else
                         prolongationbuilder.BFUpdater = bf_updater_FAMS();
                         if strcmp(MMsSettings.BFtype , 'COUPLED')
@@ -262,9 +313,13 @@ classdef simulation_builder < handle
             Tres = obj.SimulationInput.ReservoirProperties.Temperature; %Res temperature [K]
             Reservoir = reservoir(Lx, Ly, h, Tres);
             phi = obj.SimulationInput.ReservoirProperties.phi;
+            cr = obj.SimulationInput.ReservoirProperties.Compressibility;
             nx = obj.SimulationInput.ReservoirProperties.Grid.N(1); 
             ny = obj.SimulationInput.ReservoirProperties.Grid.N(2);
             nz = obj.SimulationInput.ReservoirProperties.Grid.N(3);
+            k_cond = obj.SimulationInput.ReservoirProperties.Conductivity * ones(nx*ny*nz, 3);
+            Cpr = obj.SimulationInput.ReservoirProperties.SpecificHeat;
+            RockDensity = obj.SimulationInput.ReservoirProperties.Density;
             K = ones(nx*ny*nz, 3);
             for i=1:3
                 if obj.SimulationInput.ReservoirProperties.PermInclude(i)
@@ -294,6 +349,11 @@ classdef simulation_builder < handle
                 end
             end
             Reservoir.AddPermeabilityPorosity(K, phi);
+            Reservoir.Cr = cr;
+            Reservoir.k_cond = k_cond;
+            Reservoir.Cpr = Cpr;
+            Reservoir.Rho = RockDensity;
+            Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
                     % This is for DLGR type ADM: it reads coarse permeabilities
@@ -340,16 +400,22 @@ classdef simulation_builder < handle
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
                 coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
+                switch (obj.SimulationInput.FluidProperties.FluidModel)
+                    case ("Geothermal_2T")
+                    temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
+                    otherwise
+                    temperature = Tres;
+                end
                 switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.name)
                     case('pressure')
                         pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
-                        temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
+                        % temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
                         Injector = injector_pressure(PI, coord, pressure, temperature, n_phases);
                     case('rate')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         p_init = obj.SimulationInput.Init(1);
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
-                        Injector = injector_rate(PI, coord, rate, p_init, Tres, n_phases);
+                        Injector = injector_rate(PI, coord, rate, p_init, temperature, n_phases);
                 end
                 Wells.AddInjector(Injector);
             end
@@ -398,6 +464,7 @@ classdef simulation_builder < handle
                     FracturesNetwork.Fractures(f).Length = str2double( frac_info_split{3} );            % Length of each fracture
                     FracturesNetwork.Fractures(f).Width = str2double( frac_info_split{4} );             % Width of each fracture
                     FracturesNetwork.Fractures(f).Thickness = str2double( frac_info_split{5} );         % Thickness of each fracture
+                    FracturesNetwork.Fractures(f).Temp = Tres;                                          % Temperature of each fracture
                     
                     Porosity = str2double( frac_info_split{6} );                                        % Porosity  of each fracture 
                     Permeability = str2double( frac_info_split{7} );                                    % Permeability of each fracture
@@ -405,9 +472,16 @@ classdef simulation_builder < handle
                     Ky = Kx;
                     Kz = Kx;
                     K = [Kx, Ky, Kz];
-                    FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture  
+                    FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture 
+                    FracturesNetwork.Fractures(f).k_cond = 0*K;
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
+%                 Reservoir.AddPermeabilityPorosity(K, phi);
+%                 Reservoir.Cr = cr;
+%                 Reservoir.k_cond = k_cond;
+%                 Reservoir.Cpr = Cpr;
+%                 Reservoir.Rho = RockDensity;
+%                 Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
             end
         end
         function FluidModel = BuildFluidModel(obj)
@@ -498,12 +572,28 @@ classdef simulation_builder < handle
                         FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     end
                     FluidModel.FlashCalculator = FlashCalculator;
-                case('Geothermal')
+                case("Geothermal_2T")
                     % build the geothermal fluid model
-                    FluidModel = Geothermal_fluid_model();
+                    FluidModel = Geothermal_2T_fluid_model();
+                    FluidModel.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
                     Phase = therm_comp_phase();
                     FluidModel.AddPhase(Phase, 1);
                     obj.SimulatorSettings.CouplingType = 'FIM';
+                    %Gets all densities [kg/m^3]
+                    Phase.rho0 = obj.SimulationInput.FluidProperties.Density;
+                    %Gets all viscosities [Pa sec]
+                    Phase.mu0 = obj.SimulationInput.FluidProperties.mu;
+                    % Compressibility
+                    Phase.cf0 = obj.SimulationInput.FluidProperties.Comp;
+                    % Conductivity
+                    Phase.Kf = obj.SimulationInput.FluidProperties.Conductivity;
+                    % Specific Heat
+                    Phase.Cp = obj.SimulationInput.FluidProperties.SpecificHeat;
+                    
+                    FluidModel.AddPhase(Phase, 1);
+                    if Phase.cf0 == 0
+                        obj.incompressible = 1;
+                    end
             end
             
             %%  RelPerm model
@@ -551,9 +641,10 @@ classdef simulation_builder < handle
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
-                case('Thermal')
-                    Formulation = Thermal_formulation();
-                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 1;
+                case("Geothermal_2T")
+                    Formulation = Geothermal_2T_formulation();
+                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 2;
+                    Formulation.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
             end
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
@@ -569,7 +660,14 @@ classdef simulation_builder < handle
                         case ('ADM')
                             % Build a different convergence cheker and a proper LS for ADM
                             NLSolver.SystemBuilder = fim_system_builder_ADM();
-                            ConvergenceChecker = convergence_checker_ADM();
+                            switch obj.SimulatorSettings.Formulation  
+                                case ("Geothermal_2T")
+                                ConvergenceChecker = convergence_checker_ADM_geothermal_2T();
+                                ConvergenceChecker.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
+                                otherwise
+                                ConvergenceChecker = convergence_checker_ADM();
+                            end
+                            
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
@@ -583,16 +681,24 @@ classdef simulation_builder < handle
                             switch (obj.SimulatorSettings.Formulation)
                                 case('Molar')
                                     ConvergenceChecker = convergence_checker_FS_molar();
+                                case("Geothermal_2T")
+                                    ConvergenceChecker = convergence_checker_FS_geothermal_2T();
+                                    ConvergenceChecker.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
-                            NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                            NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500); 
                     end
+                     NLSolver.SystemBuilder.NumberOfEq = obj.NofEq;
                     NLSolver.MaxIter = obj.SimulatorSettings.MaxIterations;
-                    ConvergenceChecker.Tol = obj.SimulatorSettings.Tolerance;
+                    ConvergenceChecker.NumberOfEq  = obj.NofEq;
+                    ConvergenceChecker.ResidualTol = obj.SimulatorSettings.ResidualTolerances;
+                    ConvergenceChecker.SolutionTol = obj.SimulatorSettings.SolutionTolerances;
                     switch (obj.SimulatorSettings.Formulation)
                         case('Immiscible')
                             ConvergenceChecker.NormCalculator = norm_calculator_immiscible();
+                        case("Geothermal_2T")
+                            ConvergenceChecker.NormCalculator = norm_calculator_immiscible_geothermal();
                         otherwise
                             ConvergenceChecker.NormCalculator = norm_calculator_comp();
                     end
@@ -603,7 +709,7 @@ classdef simulation_builder < handle
                     else
                         Coupling = FIM_Strategy('FIM', NLSolver);
                     end
-                
+                %% Sequential coupling    
                 case('Sequential')
                     % Sequential coupling
                     Coupling = Sequential_Strategy('Sequential');
@@ -701,7 +807,7 @@ classdef simulation_builder < handle
                     end_of_sim_eval = end_of_sim_evaluator_PVInjected(obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps, 3);
             end
             TimeDriver.AddEndOfSimEvaluator(end_of_sim_eval);
-    end
+        end
         function Summary = BuildSummary(obj, simulation)
             %%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
             switch(obj.SimulatorSettings.CouplingType)
