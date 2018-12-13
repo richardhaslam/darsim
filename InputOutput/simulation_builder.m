@@ -606,7 +606,24 @@ classdef simulation_builder < handle
                 
                 case('Sequential')
                     % Sequential coupling
-                    Coupling = Sequential_Strategy('Sequential');
+                    if obj.SimulatorSettings.LTS == 1 
+                        Coupling = LTS_Sequential_Strategy('Sequential');                        
+                        LTStransportsolver = LTS_NL_Solver();
+                        LTStransportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
+                        ConvergenceChecker = convergence_checker_transport();
+                        ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                        LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
+                        LTStransportsolver.SystemBuilder = LTStransport_system_builder();
+                        LTStransportsolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+
+                        Coupling.AddLTSTransportSolver(LTStransportsolver);
+                    else
+                        Coupling = Sequential_Strategy('Sequential');
+                    end
+                    % At the moment I do not check pres and sat at each
+                    % cycle no OUTER ITERATION for LTS.
+                    Coupling.ConvergenceChecker = convergence_checker_outer();
+                    Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
                     Coupling.MaxIter = obj.SimulatorSettings.MaxIterations;
                     % pressuresolver = incompressible_pressure_solver();
                     pressuresolver = NL_Solver();
@@ -642,8 +659,7 @@ classdef simulation_builder < handle
                             ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
                             transportsolver.AddConvergenceChecker(ConvergenceChecker);
                             transportsolver.SystemBuilder = transport_system_builder();
-                            Coupling.ConvergenceChecker = convergence_checker_outer();
-                            Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                           
                             switch obj.SimulatorSettings.DiscretizationModel
                                 case('ADM')
                                     transportsolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);

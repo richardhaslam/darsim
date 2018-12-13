@@ -13,6 +13,7 @@ classdef Immiscible_formulation < formulation
         f
         df
         V
+        Vr
     end
     methods
         function obj = Immiscible_formulation()
@@ -972,6 +973,88 @@ classdef Immiscible_formulation < formulation
             Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
             Sm.update(-DeltaLast);
         end
+        %% LTS TRANSPORT SOLVER
+        
+        function ViscousMatrixLTS(obj, Grid, CellsSelected)
+            %Builds Upwind Flux matrix
+            Nx = Grid.Nx;
+            Ny = Grid.Ny;
+            Nz = Grid.Nz;
+            N = Grid.N;                                   
+            q = min(obj.Qwells, 0) .* CellsSelected.ActCells;                        
+            % right to left and top to bottom (negative x, y, z)
+            Xneg = min(obj.Utot.x, 0); 
+            Yneg = min(obj.Utot.y, 0);
+            Zneg = min(obj.Utot.z, 0);
+            % make them vectors 
+            x1 = reshape(Xneg(1:Nx,:,:),N,1);
+            y1 = reshape(Yneg(:,1:Ny,:),N,1);
+            z1 = reshape(Zneg(:,:,1:Nz),N,1);
+            
+            ActFluxes = CellsSelected.SelectRefFluxes(Grid);
+            
+            %select only the active fluxes
+            x1A = reshape(ActFluxes.x(1:Nx,:,:),N,1);
+            y1A = reshape(ActFluxes.y(:,1:Ny,:),N,1);
+            z1A = reshape(ActFluxes.z(:,:,1:Nz),N,1);
+            
+            x1 = x1 .* x1A;
+            y1 = y1 .* y1A;
+            z1 = z1 .* z1A;
+            
+            % left to right and bottom to top (positive x, y, z)
+            Xpos = max(obj.Utot.x, 0); 
+            Ypos = max(obj.Utot.y, 0); 
+            Zpos = max(obj.Utot.z, 0);
+            % make them vectors
+            x2 = reshape(Xpos(2:Nx+1,:,:), N, 1);
+            y2 = reshape(Ypos(:,2:Ny+1,:), N, 1);
+            z2 = reshape(Zpos(:,:,2:Nz+1), N, 1);
+            
+            %select only the active fluxes
+            x2A = reshape(ActFluxes.x(2:Nx+1,:,:),N,1);
+            y2A = reshape(ActFluxes.y(:,2:Ny+1,:),N,1);
+            z2A = reshape(ActFluxes.z(:,:,2:Nz+1),N,1);
+            
+            x2 = x2 .* x2A;
+            y2 = y2 .* y2A;
+            z2 = z2 .* z2A;
+            
+            % Assemble matrix
+            DiagVecs = [z2, y2, x2, +x1-x2+y1-y2+z1-z2+q, -x1, -y1, -z1]; % diagonal vectors
+            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny]; % diagonal index
+            obj.Vr = spdiags(DiagVecs, DiagIndx, N, N);
+        end
+        function Residual = BuildTransportResidualLTS(obj, ProductionSystem, DiscretizationModel, dt, State0, CellsSelected)
+            % Initialise local objects
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            s = ProductionSystem.Reservoir.State.Properties('S_1').Value;
+            s_old = State0.Properties('S_1').Value;      
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
+            
+            % viscous fluxes matrix
+            obj.ViscousMatrixLTS(DiscretizationModel.ReservoirGrid, CellsSelected);      
+            
+            % Compute residual
+            %(1) Put to zero the accepted residual cells 
+            Residual = (pv/dt .* rho .* (s - s_old)  - max(obj.Qwells, 0)) .*  CellsSelected.ActCells; 
+            %(2) Add the contribution of the viscous matrix 
+            Residual = Residual - obj.Vr * (obj.f);
+            % (3) Add the contribution of the accelpted fluxes at the
+            % boundary
+            Residual = Residual - (CellsSelected.ViscousMatrixValue * CellsSelected.f).* CellsSelected.ActCells;
+
+        end
+        function Jacobian = BuildTransportJacobianLTS(obj, ProductionSystem, DiscretizationModel, dt, CellsSelected)
+            % Build Transport Jacobian
+            N = DiscretizationModel.ReservoirGrid.N;
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
+            
+            D = spdiags(pv/dt*rho .* CellsSelected.ActCells, 0, N, N);
+            Jacobian = D - obj.Vr * spdiags(obj.df .* CellsSelected.ActCells,0,N,N); 
+        end
+        %% Explicit Saturation
         function delta = UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)
             % 0. Initialise
             pv = ProductionSystem.Reservoir.Por .* DiscretizationModel.ReservoirGrid.Volume;

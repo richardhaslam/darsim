@@ -556,7 +556,15 @@ classdef reader_darsim2 < reader
             end  
             
             %% %%% LTS
-            SimulatorSettings.LTS = 1; % 1 or 0. If 1 LTS is used.
+            temp = strfind(obj.SettingsMatrix, 'LTS');
+            index = find(~cellfun('isempty', temp));
+            if  ~isempty(index)
+                SimulatorSettings.LTS = str2double(obj.SettingsMatrix(index + 1));
+                % if == 1 I can read parameters useful for the
+                % sub-refinements:
+                % if str2double(obj.SettingsMatrix(adm + 1)) == 1
+            end
+            
             
             %% %%% Stop criterion
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation

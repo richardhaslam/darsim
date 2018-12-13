@@ -17,6 +17,8 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         Verteces
         CoarseFactor
         GridCoords
+        ActiveTime
+        
     end
     methods
         function Initialise(obj, maxLevel)
@@ -25,7 +27,7 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
             obj.Children = cell(obj.N, 1);
             obj.GrandChildren = cell(obj.N, 1);
             obj.Verteces = zeros(obj.N, maxLevel);
-            obj.CoarseFactor = zeros(obj.N, 3);
+            obj.CoarseFactor = zeros(obj.N, 3);            
         end
         function CopyGridEntries(obj, Grid, Nc_global, level)
             for c = 1:Grid.N

@@ -17,6 +17,9 @@
 % PermDir = '../Permeability/'
 function ResSimulator = DARSim2ResSim(Directory, File, PermDirectory)
 clc;
+
+addpath(genpath(pwd))
+
 %Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
 warning('off', 'MATLAB:nearlySingularMatrix');
