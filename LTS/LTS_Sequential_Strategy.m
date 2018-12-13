@@ -78,8 +78,7 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                     end
                     obj.BalanceTimer(obj.itCount) = toc(tstart2);
 
-                    %% 3. Solve transport
-                    
+                  %% 3. Solve transport
                     disp('Transport Solver');
                     disp('...............................................');
                     tstart3 = tic;
@@ -87,8 +86,20 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
        
                     obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
                     obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
+                    obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
+
                     if obj.TransportSolver.Converged == 0
-                        error('DARSim2 error: transport not converged')
+                        disp('Transport solver failed to converge!');
+                        obj.Chops = obj.Chops + 1;
+                        % Reset Initial guess
+                        ProductionSystem.Reservoir.State.CopyProperties(ProductionSystem.Reservoir.State_old);
+                        % UpdateWells
+                        ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                        disp(['Chopping time-step and restarting outer-loop with dt = ', num2str(dt)]);
+                        dt = dt/2;
+                        obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
+                        break;
+
                     end
                     obj.TransportTimer(obj.itCount) = toc(tstart3);
                     disp('...............................................');
@@ -125,6 +136,12 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                             
                             obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelector);
                             obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelector);
+                            %%!!! TO DO
+                            
+                            % il will create another variable to take into
+                            % account LTSIter
+                            % obj.NLiter = obj.NLiter + obj.LTSTransportSolver.itCount - 1;
+
                             if obj.LTSTransportSolver.Converged == 0
                                 disp('Sub ref not converged')
                                 break;
@@ -144,7 +161,7 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                     end
                     obj.Converged = obj.ConvergenceChecker.Check(ProductionSystem.Reservoir.State, State_old);
                     obj.itCount = obj.itCount + 1;
-                    if (obj.LTSTransportSolver.Converged == 0 || obj.LTSTransportSolver.Converged == 0 || obj.PressureSolver.Converged == 0)
+                    if  obj.LTSTransportSolver.Converged == 0
                         obj.Converged = 0;
                         
                         obj.Chops = obj.Chops + 1;
@@ -158,10 +175,15 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                         break;
                     end
                 end 
-                %ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                 ProductionSystem.SavePreviousState();
                 obj.TimeStepSelector.Update(dt, obj.itCount - 1, obj.Chops);
             end
+        end
+        function UpdateSummary(obj, Summary, Wells, Ndt, dt)
+            Summary.CouplingStats.SaveStats(Ndt, obj.itCount - 1, obj.NLiter);
+            Summary.CouplingStats.SaveTimers(Ndt, obj.PressureTimer, obj.BalanceTimer, obj.TransportTimer);
+            Summary.SaveWellsData(Ndt+1, Wells.Inj, Wells.Prod, dt);
         end
     end
 end
