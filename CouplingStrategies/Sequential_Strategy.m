@@ -78,10 +78,10 @@ classdef Sequential_Strategy < Coupling_Strategy
                     Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
                     % Check that velocity field is conservative
                     tstart2 = tic;
-%                     % conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
-%                     if ~conservative
-%                         error('DARSim2 error: mass balance not respected');
-%                     end
+                    conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
+                    if ~conservative
+                        error('DARSim2 error: mass balance not respected');
+                    end
                     obj.BalanceTimer(obj.itCount) = toc(tstart2);
                     
                     %% 3. Solve transport
@@ -105,6 +105,10 @@ classdef Sequential_Strategy < Coupling_Strategy
                     if obj.TransportSolver.Converged == 0
                         disp('Transport solver failed to converge!');
                         obj.itCount = obj.MaxIter+1;
+                    elseif obj.MaxIter == 1 
+                        % if there's only 1 outer-loop this check does not make sense
+                        obj.Converged = 1;
+                        obj.itCount = obj.itCount + 1;
                     else
                         %% 4. Check outer-loop convergence
                         obj.Converged = obj.ConvergenceChecker.Check(ProductionSystem.Reservoir.State, State_old);
@@ -114,7 +118,7 @@ classdef Sequential_Strategy < Coupling_Strategy
                 
                 % If it did not converge we chop the time-step and try
                 % again
-                if obj.Converged == 0
+                if obj.Converged == 0 
                     dt = dt/2;
                     obj.Chops = obj.Chops + 1;
                     % Reset Initial guess

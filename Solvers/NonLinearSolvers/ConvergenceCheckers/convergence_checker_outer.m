@@ -17,7 +17,7 @@ classdef convergence_checker_outer < convergence_checker
             Norm1 = norm((p - p_old)/max(p), inf);
             Norm2 = norm(s - s_old, inf);
             
-            if (Norm1 < obj.Tol*1000 && Norm2 < obj.Tol*1000)
+            if (Norm1 < obj.Tol && Norm2 < obj.Tol)
                 Converged = 1;
             end
         end

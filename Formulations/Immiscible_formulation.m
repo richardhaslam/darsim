@@ -544,18 +544,15 @@ classdef Immiscible_formulation < formulation
             obj.Mobt = sum(obj.Mob, 2);
         end
         function UpdateFractionalFlow(obj, ProductionSystem, FluidModel)
+            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.f = obj.Mob(:,1) ./ (obj.Mob(:,1) + obj.Mob(:, 2));
         end
         function dfdS(obj, ProductionSystem, FluidModel)
             obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            rho = 0 * obj.Mob; 
-            for i=1:obj.NofPhases
-                rho(:,i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
-            end
-            num = rho(:, 1) .* obj.Mob(:, 1);
-            dnum = rho(:, 1) .* obj.dMob(:,1);
-            den = sum(rho .* obj.Mob, 2);
-            dden = sum(rho .* obj.dMob, 2);  
+            num = obj.Mob(:, 1);
+            dnum = obj.dMob(:,1);
+            den = sum(obj.Mob, 2);
+            dden = sum(obj.dMob, 2);  
             obj.df = (dnum .* den - dden .* num) ./ den.^2;
         end
         function dfdsds = dfdSdS(obj, s, rho, FluidModel)
@@ -952,10 +949,10 @@ classdef Immiscible_formulation < formulation
             %snew = min(snew, 1);
             
             % FLUX CORRECTION - PATRICK
-            Ddf_old = obj.dfdSdS(s_old, rho, FluidModel);
-            Ddf = obj.dfdSdS(snew, rho, FluidModel);           
-            snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
-            delta = snew-s_old;
+%             Ddf_old = obj.dfdSdS(s_old, rho, FluidModel);
+%             Ddf = obj.dfdSdS(snew, rho, FluidModel);           
+%             snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
+%             delta = snew-s_old;
             
             % This is the actual update
             Nm = DiscretizationModel.ReservoirGrid.N;
