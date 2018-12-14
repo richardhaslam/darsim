@@ -11,6 +11,8 @@ classdef bf_updater_FAMS < bf_updater_ms
     end
     methods
         function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections)
+            % Builds fine-scale incompressible pressure system
+            
             % Reservoir
             Km = ProductionSystem.Reservoir.K;
             S = ProductionSystem.CreateGlobalVariables(FineGrid, FluidModel.NofPhases, 'S_');

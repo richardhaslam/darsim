@@ -34,9 +34,9 @@ classdef NaturalVar_formulation < Compositional_formulation
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State, obj.SinglePhase);
-            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.dMob = FluidModel.ComputeDMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State, obj.SinglePhase);
+            obj.dPc = FluidModel.ComputeDPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.K = FluidModel.ComputeKvalues(ProductionSystem.Reservoir.State);
             obj.dKdp = FluidModel.DKvalDp(ProductionSystem.Reservoir.State);
             obj.SinglePhase = FluidModel.CheckNumberOfPhases(obj.SinglePhase, obj.PreviousSinglePhase, ProductionSystem.Reservoir.State, obj.K);

@@ -91,8 +91,15 @@ classdef Multiscale_Discretization_model < Discretization_model
                 end
                 % Fathers and Verteces
                 obj.GridMapper.AssignFathersandVerteces(obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:min_maxLevel), min_maxLevel)
+                
+                % Correcting for Fathers and Verteces
+                for i=2:min_maxLevel
+                    obj.CoarseGrid(1+f, i).Fathers = [obj.CoarseGrid(1+f, i).Fathers, ...
+                                                      obj.CoarseGrid(1+f, i).Fathers(:,end) .* ones( size(obj.CoarseGrid(1+f, i).Fathers,1), obj.maxLevel(1)-min_maxLevel )];
+                end
+                
                 for i=min_maxLevel + 1 :obj.maxLevel(1)
-                    obj.CoarseGrid(1+f,i) = coarse_grid();
+                    obj.CoarseGrid(1+f, i) = coarse_grid();
                     obj.CoarseGrid(1+f, i).CoarseFactor = obj.Coarsening(1+f,:, i-1);
                     obj.CoarseGrid(1+f, i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
                     obj.CoarseGrid(1+f, i).Children = [1:obj.CoarseGrid(1+f, i).N]';

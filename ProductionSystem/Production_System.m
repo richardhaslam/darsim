@@ -87,5 +87,23 @@ classdef Production_System < handle
                 end
             end
         end
+        function x_Global = CreateGlobalSinglePhaseVariables(obj, FineGrid, key)
+            % For now only for fluid temperature, we use this function
+            % instead of the function defined above which is "CreateGlobalVariables"
+            x_Global   = zeros(sum([FineGrid(1:end).N]), 1);
+            %% Reservoir
+            x = obj.Reservoir.State.Properties(key).Value;
+            x_Global(1:FineGrid(1).N) = x;
+            %% Fractures
+            if obj.FracturesNetwork.Active
+                End = FineGrid(1).N;
+                for f=1:obj.FracturesNetwork.NumOfFrac
+                     Start = End+1;
+                     End = Start + FineGrid(1+f).N - 1;
+                     x = obj.FracturesNetwork.Fractures(f).State.Properties(key).Value;
+                     x_Global(Start:End) = x;
+                end
+            end
+        end
     end
 end

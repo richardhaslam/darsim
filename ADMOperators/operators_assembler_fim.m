@@ -20,8 +20,13 @@ classdef operators_assembler_fim < operators_assembler
             R = DiscretizationModel.OperatorsHandler.ADMRest;
             P = DiscretizationModel.OperatorsHandler.ADMProl{1};
             for i = 2:obj.NumberOfEq
-                R = blkdiag(R, DiscretizationModel.OperatorsHandler.ADMRest);
-                P = blkdiag(P, DiscretizationModel.OperatorsHandler.ADMProl{2});
+                % The equation number 3 (Energy balance in solid phase, i.e., Rock Temperature) is only for reservoir
+                if i==3 && any(strcmp(ProductionSystem.Reservoir.State.Properties.keys,'Tr'))
+                    R = blkdiag(R, DiscretizationModel.OperatorsHandler.ADMRest_Reservoir);
+                else
+                    R = blkdiag(R, DiscretizationModel.OperatorsHandler.ADMRest);
+                end
+                P = blkdiag(P, DiscretizationModel.OperatorsHandler.ADMProl{i});
             end
         end
     end

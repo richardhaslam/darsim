@@ -27,8 +27,10 @@ classdef injector_pressure < injector
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
-                case('Geothermal')
-                    % update also Qh flux
+                case('Geothermal_2T')
+                    for i = 1:FluidModel.NofPhases
+                        obj.Qh(:,i) = obj.h(i) * obj.QPhases(:,i);
+                    end
                 otherwise
                     for j=1:FluidModel.NofComp
                         for phase=1:FluidModel.NofPhases
@@ -46,16 +48,22 @@ classdef injector_pressure < injector
             end
         end
         function [dQdp, dQdT] = dQdPdT(obj, K, NofPhases)
+            dQdp = zeros(length(obj.Cells), NofPhases);
+            dQdT = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                dQdp = obj.Mob(:,i) * obj.PI .* K(obj.Cells) .* obj.rho(:,i) * (-1);
+                dQdT = 0;   
+            end
         end
         function [dQhdp, dQhdT] = dQhdPdT(obj, K, NofPhases)
+            dQhdp = zeros(length(obj.Cells), NofPhases);
+            dQhdT = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                dQhdp = obj.h(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells) .* obj.rho(:,i) * (-1);
+                dQhdT = 0;
+            end
         end
-%         function [A, rhs] = AddToPressureSystem(obj, K, A, rhs)
-%             a = obj.Cells;
-%             for ii=1:length(a)
-%                 A(a(ii),a(ii)) = A(a(ii),a(ii)) + obj.PI * K(a(ii)) .* obj.Mob(ii, 1);
-%                 rhs(a(ii)) = rhs(a(ii)) + obj.PI .* K(a(ii)) .* obj.Mob(ii,1) .* obj.p;
-%             end
-%         end
+
         function q = TotalFlux(obj, q, p, K)
             q(obj.Cells) = q(obj.Cells) + obj.PI .* K(obj.Cells) .* obj.Mob(:,1) .* (obj.p - p(obj.Cells));
         end

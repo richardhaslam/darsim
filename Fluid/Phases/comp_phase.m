@@ -18,8 +18,8 @@ classdef comp_phase < phase
         function rho = ComputeDensity(obj, p, Components)
             rho = obj.rho0 .* exp(obj.cf.*(p - obj.Pref));
         end
-        function drho = DrhoDp(obj, p, Components)
-            drho = obj.cf .* obj.rho0 .*exp (obj.cf.*(p - obj.Pref));
+        function drhodp = ComputeDrhoDp(obj, p, Components)
+            drhodp = obj.cf .* obj.rho0 .*exp (obj.cf.*(p - obj.Pref));
         end
     end
 end

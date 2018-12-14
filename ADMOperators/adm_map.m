@@ -21,6 +21,7 @@ classdef adm_map < handle
             obj.CF = cf;
         end
         function Update(obj, ADMGrid, FineGrid, level)
+                obj.CF = obj.CF(1:size(ADMGrid.N,1));
                 % Number of cells
                 obj.Nf = sum(ADMGrid.N(:,1:level), 1);
                 obj.Nc = ADMGrid.N(:, level+1);

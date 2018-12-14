@@ -85,7 +85,7 @@ classdef grid_mapper < handle
                 for y = x+1:maxLevel
                     Nc = CoarseGrid(y).N;
                     for c = 1:Nc
-                        CoarseGrid(x).Fathers(CoarseGrid(y).Children(c, :), y) = c; 
+                        CoarseGrid(x).Fathers(CoarseGrid(y).Children(c, :), y) = c;
                         for child = CoarseGrid(y).Children(c, :)
                             if CoarseGrid(y).I(c, 2) == CoarseGrid(x).I(child, 2) && CoarseGrid(y).J(c, 2) == CoarseGrid(x).J(child, 2) && CoarseGrid(y).K(c, 2) == CoarseGrid(x).K(child, 2)
                                 CoarseGrid(x).Verteces(child, y) = 1;

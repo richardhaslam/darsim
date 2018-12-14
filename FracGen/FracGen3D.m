@@ -32,7 +32,7 @@ Frac_Input = obj.Builder.FracInput;
 % machine's non-zero accuracy
 almostZero = obj.Simulation.Reservoir.almostZero;
 
-Frac = fractures_FracGen(); % Defining "Frac" as 
+Frac = fractures_FracGen(); % Defining "Frac" as
 
 Nt = 0; % Initializing total number of fracture grids
 
@@ -44,7 +44,6 @@ for F = 1 : size(Frac_Input,2)
     if Frac_Input(F).isActive
             f = f + 1;
             if isnan( Frac_Input(F).CenterCoord(1) ) % Fractures construction with three Points input type
-                
                 % The three vectors connecting 3 corners of the fracture plate (forming a triangle)
                 Vec12 = Frac_Input(F).CornerCoords(:,2) - Frac_Input(F).CornerCoords(:,1);
                 Vec23 = Frac_Input(F).CornerCoords(:,3) - Frac_Input(F).CornerCoords(:,2);
@@ -71,7 +70,7 @@ for F = 1 : size(Frac_Input,2)
                 Frac(f).Points = [ Frac(f).PointA , Frac(f).PointB , Frac(f).PointC , Frac(f).PointD , Frac(f).PointM ];
 
             else
-                
+	        
                 % Fracture construction with central Point and angles input type
                 Frac(f).PointM = Frac_Input(F).CenterCoord;
 
@@ -231,7 +230,7 @@ for F = 1 : size(Frac_Input,2)
         end
         
         % Reporting fracture properties:
-        fprintf('Fracture %4d: Dimension= %5.2f x %5.2f [m2] , Grid= %3.0f x %3.0f = %4.0f , ADM lvl= %1.0f\n', ...
+        fprintf('Fracture %2d: Dimension= %5.2f x %5.2f [m2] , Grid= %3.0f x %3.0f = %4.0f , ADM lvl= %1.0f\n', ...
         f, Frac(f).Length_AB, Frac(f).Width_AD, Frac(f).N_Length_AB, Frac(f).N_Width_AD, Frac(f).N_Length_AB*Frac(f).N_Width_AD, Frac(f).ADM(1)*Frac(f).ADM(2) );
         
         % Cumulative number of all fractures cells
@@ -249,7 +248,7 @@ fprintf('---------------------------------------------------------\n');
 
 %% Plotting fracture plates
 fprintf('Plotting fractures ...\n');
-figure(); 
+figure();
 for f = 1 : length(Frac)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Plotting the boundaries of each fracture plate
@@ -377,8 +376,8 @@ fprintf('---------------------------------------------------------\n');
 fprintf('Obtaining fractures - matrix overlaps:\n',f);
 fprintf('---> Fracture ');
 for f = 1 : length(Frac)
-    if (f>1),  fprintf(repmat('\b', 1, 9+27));  end
-    fprintf('%04d/%04d',f,length(Frac));
+    if (f>1),  fprintf(repmat('\b', 1, 5+27));  end
+    fprintf('%02d/%02d',f,length(Frac));
     Frac(f).  intersectCoord_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Coordinates of intersections between each fracture cell and each matrix cell
     Frac(f).        areaFrac_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Area fraction of each fracture cell inside each matrix cube
     Frac(f).         aveDist_matCell = cell( Frac(f).N_Length_AB*Frac(f).N_Width_AD , 1 );   % Average distance between each fracture cell and each matrix cube

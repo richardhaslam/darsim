@@ -33,7 +33,7 @@ classdef seq_formulation < handle
             obj.f = obj.Mob(:,1) ./ obj.Mobt;
         end
         function dfdS(obj, ProductionSystem, FluidModel)
-            dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.S);
+            dMob = FluidModel.ComputeDMobDS(ProductionSystem.Reservoir.State.S);
             obj.df = (dMob(:,1) .* sum(obj.Mob, 2) - sum(dMob, 2) .* obj.Mob(:,1)) ./ sum(obj.Mob, 2).^2;
         end
         function ComputeTransmissibilities(obj, ProductionSystem, DiscretizationModel)

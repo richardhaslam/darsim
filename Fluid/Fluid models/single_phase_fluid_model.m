@@ -43,11 +43,11 @@ classdef single_phase_fluid_model < fluid_model
             Mob = ones(length(s), obj.NofPhases);
             Mob(:,1) = 1/obj.Phases(1).mu;
         end
-         function dMob = DMobDS(obj, S)
-            dMob = zeros(length(S), 1);
+         function dMobdS = ComputeDMobDS(obj, S)
+            dMobdS = zeros(length(S), 1);
         end
-        function dPc = DPcDS(obj, S)
-            dPc = zeros(length(S), 1);
+        function dPcdS = ComputeDPcDS(obj, S)
+            dPcdS = zeros(length(S), 1);
         end
     end
 end

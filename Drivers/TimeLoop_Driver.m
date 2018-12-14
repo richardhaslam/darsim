@@ -64,7 +64,7 @@ classdef TimeLoop_Driver < handle
                 %% %%%Increase time and timestep counter
                 obj.Time = obj.Time + obj.dt;
                 disp('-----------------------------------------------')
-                disp(['Final time: ' num2str((obj.Time)/(3600*24),4) ' days, dT= ' num2str(obj.dt) ' s']);
+                disp(['Final time: ' num2str((obj.Time)/(3600*24),4) ' days, dt= ' num2str(obj.dt) ' s']);
                 disp(['end of time-step ' num2str(obj.Ndt)]);
                 disp(newline);
                 obj.Ndt = obj.Ndt + 1;

@@ -61,16 +61,16 @@ classdef Immiscible_formulation < formulation
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             %% 1. Reservoir Properteis and Derivatives
-            obj.drhodp = FluidModel.DrhoDp(ProductionSystem.Reservoir.State);
+            obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State);
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            obj.dPc = FluidModel.DPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.dMob = FluidModel.ComputeDMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            obj.dPc = FluidModel.ComputeDPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             %% 2. Fractures Properteis and Derivatives
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                obj.drhodp = [obj.drhodp; FluidModel.DrhoDp(ProductionSystem.FracturesNetwork.Fractures(f).State) ];
+                obj.drhodp = [obj.drhodp; FluidModel.ComputeDrhoDp(ProductionSystem.FracturesNetwork.Fractures(f).State) ];
                 obj.Mob = [obj.Mob; FluidModel.ComputePhaseMobilities(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
-                obj.dMob = [obj.dMob; FluidModel.DMobDS(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
-                obj.dPc = [obj.dPc; FluidModel.DPcDS(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
+                obj.dMob = [obj.dMob; FluidModel.ComputeDMobDS(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
+                obj.dPc = [obj.dPc; FluidModel.ComputeDPcDS(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
             end
         end
         %% Methods for FIM Coupling
@@ -547,15 +547,15 @@ classdef Immiscible_formulation < formulation
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.f = obj.Mob(:,1) ./ (obj.Mob(:,1) + obj.Mob(:, 2));
         end
-        function dfdS(obj, ProductionSystem, FluidModel)
-            obj.dMob = FluidModel.DMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+        function ComputeDfDS(obj, ProductionSystem, FluidModel)
+            obj.dMob = FluidModel.ComputeDMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             num = obj.Mob(:, 1);
             dnum = obj.dMob(:,1);
             den = sum(obj.Mob, 2);
-            dden = sum(obj.dMob, 2);  
+            dden = sum(obj.dMob, 2);
             obj.df = (dnum .* den - dden .* num) ./ den.^2;
         end
-        function dfdsds = dfdSdS(obj, s, rho, FluidModel)
+        function dfdSdS = ComputeDfDSDS(obj, s, rho, FluidModel)
            % f = (rho1 * Mob1) / (rho1 * Mob1 + rho2 * Mob2);
            % df = (rho1 * dMob1 * (rho1*Mob1 + rho2*Mob2) - (rho1*dMob1 + rho2*dMob2) * rho1*Mob1) / (rho1 * Mob1 + rho2 * Mob2)^2
            % Num = A - B;
@@ -565,8 +565,8 @@ classdef Immiscible_formulation < formulation
            % dB = (rho1*ddMob1 + rho2 * ddMob2) *  rho1*Mob1 + (rho1*dMob1 + rho2*dMob2) * rho1*dMob1 
            % Den = (rho1 * Mob1 + rho2 * Mob2)^2;
            Mob = FluidModel.ComputePhaseMobilities(s);
-           dMob = FluidModel.DMobDS(s);
-           ddMob = FluidModel.DMobDSDS(s);
+           dMob = FluidModel.ComputeDMobDS(s);
+           ddMob = FluidModel.ComputeDMobDSDS(s);
            
            A = rho(:, 1) .* dMob(:, 1) .* sum(rho.*Mob, 2);
            dA = rho(:, 1) .* ddMob(:,1) .* sum(rho.*Mob, 2) + rho(:,1) .* dMob(:,1) .*  sum(rho.*dMob, 2);
@@ -577,7 +577,7 @@ classdef Immiscible_formulation < formulation
            den = sum(rho.*Mob, 2).^2;
            dden = sum(rho.*Mob, 2) .* sum(rho.*dMob, 2);  
            
-           dfdsds = (dnum .* den - dden .* num) ./ den.^2;
+           dfdSdS = (dnum .* den - dden .* num) ./ den.^2;
            
         end
         function Residual = BuildPressureResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
@@ -949,8 +949,8 @@ classdef Immiscible_formulation < formulation
             snew = min(snew, 1);
             
             % FLUX CORRECTION - PATRICK
-            Ddf_old = obj.dfdSdS(s_old, rho, FluidModel);
-            Ddf = obj.dfdSdS(snew, rho, FluidModel);           
+            Ddf_old = obj.ComputeDfDSDS(s_old, rho, FluidModel);
+            Ddf = obj.ComputeDfDSDS(snew, rho, FluidModel);           
             snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
             delta = snew-s_old;
             

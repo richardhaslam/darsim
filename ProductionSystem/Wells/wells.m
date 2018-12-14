@@ -34,7 +34,12 @@ classdef wells < handle
         end
         function UpdateState(obj, Reservoir, FluidModel)
             K = Reservoir.K(:,1);
-            Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('S_1').Value);
+            switch FluidModel.name 
+                case ('Geothermal_2T')
+                Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('mu_1').Value); %
+                otherwise
+                Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('S_1').Value);
+            end
             
             % Injectors
             for i=1:obj.NofInj

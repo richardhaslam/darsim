@@ -46,20 +46,20 @@ classdef BO_fluid_model < Comp_fluid_model
         function dkdp = DKvalDp(obj, Status)
             dkdp = obj.FlashCalculator.KvaluesCalculator.DKvalDp(Status, obj.Components, obj.Phases);
         end
-        function drho = DrhoDp(obj, Status, SinglePhase)
-            drho = zeros(length(SinglePhase), obj.NofPhases);
+        function drhodp = ComputeDrhoDp(obj, Status, SinglePhase)
+            drhodp = zeros(length(SinglePhase), obj.NofPhases);
             [obj.Rs, obj.dRs] = obj.FlashCalculator.KvaluesCalculator.ComputeRs(Status, obj.Phases);
             for i=1:obj.NofPhases
                 [obj.Rs(:,i), obj.dRs(:,i)] = obj.Phases(i).RsOfUnderSaturatedPhase(Status.Properties('z_1').Value, obj.Components, obj.Rs(:,i), obj.dRs(:,i), SinglePhase);
-                drho(:, i) = obj.Phases(i).DrhoDp(Status.Properties('P_2').Value, obj.Components, obj.Rs(:,i), obj.dRs(:,i));
+                drhodp(:, i) = obj.Phases(i).ComputeDrhoDp(Status.Properties('P_2').Value, obj.Components, obj.Rs(:,i), obj.dRs(:,i));
             end
         end
-        function drho = DrhoDz(obj, Status, SinglePhase)
+        function drhodz = ComputeDrhoDz(obj, Status, SinglePhase)
             N = length(Status.Properties('P_2').Value);
             p = Status.Properties('P_2').Value;
             z = Status.Properties('z_1').Value;
-            drho = zeros(N, obj.NofPhases);
-            %drho(:, 2) = obj.Phases(2).DrhoDz(p, z, obj.Components, SinglePhase);
+            drhodz = zeros(N, obj.NofPhases);
+            %drhodz(:, 2) = obj.Phases(2).ComputeDrhoDz(p, z, obj.Components, SinglePhase);
         end
     end
 end

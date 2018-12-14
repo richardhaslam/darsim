@@ -6,12 +6,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef norm_calculator_comp < norm_calculator
     methods
-        function [Balance, Equilibrium] = ResidualNorm(obj, residual, N, Formulation)
+        function [Balance, Equilibrium] = CalculateResidualNorm(obj, residual, N, Formulation)
             n_comp = Formulation.NofComponents;
             Balance = norm(residual(1:N*n_comp), inf);
             Equilibrium = norm(residual(N*n_comp+1:end), inf);
         end
-        function [dp, dS] = SolutionNorm(obj, delta, N, State)
+        function [dp, dS] = CalculateSolutionNorm(obj, delta, N, State)
             dp = norm(delta(1:N), inf)/max(State.Properties('P_2').Value);
             dS = norm(delta(N+1:end), inf);
             %[a, b] = max(norm(dS));

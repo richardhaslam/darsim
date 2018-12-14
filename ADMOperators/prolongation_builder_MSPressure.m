@@ -16,8 +16,8 @@ classdef prolongation_builder_MSPressure < prolongation_builder
     methods
         function obj = prolongation_builder_MSPressure(n, cf)
             obj@prolongation_builder(n)
-            obj.R = cell(1, n);
-            obj.P = cell(1, n);
+            obj.R = cell(n, 1);
+            obj.P = cell(n, 1);
             if cf(1,3) == 1 && cf(1,2) == 1
                 obj.Dimensions = 1;
             elseif cf(1,3) == 1
@@ -38,19 +38,19 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 fprintf(char(strcat({'The Basis Functions are '},obj.BFUpdater.BFtype,'.\n')));
             end
             %Build static restriction operator (FV)
-            disp('Building Restriction 1');
+            disp('Building Pressure Restriction 1');
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(:,1));
             % Build Prolongation operator
-            disp('Building Prolongation 1');
+            disp('Building Pressure Prolongation 1');
             [obj.P{1}, obj.C{1}] = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
             % Build tpfa coarse system of level 1 (with MsFE)
             obj.BFUpdater.UpdatePressureMatrix(obj.P{1}, CoarseGrid(:, 1));
             for x = 2:maxLevel(1)
                 % Build static restriction operator (FV)
-                disp(['Building Restriction ', num2str(x)]);
+                disp(['Building Pressure Restriction ', num2str(x)]);
                 obj.R{x} = obj.MsRestriction(CoarseGrid(:, x-1), CoarseGrid(:, x));
                 % Build Prolongation operator
-                disp(['Building Prolongation ', num2str(x)]);
+                disp(['Building Pressure Prolongation ', num2str(x)]);
                 [obj.P{x}, obj.C{x}] = obj.BFUpdater.MsProlongation(CoarseGrid(:, x-1), CoarseGrid(:, x), obj.Dimensions);
                 %Build tpfa coarse system of level x (with MsFE)
                 obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(:, x));
@@ -59,9 +59,6 @@ classdef prolongation_builder_MSPressure < prolongation_builder
         function ADMProlp = ADMProlongation(obj, ADMGrid_original, GlobalGrids, ADMRest)
             % Copy ADM Grid
             ADMGrid = ADMGrid_original.copy();
-            
-            
-            
             % Pressure prolongation
             ADMProlp = 1;
             

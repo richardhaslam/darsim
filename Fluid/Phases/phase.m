@@ -59,6 +59,6 @@ classdef phase < matlab.mixin.Heterogeneous & handle
     end
     methods (Abstract)
         obj = ComputeDensity(obj);
-        obj = DrhoDp(obj);
+        obj = ComputeDrhoDp(obj);
     end
 end

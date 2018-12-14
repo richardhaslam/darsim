@@ -17,12 +17,10 @@ properties
     TimerSolve
     TimerInner
     Delta
-    InitialTimeStep = true;
 end
 properties (Access = private)
     Residual
     Jacobian
-%     InitialTimeStep = true;
 end
 methods
     function obj = NL_Solver()
@@ -45,9 +43,11 @@ methods
         obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         % Compute residual
         obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
+        % Compute the first residual norm
+        obj.ConvergenceChecker.ComputeFirstResidualNorm(obj.Residual, DiscretizationModel, obj.LinearSolver);
         
         % Print some info
-        obj.ConvergenceChecker.PrintTitles(obj.Residual);
+        obj.ConvergenceChecker.PrintTitles();
         
         % NEWTON-RAPHSON LOOP
         while ((obj.Converged==0)  && (obj.itCount <= obj.MaxIter))
@@ -56,7 +56,6 @@ methods
             start1 = tic;
             obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
             obj.TimerConstruct(obj.itCount) = toc(start1);
-            
             % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
             obj.SystemBuilder.SetUpSolutionChopper(obj.SolutionChopper, Formulation, ProductionSystem, DiscretizationModel);
             start2 = tic;
@@ -103,6 +102,17 @@ methods
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
         % 1. Save initial state
         obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
+     
+%         % Use CPR for Pressure (only for geothermal)
+%         if obj.InitialTimeStep
+%             switch(FluidModel.name)
+%                 case ('Geothermal_2T')
+%                     Formulation.ConstrainedPressureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
+%                     obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel); 
+%                 obj.InitialTimeStep = false;
+%             end
+%         end
+        
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
         % Set up the linear solver

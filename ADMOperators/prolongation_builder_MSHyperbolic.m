@@ -6,7 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef prolongation_builder_MSHyperbolic < prolongation_builder
     properties
-        key = 'S_1';
+        key % = 'S_1';
         Pdelta
         Pdeltac
         nt;

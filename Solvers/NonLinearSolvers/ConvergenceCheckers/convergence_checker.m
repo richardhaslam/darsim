@@ -6,7 +6,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef convergence_checker < handle
     properties
-        Tol
+        NumberOfEq
+        ResidualTol
+        SolutionTol
         NormCalculator
         OldResidual
     end
@@ -16,7 +18,10 @@ classdef convergence_checker < handle
     methods
         function output = Stagnating(obj, residual, delta)
             output = 0;
-            diff = abs(residual - obj.OldResidual)/abs(residual);
+            if isempty(obj.OldResidual)
+                obj.OldResidual = zeros(length(residual),1);
+            end
+            diff = abs(residual - obj.OldResidual)./abs(residual);
             obj.OldResidual = residual;
             if  diff < 1e-2
                 output = 0;
