@@ -660,7 +660,7 @@ classdef simulation_builder < handle
                         case ('ADM')
                             % Build a different convergence cheker and a proper LS for ADM
                             NLSolver.SystemBuilder = fim_system_builder_ADM();
-                            switch obj.SimulatorSettings.Formulation  
+                            switch obj.SimulatorSettings.Formulation
                                 case ("Geothermal_2T")
                                 ConvergenceChecker = convergence_checker_ADM_geothermal_2T();
                                 ConvergenceChecker.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
@@ -671,6 +671,11 @@ classdef simulation_builder < handle
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+                            if obj.SimulatorSettings.Formulation == "Geothermal_2T" && ConvergenceChecker.AveragedTemperature == "On"
+                                % In this case, two Tf and Tr eqations with be summed up to represent one average temperature
+                                % and for OperatorsAssembler, we have only one equation less (average T instead of Tf and Tr).
+                                NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq-1);
+                            end
                             if obj.SimulatorSettings.ADMSettings.DLGR
                                 % it will change perm during ADM
                                 % simulaiton to use upscaled ones
