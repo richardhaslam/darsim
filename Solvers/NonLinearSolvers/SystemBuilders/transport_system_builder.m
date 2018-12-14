@@ -10,7 +10,7 @@ classdef transport_system_builder < system_builder
     methods
         function ComputePropertiesAndDerivatives(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
             Formulation.UpdateFractionalFlow(ProductionSystem, FluidModel);
-            Formulation.dfdS(ProductionSystem, FluidModel);
+            Formulation.ComputeDfDS(ProductionSystem, FluidModel);
         end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
            Residual = Formulation.BuildTransportResidual(ProductionSystem, DiscretizationModel, dt, obj.State);

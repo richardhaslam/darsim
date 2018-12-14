@@ -10,12 +10,24 @@ classdef convergence_checker < handle
         ResidualTol
         SolutionTol
         NormCalculator
+        FirstResidualNorm
+        FirstResidual
         OldResidual
     end
     methods (Abstract)
-        obj = Check(obj)
+        obj = Check(obj) 
     end
     methods
+        function ComputeFirstResidualNorm(obj, Residual, DiscretizationModel, LinearSolver)
+            Nt = DiscretizationModel.N; 
+            obj.FirstResidual = Residual;
+            % Compute Norms
+            obj.FirstResidualNorm = zeros(obj.NumberOfEq,1);
+            for eq = 1 : obj.NumberOfEq
+                obj.FirstResidualNorm(eq) = norm(obj.FirstResidual((eq -1)*Nt+1:eq*Nt), 2);
+            end
+            obj.NormCalculator.FirstResidualNorm = obj.FirstResidualNorm;
+        end
         function output = Stagnating(obj, residual, delta)
             output = 0;
             if isempty(obj.OldResidual)

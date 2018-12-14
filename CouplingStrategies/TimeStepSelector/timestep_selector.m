@@ -28,7 +28,7 @@ classdef timestep_selector < handle
             %I take the worst possible scenario
             s = [FluidModel.Phases(1).sr:0.01:1-FluidModel.Phases(1).sr]';
             Mob = FluidModel.ComputePhaseMobilities(s);
-            dMob = FluidModel.DMobDS(s);
+            dMob = FluidModel.ComputeDMobDS(s);
            
             num =  Mob(:, 1);
             dnum = dMob(:,1);

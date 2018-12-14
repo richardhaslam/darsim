@@ -10,8 +10,8 @@ classdef convergence_checker_transport < convergence_checker
         OperatorsAssembler
     end
     methods 
-        function PrintTitles(obj, Residual)
-            disp(['Initial residual norm: ', num2str(norm(Residual, inf))]);
+        function PrintTitles(obj)
+            disp(['Initial residual norm: ', num2str(obj.FirstResidualNorm, '%5.5e')]);
             disp('');
             disp('        ||Residual||   ||delta S||');
         end
@@ -32,7 +32,7 @@ classdef convergence_checker_transport < convergence_checker
             disp(['Iter ' num2str(iter) '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
             
             %Check convergence
-            if (Norm1 < obj.Tol && Norm2 < obj.Tol * 1e3)
+            if (Norm1 < obj.ResidualTol && Norm2 < obj.SolutionTol)
                 converged = 1;
             end
         end

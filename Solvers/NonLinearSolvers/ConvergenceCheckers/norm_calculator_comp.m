@@ -7,8 +7,11 @@
 classdef norm_calculator_comp < norm_calculator
     methods
         function [Balance, Equilibrium] = CalculateResidualNorm(obj, residual, N, Formulation)
+            Balance = zeros(length(obj.FirstResidualNorm),1);
             n_comp = Formulation.NofComponents;
-            Balance = norm(residual(1:N*n_comp), inf);
+            for i=1:n_comp
+                Balance(i) = norm(residual((i-1)*N + 1:i*N), 2);
+            end
             Equilibrium = norm(residual(N*n_comp+1:end), inf);
         end
         function [dp, dS] = CalculateSolutionNorm(obj, delta, N, State)

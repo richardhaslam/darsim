@@ -342,7 +342,7 @@ classdef simulation_builder < handle
                     % make it the size of the grid
                     %K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
                     % In case the data is in logarithmic scale
-                    K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-12, nx*ny*nz, 1);
+                    K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
                 else
                     value = obj.SimulationInput.ReservoirProperties.Perm(i);
                     K(:, i)= K(:,i) * value;
@@ -694,9 +694,15 @@ classdef simulation_builder < handle
                             end
                             NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500); 
                     end
-                     NLSolver.SystemBuilder.NumberOfEq = obj.NofEq;
+                    NLSolver.SystemBuilder.NumberOfEq = obj.NofEq;
                     NLSolver.MaxIter = obj.SimulatorSettings.MaxIterations;
                     ConvergenceChecker.NumberOfEq  = obj.NofEq;
+                    if length(obj.SimulatorSettings.ResidualTolerances) < obj.NofEq
+                        obj.SimulatorSettings.ResidualTolerances = obj.SimulatorSettings.ResidualTolerances(1) * ones(obj.NofEq, 1);
+                    end
+                    if length(obj.SimulatorSettings.SolutionTolerances) < obj.NofEq
+                        obj.SimulatorSettings.SolutionTolerances = obj.SimulatorSettings.SolutionTolerances(1) * ones(obj.NofEq, 1);
+                    end
                     ConvergenceChecker.ResidualTol = obj.SimulatorSettings.ResidualTolerances;
                     ConvergenceChecker.SolutionTol = obj.SimulatorSettings.SolutionTolerances;
                     switch (obj.SimulatorSettings.Formulation)
@@ -723,7 +729,7 @@ classdef simulation_builder < handle
                     pressuresolver = NL_Solver();
                     pressuresolver.MaxIter = 15;
                     ConvergenceChecker = convergence_checker_pressure();
-                    ConvergenceChecker.Tol = 1e-6;
+                    ConvergenceChecker.ResidualTol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
                     pressuresolver.SystemBuilder = pressure_system_builder();
                     switch obj.SimulatorSettings.DiscretizationModel
@@ -750,11 +756,12 @@ classdef simulation_builder < handle
                             transportsolver = NL_Solver();
                             transportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
                             ConvergenceChecker = convergence_checker_transport();
-                            ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                            ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
+                            ConvergenceChecker.SolutionTol = 1e-3;
                             transportsolver.AddConvergenceChecker(ConvergenceChecker);
                             transportsolver.SystemBuilder = transport_system_builder();
                             Coupling.ConvergenceChecker = convergence_checker_outer();
-                            Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.Tolerance;
+                            Coupling.ConvergenceChecker.SolutionTol = obj.SimulatorSettings.Tolerance;
                             switch obj.SimulatorSettings.DiscretizationModel
                                 case('ADM')
                                     transportsolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
@@ -776,7 +783,7 @@ classdef simulation_builder < handle
                     pressuresolver = NL_Solver();
                     pressuresolver.MaxIter = 15;
                     ConvergenceChecker = convergence_checker_pressure();
-                    ConvergenceChecker.Tol = 1e-6;
+                    ConvergenceChecker.ResidualTol = 1e-6;
                     pressuresolver.AddConvergenceChecker(ConvergenceChecker);
                     pressuresolver.SystemBuilder = pressure_system_builder();
                     switch obj.SimulatorSettings.DiscretizationModel
