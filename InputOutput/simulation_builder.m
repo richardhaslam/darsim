@@ -287,7 +287,7 @@ classdef simulation_builder < handle
                     % make it the size of the grid
                     %K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
                     % In case the data is in logarithmic scale
-                    K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-15, nx*ny*nz, 1);
+                    K(:,i) = reshape(field1(1:nx, 1:ny, 1:nz)*1e-12, nx*ny*nz, 1);
                 else
                     value = obj.SimulationInput.ReservoirProperties.Perm(i);
                     K(:, i)= K(:,i) * value;
@@ -706,11 +706,11 @@ classdef simulation_builder < handle
             %%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
             switch(obj.SimulatorSettings.CouplingType)
                 case('FIM')
-                    CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
+                    CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'FIM');
                 case('Sequential')
-                    CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
+                    CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'Sequential');
                 case('SinglePhase')
-                    CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
+                    CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'SinglePhase');
             end
             wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
             switch (obj.SimulatorSettings.DiscretizationModel)

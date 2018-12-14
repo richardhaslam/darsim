@@ -6,12 +6,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef (Abstract) Coupling_Stats < handle
     properties 
+        Name
         TotalTimer
         NTimers
         NStats
     end
     methods 
-        function obj = Coupling_Stats(MaxNTimeSteps)
+        function obj = Coupling_Stats(MaxNTimeSteps, name)
+            obj.Name = name;
             obj.TotalTimer = zeros(MaxNTimeSteps, 1);
         end
         function SaveTimeStepTimer(obj, Ndt, timer)

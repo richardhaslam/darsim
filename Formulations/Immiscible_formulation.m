@@ -945,14 +945,14 @@ classdef Immiscible_formulation < formulation
             snew = s_old + delta;
             
             % Remove values that are not physical
-            %snew = max(snew, 0);
-            %snew = min(snew, 1);
+            snew = max(snew, 0);
+            snew = min(snew, 1);
             
             % FLUX CORRECTION - PATRICK
-%             Ddf_old = obj.dfdSdS(s_old, rho, FluidModel);
-%             Ddf = obj.dfdSdS(snew, rho, FluidModel);           
-%             snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
-%             delta = snew-s_old;
+            Ddf_old = obj.dfdSdS(s_old, rho, FluidModel);
+            Ddf = obj.dfdSdS(snew, rho, FluidModel);           
+            snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
+            delta = snew-s_old;
             
             % This is the actual update
             Nm = DiscretizationModel.ReservoirGrid.N;

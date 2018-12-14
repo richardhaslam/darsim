@@ -14,8 +14,8 @@ classdef FIM_Stats < Coupling_Stats
         CFL
     end
     methods
-        function obj = FIM_Stats(MaxNTimeSteps)
-           obj@Coupling_Stats(MaxNTimeSteps); 
+        function obj = FIM_Stats(MaxNTimeSteps, name)
+           obj@Coupling_Stats(MaxNTimeSteps, name); 
            obj.NLIter = zeros(MaxNTimeSteps, 1);
            obj.Chops = zeros(MaxNTimeSteps, 1);
            obj.CFL = zeros(MaxNTimeSteps, 1);

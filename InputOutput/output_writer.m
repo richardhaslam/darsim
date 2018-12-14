@@ -99,16 +99,41 @@ classdef output_writer < handle
             end
         end
         function WriteCouplingStats(obj, CouplingStats, Ndt)
-            %Stats
-            fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
-            fprintf(fileID, '%10s %10s %10s %10.0s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
-            fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
-            fclose(fileID);
-            %Timers
-            fileID = fopen(strcat(obj.Directory,'Timers.txt'),'w');
-            fprintf(fileID, '%10s %10s %10s %10s %10s\n', '# Timestep', 'Total Time', 'Construct', 'Solve', 'Flash');
-            fprintf(fileID, obj.FormatTimers, CouplingStats.TimersMatrix(Ndt));
-            fclose(fileID);
+            switch (CouplingStats.Name)
+                case('FIM')
+                    %Stats
+                    fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
+                    fprintf(fileID, '%10s %10s %10s %10.0s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
+                    fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
+                    fclose(fileID);
+                    %Timers
+                    fileID = fopen(strcat(obj.Directory,'Timers.txt'),'w');
+                    fprintf(fileID, '%10s %10s %10s %10s %10s\n', '# Timestep', 'Total Time', 'Construct', 'Solve', 'Flash');
+                    fprintf(fileID, obj.FormatTimers, CouplingStats.TimersMatrix(Ndt));
+                    fclose(fileID);
+                case('Sequential')
+                    %Stats
+                    fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
+                    fprintf(fileID, '%10s %10s %10s %10s\n', 'Timestep', 'Out it.', 'NL iter.', 'CFL');
+                    fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
+                    fclose(fileID);
+                    %Timers
+                    fileID = fopen(strcat(obj.Directory,'Timers.txt'),'w');
+                    fprintf(fileID, '%10s %10s %10s\n', '# Timestep', 'Pressure', 'Transport');
+                    fprintf(fileID, obj.FormatTimers, CouplingStats.TimersMatrix(Ndt));
+                    fclose(fileID);
+                case('SinglePhase')
+                    %Stats
+                    fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
+                    fprintf(fileID, '%10s %10s %10s %10.0s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
+                    fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
+                    fclose(fileID);
+                    %Timers
+                    fileID = fopen(strcat(obj.Directory,'Timers.txt'),'w');
+                    fprintf(fileID, '%10s %10s\n', '# Timestep', 'Pressure');
+                    fprintf(fileID, obj.FormatTimers, CouplingStats.TimersMatrix(Ndt));
+                    fclose(fileID);
+            end
         end
     end
 end

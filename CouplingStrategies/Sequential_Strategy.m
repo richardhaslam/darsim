@@ -78,10 +78,10 @@ classdef Sequential_Strategy < Coupling_Strategy
                     Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
                     % Check that velocity field is conservative
                     tstart2 = tic;
-                    conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
-                    if ~conservative
-                        error('DARSim2 error: mass balance not respected');
-                    end
+%                     conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
+%                     if ~conservative
+%                         error('DARSim2 error: mass balance not respected');
+%                     end
                     obj.BalanceTimer(obj.itCount) = toc(tstart2);
                     
                     %% 3. Solve transport
@@ -131,7 +131,7 @@ classdef Sequential_Strategy < Coupling_Strategy
             end
             % Compute phase fluxes after converged solution
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
-            obj.TimeStepSelector.UpdateSequential(dt, obj.itCount - 1, obj.Chops);
+            obj.TimeStepSelector.UpdateSequential(dt, obj.itCount - 1, obj.TransportSolver.itCount - 1, obj.Chops);
         end
         function UpdateSummary(obj, Summary, Wells, Ndt, dt)
             Summary.CouplingStats.SaveStats(Ndt, obj.itCount - 1, obj.NLiter);

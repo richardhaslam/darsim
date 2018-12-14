@@ -13,14 +13,14 @@ classdef Sequential_Stats < Coupling_Stats
         TransportTimer
     end
     methods
-        function obj = Sequential_Stats(MaxNTimeSteps)
-           obj@Coupling_Stats(MaxNTimeSteps);
+        function obj = Sequential_Stats(MaxNTimeSteps, name)
+           obj@Coupling_Stats(MaxNTimeSteps, name);
            obj.OuterIter = zeros(MaxNTimeSteps, 1);
            obj.NLIter = zeros(MaxNTimeSteps, 1);
            obj.PressureTimer = zeros(MaxNTimeSteps, 1);
            obj.BalanceTimer = zeros(MaxNTimeSteps, 1);
            obj.TransportTimer = zeros(MaxNTimeSteps, 1);
-           obj.NTimers = 4;
+           obj.NTimers = 2;
            obj.NStats = 2;
         end
         function SaveTimers(obj, Ndt, t_pressure, t_balance, t_transport)
@@ -34,7 +34,7 @@ classdef Sequential_Stats < Coupling_Stats
         end
          function Matrix = TimersMatrix(obj, Ndt)
             timesteps = 1:Ndt;
-            Matrix = [timesteps', obj.PressureTimer(1:Ndt), obj.BalanceTimer(1:Ndt), obj.TransportTimer(1:Ndt)]';
+            Matrix = [timesteps', obj.PressureTimer(1:Ndt), obj.TransportTimer(1:Ndt)]';
         end
         function Matrix = StatsMatrix(obj, Ndt)
             timesteps = 1:Ndt;

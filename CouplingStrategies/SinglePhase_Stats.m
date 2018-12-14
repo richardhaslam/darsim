@@ -10,8 +10,8 @@ classdef SinglePhase_Stats < Coupling_Stats
         PressureTimer
     end
     methods
-        function obj = SinglePhase_Stats(MaxNTimeSteps)
-           obj@Coupling_Stats(MaxNTimeSteps);
+        function obj = SinglePhase_Stats(MaxNTimeSteps, name)
+           obj@Coupling_Stats(MaxNTimeSteps, name);
            obj.NLIter = zeros(MaxNTimeSteps, 1);
            obj.PressureTimer = zeros(MaxNTimeSteps, 1);
            obj.NTimers = 1;
