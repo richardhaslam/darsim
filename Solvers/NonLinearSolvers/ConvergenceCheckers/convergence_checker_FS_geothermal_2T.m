@@ -8,8 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef convergence_checker_FS_geothermal_2T < convergence_checker
     properties
-        FirstResidualNorm
-        FirstResidual
         AveragedTemperature
     end
     methods
