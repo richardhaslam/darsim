@@ -724,8 +724,12 @@ classdef simulation_builder < handle
                 case('FIM')
                     CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
                 case('Sequential')
-                    CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
-                case('SinglePhase')
+                    if obj.SimulatorSettings.LTS == 1 
+                        CouplingStats = LTS_Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
+                    else
+                        CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
+                    end
+                 case('SinglePhase')
                     CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
             end
             wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);

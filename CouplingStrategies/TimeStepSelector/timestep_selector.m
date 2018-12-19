@@ -53,7 +53,7 @@ classdef timestep_selector < handle
             dtx = obj.CFL*pv*max(rho)/Lambdax;
             dty = obj.CFL*pv*max(rho)/Lambday;
             dtz = obj.CFL*pv*max(rho)/Lambdaz;
-            dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt]);
+            dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt, obj.NextDt]);
         end
         function dt = ChooseTimeStep(obj)
             if obj.ReportDt <= 0
@@ -71,5 +71,17 @@ classdef timestep_selector < handle
                obj.NextDt = dt;
             end
         end
+        function UpdateSequential(obj, dt, itOuter ,itTransp, chops)
+            % We check for number of outer iterations and nubmer of
+            % iterations of last transport solve.
+            if itOuter <= 2 && itTransp < 6 && chops < 1
+               obj.NextDt = 2*dt;
+            elseif itTransp > 10 || chops > 1
+               obj.NextDt = dt/2;
+            else
+               obj.NextDt = dt;
+            end
+        end
+
     end
 end

@@ -973,6 +973,18 @@ classdef Immiscible_formulation < formulation
             Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
             Sm.update(-DeltaLast);
         end
+        function CFL = ComputeCFLNumberTransport(obj, DiscretizationModel, ProductionSystem, dt)
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
+            dx = DiscretizationModel.ReservoirGrid.dx;
+            dy = DiscretizationModel.ReservoirGrid.dy;
+            dz = DiscretizationModel.ReservoirGrid.dz;
+            maxdf = max(abs(obj.df));
+            maxUx = max(max(max(abs(obj.Utot.x))));
+            maxUy = max(max(max(abs(obj.Utot.y))));
+            maxUz = max(max(max(abs(obj.Utot.z))));
+            CFL = dt * maxdf * (maxUx/dx + maxUy/dy + maxUz/dz) / (max(rho) * pv);
+        end
         %% LTS TRANSPORT SOLVER
         
         function ViscousMatrixLTS(obj, Grid, CellsSelected)
@@ -1053,6 +1065,18 @@ classdef Immiscible_formulation < formulation
             
             D = spdiags(pv/dt*rho .* CellsSelected.ActCells, 0, N, N);
             Jacobian = D - obj.Vr * spdiags(obj.df .* CellsSelected.ActCells,0,N,N); 
+        end
+        function CFL = ComputeCFLNumberTransportLTS(obj, DiscretizationModel, ProductionSystem, dt, CellsSelected)
+            pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
+            rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
+            dx = DiscretizationModel.ReservoirGrid.dx;
+            dy = DiscretizationModel.ReservoirGrid.dy;
+            dz = DiscretizationModel.ReservoirGrid.dz;
+            maxdf = max(abs(obj.df .* CellsSelected.ActCells));
+            maxUx = max(max(max(abs(obj.Utot.x .* CellsSelected.ActFluxes.x))));
+            maxUy = max(max(max(abs(obj.Utot.y .* CellsSelected.ActFluxes.y))));
+            maxUz = max(max(max(abs(obj.Utot.z .* CellsSelected.ActFluxes.z))));
+            CFL = dt * maxdf * (maxUx/dx + maxUy/dy + maxUz/dz) / (pv*max(rho));
         end
         %% Explicit Saturation
         function delta = UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)

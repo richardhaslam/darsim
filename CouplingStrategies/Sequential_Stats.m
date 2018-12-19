@@ -8,6 +8,7 @@ classdef Sequential_Stats < Coupling_Stats
     properties
         OuterIter
         NLIter
+        CFLVal
         PressureTimer
         BalanceTimer
         TransportTimer
@@ -17,20 +18,22 @@ classdef Sequential_Stats < Coupling_Stats
            obj@Coupling_Stats(MaxNTimeSteps);
            obj.OuterIter = zeros(MaxNTimeSteps, 1);
            obj.NLIter = zeros(MaxNTimeSteps, 1);
+           obj.CFLVal = zeros(MaxNTimeSteps, 1);
            obj.PressureTimer = zeros(MaxNTimeSteps, 1);
            obj.BalanceTimer = zeros(MaxNTimeSteps, 1);
            obj.TransportTimer = zeros(MaxNTimeSteps, 1);
-           obj.NTimers = 4;
-           obj.NStats = 2;
+           obj.NTimers = 3;
+           obj.NStats = 3;
         end
         function SaveTimers(obj, Ndt, t_pressure, t_balance, t_transport)
             obj.PressureTimer(Ndt) = sum(t_pressure);
             obj.BalanceTimer(Ndt) = sum(t_balance);
             obj.TransportTimer(Ndt) = sum(t_transport);
         end
-        function SaveStats(obj, Ndt, outit, NLit)
+        function SaveStats(obj, Ndt, outit, NLit, CFLval)
              obj.OuterIter(Ndt) = outit;
              obj.NLIter(Ndt) = NLit;
+             obj.CFLVal(Ndt) = CFLval;
         end
          function Matrix = TimersMatrix(obj, Ndt)
             timesteps = 1:Ndt;
@@ -38,7 +41,7 @@ classdef Sequential_Stats < Coupling_Stats
         end
         function Matrix = StatsMatrix(obj, Ndt)
             timesteps = 1:Ndt;
-            Matrix = [timesteps', obj.OuterIter(1:Ndt), obj.NLIter(1:Ndt)]';
+            Matrix = [timesteps', obj.OuterIter(1:Ndt), obj.NLIter(1:Ndt), obj.CFLVal(1:Ndt)]';
         end
     end
 end

@@ -16,7 +16,7 @@ classdef output_writer < handle
         FormatTimers
     end
     methods
-        function obj = output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_components)
+        function obj = output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, ~)
             obj.Directory = strcat(dir, '/Output/');
             obj.ProblemName = problem;
             
@@ -101,7 +101,7 @@ classdef output_writer < handle
         function WriteCouplingStats(obj, CouplingStats, Ndt)
             %Stats
             fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
-            fprintf(fileID, '%10s %10s %10s %10.0s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
+            fprintf(fileID, '%10s %10s %10s %10s %10s %10s \n', 'Timestep', 'Chops', 'Iterations', 'CFL Global', 'IterationsLTS', 'CFL Local');
             fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
             fclose(fileID);
             %Timers

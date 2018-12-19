@@ -6,8 +6,8 @@
 classdef RefCellsSelector < handle
     properties
         tol = 1e-2
-        NSten = 2
-        
+        NSten = 1
+        ActFluxes
         ActCells
         ViscousMatrixValue
         f
@@ -73,6 +73,7 @@ classdef RefCellsSelector < handle
             ActFluxes.z(:,:,1)    = ActCellsM(:,:,1);
             ActFluxes.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
             ActFluxes.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2; 
+            obj.ActFluxes = ActFluxes;
         end
         function ComputeBoundaryValues(obj, DiscretizationModel, Formulation)
             % store the past values of the fractional flow and the
