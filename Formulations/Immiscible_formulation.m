@@ -1040,18 +1040,21 @@ classdef Immiscible_formulation < formulation
             s = ProductionSystem.Reservoir.State.Properties('S_1').Value;
             s_old = State0.Properties('S_1').Value;      
             rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
+            N = DiscretizationModel.ReservoirGrid.N;
             
             % viscous fluxes matrix
             obj.ViscousMatrixLTS(DiscretizationModel.ReservoirGrid, CellsSelected);      
             
+            q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
+            
             % Compute residual
             %(1) Put to zero the accepted residual cells 
-            Residual = (pv/dt .* rho .* (s - s_old)  - max(obj.Qwells, 0)) .*  CellsSelected.ActCells; 
+            Residual = (pv/dt .* rho .* (s - s_old)  - max(q(:, 1), 0)) .*  CellsSelected.ActCells; 
             %(2) Add the contribution of the viscous matrix 
-            Residual = Residual - obj.Vr * (obj.f);
+            Residual = Residual - obj.Vr * (obj.f .* rho);
             % (3) Add the contribution of the accelpted fluxes at the
             % boundary
-            Residual = Residual - (CellsSelected.ViscousMatrixValue * CellsSelected.f).* CellsSelected.ActCells;
+            Residual = Residual - (CellsSelected.ViscousMatrixValue * CellsSelected.f .* rho).* CellsSelected.ActCells;
 
         end
         function Jacobian = BuildTransportJacobianLTS(obj, ProductionSystem, DiscretizationModel, dt, CellsSelected)
@@ -1061,7 +1064,7 @@ classdef Immiscible_formulation < formulation
             rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
             
             D = spdiags(pv/dt*rho .* CellsSelected.ActCells, 0, N, N);
-            Jacobian = D - obj.Vr * spdiags(obj.df .* CellsSelected.ActCells,0,N,N); 
+            Jacobian = D - obj.Vr * spdiags(obj.df .* rho .* CellsSelected.ActCells,0,N,N); 
         end
         function CFL = ComputeCFLNumberTransportLTS(obj, DiscretizationModel, ProductionSystem, dt, CellsSelected)
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;

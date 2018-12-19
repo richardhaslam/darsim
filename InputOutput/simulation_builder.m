@@ -728,7 +728,8 @@ classdef simulation_builder < handle
                         LTStransportsolver = LTS_NL_Solver();
                         LTStransportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
                         ConvergenceChecker = convergence_checker_transport();
-                        ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                        ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
+                        ConvergenceChecker.SolutionTol = 1e-3;
                         LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
                         LTStransportsolver.SystemBuilder = LTStransport_system_builder();
                         LTStransportsolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
@@ -736,11 +737,10 @@ classdef simulation_builder < handle
                         Coupling.AddLTSTransportSolver(LTStransportsolver);
                     else
                         Coupling = Sequential_Strategy('Sequential');
-                    end
-                    % At the moment I do not check pres and sat at each
-                    % cycle no OUTER ITERATION for LTS.
+                    end                    
+                    % OUTER ITERATION (for LTS and not)
                     Coupling.ConvergenceChecker = convergence_checker_outer();
-                    Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                    Coupling.ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
                     Coupling.MaxIter = obj.SimulatorSettings.MaxIterations;
                     % pressuresolver = incompressible_pressure_solver();
                     pressuresolver = NL_Solver();

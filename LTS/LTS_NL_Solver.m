@@ -40,9 +40,17 @@ methods
         obj.TimerInner = zeros(obj.MaxIter, 1);
         obj.itCount = 1;
         
-        % Print some info
-        obj.ConvergenceChecker.PrintTitles(obj.Residual);
+        % 0. Computes initial residual
+        % Update Derivatives
+        obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+        % Compute residual
+        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected);
+        % Compute the first residual norm
+        obj.ConvergenceChecker.ComputeFirstResidualNorm(obj.Residual, DiscretizationModel, obj.LinearSolver);
         
+        % Print some info
+        obj.ConvergenceChecker.PrintTitles();
+   
         % NEWTON-RAPHSON LOOP
         while ((obj.Converged==0)  && (obj.itCount <= obj.MaxIter))
             
@@ -97,12 +105,7 @@ methods
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt, CellsSelected)
         % 1. Save initial state
         obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
-        
-        % 2. Computes initial residual
-        % Update Derivatives
-        obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
-        % Compute residual
-        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected);
+               
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
         % Set up the linear solver
