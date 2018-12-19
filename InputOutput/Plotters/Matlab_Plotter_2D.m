@@ -12,7 +12,13 @@ classdef Matlab_Plotter_2D < Plotter
     properties
     end
     methods
-        function PlotSolution(obj, Status, Grid)
+        function PlotSolution(obj, ProductionSystem, DiscretizationModel)
+            obj.PlotReservoirSolution(ProductionSystem.Reservoir.State, DiscretizationModel.ReservoirGrid);
+            for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
+                obj.PlotFractureSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
+            end
+        end
+        function PlotReservoirSolution(obj, Status, Grid)
             %Plot for 2D problems
             x = linspace(Grid.Nx * Grid.dx/(2*Grid.Nx), (2*Grid.Nx^2*Grid.dx-Grid.Nx * Grid.dx)/(2*Grid.Nx), Grid.Nx);
             y = linspace(Grid.Ny * Grid.dy/(2*Grid.Ny), (2*Grid.Ny^2*Grid.dy-Grid.Ny * Grid.dy)/(2*Grid.Ny), Grid.Ny);
@@ -39,6 +45,9 @@ classdef Matlab_Plotter_2D < Plotter
                 set(gca,'fontsize',24);
                 drawnow
             end
+        end
+        function PlotFractureSolution(obj, Fracture, Grid, f)
+           % TO BE IMPLEMENTED 
         end
         function PlotPermeability(obj, Grid, Perm)
             %Plot permeability

@@ -88,6 +88,8 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
             fprintf(fileID, '\n');
+            obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
+            fprintf(fileID, '\n');
             %ADD ADM coarse grids
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');

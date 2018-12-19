@@ -16,6 +16,7 @@ classdef Sequential_Strategy < Coupling_Strategy
         BalanceTimer
         TransportTimer
         Chops
+        CFLVal
     end
     methods
         function obj = Sequential_Strategy(name)
@@ -27,7 +28,7 @@ classdef Sequential_Strategy < Coupling_Strategy
         function AddTransportSolver(obj, transportsolver)
             obj.TransportSolver = transportsolver;
         end
-        function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
+        function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, index)
             End = 0;
             
             % This is the outer loop
@@ -100,6 +101,7 @@ classdef Sequential_Strategy < Coupling_Strategy
                     obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
                     obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
                     obj.TransportTimer(obj.itCount) = toc(tstart3);
+                    obj.CFLVal = Formulation.ComputeCFLNumberTransport(DiscretizationModel, ProductionSystem, dt);
                     disp('...............................................');
                     disp(newline);
                     if obj.TransportSolver.Converged == 0
@@ -134,7 +136,7 @@ classdef Sequential_Strategy < Coupling_Strategy
             obj.TimeStepSelector.UpdateSequential(dt, obj.itCount - 1, obj.TransportSolver.itCount - 1, obj.Chops);
         end
         function UpdateSummary(obj, Summary, Wells, Ndt, dt)
-            Summary.CouplingStats.SaveStats(Ndt, obj.itCount - 1, obj.NLiter);
+            Summary.CouplingStats.SaveStats(Ndt, obj.itCount - 1, obj.NLiter, obj.CFLVal);
             Summary.CouplingStats.SaveTimers(Ndt, obj.PressureTimer, obj.BalanceTimer, obj.TransportTimer);
             Summary.SaveWellsData(Ndt+1, Wells.Inj, Wells.Prod, dt);
         end

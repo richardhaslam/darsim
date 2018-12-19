@@ -723,7 +723,24 @@ classdef simulation_builder < handle
                 %% Sequential coupling    
                 case('Sequential')
                     % Sequential coupling
-                    Coupling = Sequential_Strategy('Sequential');
+                    if obj.SimulatorSettings.LTS == 1 
+                        Coupling = LTS_Sequential_Strategy('Sequential');                        
+                        LTStransportsolver = LTS_NL_Solver();
+                        LTStransportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
+                        ConvergenceChecker = convergence_checker_transport();
+                        ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
+                        LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
+                        LTStransportsolver.SystemBuilder = LTStransport_system_builder();
+                        LTStransportsolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+
+                        Coupling.AddLTSTransportSolver(LTStransportsolver);
+                    else
+                        Coupling = Sequential_Strategy('Sequential');
+                    end
+                    % At the moment I do not check pres and sat at each
+                    % cycle no OUTER ITERATION for LTS.
+                    Coupling.ConvergenceChecker = convergence_checker_outer();
+                    Coupling.ConvergenceChecker.Tol = obj.SimulatorSettings.TransportSolver.Tol;
                     Coupling.MaxIter = obj.SimulatorSettings.MaxIterations;
                     % pressuresolver = incompressible_pressure_solver();
                     pressuresolver = NL_Solver();
@@ -826,9 +843,13 @@ classdef simulation_builder < handle
                 case('FIM')
                     CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'FIM');
                 case('Sequential')
-                    CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'Sequential');
-                case('SinglePhase')
-                    CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'SinglePhase');
+                    if obj.SimulatorSettings.LTS == 1 
+                        CouplingStats = LTS_Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'LTS_Sequential');
+                    else
+                        CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'Sequential');
+                    end
+                 case('SinglePhase')
+                    CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
             end
             wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
             switch (obj.SimulatorSettings.DiscretizationModel)

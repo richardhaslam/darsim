@@ -44,7 +44,6 @@ classdef timestep_selector < handle
             Lambdaz = dfmax * Uzmax;
             
             %Compute timestep size
-            % I multiply by mean(rho) coz U is the mass flux
             dtx = obj.CFL*pv/Lambdax;
             dty = obj.CFL*pv/Lambday;
             dtz = obj.CFL*pv/Lambdaz;

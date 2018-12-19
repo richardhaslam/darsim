@@ -1,0 +1,21 @@
+******************************************************************
+********************DARSIM 2 RESERVOIR SIMULATOR******************
+******************************************************************
+
+
+Reading input file ImmHomo.txt from ../ImmHomo/
+
+
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('textscan')" style="font-weight:bold">textscan</a>
+Invalid file identifier. Use fopen to generate a valid file identifier.
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('reader_darsim2/ReadInputFile', '/home/ludodelpop/Documents/DARSim2_src/InputOutput/Readers/reader_darsim2.m', 23)" style="font-weight:bold">reader_darsim2/ReadInputFile</a> (<a href="matlab: opentoline('/home/ludodelpop/Documents/DARSim2_src/InputOutput/Readers/reader_darsim2.m',23,0)">line 23</a>)
+            matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('DARSim2ResSim', '/home/ludodelpop/Documents/DARSim2_src/DARSim2ResSim.m', 49)" style="font-weight:bold">DARSim2ResSim</a> (<a href="matlab: opentoline('/home/ludodelpop/Documents/DARSim2_src/DARSim2ResSim.m',49,0)">line 49</a>)
+ResSimulator.Reader.ReadInputFile(ResSimulator.Builder);
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('LudoRun', '/home/ludodelpop/Documents/DARSim2_src/LudoRun.m', 8)" style="font-weight:bold">LudoRun</a> (<a href="matlab: opentoline('/home/ludodelpop/Documents/DARSim2_src/LudoRun.m',8,0)">line 8</a>)
+DARSim2Res = DARSim2ResSim(Directory, File,'');
+} 
+LudoRun

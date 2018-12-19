@@ -35,6 +35,7 @@ classdef cartesian_grid < grid_darsim
             obj.Nz = n(3);
             obj.N = prod(n);
             obj.Active = ones(obj.N, 1);
+            obj.ActiveTime = ones(obj.N, 1);
             obj.Tx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
             obj.Ty = zeros(obj.Nx, obj.Ny+1, obj.Nz);
             obj.Tz = zeros(obj.Nx, obj.Ny, obj.Nz+1);

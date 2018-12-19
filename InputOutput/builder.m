@@ -1177,6 +1177,7 @@ classdef builder < handle
                 case('FIM')
                     CouplingStats = FIM_Stats(obj.MaxNumTimeSteps);
                 case('Sequential')
+                    if
                     CouplingStats = Sequential_Stats(obj.MaxNumTimeSteps);
                 case('SinglePhase')
                     CouplingStats = SinglePhase_Stats(obj.MaxNumTimeSteps);
