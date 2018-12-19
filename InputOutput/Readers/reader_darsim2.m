@@ -622,15 +622,7 @@ classdef reader_darsim2 < reader
                 end
             end  
             
-            %% %%% LTS
-<<<<<<< HEAD
-            temp = sum(contains(obj.SettingsMatrix, 'LTS'));
-            if temp
-                SimulatorSettings.LTS = 1; % 1 or 0. If 1 LTS is used.
-            else
-                SimulatorSettings.LTS = 0; % 1 or 0. If 1 LTS is used.
-            end
-=======
+           %% %%% LTS
             temp = strfind(obj.SettingsMatrix, 'LTS');
             index = find(~cellfun('isempty', temp));
             if  ~isempty(index)
@@ -639,9 +631,7 @@ classdef reader_darsim2 < reader
                 % sub-refinements:
                 % if str2double(obj.SettingsMatrix(adm + 1)) == 1
             end
-            
->>>>>>> AddingLTSSeq
-            
+
             %% %%% Stop criterion
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation
             
