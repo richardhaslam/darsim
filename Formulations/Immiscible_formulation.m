@@ -980,7 +980,7 @@ classdef Immiscible_formulation < formulation
             maxUx = max(max(max(abs(obj.Utot.x))));
             maxUy = max(max(max(abs(obj.Utot.y))));
             maxUz = max(max(max(abs(obj.Utot.z))));
-            CFL = dt * maxdf * (maxUx/dx + maxUy/dy + maxUz/dz) / (max(rho) * pv);
+            CFL = dt * maxdf * (maxUx/dx + maxUy/dy + maxUz/dz) / pv;
         end
         %% LTS TRANSPORT SOLVER
         
@@ -1068,7 +1068,6 @@ classdef Immiscible_formulation < formulation
         end
         function CFL = ComputeCFLNumberTransportLTS(obj, DiscretizationModel, ProductionSystem, dt, CellsSelected)
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
-            rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
             dx = DiscretizationModel.ReservoirGrid.dx;
             dy = DiscretizationModel.ReservoirGrid.dy;
             dz = DiscretizationModel.ReservoirGrid.dz;
@@ -1076,7 +1075,7 @@ classdef Immiscible_formulation < formulation
             maxUx = max(max(max(abs(obj.Utot.x .* CellsSelected.ActFluxes.x))));
             maxUy = max(max(max(abs(obj.Utot.y .* CellsSelected.ActFluxes.y))));
             maxUz = max(max(max(abs(obj.Utot.z .* CellsSelected.ActFluxes.z))));
-            CFL = dt * maxdf * (maxUx/dx + maxUy/dy + maxUz/dz) / (pv*max(rho));
+            CFL = dt * maxdf * (maxUx/dx + maxUy/dy + maxUz/dz) / pv;
         end
         %% Explicit Saturation
         function delta = UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)

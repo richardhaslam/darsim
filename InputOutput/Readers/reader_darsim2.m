@@ -623,15 +623,22 @@ classdef reader_darsim2 < reader
             end  
             
            %% %%% LTS
-            temp = strfind(obj.SettingsMatrix, 'LTS');
-            index = find(~cellfun('isempty', temp));
-            if  ~isempty(index)
-                SimulatorSettings.LTS = str2double(obj.SettingsMatrix(index + 1));
-                % if == 1 I can read parameters useful for the
-                % sub-refinements:
-                % if str2double(obj.SettingsMatrix(adm + 1)) == 1
-            end
+            lts = strfind(obj.SettingsMatrix, 'LTS');
+            index = find(~cellfun('isempty', lts));
+                if str2double(obj.SettingsMatrix(index + 1)) == 1
+                    SimulatorSettings.LTS = 1;
+                    temp = strfind(obj.SettingsMatrix, 'REF_CRITERION');
+                    x = find(~cellfun('isempty', temp));
+                    SimulatorSettings.LTSCriterion = char(obj.SettingsMatrix(x+1));
+                    temp2 = strfind(obj.SettingsMatrix, 'PLOT_INTERNAL_STEPS');
+                    x2 = find(~cellfun('isempty', temp2));
+                    SimulatorSettings.LTSPlot = str2double(obj.SettingsMatrix(x2 + 1));
+                else
+                    SimulatorSettings.LTS = 0;
+                    SimulatorSettings.LTSPlot = 0;
+                end
 
+            
             %% %%% Stop criterion
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation
             

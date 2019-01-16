@@ -1,4 +1,4 @@
- % Builder Builds all objects
+% Builder Builds all objects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -15,7 +15,7 @@ classdef simulation_builder < handle
         function simulation = BuildSimulation(obj, FractureMatrix)
             simulation = Reservoir_Simulation();
             simulation.DiscretizationModel = obj.BuildDiscretization(FractureMatrix);
-            simulation.ProductionSystem = obj.BuildProductionSystem(FractureMatrix,simulation.DiscretizationModel.FracturesGrid);            
+            simulation.ProductionSystem = obj.BuildProductionSystem(FractureMatrix,simulation.DiscretizationModel.FracturesGrid);
             simulation.FluidModel = obj.BuildFluidModel();
             simulation.Formulation = obj.BuildFormulation();
             simulation.TimeDriver = obj.BuildTimeDriver();
@@ -40,23 +40,23 @@ classdef simulation_builder < handle
                 VarValues(:, i) = VarValues(:, i) * obj.SimulationInput.Init(i);
             end
             switch(simulation.FluidModel.name)
-                case('SinglePhase') 
+                case('SinglePhase')
                     VarNames = {'P_1', 'S_1'};
                     VarValues(:, 2) = 1;
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-%                     % Perturb initial S
-%                     nx = simulation.DiscretizationModel.ReservoirGrid.Nx;
-%                     rng(0);
-%                     perturbations = rand(20, 1);
-%                     np = nx / 20;
-%                     for i=1:20
-%                         newval((i-1)*np + 1:i*np) = perturbations(i);
-%                     end
-%                     index = 1:nx:N;
-%                     VarValues(index, 2) = newval;
-%                     VarValues(:, 3) = 1 - VarValues(:, 2);
+                    %                     % Perturb initial S
+                    %                     nx = simulation.DiscretizationModel.ReservoirGrid.Nx;
+                    %                     rng(0);
+                    %                     perturbations = rand(20, 1);
+                    %                     np = nx / 20;
+                    %                     for i=1:20
+                    %                         newval((i-1)*np + 1:i*np) = perturbations(i);
+                    %                     end
+                    %                     index = 1:nx:N;
+                    %                     VarValues(index, 2) = newval;
+                    %                     VarValues(:, 3) = 1 - VarValues(:, 2);
                     simulation.Initializer = initializer(VarNames, VarValues);
                 case("Geothermal_2T")
                     VarNames = {'P_1', 'Tf', 'Tr' ,'S_1'};
@@ -91,7 +91,7 @@ classdef simulation_builder < handle
                     nz = 1;
                     FractureGrid = cartesian_grid([nx;ny;nz]);
                     
-                    % Add fracture grid coordinates (it's for plotting purposes) 
+                    % Add fracture grid coordinates (it's for plotting purposes)
                     temp = strfind(FractureMatrix, 'GRID_COORDS_X');
                     frac_grid_coords_x = find(~cellfun('isempty', temp));
                     temp = strfind(FractureMatrix, 'GRID_COORDS_Y');
@@ -130,10 +130,10 @@ classdef simulation_builder < handle
                     if (f>1),  fprintf(repmat('\b', 1, 9+27));  end
                     fprintf('%04d/%04d',f,NrOfFrac);
                     % looping over all global fracture cells
-					fprintf(' ---> Grid cell ');
+                    fprintf(' ---> Grid cell ');
                     for If = 1:Nf(f)
-						if (If>1),  fprintf(repmat('\b', 1, 11));  end
-						fprintf('%05d/%05d',If,Nf(f));
+                        if (If>1),  fprintf(repmat('\b', 1, 11));  end
+                        fprintf('%05d/%05d',If,Nf(f));
                         fracCell_info_split = strsplit(FractureMatrix{frac_cell_index(sum(Nf(1:f-1))+If)},{' ','	'});
                         
                         % frac-marix conn
@@ -164,7 +164,7 @@ classdef simulation_builder < handle
                         CrossConnections(sum(Nf(1:f-1))+If,1).T_Geo = zeros(size(CrossConnections(sum(Nf(1:f-1))+If,1).ConnIndex));
                     end
                 end
-				fprintf(' ---> Complete!\n');
+                fprintf(' ---> Complete!\n');
             end
             
             %% 2. Define your discretization Model (choose between FS and ADM)
@@ -200,7 +200,7 @@ classdef simulation_builder < handle
                             else
                                 prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
                             end
-                    end       
+                    end
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                     
                     % a.2 Hyperbolic variables operators builder
@@ -214,7 +214,7 @@ classdef simulation_builder < handle
                                 prolongationbuilder.key = strcat('S_',num2str(i-1));
                         end
                         operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
-                    end    
+                    end
                     if obj.SimulatorSettings.Formulation == "Geothermal_2T"
                         switch(ADMSettings.HInterpolator)
                             case('Constant')
@@ -244,7 +244,7 @@ classdef simulation_builder < handle
                         i = length(operatorshandler.ProlongationBuilders);
                         operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
                     end
- 
+                    
                     % b. Grid selection criterion (time\space based)
                     switch (ADMSettings.GridSelCriterion)
                         case('dfdx')
@@ -314,7 +314,7 @@ classdef simulation_builder < handle
             Reservoir = reservoir(Lx, Ly, h, Tres);
             phi = obj.SimulationInput.ReservoirProperties.phi;
             cr = obj.SimulationInput.ReservoirProperties.Compressibility;
-            nx = obj.SimulationInput.ReservoirProperties.Grid.N(1); 
+            nx = obj.SimulationInput.ReservoirProperties.Grid.N(1);
             ny = obj.SimulationInput.ReservoirProperties.Grid.N(2);
             nz = obj.SimulationInput.ReservoirProperties.Grid.N(3);
             k_cond = obj.SimulationInput.ReservoirProperties.Conductivity * ones(nx*ny*nz, 3);
@@ -375,7 +375,7 @@ classdef simulation_builder < handle
                     end
                 otherwise
             end
-            % Add reservoir to production system            
+            % Add reservoir to production system
             ProductionSystem.AddReservoir(Reservoir);
             
             %% WELLS
@@ -402,9 +402,9 @@ classdef simulation_builder < handle
                 coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
                 switch (obj.SimulationInput.FluidProperties.FluidModel)
                     case ("Geothermal_2T")
-                    temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
+                        temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
                     otherwise
-                    temperature = Tres;
+                        temperature = Tres;
                 end
                 switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.name)
                     case('pressure')
@@ -457,7 +457,7 @@ classdef simulation_builder < handle
                 
                 temp = strfind(FractureMatrix, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
-
+                
                 FracturesNetwork.Fractures = fracture();
                 for f = 1 : FracturesNetwork.NumOfFrac
                     frac_info_split = strsplit(FractureMatrix{frac_index(f)},' ');                      % Splitted data for each fracture
@@ -466,22 +466,22 @@ classdef simulation_builder < handle
                     FracturesNetwork.Fractures(f).Thickness = str2double( frac_info_split{5} );         % Thickness of each fracture
                     FracturesNetwork.Fractures(f).Temp = Tres;                                          % Temperature of each fracture
                     
-                    Porosity = str2double( frac_info_split{6} );                                        % Porosity  of each fracture 
+                    Porosity = str2double( frac_info_split{6} );                                        % Porosity  of each fracture
                     Permeability = str2double( frac_info_split{7} );                                    % Permeability of each fracture
                     Kx = ones(FracturesGrid.N(f), 1)*Permeability;
                     Ky = Kx;
                     Kz = Kx;
                     K = [Kx, Ky, Kz];
-                    FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture 
+                    FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture
                     FracturesNetwork.Fractures(f).k_cond = 0*K;
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
-%                 Reservoir.AddPermeabilityPorosity(K, phi);
-%                 Reservoir.Cr = cr;
-%                 Reservoir.k_cond = k_cond;
-%                 Reservoir.Cpr = Cpr;
-%                 Reservoir.Rho = RockDensity;
-%                 Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
+                %                 Reservoir.AddPermeabilityPorosity(K, phi);
+                %                 Reservoir.Cr = cr;
+                %                 Reservoir.k_cond = k_cond;
+                %                 Reservoir.Cpr = Cpr;
+                %                 Reservoir.Rho = RockDensity;
+                %                 Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
             end
         end
         function FluidModel = BuildFluidModel(obj)
@@ -649,7 +649,11 @@ classdef simulation_builder < handle
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
         function TimeDriver = BuildTimeDriver(obj)
-            TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+            if obj.SimulatorSettings.LTSPlot == 1
+                TimeDriver = LTS_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+            else
+                TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+            end
             % Construct Coupling
             switch(obj.SimulatorSettings.CouplingType)
                 case('FIM')
@@ -662,10 +666,10 @@ classdef simulation_builder < handle
                             NLSolver.SystemBuilder = fim_system_builder_ADM();
                             switch obj.SimulatorSettings.Formulation
                                 case ("Geothermal_2T")
-                                ConvergenceChecker = convergence_checker_ADM_geothermal_2T();
-                                ConvergenceChecker.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
+                                    ConvergenceChecker = convergence_checker_ADM_geothermal_2T();
+                                    ConvergenceChecker.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
                                 otherwise
-                                ConvergenceChecker = convergence_checker_ADM();
+                                    ConvergenceChecker = convergence_checker_ADM();
                             end
                             
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
@@ -692,7 +696,7 @@ classdef simulation_builder < handle
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
-                            NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500); 
+                            NLSolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                     end
                     NLSolver.SystemBuilder.NumberOfEq = obj.NofEq;
                     NLSolver.MaxIter = obj.SimulatorSettings.MaxIterations;
@@ -720,11 +724,16 @@ classdef simulation_builder < handle
                     else
                         Coupling = FIM_Strategy('FIM', NLSolver);
                     end
-                %% Sequential coupling    
+                    %% Sequential coupling
                 case('Sequential')
                     % Sequential coupling
-                    if obj.SimulatorSettings.LTS == 1 
-                        Coupling = LTS_Sequential_Strategy('Sequential');                        
+                    if obj.SimulatorSettings.LTS == 1
+                        switch (obj.SimulatorSettings.LTSCriterion)
+                            case('Fixed')
+                                Coupling = LTS_Sequential_Strategy('Sequential');
+                            case('Adaptive')
+                                Coupling = LTS_Adaptive_Sequential_Strategy('Sequential');
+                        end
                         LTStransportsolver = LTS_NL_Solver();
                         LTStransportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
                         ConvergenceChecker = convergence_checker_transport();
@@ -733,11 +742,11 @@ classdef simulation_builder < handle
                         LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
                         LTStransportsolver.SystemBuilder = LTStransport_system_builder();
                         LTStransportsolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
-
+                        
                         Coupling.AddLTSTransportSolver(LTStransportsolver);
                     else
                         Coupling = Sequential_Strategy('Sequential');
-                    end                    
+                    end
                     % OUTER ITERATION (for LTS and not)
                     Coupling.ConvergenceChecker = convergence_checker_outer();
                     Coupling.ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
@@ -769,7 +778,7 @@ classdef simulation_builder < handle
                     end
                     Coupling.AddPressureSolver(pressuresolver);
                     switch (obj.SimulatorSettings.TransportSolver.Type)
-                        case('IMPSAT') 
+                        case('IMPSAT')
                             transportsolver = NL_Solver();
                             transportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
                             ConvergenceChecker = convergence_checker_transport();
@@ -843,12 +852,12 @@ classdef simulation_builder < handle
                 case('FIM')
                     CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'FIM');
                 case('Sequential')
-                    if obj.SimulatorSettings.LTS == 1 
+                    if obj.SimulatorSettings.LTS == 1
                         CouplingStats = LTS_Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'LTS_Sequential');
                     else
                         CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'Sequential');
                     end
-                 case('SinglePhase')
+                case('SinglePhase')
                     CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps);
             end
             wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
@@ -885,7 +894,7 @@ classdef simulation_builder < handle
                     Writer = output_writer_FS(InputDirectory, obj.SimulationInput.ProblemName,...
                         simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd,...
                         simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
-                        simulation.FluidModel.NofComp);   
+                        simulation.FluidModel.NofComp);
             end
             Writer.AddPlotter(plotter);
         end

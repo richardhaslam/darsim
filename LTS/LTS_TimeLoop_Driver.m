@@ -1,40 +1,16 @@
 % TimeLoop driver
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
+%Author: Ludovica Delpopolo
 %TU Delft
-%Created: 12 July 2016
-%Last modified: 18 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef TimeLoop_Driver < handle
-    properties
-        Time
-        TStops % List of solution report times
-        TotalTime
-        Ndt
-        dt
-        Coupling
-        EndOfSimEvaluator
-    end
+classdef LTS_TimeLoop_Driver <  TimeLoop_Driver
+
     methods
-        function obj = TimeLoop_Driver(n_reports, TotalTime, MaxNumTimesteps)
-            obj.TotalTime = TotalTime;
-            if n_reports == 0
-                % Prnt at every time-step
-                obj.TStops = TotalTime * zeros(MaxNumTimesteps ,1);
-            else
-                obj.TStops = linspace(TotalTime/n_reports, TotalTime, n_reports);
-            end 
-        end
-        function AddCouplingStrategy(obj, coupling)
-            obj.Coupling = coupling;
-        end
-        function AddEndOfSimEvaluator(obj, end_of_sim_eval)
-            obj.EndOfSimEvaluator = end_of_sim_eval;
-        end
         function Summary = SolveTimeDependentProblem(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, Summary, Writer)
             %%%%% START THE TIME LOOP %%%%%
-            index = 1;   
+            index = 1;
+            index_internal = 1;
             obj.Time = 0;
             obj.Ndt = 1;
             EndOfSimCriterion = 0;
@@ -78,11 +54,32 @@ classdef TimeLoop_Driver < handle
                 EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, ProductionSystem, obj.Time, obj.Ndt);
                 
                 %% %%%%%%%%%%%%PLOT SOLUTION%%%%%%%%%%%%%
+                  %%%%% PLOT LTS  NEW SOLUTION %%%%%%%%
                 if (obj.Time == obj.TStops(index) || obj.TStops(index) == 0 ||EndOfSimCriterion==1 )
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
                     disp(newline);
+                    if size(obj.Coupling.ActCellsSummary,2) ~= 0
+                        % for each sub/ref we modify the ActiveTime attribute
+                        % and the ProductionSystem.State
+                        % of Reservoir Grid to plot it.
+                        StateGlob = status();
+                        StateGlob.CopyProperties(ProductionSystem.Reservoir.State);
+                        
+                        for i = 1:size(obj.Coupling.ActCellsSummary,2)
+                            DiscretizationModel.ReservoirGrid.ActiveTime = obj.Coupling.ActCellsSummary(:,i);
+                            ProductionSystem.Reservoir.State.CopyProperties(obj.Coupling.StatesSummary(i));
+                            ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                            Writer.PlotSolution(ProductionSystem, DiscretizationModel);
+                            Writer.WriteSolutionOnFile(ProductionSystem, index_internal);
+                            index_internal = index_internal + 1;
+                        end
+                        DiscretizationModel.ReservoirGrid.ActiveTime = ones(size(obj.Coupling.ActCellsSummary(:,i)));
+                        ProductionSystem.Reservoir.State.CopyProperties(StateGlob);
+                        ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                    end
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
-                    Writer.WriteSolutionOnFile(ProductionSystem, index);
+                    Writer.WriteSolutionOnFile(ProductionSystem, index_internal);
+                    index_internal = index_internal + 1;
                     index = index + 1;
                 end
             end
