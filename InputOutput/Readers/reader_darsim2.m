@@ -553,7 +553,7 @@ classdef reader_darsim2 < reader
                 end
             end
             
-            %% Multilevel Multiscale settings
+           %% Multilevel Multiscale settings
             temp = strfind(obj.SettingsMatrix, 'MMs');
             mms = find(~cellfun('isempty', temp));
             if str2double(obj.SettingsMatrix(mms + 1)) == 1
@@ -638,6 +638,21 @@ classdef reader_darsim2 < reader
                     SimulatorSettings.LTSPlot = 0;
                 end
 
+            %% %%% ADT (space-time)  
+            temp = strfind(obj.SettingsMatrix, 'ADT_SEQ');
+            adm = find(~cellfun('isempty', temp));
+            if str2double(obj.SettingsMatrix(adm + 1)) == 1
+                SimulatorSettings.ADT_SEQ = 1;
+            else
+                SimulatorSettings.ADT_SEQ = 0;
+            end
+            temp = strfind(obj.SettingsMatrix, 'VISUAL_INTERNAL');
+            adm = find(~cellfun('isempty', temp));
+            if str2double(obj.SettingsMatrix(adm + 1)) == 1
+                SimulatorSettings.ADTPlot = 1;
+            else
+                SimulatorSettings.ADTPlot = 0;
+            end
             
             %% %%% Stop criterion
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation

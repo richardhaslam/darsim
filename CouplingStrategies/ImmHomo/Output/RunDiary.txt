@@ -18,4 +18,5 @@ ResSimulator.Reader.ReadInputFile(ResSimulator.Builder);
 Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('LudoRun', '/home/ludodelpop/Documents/DARSim2_src/LudoRun.m', 7)" style="font-weight:bold">LudoRun</a> (<a href="matlab: opentoline('/home/ludodelpop/Documents/DARSim2_src/LudoRun.m',7,0)">line 7</a>)
 DARSim2Res = DARSim2ResSim(Directory, File,'');
 } 
+matlab.internal.language.introspective.errorDocCallback('reader_darsim2/ReadInputFile', '/home/ludodelpop/Documents/DARSim2_src/InputOutput/Readers/reader_darsim2.m', 23)
 LudoRun

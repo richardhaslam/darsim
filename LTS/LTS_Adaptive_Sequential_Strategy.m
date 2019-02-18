@@ -219,6 +219,8 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             obj.LTSTransportTimer(obj.itCount) = 0;
                             obj.CFLLocal = 0;
                             obj.NLiterLTS = 0;
+                            obj.ActCellsSummary = 0;
+                            obj.StatesSummary = 0;
                             DiscretizationModel.ReservoirGrid.ActiveTime = zeros(DiscretizationModel.ReservoirGrid.N,1);
                         end
                         if obj.LTSTransportSolver.Converged ~= 0

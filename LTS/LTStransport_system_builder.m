@@ -26,8 +26,7 @@ classdef LTStransport_system_builder < transport_system_builder
                 Index.Start = 1;
                 Index.End = size(ProductionSystem.Reservoir.K,1);
                 temp = ProductionSystem.Reservoir.State.Properties(Names{i});
-                temp.Value = temp.Value .* CellsSelected.ActCells + ...
-                             State_global.Properties(Names{i}).Value(Index.Start:Index.End,:) .* (1 - CellsSelected.ActCells);
+                temp.Value = temp.Value .* CellsSelected.ActCells + State_global.Properties(Names{i}).Value .* (1 - CellsSelected.ActCells);
                 % Save fractures state
                 % To be implement
             end

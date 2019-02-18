@@ -1,6 +1,6 @@
 clc;
 
-%Homogeneous permeability fiead
+% %Homogeneous permeability fiead
  Directory = '../ImmHomo/';
 File = 'ImmHomo.txt';
  

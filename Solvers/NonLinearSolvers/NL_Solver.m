@@ -118,5 +118,9 @@ methods
         % Set up the linear solver
         obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel, 0); % We may need the residual for ADM but for now let's pass a 0.
     end
+        
+    function SetUpLinearSolverCoarse(obj, ProductionSystem, DiscretizationModel)
+         obj.LinearSolver.LTS_SetUpCoarse(ProductionSystem, DiscretizationModel, obj.Residual);
+    end
 end
 end

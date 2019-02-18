@@ -1,22 +1,11 @@
                                                                                                                                                                      % NL solver base class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
+%Author: Ludovica Delpopolo
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef LTS_NL_Solver < handle
+classdef LTS_NL_Solver < NL_Solver
 properties
-    SystemBuilder
-    SolutionChopper
-    MaxIter
-    Converged
-    itCount
-    LinearSolver
-    ConvergenceChecker
-    TimerConstruct
-    TimerSolve
-    TimerInner
-    Delta
     InitialTimeStep = true;
 end
 properties (Access = private)
@@ -28,9 +17,6 @@ methods
     function obj = LTS_NL_Solver()
         obj.Converged = 0;
         obj.SolutionChopper = solution_chopper();
-    end
-    function AddConvergenceChecker(obj, convcheck)
-        obj.ConvergenceChecker = convcheck;
     end
     function Solve(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt, CellsSelected)
         % Initialise objects for new NL Solve
@@ -96,20 +82,21 @@ methods
     function BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected)
         obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected);
     end
-    function CheckConvergence(obj, Formulation, DiscretizationModel, ProductionSystem)
-        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver);
-    end
-    function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
-        obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
-    end
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt, CellsSelected)
         % 1. Save initial state
-        obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
-               
+        obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);    
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
         % Set up the linear solver
         obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel, obj.Residual);
+    end
+    function SetUpRP_LTS_ADM(obj, DiscretizationModel, ActCells, l)
+        % Set up the linear solver
+        obj.LinearSolver.LTS_SetUp(DiscretizationModel, ActCells, l);
+    end
+    
+    function TransportSolver.SetUpLinearSolverCoarse(obj, ProductionSystem, DiscretizationModel)
+         obj.LinearSolver.LTS_SetUpCoarse(ProductionSystem, DiscretizationModel, obj.Residual);
     end
     
     function SynchronizeProperties(obj, ProductionSystem, State_global, CellsSelected)

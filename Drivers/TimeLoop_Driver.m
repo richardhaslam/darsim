@@ -45,7 +45,9 @@ classdef TimeLoop_Driver < handle
                 
                 %% Solve Coupled problem at time-step n
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
-
+                obj.Coupling.TimeStepSelector.Index = index;
+                
+                
                 [obj.dt, EndOfSimCriterion] = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
                 
                 % Average for ADM
@@ -73,7 +75,7 @@ classdef TimeLoop_Driver < handle
                 Summary.NumberTimeSteps = obj.Ndt - 1;
                 Summary.CouplingStats.SaveTimeStepTimer(obj.Ndt - 1, toc(tstart));
                 Summary.SaveGridStats(obj.Ndt - 1, DiscretizationModel);
-                
+               
                 %% Has simulation ended?
                 EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, ProductionSystem, obj.Time, obj.Ndt);
                 

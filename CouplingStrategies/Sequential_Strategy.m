@@ -43,9 +43,9 @@ classdef Sequential_Strategy < Coupling_Strategy
             
             % Pressure timestep
             dt = obj.TimeStepSelector.ChooseTimeStep();
+            %dt = 0.5 * 60 * 60 * 24;
             
-            % Save state of current time-step
-            ProductionSystem.SavePreviousState();
+            
             % Set up linear solver
             while obj.Converged == 0 && obj.Chops < 10
                 obj.itCount = 1;
@@ -54,8 +54,10 @@ classdef Sequential_Strategy < Coupling_Strategy
                 
                 if (obj.Chops == 0)
                     % This is only for ADM
-                    obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
+                    %obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                     obj.TransportSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
+                    % Save state of current time-step
+                    ProductionSystem.SavePreviousState();
                 end
                 
                 % Outer loop (Flow-transport coupling)
@@ -87,9 +89,10 @@ classdef Sequential_Strategy < Coupling_Strategy
                     
                     %% 3. Solve transport
                     % 3.1 Choose stable timestep
-                    if obj.itCount == 1 && obj.Chops == 0
-                        dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
-                    end
+%                     if obj.itCount == 1 && obj.Chops == 0
+%                         dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
+%                     end
+
                     % 3.2 Solve transport
                     disp('Transport Solver');
                     disp('...............................................');
@@ -132,6 +135,8 @@ classdef Sequential_Strategy < Coupling_Strategy
                 end
             end
             % Compute phase fluxes after converged solution
+            obj.TimeStepSelector.CreateCFLfile(ProductionSystem, DiscretizationModel, Formulation.df, Formulation.Utot, dt);
+
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
             obj.TimeStepSelector.UpdateSequential(dt, obj.itCount - 1, obj.TransportSolver.itCount - 1, obj.Chops);
         end
