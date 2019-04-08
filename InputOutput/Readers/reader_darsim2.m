@@ -630,6 +630,8 @@ classdef reader_darsim2 < reader
                 % if == 1 I can read parameters useful for the
                 % sub-refinements:
                 % if str2double(obj.SettingsMatrix(adm + 1)) == 1
+            else
+                SimulatorSettings.LTS = 0;
             end
 
             %% %%% Stop criterion
