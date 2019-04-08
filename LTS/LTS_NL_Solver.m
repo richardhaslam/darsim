@@ -64,7 +64,7 @@ methods
             obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected);
             
             % 6. Check NonLinear convergencel
-            obj.CheckConvergence(Formulation, DiscretizationModel, ProductionSystem);
+            obj.CheckConvergence(Formulation, DiscretizationModel, ProductionSystem, CellsSelected.ActCells);
             
             if obj.Converged == -1
                 obj.Converged = 0;
@@ -81,6 +81,9 @@ methods
     end
     function BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected)
         obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected);
+    end
+    function CheckConvergence(obj, Formulation, DiscretizationModel, ProductionSystem,  ActCells)
+        obj.Converged = obj.ConvergenceChecker.CheckLTS(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver,  ActCells);
     end
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt, CellsSelected)
         % 1. Save initial state

@@ -43,12 +43,13 @@ classdef adm_grid_selector_delta < adm_grid_selector
                         % coarse grid 1 to 0 (fine-scale)
                         obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), S{m}, false);
                     elseif l <= maxLevel(m)
-                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), S{m}, false);
+                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), S{m}, true);
                     else
                         CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
                     end
                 end
             end
+             %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
         
@@ -107,36 +108,35 @@ classdef adm_grid_selector_delta < adm_grid_selector
                         S_children = S(CoarseGrid.GrandChildren(n(i), :));
                         Sn_max = max(S_children);
                         Sn_min = min(S_children);
-                        if (abs(Smax-Sn_min) > obj.tol || abs(Smin-Sn_max) > obj.tol)
-                            CoarseGrid.Active(c) = 0;
-                            %CoarseGrid.Active(i) = 0;
-                            i = Nn + 1;
+                        if flag == false
+                            if (abs(Smax-Sn_min) > obj.tol || abs(Smin-Sn_max) > obj.tol)
+                                CoarseGrid.Active(c) = 0;
+                                %CoarseGrid.Active(i) = 0;
+                                i = Nn + 1;
+                            else
+                                i = i+1;
+                            end
                         else
-                            i = i+1;
+                            if (abs(Smax-Sn_min) > 2*obj.tol || abs(Smin-Sn_max) > 2*obj.tol)
+                                CoarseGrid.Active(c) = 0;
+                                %CoarseGrid.Active(i) = 0;
+                                i = Nn + 1;
+                            else
+                                i = i+1;
+                            end
                         end
                     end
                 end
             end
             
-            %2. Do not coarsen neighbours of cells that are fine
-            DummyActive = CoarseGrid.Active;
-            for i = 1:Nc
-                if (CoarseGrid.Active(i) == 0)
-                    DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
-                end
-            end
-            CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
-            if flag
-                for i = 1:Nc
-                    if (CoarseGrid.Active(i) == 0)
-                        DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
-                    end
-                end
-                CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
-            end
-            
-            %3. Set to inactive fine block belonging to Active Coarse Blocks
-            %Cindeces = find();
+%             %2. Do not coarsen neighbours of cells that are fine
+%                         DummyActive = CoarseGrid.Active;
+%                         for i = 1:Nc
+%                             if (CoarseGrid.Active(i) == 0)
+%                                 DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
+%                             end
+%                         end
+%                         CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
             FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
         end
         function SelectCoarseFineC(obj, FineGrid, CoarseGrid)

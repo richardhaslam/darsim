@@ -13,12 +13,12 @@ classdef LTS_Run_Summary_ADM < Run_Summary_ADM
     methods
         function obj = LTS_Run_Summary_ADM(MaxNTimeSteps, couplingstats, wellsData, maxLevel)
             obj@Run_Summary_ADM(MaxNTimeSteps, couplingstats, wellsData, maxLevel);
-            internal = 0;
+            internal =1;
             val = 1;
             % 2 shold be more general (time_ref problerties inside
             % LTS_ADM_Sequatial strategy)
             for i = 1:maxLevel
-                val = val * 2;
+                val = val * 4;
                 internal = internal + val;           
             end
             obj.LTSIter = zeros(MaxNTimeSteps, internal);

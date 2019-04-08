@@ -49,7 +49,7 @@ classdef LTSPrint_TimeLoop_Driver <  TimeLoop_Driver
                 Summary.NumberTimeSteps = obj.Ndt - 1;
                 Summary.CouplingStats.SaveTimeStepTimer(obj.Ndt - 1, toc(tstart));
                 Summary.SaveGridStats(obj.Ndt - 1, DiscretizationModel);
-                Summary.SaveLTSiter( obj.Ndt, obj.Coupling.LTS_iters);
+%                Summary.SaveLTSiter( obj.Ndt, obj.Coupling.LTS_iters);
                 
                 %% Has simulation ended?
                 EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, ProductionSystem, obj.Time, obj.Ndt);

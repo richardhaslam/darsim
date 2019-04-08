@@ -254,7 +254,7 @@ classdef simulation_builder < handle
                                 gridselector = adm_grid_selector_delta(ADMSettings.tol, ADMSettings.key);
                             end
                         case('dfdt')
-                            gridselector = adm_grid_selector_time2(ADMSettings.tol, ADMSettings.key, ReservoirGrid.N, ADMSettings.maxLevel(1));
+                            gridselector = adm_grid_selector_time(ADMSettings.tol, ADMSettings.key, ReservoirGrid.N, ADMSettings.maxLevel(1));
                         case('residual')
                             gridselector = adm_grid_selector_residual(ADMSettings.tol);
                     end
@@ -650,8 +650,8 @@ classdef simulation_builder < handle
         end
         function TimeDriver = BuildTimeDriver(obj)
             if obj.SimulatorSettings.LTSPlot == 1 ||  obj.SimulatorSettings.ADTPlot == 1
-                TimeDriver = LTS_Print_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
-            elseif obj.SimulatorSettings.ADT_SEQ == 1
+                TimeDriver = LTSPrint_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+            elseif obj.SimulatorSettings.ADT_SEQ == 1 
                  TimeDriver = LTS_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             else
                  TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
@@ -737,13 +737,16 @@ classdef simulation_builder < handle
                         
                         LTStransportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
                         ConvergenceChecker = convergence_checker_transport();
+                        %ConvergenceChecker = LTS_convergence_checker_transport_ADM();
                         ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
                         ConvergenceChecker.SolutionTol = 1e-3;
                         LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
+                        LTStransportsolver.ConvergenceChecker.adm = 1;
+                        LTStransportsolver.ConvergenceChecker.lts = 1;
                         LTStransportsolver.SystemBuilder = LTStransport_system_builder();
                         LTStransportsolver.LinearSolver.OperatorsAssembler = LTS_operators_assembler_seq(2, obj.NofEq);
                         Coupling.AddLTSTransportSolver(LTStransportsolver);
-                        
+
                         % OUTER ITERATION (for LTS and not)
                         Coupling.ConvergenceChecker = convergence_checker_outer();
                         Coupling.ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
@@ -757,7 +760,7 @@ classdef simulation_builder < handle
                         pressuresolver.SystemBuilder = pressure_system_builder();
                         
                         
-                        % at the moment we use a
+                        % at the moment we use a fine pressure solver
                         %                     switch obj.SimulatorSettings.DiscretizationModel
                         %                         case ('ADM')
                         %                             pressuresolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
@@ -790,15 +793,13 @@ classdef simulation_builder < handle
                         Coupling.ConvergenceChecker = convergence_checker_outer();
                         Coupling.ConvergenceChecker.SolutionTol = obj.SimulatorSettings.Tolerance;
                         
-                        transportsolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                        transportsolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-2, 500);
                         transportsolver.LinearSolver.OperatorsAssembler = LTS_operators_assembler_seq(2, obj.NofEq);
                         transportsolver.ConvergenceChecker.adm = 1;
                         transportsolver.ConvergenceChecker.OperatorsAssembler = LTS_operators_assembler_seq(2, obj.NofEq);
                         
                         Coupling.AddTransportSolver(transportsolver);
-                        
-                        
-                    else
+                      else
                         if obj.SimulatorSettings.LTS == 1
                             switch (obj.SimulatorSettings.LTSCriterion)
                                 case('Fixed')
@@ -813,13 +814,7 @@ classdef simulation_builder < handle
                             ConvergenceChecker.SolutionTol = 1e-3;
                             LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
                             LTStransportsolver.SystemBuilder = LTStransport_system_builder();
-                            switch obj.SimulatorSettings.DiscretizationModel
-                                case('ADM')
-                                    LTStransportsolver.LinearSolver = LTS_linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
-                                    LTStransportsolver.LinearSolver.OperatorsAssembler = operators_assembler_seq(2, obj.NofEq);
-                                otherwise
-                                    LTStransportsolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
-                            end
+                            LTStransportsolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             Coupling.AddLTSTransportSolver(LTStransportsolver);
                         else
                             Coupling = Sequential_Strategy('Sequential');
@@ -944,7 +939,7 @@ classdef simulation_builder < handle
             wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
             switch (obj.SimulatorSettings.DiscretizationModel)
                 case('ADM')
-                    if obj.SimulatorSettings.ADT_SEQ == 1
+                    if obj.SimulatorSettings.ADT_SEQ == 1 
                         Summary = LTS_Run_Summary_ADM(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
                     else
                         Summary = Run_Summary_ADM(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
@@ -971,7 +966,7 @@ classdef simulation_builder < handle
             
             switch(obj.SimulatorSettings.DiscretizationModel)
                 case ('ADM')
-                    if  obj.SimulatorSettings.ADT_SEQ == 1
+                    if  obj.SimulatorSettings.ADT_SEQ == 1 
                         Writer = lts_output_writer_adm(InputDirectory, obj.SimulationInput.ProblemName,...
                             simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, ...
                             simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...

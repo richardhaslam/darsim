@@ -24,7 +24,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
             
             % Pressure timestep
             dt = obj.TimeStepSelector.ChooseTimeStep();
-            %dt = 10 * 60 * 60 * 24;
+            
             % Phase Mobilities and total Mobility
             Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
             
@@ -42,6 +42,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                 
                 % Outer loop (Flow transport coupling)
                 while obj.Converged == 0 && obj.itCount <= obj.MaxIter
+                   
                     % copy state to check outer convergence
                     State_old = status();
                     State_old.CopyProperties(ProductionSystem.Reservoir.State);
@@ -62,6 +63,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                     Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
                     % Check that velocity field is conservative
                     tstart2 = tic;
+                    %It is not correct
                     %                     conservative = Formulation.CheckMassConservation(DiscretizationModel.ReservoirGrid);
                     %                     if ~conservative
                     %                         error('DARSim2 error: mass balance not respected');
@@ -74,6 +76,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                     
                     obj.TransportSolver.SetUpLinearSolverCoarse(ProductionSystem, DiscretizationModel);
                     %% 3. Solve transport
+                      % we do not se it in order to impose fix global steps
 %                     if obj.itCount == 1 && obj.Chops == 0
 %                         dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
 %                     end
@@ -130,6 +133,18 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         ProductionSystem.Reservoir.State.CopyProperties(State_iniTransp);
                         ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                         
+                        Newton_IniGuess = status();
+                        Newton_IniGuess.CopyProperties(ProductionSystem.Reservoir.State);
+                        temp = Newton_IniGuess.Properties('S_1');                        
+                        temp2 = Newton_IniGuess.Properties('S_2');
+
+                        S1_next = obj.StateGlobalVec(1).Properties('S_1').Value;
+                        S2_next = obj.StateGlobalVec(1).Properties('S_2').Value;
+                        S1_old = State_iniTransp.Properties('S_1').Value(:);
+                        S2_old = State_iniTransp.Properties('S_2').Value(:);
+                        temp.Value = S1_old + (dtRef)/dtGlob * (S1_next - S1_old);
+                        temp2.Value = S2_old + (dtRef)/dtGlob * (S2_next - S2_old);
+
                         while sum_dtLoc(lev) < dtGlob(lev)
                             % we sum up all the timer for the refinemets
                             obj.LTSTransportTimer(obj.itCount) = 0;
@@ -143,20 +158,28 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                             disp(['SubRef step: ', num2str(lev)]);
                             disp('...............................................');
                             % Set up for LinearSolver R and P
-                            obj.LTSTransportSolver.SetUpRP_LTS_ADM(DiscretizationModel, obj.RefCellsSelectorVec(lev).ActCells(:), lev)
+                            if lev == NofLevel
+                                obj.LTSTransportSolver.SetUpRP_LTS_ADM(DiscretizationModel, obj.RefCellsSelectorVec(lev).ActCells(:), lev)  
+                                obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(lev));
+                                 
+                                obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
+                                obj.LTS_iters = [obj.LTS_iters (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
                             
-                            obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(lev));
-                            obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
-                            obj.LTS_iters = [obj.LTS_iters (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
-                            obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(lev));
-                            obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
+                                obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(lev));
+                                obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
+                            else 
+                                obj.LTSTransportSolver.SetUpRP_LTS_ADM(DiscretizationModel, obj.RefCellsSelectorVec(lev).ActCells(:), lev)
+                                obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(lev));
+                                
+                                ProductionSystem.Reservoir.State.CopyProperties(Newton_IniGuess);
+                                                                
+                                obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
+                                obj.LTS_iters = [obj.LTS_iters (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
                             
-                            if obj.LTSTransportSolver.Converged == 0
-                                disp('Sub ref not converged')
-                                obj.itCount = obj.MaxIter+1;
-                                break;
+                                obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(lev));
+                                obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
                             end
-                            
+                                                          
                             if lev == DiscretizationModel.maxLevel
                                 sum_dtLoc(lev) = sum_dtLoc(lev) + dtRef;
                                 
@@ -181,12 +204,25 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                     StateSum.CopyProperties(ProductionSystem.Reservoir.State);
                                     obj.StatesSummary(idxSummary) = StateSum;
                                     idxSummary = idxSummary + 1;
-                                    
+                                    temp = Newton_IniGuess.Properties('S_1');
+                                    temp2 = Newton_IniGuess.Properties('S_2');
+                                    S1_next = obj.StateGlobalVec(1).Properties('S_1').Value;
+                                    S2_next = obj.StateGlobalVec(1).Properties('S_2').Value;
+                                    S1_old = State_iniTransp.Properties('S_1').Value(:);
+                                    S2_old = State_iniTransp.Properties('S_2').Value(:);
+                                    if (sum_dtLoc(lev)+ dtRef - dtGlob(lev))< eps
+                                        temp.Value = S1_old + (sum_dtLoc(lev)+ dtRef)/dtGlob(lev) * (S1_next - S1_old);
+                                        temp2.Value = S2_old + (sum_dtLoc(lev)+ dtRef)/dtGlob(lev) * (S2_next - S2_old);
+                                    else
+                                        temp.Value = S1_next;
+                                        temp2.Value = S2_next;
+                                    end
                                 end
                             else
                                 obj.RefCellsSelector.ComputeActiveCells(DiscretizationModel, lev+1);
-                                obj.RefCellsSelector.ActCellCheckError(ProductionSystem, DiscretizationModel.ReservoirGrid, Formulation);
-                                
+                                if lev == DiscretizationModel.maxLevel - 1
+                                    obj.RefCellsSelector.ActCellCheckError(ProductionSystem, DiscretizationModel.ReservoirGrid, Formulation);
+                                end
                                 DiscretizationModel.ReservoirGrid.ActiveTime = obj.RefCellsSelector.ActCells;
 
                                 if sum(obj.RefCellsSelector.ActCells) ~= 0

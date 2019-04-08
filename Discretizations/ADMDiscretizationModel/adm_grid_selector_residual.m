@@ -62,6 +62,40 @@ classdef adm_grid_selector_residual < adm_grid_selector
             %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
+        function SelectGridCoarse(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
+            % SELECT the ADM GRID for next time-step based on delta x
+            %% 1. Reset all cells to be active and stor x{m}
+            n_media = length(FineGrid);
+            for m=1:n_media
+                FineGrid(m).Active = ones(FineGrid(m).N, 1);
+                if m==1
+                    % for now wells are only in the reservoir
+                    CoarseGrid(m,1).Active = obj.NoWellsCoarseCells;
+                else
+                    CoarseGrid(m,1).Active = ones(CoarseGrid(m).N, 1);
+                end
+            end
+            
+            %% 2. Select active cells
+            for l=1:max(maxLevel)
+                % 2.a choose possible active grids for level l
+                if l>1
+                    obj.DefinePossibleActive(CoarseGrid(:, l), CoarseGrid(:, l-1), l);
+                end
+                for m=1:n_media
+                    % 2.b choose active cells of level l
+                    if l==1
+                        % coarse grid 1 to 0 (fine-scale)
+                        obj.SelectCoarseFineC(FineGrid(m), CoarseGrid(m, 1));
+                    elseif l <= maxLevel(m)
+                        obj.SelectCoarseFineC(CoarseGrid(m, l-1), CoarseGrid(m, l));
+                    else
+                        CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
+                    end
+                end
+            end
+            obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
+        end
         function SelectCoarseFine(obj, FineGrid, CoarseGrid, Residual)
             %Given a Fine (level l-1) and a Coarse (level l) Grids chooses the cells that have to be active
             
@@ -80,6 +114,9 @@ classdef adm_grid_selector_residual < adm_grid_selector
             end
             
             %% 3. Set to inactive fine blocks (level l-1) belonging to active Coarse Blocks (level l)
+            FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
+        end
+        function SelectCoarseFineC(obj, FineGrid, CoarseGrid)
             FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
         end
     end

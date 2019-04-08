@@ -6,7 +6,7 @@
 classdef RefCellsSelector < handle
     properties
         tol =5e-2
-        NSten = 1
+        NSten = 2
         ActFluxes
         ActCells
         ActCellsMesh
@@ -236,24 +236,6 @@ classdef RefCellsSelector < handle
                 end
             end
         end
-        function numb = NumberOfActiveCellsDD(obj, DiscretizationModel, level)
-            %level = DiscretizationModel.maxLevel - level + 1;
-            CellCoarse = zeros(size(obj.ActCells));
-            CellCoarse (DiscretizationModel.CoarseGrid(level).GrandChildren(DiscretizationModel.CoarseGrid(level).Active == 1,1)) = 1;
-            numb = sum(CellCoarse .* obj.ActCells);
-            
-            if level ~= 0
-                CellCoarse = zeros(size(obj.ActCells));
-                CellCoarse (DiscretizationModel.CoarseGrid(level-1).GrandChildren(DiscretizationModel.CoarseGrid(level-1).Active == 1,1)) = 1;
-                numb = numb + sum(CellCoarse .* obj.ActCells);
-            end
-            
-            if level ~= DiscretizationModel.maxLevel
-                CellCoarse = zeros(size(obj.ActCells));
-                CellCoarse (DiscretizationModel.CoarseGrid(level+1).GrandChildren(DiscretizationModel.CoarseGrid(level+1).Active == 1,1)) = 1;
-                numb = numb + sum(CellCoarse .* obj.ActCells);
-            end
-        end
         function ActCellCheckError(obj, ProductionSystem, Grid, Formulation)
             Utot = Formulation.Utot;
             Nx = Grid.Nx;
@@ -263,7 +245,8 @@ classdef RefCellsSelector < handle
             dS = ProductionSystem.Reservoir.State.Properties('S_1').Value - ...
                  ProductionSystem.Reservoir.State_old.Properties('S_1').Value;
             % vector of active cells
-            obj.ActCells = (abs(dS) >= obj.tol) .* obj.ActCells;
+            PossibleCells = obj.ActCells;
+            obj.ActCells = (abs(dS) >= obj.tol) .* PossibleCells ;
             ActCellsM = reshape(obj.ActCells, Nx, Ny, Nz);
             for i = 1: obj.NSten
                 ActCellsM(2:Nx,:,:) = ActCellsM(2:Nx,:,:) + max(Utot.x(2:Nx,:,:),0) .* ActCellsM(1:Nx-1,:,:);
@@ -275,7 +258,7 @@ classdef RefCellsSelector < handle
                 ActCellsM(:,:,2:Nz) = ActCellsM(:,:,2:Nz) + max(Utot.z(:,:,2:Nz),0) .* ActCellsM(:,:,1:Nz-1);
                 ActCellsM(:,:,1:Nz-1) = ActCellsM(:,:,1:Nz-1) + min(Utot.z(:,:,1:Nz-1),0) .* ActCellsM(:,:,2:Nz);
             end
-            obj.ActCells = obj.ActCells .* reshape(ActCellsM >0, N, 1);
+            obj.ActCells = PossibleCells  .* reshape(ActCellsM >0, N, 1);
         end
         function ActiveCellsOnLevelAndNeighbours(obj, DiscretizationModel, level)
             %level = DiscretizationModel.maxLevel - level + 1;
