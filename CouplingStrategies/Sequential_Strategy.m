@@ -43,8 +43,6 @@ classdef Sequential_Strategy < Coupling_Strategy
             
             % Pressure timestep
             dt = obj.TimeStepSelector.ChooseTimeStep();
-            %dt = 0.5 * 60 * 60 * 24;
-            
             
             % Set up linear solver
             while obj.Converged == 0 && obj.Chops < 10
@@ -54,7 +52,7 @@ classdef Sequential_Strategy < Coupling_Strategy
                 
                 if (obj.Chops == 0)
                     % This is only for ADM
-                    %obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
+                    obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                     obj.TransportSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                     % Save state of current time-step
                     ProductionSystem.SavePreviousState();
