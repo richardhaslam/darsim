@@ -1,3 +1,10 @@
+% Sequential coupling strategy
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%DARSim 2 Reservoir Simulator
+%Author: Matteo Cusini
+%TU Delft
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 classdef Sequential_Stats < Coupling_Stats
     properties
         OuterIter
