@@ -16,6 +16,19 @@ classdef linear_solver_ADM < linear_solver
         function obj = linear_solver_ADM(name, tol, maxit)
             obj@linear_solver(name, tol, maxit);
         end
+        function LTS_SetUpCoarse(obj, ProductionSystem, DiscretizationModel, Residual)
+            % Select grid and get ADM Operators 
+            [obj.R, obj.P] = obj.OperatorsAssembler.AssembleCoarse(DiscretizationModel, ProductionSystem, Residual);
+           
+            % Modify permeability field (for upscaling option)
+            if obj.DLGR
+                DiscretizationModel.ModifyPerm(ProductionSystem); 
+            end            
+            
+            % Display the number of active grids
+            fprintf('Number of ADM Active Grids: %1.0f (%2.2f Percent of nodes)\n', ...
+                    DiscretizationModel.ADMGrid.Ntot, 100*DiscretizationModel.ADMGrid.Ntot/DiscretizationModel.GlobalGrids(1).N);
+        end
         function SetUp(obj, ProductionSystem, DiscretizationModel, Residual)
             % Select grid and get ADM Operators 
             [obj.R, obj.P] = obj.OperatorsAssembler.Assemble(DiscretizationModel, ProductionSystem, Residual);

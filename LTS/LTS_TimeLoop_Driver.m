@@ -1,37 +1,10 @@
-% TimeLoop driver
+% LTS TimeLoop driver
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
-%TU Delft
-%Created: 12 July 2016
-%Last modified: 18 July 2016
+%Author: Ludovica Delpopolo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef TimeLoop_Driver < handle
-    properties
-        Time
-        TStops % List of solution report times
-        TotalTime
-        Ndt
-        dt
-        Coupling
-        EndOfSimEvaluator
-    end
+classdef LTS_TimeLoop_Driver < TimeLoop_Driver
     methods
-        function obj = TimeLoop_Driver(n_reports, TotalTime, MaxNumTimesteps)
-            obj.TotalTime = TotalTime;
-            if n_reports == 0
-                % Prnt at every time-step
-                obj.TStops = TotalTime * zeros(MaxNumTimesteps ,1);
-            else
-                obj.TStops = linspace(TotalTime/n_reports, TotalTime, n_reports);
-            end 
-        end
-        function AddCouplingStrategy(obj, coupling)
-            obj.Coupling = coupling;
-        end
-        function AddEndOfSimEvaluator(obj, end_of_sim_eval)
-            obj.EndOfSimEvaluator = end_of_sim_eval;
-        end
         function Summary = SolveTimeDependentProblem(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, Summary, Writer)
             %%%%% START THE TIME LOOP %%%%%
             index = 1;   
@@ -46,6 +19,7 @@ classdef TimeLoop_Driver < handle
                 %% Solve Coupled problem at time-step n
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
                 obj.Coupling.TimeStepSelector.Index = index;
+                
                 
                 [obj.dt, EndOfSimCriterion] = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
                 
@@ -74,7 +48,8 @@ classdef TimeLoop_Driver < handle
                 Summary.NumberTimeSteps = obj.Ndt - 1;
                 Summary.CouplingStats.SaveTimeStepTimer(obj.Ndt - 1, toc(tstart));
                 Summary.SaveGridStats(obj.Ndt - 1, DiscretizationModel);
-               
+
+                Summary.SaveLTSiter( obj.Ndt, obj.Coupling.LTS_iters);
                 %% Has simulation ended?
                 EndOfSimCriterion = obj.EndOfSimEvaluator.HasSimulationEnded(EndOfSimCriterion, Summary, ProductionSystem, obj.Time, obj.Ndt);
                 

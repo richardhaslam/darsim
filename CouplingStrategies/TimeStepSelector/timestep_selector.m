@@ -11,6 +11,7 @@ classdef timestep_selector < handle
         ReportDt
         NextDt
         CFL
+        Index
     end
     methods
         function obj = timestep_selector(cfl, mindt, maxdt)
@@ -50,11 +51,35 @@ classdef timestep_selector < handle
             % This means that the CFL should be the max CFL you want to use
             dt = min([dtx, dty, dtz, obj.ReportDt, obj.MaxDt, obj.NextDt]);
         end
+        function CreateCFLfile(obj, ProductionSystem, DiscretizationModel, df, U, dt)
+            por = ProductionSystem.Reservoir.Por;
+            %Void Volume in each cell
+            pv = por * DiscretizationModel.ReservoirGrid.Volume;   
+            
+            Ux = abs(U.x(2:end,:,:) + U.x(1:end-1,:,:)/2);
+            Uy = abs(U.y(:,2:end,:) + U.y(:,1:end-1,:)/2);
+            Uz = abs(U.z(:,:,2:end) + U.z(:,:,1:end-1)/2);
+
+            Lambdax = abs(df) .* Ux(:);
+            Lambday = abs(df) .* Uy(:);
+            Lambdaz = abs(df) .* Uz(:);
+            
+            cfl = dt * (Lambdax + Lambday + Lambdaz) / pv;
+            
+            FormatSol = '%10.2f\n';
+            fileID = fopen(strcat('../Input/Barrier/Output/','Solution/','CFL',num2str(obj.Index),'.txt'),'w');
+            fprintf(fileID, FormatSol, cfl);
+        end
         function dt = ChooseTimeStep(obj)
             if obj.ReportDt <= 0
                 obj.ReportDt = obj.MaxDt;
             end
-            dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
+            if obj.Index <= 5
+                dt = obj.MinDt;
+                %dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
+            else
+                dt = obj.MaxDt;
+            end
             %dt = max(obj.MinDt, dt);
         end
         function Update(obj, dt, itCount, chops)
@@ -69,13 +94,13 @@ classdef timestep_selector < handle
         function UpdateSequential(obj, dt, itOuter ,itTransp, chops)
             % We check for number of outer iterations and nubmer of
             % iterations of last transport solve.
-            if itOuter <= 2 && itTransp < 6 && chops < 1
-               obj.NextDt = 2*dt;
-            elseif itTransp > 10 || chops > 1
-               obj.NextDt = dt/2;
-            else
+%             if itOuter <= 2 && itTransp < 6 && chops < 1
+%                obj.NextDt = 2*dt;
+%             elseif itTransp > 10 || chops > 1
+%                obj.NextDt = dt/2;
+%             else
                obj.NextDt = dt;
-            end
+%             end
         end
     end
 end

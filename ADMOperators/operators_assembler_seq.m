@@ -15,7 +15,7 @@ classdef operators_assembler_seq < operators_assembler
         end
         function [R, P] = Assemble(obj, DiscretizationModel, ProductionSystem, Residual)
             % 1. Choose grid resolution
-            if obj.VarIndex == 1
+            if obj.VarIndex == 2
                 DiscretizationModel.SelectADMGrid(ProductionSystem, Residual);
             end
             
