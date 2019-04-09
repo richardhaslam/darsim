@@ -41,7 +41,7 @@ classdef Sequential_Stats < Coupling_Stats
         end
         function Matrix = StatsMatrix(obj, Ndt)
             timesteps = 1:Ndt;
-            Matrix = [timesteps', obj.OuterIter(1:Ndt), obj.NLIter(1:Ndt)]';
+            Matrix = [timesteps', obj.OuterIter(1:Ndt), obj.NLIter(1:Ndt), obj.CFLVal(1:Ndt)]';
         end
     end
 end
