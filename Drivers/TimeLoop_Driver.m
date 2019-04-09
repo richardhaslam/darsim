@@ -47,7 +47,6 @@ classdef TimeLoop_Driver < handle
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
                 obj.Coupling.TimeStepSelector.Index = index;
                 
-                
                 [obj.dt, EndOfSimCriterion] = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
                 
                 % Average for ADM

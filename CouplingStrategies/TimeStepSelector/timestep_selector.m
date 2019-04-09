@@ -67,14 +67,13 @@ classdef timestep_selector < handle
             cfl = dt * (Lambdax + Lambday + Lambdaz) / pv;
             
             FormatSol = '%10.2f\n';
-            fileID = fopen(strcat('../Input/SPE10T1/Output/','Solution/','CFL',num2str(obj.Index),'.txt'),'w');
+            fileID = fopen(strcat('../Input/Barrier/Output/','Solution/','CFL',num2str(obj.Index),'.txt'),'w');
             fprintf(fileID, FormatSol, cfl);
         end
         function dt = ChooseTimeStep(obj)
             if obj.ReportDt <= 0
                 obj.ReportDt = obj.MaxDt;
             end
-            %dt = obj.NextDt;
             if obj.Index <= 5
                 dt = obj.MinDt;
                 %dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);

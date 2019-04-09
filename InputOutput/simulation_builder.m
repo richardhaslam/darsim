@@ -251,7 +251,7 @@ classdef simulation_builder < handle
                             if obj.SimulatorSettings.Formulation == "Geothermal_2T"
                                 gridselector = adm_grid_selector_temperature(ADMSettings.tol, ADMSettings.key);
                             else
-                                gridselector = adm_grid_selector_delta(ADMSettings.tol, ADMSettings.key);
+                                gridselector = adm_grid_selector_delta2(ADMSettings.tol, ADMSettings.key);
                             end
                         case('dfdt')
                             gridselector = adm_grid_selector_time(ADMSettings.tol, ADMSettings.key, ReservoirGrid.N, ADMSettings.maxLevel(1));
