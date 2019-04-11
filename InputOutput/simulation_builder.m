@@ -651,8 +651,8 @@ classdef simulation_builder < handle
         function TimeDriver = BuildTimeDriver(obj)
             if obj.SimulatorSettings.LTSPlot == 1 ||  obj.SimulatorSettings.ADTPlot == 1
                 TimeDriver = LTSPrint_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
-            elseif obj.SimulatorSettings.ADT_SEQ == 1 
-                 TimeDriver = LTS_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+            % elseif obj.SimulatorSettings.ADT_SEQ == 1 
+              %   TimeDriver = LTS_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             else
                  TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             end
@@ -722,7 +722,7 @@ classdef simulation_builder < handle
                     NLSolver.AddConvergenceChecker(ConvergenceChecker);
                     % Build FIM Coupling strategy
                     if obj.SimulatorSettings.LTS
-                        Coupling = FIM_Strategy_LTS('FIM', NLSolver);
+                        Coupling = LTS_FIM_Strategy('FIM', NLSolver);
                     else
                         Coupling = FIM_Strategy('FIM', NLSolver);
                     end
@@ -938,12 +938,8 @@ classdef simulation_builder < handle
             end
             wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
             switch (obj.SimulatorSettings.DiscretizationModel)
-                case('ADM')
-                    if obj.SimulatorSettings.ADT_SEQ == 1 
-                        Summary = LTS_Run_Summary_ADM(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
-                    else
-                        Summary = Run_Summary_ADM(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
-                    end
+                case('ADM')      
+                    Summary = Run_Summary_ADM(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
                 otherwise
                     Summary = Run_Summary(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData);
             end
@@ -966,17 +962,10 @@ classdef simulation_builder < handle
             
             switch(obj.SimulatorSettings.DiscretizationModel)
                 case ('ADM')
-                    if  obj.SimulatorSettings.ADT_SEQ == 1 
-                        Writer = lts_output_writer_adm(InputDirectory, obj.SimulationInput.ProblemName,...
-                            simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, ...
-                            simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
-                            simulation.FluidModel.NofComp);
-                    else
-                        Writer = output_writer_adm(InputDirectory, obj.SimulationInput.ProblemName,...
-                            simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, ...
-                            simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
-                            simulation.FluidModel.NofComp);
-                    end
+                    Writer = output_writer_adm(InputDirectory, obj.SimulationInput.ProblemName,...
+                        simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, ...
+                        simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
+                        simulation.FluidModel.NofComp);
                 otherwise
                     Writer = output_writer_FS(InputDirectory, obj.SimulationInput.ProblemName,...
                         simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd,...

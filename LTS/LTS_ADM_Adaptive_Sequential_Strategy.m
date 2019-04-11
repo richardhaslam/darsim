@@ -1,7 +1,7 @@
 classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
     properties
         time_ref = 2;
-        LTS_iters;
+        LTS_complexity;
     end
     methods
         function obj = LTS_ADM_Adaptive_Sequential_Strategy(name)
@@ -10,7 +10,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             End = 0;
-            obj.LTS_iters = [];
+            obj.LTS_complexity = []; % Complexity of each LTS level
             % This is the outer loop
             obj.Converged = 0;
             obj.NLiter = 0;
@@ -163,7 +163,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                 obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(lev));
                                  
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
-                                obj.LTS_iters = [obj.LTS_iters (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
+                                obj.LTS_complexity = [obj.LTS_complexity, (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev).NumberOfActiveCells(DiscretizationModel, lev)];
                             
                                 obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(lev));
                                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
@@ -174,7 +174,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                 ProductionSystem.Reservoir.State.CopyProperties(Newton_IniGuess);
                                                                 
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
-                                obj.LTS_iters = [obj.LTS_iters (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
+                                obj.LTS_complexity = [obj.LTS_complexity (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
                             
                                 obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(lev));
                                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
@@ -300,6 +300,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
         function UpdateSummary(obj, Summary, Wells, Ndt, dt)
             Summary.CouplingStats.SaveStats(Ndt, obj.itCount - 1, obj.NLiter, obj.CFLGlobal, obj.NLiterLTS, obj.CFLLocal);
             Summary.CouplingStats.SaveTimers(Ndt, obj.PressureTimer, obj.BalanceTimer, obj.TransportTimer);
+            Summary.CouplingStats.SaveLevelsComplexities(Ndt, obj.LTS_Complexity);
             Summary.SaveWellsData(Ndt+1, Wells.Inj, Wells.Prod, dt);
         end
     end

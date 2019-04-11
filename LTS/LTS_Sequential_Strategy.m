@@ -15,7 +15,6 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
         ActCellsSummary
         StatesSummary
         NofRef = 10;
-        
     end
     methods
         function AddLTSTransportSolver(obj, LTStransportsolver)
