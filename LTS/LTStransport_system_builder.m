@@ -1,5 +1,4 @@
-
-% LTS Transport System Builder base class
+% LTS Transport System Builder 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Ludovica Delpopolo
@@ -29,7 +28,7 @@ classdef LTStransport_system_builder < transport_system_builder
                 temp = ProductionSystem.Reservoir.State.Properties(Names{i});
                 temp.Value = temp.Value .* CellsSelected.ActCells + State_global.Properties(Names{i}).Value .* (1 - CellsSelected.ActCells);
                 % Save fractures state
-                % To be implement
+                % To be implemented
             end
         end
     end

@@ -539,6 +539,13 @@ classdef Immiscible_formulation < formulation
             Ratio = ThroughPut ./ Mass;
             CFL = dt * max(max(Ratio));
         end
+        %% LTS for FIM coupling
+        function BuildLTSResidual(obj, ProductionSystem, DiscretizationModel, dt, State0, CellsSelected)
+            
+        end
+        function Jacobian = BuildLTSJacobian(obj, ProductionSystem, DiscretizationModel, dt, CellsSelected)
+        end
+        
         %% Methods for Sequential Coupling
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);

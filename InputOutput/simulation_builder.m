@@ -662,10 +662,10 @@ classdef simulation_builder < handle
                     % FIM coupling
                     %%%%FIM settings
                     NLSolver = NL_Solver();
+                    NLSolver.SystemBuilder = fim_system_builder();
                     switch obj.SimulatorSettings.DiscretizationModel
                         case ('ADM')
                             % Build a different convergence cheker and a proper LS for ADM
-                            NLSolver.SystemBuilder = fim_system_builder_ADM();
                             switch obj.SimulatorSettings.Formulation
                                 case ("Geothermal_2T")
                                     ConvergenceChecker = convergence_checker_ADM_geothermal_2T();
@@ -688,7 +688,6 @@ classdef simulation_builder < handle
                                 NLSolver.LinearSolver.DLGR = 1;
                             end
                         otherwise
-                            NLSolver.SystemBuilder = fim_system_builder();
                             switch (obj.SimulatorSettings.Formulation)
                                 case('Molar')
                                     ConvergenceChecker = convergence_checker_FS_molar();
