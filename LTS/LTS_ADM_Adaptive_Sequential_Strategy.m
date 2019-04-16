@@ -6,7 +6,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
     methods
         function obj = LTS_ADM_Adaptive_Sequential_Strategy(name)
             obj@ LTS_Adaptive_Sequential_Strategy(name);
-            obj.RefCellsSelector = RefCellsSelector('Sequential');
+            obj.RefCellsSelector = RefCellsSelector();
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             End = 0;

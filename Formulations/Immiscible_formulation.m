@@ -6,7 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
-        MatrixAssembler;
+        MatrixAssembler
         % Sequential run variables
         Mobt
         Utot
@@ -17,6 +17,7 @@ classdef Immiscible_formulation < formulation
         Vr
     end
     methods
+        %% constructor
         function obj = Immiscible_formulation()
             obj@formulation();
             obj.Tph = cell(2,1);
@@ -62,6 +63,7 @@ classdef Immiscible_formulation < formulation
                 x(1:Nm) = ProductionSystem.Reservoir.State.Properties('P_1').Value;
             end
         end
+        
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             %% 1. Reservoir Properteis and Derivatives
             obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State);
@@ -1009,7 +1011,7 @@ classdef Immiscible_formulation < formulation
             Residual = Residual - obj.Vr * (obj.f .* rho);
             % (3) Add the contribution of the accelpted fluxes at the
             % boundary
-            Residual = Residual - (CellsSelected.BCEnforcer.ViscousMatrixValue * CellsSelected.BCEnforcer.f .* rho).* CellsSelected.ActCells;
+            Residual = Residual - (CellsSelected.ViscousMatrixValue * CellsSelected.f .* rho).* CellsSelected.ActCells;
 
         end
         function Jacobian = BuildTransportJacobianLTS(obj, ProductionSystem, DiscretizationModel, dt, CellsSelected)

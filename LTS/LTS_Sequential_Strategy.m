@@ -19,7 +19,7 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
     methods
         function obj = LTS_Sequential_Strategy(name)
             obj@Sequential_Strategy(name);
-            obj.RefCellsSelector = RefCellsSelector('Sequential');
+            obj.RefCellsSelector = RefCellsSelector();
         end
         function AddLTSTransportSolver(obj, LTStransportsolver)
             obj.LTSTransportSolver = LTStransportsolver;

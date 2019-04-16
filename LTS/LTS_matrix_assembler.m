@@ -9,7 +9,7 @@ classdef LTS_matrix_assembler < matrix_assembler
         ActInterfaces
     end
     methods
-        function ResetAcitveInterfaces(obj)
+        function ResetAcitveInterfaces(obj, DiscretizationModel)
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             Nz = DiscretizationModel.ReservoirGrid.Nz;
@@ -42,9 +42,9 @@ classdef LTS_matrix_assembler < matrix_assembler
             Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
             Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
             
-            Tx = Tx .* obj.AcInterfaces.x;
-            Ty = Ty .* obj.AcInterfaces.y;
-            Tz = Tz .* obj.AcInterfaces.z;
+            Tx = Tx .* obj.ActInterfaces.x;
+            Ty = Ty .* obj.ActInterfaces.y;
+            Tz = Tz .* obj.ActInterfaces.z;
             
             % Construct matrix
             x1 = reshape(Tx(1:Nx,:,:), N, 1);

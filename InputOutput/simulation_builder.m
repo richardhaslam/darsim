@@ -727,7 +727,7 @@ classdef simulation_builder < handle
                     NLSolver.AddConvergenceChecker(ConvergenceChecker);
                     % Build FIM Coupling strategy
                     if obj.SimulatorSettings.LTS
-                        LTSNLSolver = LTS_NL_Solver();
+                        LTSNLSolver = NL_Solver();
                         LTSNLSolver.SystemBuilder = LTS_fim_system_builder();
                         
                         LTSNLSolver.SystemBuilder.NumberOfEq = obj.NofEq;

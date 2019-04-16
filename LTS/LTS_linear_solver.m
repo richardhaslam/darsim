@@ -4,29 +4,34 @@
 %Author: Ludovica Delpopolo
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef LTS_linear_solver < handle
+classdef LTS_linear_solver < linear_solver
     properties
-        Name
-        Tol
-        Maxit
-        Iter
-        CondNumber
-        %Preconditioner
+       ActiveComponents 
     end
     methods
         function obj = LTS_linear_solver(name, tol, maxit)
-            obj.Name = name;
-            obj.Tol = tol;
-            obj.Maxit = maxit;
+            obj@linear_solver(name, tol, maxit);
         end
-        function SetUp(obj, ProductionSystem, DiscretizationModel, Residual)
-            %obj.Preconditioner.Setup(ProductionSystem, DiscretizationModel);
+        function SetUp(obj, ProductionSystem, DiscretizationModel, ActCells, Nph)
+            % I should set up the number of active components
+            N = DiscretizationModel.N;
+            obj.ActiveComponents = false(N*Nph, 1);
+            End = 0;
+            for ph = 1:Nph
+                Start = End + 1;
+                End = Start - 1 + N;  
+                obj.ActiveComponents(Start:End) = ActCells;
+            end
         end
-        function x = Solve(obj, A, rhs, ActCells)
+        function x = Solve(obj, A, rhs, varargin)
             
-            A = A(ActCells, ActCells);
-            rhs = rhs(ActCells);
-            %obj.CondNumber = condest(A);
+            if length(varargin) == 1 
+                obj.ActiveComponents = varargin{1};
+            end
+             
+            A = A(obj.ActiveComponents, obj.ActiveComponents);
+            rhs = rhs(obj.ActiveComponents);
+            % obj.CondNumber = condest(A);
             obj.CondNumber = 1;
             start = tic;       
             switch (obj.Name)
@@ -58,12 +63,12 @@ classdef LTS_linear_solver < handle
                     flag = 0;
                     xred = A\rhs;
                 otherwise
-                    error('unsupported linear solver type');
+                    error('DARSim2 error: unsupported linear solver type');
             end
             
             
-            x = zeros(size(ActCells));
-            x(ActCells) = xred;
+            x = zeros(size(obj.ActiveComponents));
+            x(obj.ActiveComponents) = xred;
             
             disp(['LS time:', num2str(toc(start))]);
             if flag ~= 0

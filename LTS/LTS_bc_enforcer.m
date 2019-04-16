@@ -9,8 +9,7 @@ classdef LTS_bc_enforcer < handle
     properties
         
     end
-    methods (Abstract)
-        obj = ComputeBoundaryValues(obj)   
-        obj = ComputeBoundaryValuesSubRef(obj)  
+    methods
+
     end
 end

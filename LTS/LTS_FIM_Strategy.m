@@ -8,13 +8,15 @@ classdef LTS_FIM_Strategy < FIM_Strategy
     properties
         RefCellsSelector
         LTSNLSolver
+        LTSNLSolverTimer
         NofRef = 10;
+        NLiterLTS
     end
     methods
         function obj = LTS_FIM_Strategy(name, NONLinearSolver, LTSNONLSolver)
             obj@FIM_Strategy(name, NONLinearSolver);
             obj.LTSNLSolver = LTSNONLSolver;
-            obj.RefCellsSelector = RefCellsSelector('FIM');            
+            obj.RefCellsSelector = RefCellsSelector();            
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             % Initialise
@@ -22,14 +24,16 @@ classdef LTS_FIM_Strategy < FIM_Strategy
             dtRef = dt / obj.NofRef;
             obj.Converged = 0;
             obj.chops = 0;
+            obj.NLiterLTS = 0;
             End = 0;
             
             %% 1. Solve with coarse time-step (predictor)
             % 1.1 Set Up non-linear solverLTSNONLSolver
+            ProductionSystem.SavePreviousState(); % Save state of current time-step
             Formulation.MatrixAssembler.ResetAcitveInterfaces(DiscretizationModel);
             obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
             obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
-            ProductionSystem.SavePreviousState(); % Save state of current time-step
+            
             % 1.2 NL solver call
             obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             
@@ -40,31 +44,28 @@ classdef LTS_FIM_Strategy < FIM_Strategy
             obj.RefCellsSelector.SelectRefCells(ProductionSystem, DiscretizationModel.ReservoirGrid, Formulation);
             obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid);
             % 2.2 Compute the numerical fluxes used as boundary values between the coarse and fine timesteps areas.
-            obj.RefCellsSelector.ComputeBoundaryValues(DiscretizationModel, Formulation);
-                        
+            obj.LTSNLSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryFluxes(DiscretizationModel, Formulation, obj.RefCellsSelector.ActCells);
+            
             %% 3. Solve fine time-step zone
             % 3.1 Reset the state of small dt zones to time-step n to solve again
             % I am not sure it is needed but probably yes
+            obj.RefCellsSelector.ResetInitialState(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.State_old);
             
             % 3.2 Solve with small dt until sync is reached
-            for i=1:obj.NofRef
-                disp(['SubRef step: ', num2str(itSub)]);
+            % 3.2.A Set Up non-linear solver
+            obj.LTSNLSolver.LinearSolver.SetUp(ProductionSystem, DiscretizationModel,...
+                obj.RefCellsSelector.ActCells, FluidModel.NofPhases); % only once for now
+            obj.LTSNLSolverTimer = 0;
+            for itSubRef = 1:obj.NofRef
+                disp(['SubRef step: ', num2str(itSubRef)]);
                 disp('...............................................');
                 tstart2 = tic;
-                
-                % 3.A Set Up non-linear solver
-                obj.LTSNLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
+              
+                % 3.2.B Set Up non-linear solver
                 obj.LTSNLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef);
-                % 3.B NL solver call
+                % 3.2.C NL solver call
                 obj.LTSNLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef);
-                
-                % save summary data
-                % obj.ActCellsSummary(:,idxSummary) = obj.RefCellsSelector.ActCells(:);
-                StateSum = status();
-                StateSum.CopyProperties(ProductionSystem.Reservoir.State);
-                obj.StatesSummary(idxSummary) = StateSum;
-                idxSummary = idxSummary + 1;
-                
+                                
                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSNLSolver.itCount - 1;
                 
                 if obj.LTSNLSolver.Converged == 0
@@ -73,9 +74,8 @@ classdef LTS_FIM_Strategy < FIM_Strategy
                     break;
                 end
                 
-                ProductionSystem.SavePreviousState();
                 %for each subref
-                obj.LTSTimer(obj.itCount) = obj.LTSTransportTimer(obj.itCount) + toc(tstart2);
+                obj.LTSNLSolverTimer = obj.LTSNLSolverTimer + toc(tstart2);
                 disp('...............................................');
             end
         end

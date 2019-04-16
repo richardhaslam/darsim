@@ -6,18 +6,15 @@
 %Created: 12 April 2019
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef LTS_fim_system_builder < fim_system_builder
-    properties  
+    properties 
+        LTSBCEnforcer = LTS_bc_enforcer_fim();
     end
     methods
-        function ComputePropertiesAndDerivatives(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
-            Formulation.ComputePropertiesAndDerivatives(ProductionSystem, FluidModel);
-            Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
-        end
         function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
-           Residual = Formulation.BuildLTSResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
-        end
-        function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
-            Jacobian = Formulation.BuildLTSJacobian(ProductionSystem, DiscretizationModel, dt);
+            % Compute full residual (already with 0 transmissibilities where needed)
+            Residual = Formulation.BuildResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
+            % Add b.c. to the residual
+            Residual = obj.LTSBCEnforcer.AddBC2Residual(Residual, ProductionSystem, Formulation);
         end
     end
 end
