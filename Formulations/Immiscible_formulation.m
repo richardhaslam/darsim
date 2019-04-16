@@ -6,6 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
+        MatrixAssembler;
         % Sequential run variables
         Mobt
         Utot
@@ -20,6 +21,7 @@ classdef Immiscible_formulation < formulation
             obj@formulation();
             obj.Tph = cell(2,1);
             obj.Gph = cell(2,1);
+            obj.MatrixAssembler = matrix_assembler();
         end
         function x = GetPrimaryUnknowns(obj, ProductionSystem, DiscretizationModel)
              Nt = DiscretizationModel.N;
@@ -74,6 +76,7 @@ classdef Immiscible_formulation < formulation
                 obj.dPc = [obj.dPc; FluidModel.ComputeDPcDS(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
             end
         end
+        
         %% Methods for FIM Coupling
         function Residual = BuildMediumResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
             % Create local variables
@@ -108,7 +111,7 @@ classdef Immiscible_formulation < formulation
             % Transmissibility of reservoir
             for i=1:obj.NofPhases
                 [obj.Tph{i, 1}, obj.Gph{i, 1}] = ...
-                    obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, obj.UpWind{i, 1}, obj.Mob(1:DiscretizationModel.ReservoirGrid.N, i), ...
+                    obj.MatrixAssembler.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, obj.UpWind{i, 1}, obj.Mob(1:DiscretizationModel.ReservoirGrid.N, i), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(i)]).Value, obj.GravityModel.RhoInt{i, 1});
             end
             
@@ -347,54 +350,6 @@ classdef Immiscible_formulation < formulation
                 end
             end
         end
-        function [Tph, Gph] = TransmissibilityMatrix(obj, Grid, UpWind, Mob, rho, RhoInt)
-            Nx = Grid.Nx;
-            Ny = Grid.Ny;
-            Nz = Grid.Nz;
-            N = Grid.N;
-            % Transmissibility matrix construction
-            Tx = zeros(Nx+1, Ny, Nz);
-            Ty = zeros(Nx, Ny+1, Nz);
-            Tz = zeros(Nx, Ny, Nz+1);
-            
-            % Apply upwind operator
-            Mupx = UpWind.x*(Mob .* rho);
-            Mupy = UpWind.y*(Mob .* rho);
-            Mupz = UpWind.z*(Mob .* rho);
-            Mupx = reshape(Mupx, Nx, Ny, Nz);
-            Mupy = reshape(Mupy, Nx, Ny, Nz);
-            Mupz = reshape(Mupz, Nx, Ny, Nz);
-            
-            % Transmisibility Matrix
-            Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-            Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-            Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
-            % Construct matrix
-            x1 = reshape(Tx(1:Nx,:,:), N, 1);
-            x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
-            y1 = reshape(Ty(:,1:Ny,:), N, 1);
-            y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
-            z1 = reshape(Tz(:,:,1:Nz), N, 1);
-            z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
-            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
-            DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-            Tph = spdiags(DiagVecs,DiagIndx,N,N);
-            
-            % Gravity Matrix
-            Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt.x(2:Grid.Nx,:,:);
-            Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt.y(:,2:Grid.Ny,:);
-            Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt.z(:,:,2:Grid.Nz);
-            % Construct matrix
-            x1 = reshape(Tx(1:Nx,:,:), N, 1);
-            x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
-            y1 = reshape(Ty(:,1:Ny,:), N, 1);
-            y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
-            z1 = reshape(Tz(:,:,1:Nz), N, 1);
-            z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
-            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
-            DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-            Gph = spdiags(DiagVecs, DiagIndx, N, N);
-        end
         function qw = ComputeSourceTerms(obj, N, Wells)
             qw = zeros(N, obj.NofPhases);    
             %Injectors
@@ -539,13 +494,7 @@ classdef Immiscible_formulation < formulation
             Ratio = ThroughPut ./ Mass;
             CFL = dt * max(max(Ratio));
         end
-        %% LTS for FIM coupling
-        function BuildLTSResidual(obj, ProductionSystem, DiscretizationModel, dt, State0, CellsSelected)
-            
-        end
-        function Jacobian = BuildLTSJacobian(obj, ProductionSystem, DiscretizationModel, dt, CellsSelected)
-        end
-        
+       
         %% Methods for Sequential Coupling
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
@@ -988,8 +937,8 @@ classdef Immiscible_formulation < formulation
             maxUz = max(max(max(abs(obj.Utot.z))));
             CFL = dt * maxdf * (maxUx + maxUy + maxUz) / pv;
         end
-        %% LTS TRANSPORT SOLVER
         
+        %% LTS transport solver
         function ViscousMatrixLTS(obj, Grid, CellsSelected)
             %Builds Upwind Flux matrix
             Nx = Grid.Nx;
@@ -1054,13 +1003,13 @@ classdef Immiscible_formulation < formulation
             q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
             
             % Compute residual
-            %(1) Put to zero the accepted residual cells 
+            % (1) Put to zero the accepted residual cells 
             Residual = (pv/dt .* rho .* (s - s_old)  - max(q(:, 1), 0)) .*  CellsSelected.ActCells; 
-            %(2) Add the contribution of the viscous matrix 
+            % (2) Add the contribution of the viscous matrix 
             Residual = Residual - obj.Vr * (obj.f .* rho);
             % (3) Add the contribution of the accelpted fluxes at the
             % boundary
-            Residual = Residual - (CellsSelected.ViscousMatrixValue * CellsSelected.f .* rho).* CellsSelected.ActCells;
+            Residual = Residual - (CellsSelected.BCEnforcer.ViscousMatrixValue * CellsSelected.BCEnforcer.f .* rho).* CellsSelected.ActCells;
 
         end
         function Jacobian = BuildTransportJacobianLTS(obj, ProductionSystem, DiscretizationModel, dt, CellsSelected)
@@ -1083,7 +1032,8 @@ classdef Immiscible_formulation < formulation
             maxUz = max(max(max(abs(obj.Utot.z .* CellsSelected.ActFluxes.z))));
             CFL = dt * maxdf * (maxUx + maxUy + maxUz) / pv;
         end
-        %% Explicit Saturation
+        
+        %% Explicit transport solver 
         function delta = UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)
             % 0. Initialise
             pv = ProductionSystem.Reservoir.Por .* DiscretizationModel.ReservoirGrid.Volume;

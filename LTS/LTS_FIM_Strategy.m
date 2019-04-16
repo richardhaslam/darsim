@@ -11,9 +11,10 @@ classdef LTS_FIM_Strategy < FIM_Strategy
         NofRef = 10;
     end
     methods
-        function obj = LTS_FIM_Strategy(name, NONLinearSolver)
+        function obj = LTS_FIM_Strategy(name, NONLinearSolver, LTSNONLSolver)
             obj@FIM_Strategy(name, NONLinearSolver);
-            obj.RefCellsSelector = RefCellsSelector();
+            obj.LTSNLSolver = LTSNONLSolver;
+            obj.RefCellsSelector = RefCellsSelector('FIM');            
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             % Initialise
@@ -24,11 +25,12 @@ classdef LTS_FIM_Strategy < FIM_Strategy
             End = 0;
             
             %% 1. Solve with coarse time-step (predictor)
-            % 1.A Set Up non-linear solver
+            % 1.1 Set Up non-linear solverLTSNONLSolver
+            Formulation.MatrixAssembler.ResetAcitveInterfaces(DiscretizationModel);
             obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
             obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
             ProductionSystem.SavePreviousState(); % Save state of current time-step
-            % 1.B NL solver call
+            % 1.2 NL solver call
             obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             
             %% 2 Select refined cells and compute fluxes
@@ -36,6 +38,7 @@ classdef LTS_FIM_Strategy < FIM_Strategy
             Formulation.ComputeTotalFluxes(ProductionSystem, DiscretizationModel);
             % 2.1 Select refined cells
             obj.RefCellsSelector.SelectRefCells(ProductionSystem, DiscretizationModel.ReservoirGrid, Formulation);
+            obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid);
             % 2.2 Compute the numerical fluxes used as boundary values between the coarse and fine timesteps areas.
             obj.RefCellsSelector.ComputeBoundaryValues(DiscretizationModel, Formulation);
                         
@@ -49,7 +52,6 @@ classdef LTS_FIM_Strategy < FIM_Strategy
                 disp('...............................................');
                 tstart2 = tic;
                 
-                Formulation.Reset(); % It's only important for compositional
                 % 3.A Set Up non-linear solver
                 obj.LTSNLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                 obj.LTSNLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef);
@@ -77,10 +79,6 @@ classdef LTS_FIM_Strategy < FIM_Strategy
                 disp('...............................................');
             end
         end
-        function Cells = ChooseRefZone(obj, ProductionSystem)
-            Cells = obj.RefCellsSelector(ProductionSystem);
-        end
-        
     end
 end
 

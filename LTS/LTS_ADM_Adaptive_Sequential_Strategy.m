@@ -1,16 +1,16 @@
 classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
     properties
         time_ref = 2;
-        LTS_complexity;
+        LTS_Complexity;
     end
     methods
         function obj = LTS_ADM_Adaptive_Sequential_Strategy(name)
             obj@ LTS_Adaptive_Sequential_Strategy(name);
-            obj.RefCellsSelector = RefCellsSelector();
+            obj.RefCellsSelector = RefCellsSelector('Sequential');
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             End = 0;
-            obj.LTS_complexity = []; % Complexity of each LTS level
+            obj.LTS_Complexity = []; % Complexity of each LTS level
             % This is the outer loop
             obj.Converged = 0;
             obj.NLiter = 0;
@@ -112,7 +112,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         
                         % store it in the vector and compute BC latent
                         % cells
-                        RefCells = RefCellsSelector();
+                        RefCells = RefCellsSelector('Sequential');
                         RefCells.CopyCellsSelected(obj.RefCellsSelector);
                         obj.RefCellsSelectorVec = RefCells;
                         
@@ -163,7 +163,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                 obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(lev));
                                  
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
-                                obj.LTS_complexity = [obj.LTS_complexity, (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev).NumberOfActiveCells(DiscretizationModel, lev)];
+                                obj.LTS_Complexity = [obj.LTS_Complexity, (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev).NumberOfActiveCells(DiscretizationModel, lev)];
                             
                                 obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(lev));
                                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
@@ -174,7 +174,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                 ProductionSystem.Reservoir.State.CopyProperties(Newton_IniGuess);
                                                                 
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
-                                obj.LTS_complexity = [obj.LTS_complexity (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
+                                obj.LTS_Complexity = [obj.LTS_Complexity (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev). NumberOfActiveCells(DiscretizationModel, lev)];
                             
                                 obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(lev));
                                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
@@ -231,7 +231,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                     State_global.CopyProperties(ProductionSystem.Reservoir.State);
                                     obj.StateGlobalVec(lev) = State_global;
                                     
-                                    RefCells = RefCellsSelector();
+                                    RefCells = RefCellsSelector('Sequential');
                                     RefCells.CopyCellsSelected(obj.RefCellsSelector);
                                     obj.RefCellsSelectorVec(lev) = RefCells;
                                     obj.RefCellsSelectorVec(lev).ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(lev-1));

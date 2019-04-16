@@ -17,12 +17,12 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
         NofRef = 10;
     end
     methods
-        function AddLTSTransportSolver(obj, LTStransportsolver)
-            obj.LTSTransportSolver = LTStransportsolver;
-        end
         function obj = LTS_Sequential_Strategy(name)
             obj@Sequential_Strategy(name);
-            obj.RefCellsSelector = RefCellsSelector();
+            obj.RefCellsSelector = RefCellsSelector('Sequential');
+        end
+        function AddLTSTransportSolver(obj, LTStransportsolver)
+            obj.LTSTransportSolver = LTStransportsolver;
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation, index)
             End = 0;

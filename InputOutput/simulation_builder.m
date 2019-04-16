@@ -631,6 +631,11 @@ classdef simulation_builder < handle
             switch(obj.SimulatorSettings.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
+                    if obj.SimulatorSettings.LTS
+                        Formulation.MatrixAssembler = LTS_matrix_assembler();
+                    else
+                        Formulation.MatrixAssembler = matrix_assembler();
+                    end
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases;
                 case('Natural')
                     Formulation = NaturalVar_formulation(sum(obj.SimulationInput.ReservoirProperties.Grid.N), obj.SimulationInput.FluidProperties.NofComponents);
@@ -646,6 +651,7 @@ classdef simulation_builder < handle
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 2;
                     Formulation.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
             end
+            
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
         function TimeDriver = BuildTimeDriver(obj)
@@ -721,7 +727,14 @@ classdef simulation_builder < handle
                     NLSolver.AddConvergenceChecker(ConvergenceChecker);
                     % Build FIM Coupling strategy
                     if obj.SimulatorSettings.LTS
-                        Coupling = LTS_FIM_Strategy('FIM', NLSolver);
+                        LTSNLSolver = LTS_NL_Solver();
+                        LTSNLSolver.SystemBuilder = LTS_fim_system_builder();
+                        
+                        LTSNLSolver.SystemBuilder.NumberOfEq = obj.NofEq;
+                        LTSNLSolver.MaxIter = obj.SimulatorSettings.MaxIterations;
+                        LTSNLSolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                        LTSNLSolver.AddConvergenceChecker(ConvergenceChecker);
+                        Coupling = LTS_FIM_Strategy('FIM', NLSolver, LTSNLSolver);
                     else
                         Coupling = FIM_Strategy('FIM', NLSolver);
                     end

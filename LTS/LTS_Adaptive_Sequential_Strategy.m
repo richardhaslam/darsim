@@ -113,7 +113,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             itRef = 1;
                             % vector contains refCellst for
                             % each level of sub-refinement
-                            RefCells =  RefCellsSelector();
+                            RefCells =  RefCellsSelector('Sequential');
                             RefCells.CopyCellsSelected(obj.RefCellsSelector)
                             obj.RefCellsSelectorVec = RefCells;
                             % a the moment we save just the active comp of the
