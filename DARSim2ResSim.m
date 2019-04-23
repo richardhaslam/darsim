@@ -19,8 +19,8 @@ function ResSimulator = DARSim2ResSim(Directory, File, PermDirectory)
 clc;
 
 % Make sure you are in the correct folder
-CurrentDir = pwd;
-if ~strcmp(CurrentDir, 'DARSim2/src')
+CurrentDir = pwd();
+if ~strcmp(CurrentDir(end-10:end), 'DARSim2/src')
     error('DARSim2 error: you have to be in the folder src to run the code!');
 end
 clear CurrentDir
