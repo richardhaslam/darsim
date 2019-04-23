@@ -9,6 +9,7 @@ classdef RefCellsSelector < handle
         NSten = 2
         ActFluxes
         ActCells
+        Dirichlet
         ActCellsMesh
         ViscousMatrixValue
         f
@@ -56,8 +57,28 @@ classdef RefCellsSelector < handle
             obj.ActCells = reshape(ActCellsM >0, N, 1);
         end
         function SetActiveInterfaces(obj, MatrixAssembler, Grid)
-            MatrixAssembler.ActInterfaces = ...
-                obj.SelectRefFluxes(Grid);
+            Nx = Grid.Nx;
+            Ny = Grid.Ny;
+            Nz = Grid.Nz;
+            
+            % From the ActCells mask we define the Active Fluxes.
+            MatrixAssembler.ActInterfaces.x = zeros(Nx+1,Ny,Nz);
+            MatrixAssembler.ActInterfaces.y = zeros(Nx,Ny+1,Nz);
+            MatrixAssembler.ActInterfaces.z = zeros(Nx,Ny,Nz+1);
+            
+            ActCellsM = reshape(obj.ActCells, Nx, Ny, Nz);
+            
+            MatrixAssembler.ActInterfaces.x(1,:,:)    = ActCellsM(1,:,:);
+            MatrixAssembler.ActInterfaces.x(Nx+1,:,:) = ActCellsM(Nx,:,:);
+            MatrixAssembler.ActInterfaces.x(2:Nx,:,:) = (ActCellsM(1:Nx-1,:,:) + ActCellsM(2:Nx,:,:)) == 2;
+            
+            MatrixAssembler.ActInterfaces.y(:,1,:)    = ActCellsM(:,1,:);
+            MatrixAssembler.ActInterfaces.y(:,Ny+1,:) = ActCellsM(:,Ny,:);
+            MatrixAssembler.ActInterfaces.y(:,2:Ny,:) = (ActCellsM(:,1:Ny-1,:) + ActCellsM(:,2:Ny,:)) == 2;
+            
+            MatrixAssembler.ActInterfaces.z(:,:,1)    = ActCellsM(:,:,1);
+            MatrixAssembler.ActInterfaces.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
+            MatrixAssembler.ActInterfaces.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2;
         end
         function ActFluxes = SelectRefFluxes(obj, Grid)
             

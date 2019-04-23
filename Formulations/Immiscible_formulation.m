@@ -454,7 +454,7 @@ classdef Immiscible_formulation < formulation
             end
             
             for i=1:obj.NofPhases
-                [obj.Tph{i}, obj.Gph{i}] = obj.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWind{i, 1}, obj.Mob(1:N,i), rho(:,i), obj.GravityModel.RhoInt{i, 1});
+                [obj.Tph{i}, obj.Gph{i}] = obj.MatrixAssembler.TransmissibilityMatrix (DiscretizationModel.ReservoirGrid, obj.UpWind{i, 1}, obj.Mob(1:N,i), rho(:,i), obj.GravityModel.RhoInt{i, 1});
             end
              % Depths
             depth = DiscretizationModel.ReservoirGrid.Depth;

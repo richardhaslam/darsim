@@ -16,5 +16,11 @@ classdef LTS_fim_system_builder < fim_system_builder
             % Add b.c. to the residual
             Residual = obj.LTSBCEnforcer.AddBC2Residual(Residual, ProductionSystem, Formulation);
         end
+        function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
+            % Compute full Jacobian
+            Jacobian = Formulation.BuildJacobian(ProductionSystem, DiscretizationModel, dt);
+            % Add b.c. to the Jacobian
+            Jacobian = obj.LTSBCEnforcer.AddBC2Jacobian(Jacobian, ProductionSystem, Formulation, DiscretizationModel);
+        end
     end
 end
