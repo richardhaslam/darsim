@@ -161,6 +161,21 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             end
             obj.OperatorsHandler.BuildADMOperators(obj.GlobalGrids, obj.ADMGrid);
         end
+        function SelectADMGridCoarse(obj, ProductionSystem, Residual)
+            % Build ADM Grid
+            obj.ADMGridSelector.SelectGridCoarse(obj.FineGrid, obj.CoarseGrid, obj.ADMGrid, ProductionSystem, Residual, obj.maxLevel);
+            obj.ADMStats.N = obj.ADMGrid.N(1,:);
+            
+            % Update prolongation builders
+            obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrid, obj.CoarseGrid, ProductionSystem);
+            
+            % Build ADM R and P operators
+            if any(strcmp(ProductionSystem.Reservoir.State.Properties.keys,'Tr'))
+                obj.ExtractReservoirADMGrid;
+                obj.OperatorsHandler.BuildReservoirADMRestriction(obj.ADMGrid_Reservoir, obj.ReservoirGrid)
+            end
+            obj.OperatorsHandler.BuildADMOperators(obj.GlobalGrids, obj.ADMGrid);
+        end
         function ExtractReservoirADMGrid(obj)
             % Remove the fractures from ADMGrid to be used for RockTemperature Prolongation
             obj.ADMGrid_Reservoir = adm_grid();

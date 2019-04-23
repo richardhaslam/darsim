@@ -132,7 +132,7 @@ classdef output_writer < handle
                 case('Sequential')
                     %Stats
                     fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
-                    fprintf(fileID, '%10s %10s %10s %10s\n', 'Timestep', 'Out it.', 'NL iter.', 'CFL');
+                    fprintf(fileID, '%10s %10s %10s\n', 'Timestep', 'OutIt.', 'NLIter.');
                     fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
                     fclose(fileID);
                     %Timers

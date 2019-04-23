@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
-%TU Delft test
+%TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim2ResSim: Reservoir Simulator main file
 %
@@ -17,6 +17,13 @@
 % PermDir = '../Permeability/'
 function ResSimulator = DARSim2ResSim(Directory, File, PermDirectory)
 clc;
+
+% Make sure you are in the correct folder
+CurrentDir = pwd;
+if ~strcmp(CurrentDir, 'DARSim2/src')
+    error('DARSim2 error: you have to be in the folder src to run the code!');
+end
+clear CurrentDir
 
 addpath(genpath(pwd))
 
