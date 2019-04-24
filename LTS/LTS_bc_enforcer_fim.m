@@ -93,7 +93,7 @@ classdef LTS_bc_enforcer_fim < LTS_bc_enforcer
                 rho = ProductionSystem.Reservoir.State.Properties(strcat('rho_', num2str(ph)));
                 Start = End + 1;
                 End = Start -  1 + N;
-                Residual(Start:End) = Residual(Start:End) - (obj.BCFluxMatrix * f(:, ph) .* rho.Value) .* obj.ActCells .* Dirichlet;
+                Residual(Start:End) = Residual(Start:End).* obj.ActCells - (obj.BCFluxMatrix * f(:, ph) .* rho.Value) .* obj.ActCells .* Dirichlet;
                 
                 %% Add 1 pressure b.c.
                 P = ProductionSystem.Reservoir.State.Properties(strcat('P_', num2str(ph)));

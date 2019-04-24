@@ -45,7 +45,7 @@ classdef TimeLoop_Driver < handle
                 
                 %% Solve Coupled problem at time-step n
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
-                obj.Coupling.TimeStepSelector.Index = index;
+                obj.Coupling.TimeStepSelector.Index = obj.Ndt;
                 
                 [obj.dt, EndOfSimCriterion] = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
                 

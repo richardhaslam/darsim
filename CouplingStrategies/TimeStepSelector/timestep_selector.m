@@ -80,7 +80,8 @@ classdef timestep_selector < handle
             else
                 dt = obj.MaxDt;
             end
-            %dt = max(obj.MinDt, dt);
+            dt = max(obj.MinDt, dt);
+            % dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
         end
         function Update(obj, dt, itCount, chops)
             if itCount <= 6 && chops < 1
