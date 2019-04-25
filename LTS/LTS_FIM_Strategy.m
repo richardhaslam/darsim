@@ -10,7 +10,7 @@ classdef LTS_FIM_Strategy < FIM_Strategy
         LTSNLSolver
         LTSNLSolverTimer
         NofRef = 5;
-        NLiterLTS
+        LTSComplexity
     end
     methods
         function obj = LTS_FIM_Strategy(name, NONLinearSolver, LTSNONLSolver)
@@ -24,7 +24,7 @@ classdef LTS_FIM_Strategy < FIM_Strategy
             dtRef = dt / obj.NofRef;
             obj.Converged = 0;
             obj.chops = 0;
-            obj.NLiterLTS = 0;
+            obj.LTSComplexity = 0;
             End = 0;
             
             %% 1. Solve with coarse time-step (predictor)
@@ -40,12 +40,12 @@ classdef LTS_FIM_Strategy < FIM_Strategy
             disp('...............................................');
             obj.NLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
             
-            figure(1)
-            plot(ProductionSystem.Reservoir.State.Properties('S_1').Value, 'red');
-            hold on
-            figure(2)
-            plot(ProductionSystem.Reservoir.State.Properties('P_1').Value, 'red')
-            hold on
+%             figure(1)
+%             plot(ProductionSystem.Reservoir.State.Properties('S_1').Value, 'red');
+%             hold on
+%             figure(2)
+%             plot(ProductionSystem.Reservoir.State.Properties('P_1').Value, 'red')
+%             hold on
             
             if obj.NLSolver.Converged == 0
                 disp('Global step did not converge')
@@ -63,9 +63,13 @@ classdef LTS_FIM_Strategy < FIM_Strategy
                 % 2.1 Select refined cells
                 obj.RefCellsSelector.SelectRefCells(ProductionSystem, DiscretizationModel.ReservoirGrid, Formulation);
                 obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid);
-                DiscretizationModel.ReservoirGrid.ActiveTime = obj.RefCellsSelector.ActCells
+                DiscretizationModel.ReservoirGrid.ActiveTime = obj.RefCellsSelector.ActCells;
                 % 2.2 Compute the numerical fluxes used as boundary values between the coarse and fine timesteps areas.
                 obj.LTSNLSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryFluxes(DiscretizationModel, Formulation, obj.RefCellsSelector.ActCells);
+                
+%                 figure(3)
+%                 plot(obj.RefCellsSelector.ActCells, 'green')
+%                 
                 
                 %% 3. Solve fine time-step zone
                 % 3.1 Reset the state of small dt zones to time-step n to solve again
@@ -80,6 +84,7 @@ classdef LTS_FIM_Strategy < FIM_Strategy
                 itSubRef = 1;
                 
                 disp(newline);
+                obj.LTSComplexity = (obj.NLSolver.itCount-1) * length(obj.RefCellsSelector.ActCells);
                 while itSubRef <= obj.NofRef && obj.Converged
                     disp(['SubRef step: ', num2str(itSubRef)]);
                     disp('...............................................');
@@ -90,7 +95,7 @@ classdef LTS_FIM_Strategy < FIM_Strategy
                     % 3.2.C NL solver call
                     obj.LTSNLSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef);
                     
-                    obj.NLiterLTS = obj.NLiterLTS + obj.LTSNLSolver.itCount - 1;
+                    obj.LTSComplexity = obj.LTSComplexity + (obj.LTSNLSolver.itCount - 1)*sum(obj.RefCellsSelector.ActCells);
                     
                     if obj.LTSNLSolver.Converged == 0
                         disp(['Sub ref ', num2str(itSubRef),' did not converge']);
@@ -104,15 +109,22 @@ classdef LTS_FIM_Strategy < FIM_Strategy
                     disp('...............................................');
                 end
                 
-                figure(1)
-                plot(ProductionSystem.Reservoir.State.Properties('S_1').Value, 'blue');
-                hold on
-                figure(2)
-                plot(ProductionSystem.Reservoir.State.Properties('P_1').Value, 'blue')
-                hold on
-                drawnow
+%                 figure(1)
+%                 plot(ProductionSystem.Reservoir.State.Properties('S_1').Value, 'blue');
+%                 hold on
+%                 figure(2)
+%                 plot(ProductionSystem.Reservoir.State.Properties('P_1').Value, 'blue')
+%                 hold on
+%                 drawnow
             end
             obj.CFL = 0;
+        end
+        function Summary = UpdateSummary(obj, Summary, Wells, Ndt, dt)
+            %% Stats, timers and Injection/Production data
+            Summary.CouplingStats.SaveStats(Ndt, obj.NLSolver.itCount-1, obj.chops, obj.CFL);
+            Summary.CouplingStats.SaveTimers(Ndt, obj.NLSolver.TimerConstruct, obj.NLSolver.TimerSolve, obj.NLSolver.TimerInner);
+            Summary.CouplingStats.SaveLevelsComplexities(Ndt, obj.LTSComplexity);
+            Summary.SaveWellsData(Ndt+1, Wells.Inj, Wells.Prod, dt);
         end
     end
 end

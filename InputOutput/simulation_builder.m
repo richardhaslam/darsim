@@ -938,7 +938,12 @@ classdef simulation_builder < handle
             %%%%%%%%%%%%%%% BuildObjects for OUTPUT%%%%%%%%%
             switch(obj.SimulatorSettings.CouplingType)
                 case('FIM')
-                    CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'FIM');
+                    if obj.SimulatorSettings.LTS == 1
+                        CouplingStats = LTS_FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'LTS_FIM');
+                    else
+                        CouplingStats = FIM_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'FIM');
+                    end
+                    
                 case('Sequential')
                     if obj.SimulatorSettings.LTS == 1 || obj.SimulatorSettings.ADT_SEQ == 1
                         CouplingStats = LTS_Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'LTS_Sequential');

@@ -77,10 +77,12 @@ classdef timestep_selector < handle
             if obj.Index <= 5
                 dt = obj.MinDt;
                 %dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
+            elseif obj.Index <= 10
+                dt = obj.MaxDt;
             else
                 dt = obj.MaxDt;
             end
-            dt = max(obj.MinDt, dt);
+            dt = min(obj.ReportDt, dt);
             % dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
         end
         function Update(obj, dt, itCount, chops)

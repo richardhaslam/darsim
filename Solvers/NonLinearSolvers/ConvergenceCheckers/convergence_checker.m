@@ -24,7 +24,7 @@ classdef convergence_checker < handle
             % Compute Norms
             obj.FirstResidualNorm = zeros(obj.NumberOfEq,1);
             for eq = 1 : obj.NumberOfEq
-                obj.FirstResidualNorm(eq) = norm(obj.FirstResidual((eq -1)*Nt+1:eq*Nt), 2);
+                obj.FirstResidualNorm(eq) = norm(obj.FirstResidual((eq -1)*Nt+1:eq*Nt), inf); % The inf norm is better for LTS.
             end
             obj.NormCalculator.FirstResidualNorm = obj.FirstResidualNorm;
         end

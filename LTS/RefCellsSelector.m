@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef RefCellsSelector < handle
     properties
-        tol = 5e-4
+        tol = 1e-3
         NSten = 2
         ActFluxes
         ActCells
@@ -34,10 +34,12 @@ classdef RefCellsSelector < handle
             % flooded during the coarse dt.
             % For now it only works for the reservoir and not for the
             % fractures
-            dS = ProductionSystem.Reservoir.State.Properties('S_1').Value - ...
-                ProductionSystem.Reservoir.State_old.Properties('S_1').Value;
+            Snew = ProductionSystem.Reservoir.State.Properties('S_1').Value;
+            Sold = ProductionSystem.Reservoir.State_old.Properties('S_1').Value;
+            dS = Snew - Sold;
             % vector of active cells
-            obj.ActCells = abs(dS) >= obj.tol;
+            % obj.ActCells = abs(dS) >= obj.tol;
+            obj.ActCells = (Snew < 0.65 & Snew > 0.105);
             
             % to add also the next cell according to the upwind velocity
             
