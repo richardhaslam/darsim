@@ -25,7 +25,16 @@ classdef adm_map < handle
                 % Number of cells
                 obj.Nf = sum(ADMGrid.N(:,1:level), 1);
                 obj.Nc = ADMGrid.N(:, level+1);
-                obj.Nx = ADMGrid.N(:, level+1) .* obj.CF;
+                
+                NumOfChildrenFull = cellfun('length',ADMGrid.Children);
+                for m = 1 : size(ADMGrid.N,1)
+                    Start = sum(sum(ADMGrid.N(1:m-1,:)))+1;
+                    End = sum(sum(ADMGrid.N(1:m,:)));
+                    NumOfChildrenMedia = NumOfChildrenFull(Start:End);
+                    obj.Nx(m,1) = sum(NumOfChildrenMedia(ADMGrid.level(Start:End)==level));
+                end
+                % obj.Nx = ADMGrid.N(:, level+1) .* obj.CF;
+  
                 % obj.Nf = sum(ADMGrid.N(1:level));
                 % obj.Nc = ADMGrid.N(level+1);
                 % obj.Nx = obj.Nc * obj.CF;

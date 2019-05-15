@@ -7,8 +7,8 @@
 %Last modified: 2017-03-10
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function FracGenerator = DARSim2FracGen(Directory, File)
-clc;
+function pEDFM = DARSim2FracGen(Directory, File)
+close all; clc;
 
 % Remove some warnings 
 warning('off', 'MATLAB:singularMatrix');
@@ -28,24 +28,24 @@ disp(['Reading input file ', File, ' from ', Directory]);
 disp(char(5));
 
 %% Build objects
-% Build Simulator
-FracGenerator = Fracture_Generator(Directory, File);
+% Build pEDFM Generator
+pEDFM = pEDFM_Generator(Directory, File);
 % Read Input File
-FracGenerator.Reader.ReadInputFile();
+pEDFM.Reader.ReadInputFile();
 % Build objects
-FracGenerator.BuildObjects();
+pEDFM.BuildObjects();
 % Print info to screen
-FracGenerator.PrintInfo();
+pEDFM.PrintInfo();
 
-%% Run Simulation
+%% Run pEDFM Generator
 TotalStart = tic;
-FracGenerator.Run();
+pEDFM.Run();
 TotalTime = toc(TotalStart);
 
 %% Display elapsed time
 disp(['The total computation time is ' num2str(TotalTime) ' s']); fprintf('\n');
 
 %% Output Results
-FracGenerator.OutputResults();
+pEDFM.OutputResults();
 
 end

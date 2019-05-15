@@ -46,5 +46,3 @@ classdef Sequential_Stats < Coupling_Stats
         end
     end
 end
-
-end

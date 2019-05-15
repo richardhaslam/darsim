@@ -53,11 +53,22 @@ classdef reader_darsim2 < reader
             % 1. Name of the Problem 
             temp = strfind(obj.InputMatrix, 'TITLE'); % Search a specific string and find all rows containing matches
             SimulationInput.ProblemName = char(obj.InputMatrix(find(~cellfun('isempty', temp)) + 1));
+			
             % 2. Total time
             temp = strfind(obj.InputMatrix, 'TOTALTIME');
             xv = find(~cellfun('isempty', temp));
-            SimulationInput.TotalTime = str2double(obj.InputMatrix(xv + 1))*24*3600;
-            
+            Time = strsplit( obj.InputMatrix{xv + 1} , ' ');
+            Hours = 0; Minutes = 0; Seconds = 0;
+            Days = str2double(Time{1});
+            if length(Time)>1
+                if strcmp(Time{2},'DAYS')
+                    if strcmp(Time{4},'HOURS')  ,  Hours   = str2double(Time{3});  end
+                    if strcmp(Time{6},'MINUTES'),  Minutes = str2double(Time{5});  end
+                    if strcmp(Time{8},'SECONDS'),  Seconds = str2double(Time{7});  end
+                end
+            end
+            SimulationInput.TotalTime = Days*24*3600 + Hours*3600 + Minutes*60 + Seconds;
+			
             % 3. Read reservoir properties
             SimulationInput.ReservoirProperties = obj.ReadReservoirProperties();
             
@@ -101,6 +112,47 @@ classdef reader_darsim2 < reader
                                           str2double(obj.InputMatrix{index+3})];
             
             % 3. Permeability
+			temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                ReservoirProperties.PermUnit = obj.InputMatrix{index+1};
+            else
+                ReservoirProperties.PermUnit = 'm2';
+            end
+            
+            temp = strfind(obj.InputMatrix, 'PERMEABILITY_SCALE');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                ReservoirProperties.PermScale = obj.InputMatrix{index+1};
+            else
+                ReservoirProperties.PermScale = 'Linear';
+            end
+            if ~strcmp(ReservoirProperties.PermScale, 'Linear') && ~strcmp(ReservoirProperties.PermScale, 'Logarithmic')
+                error('The permeability scale is either Linear or Logarithmic. Please check the input file.\n');
+            end
+            
+            temp = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_REDUCTION');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                ReservoirProperties.PermContrastReduction = 1;
+                temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_MEAN');
+                index1 = find(~cellfun('isempty', temp1));
+                if ~isempty(index1)
+                    ReservoirProperties.PermContrastMean = obj.InputMatrix{index1+1};
+                else
+                    ReservoirProperties.PermContrastMean = 'Default';
+                end
+                temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_ORDER');
+                index1 = find(~cellfun('isempty', temp1));
+                if ~isempty(index1)
+                    ReservoirProperties.PermContrastOrder = str2double(obj.InputMatrix{index1+1});
+                else
+                    ReservoirProperties.PermContrastOrder = 3;
+                end
+            else
+                ReservoirProperties.PermContrastReduction = 0;
+            end
+			
             perm = zeros(3, 1);
             temp = strfind(obj.InputMatrix, 'PERMX');
             perm(1) = find(~cellfun('isempty', temp));
@@ -117,6 +169,7 @@ classdef reader_darsim2 < reader
                     ReservoirProperties.Perm(i) = str2double(obj.InputMatrix(perm(i) +1));
                 end
             end
+			
             %%%% UPSCALING LEVEL PERM UPSCALING %%%%%%%
             clear perm
             % level 1
@@ -182,7 +235,6 @@ classdef reader_darsim2 < reader
             else
                 ReservoirProperties.Conductivity = str2double(obj.InputMatrix{index_conduc+((NofPhases+1)*2)});
             end
-%             ReservoirProperties.Conductivity = str2double(obj.InputMatrix{index_conduc+((NofPhases+1)*2)});
             
             % 9. Rock Specific Heat
             temp = strfind(obj.InputMatrix, 'SPECIFIC HEAT');
@@ -192,7 +244,6 @@ classdef reader_darsim2 < reader
             else
                 ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+((NofPhases+1)*2)});
             end
-%             ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+((NofPhases+1)*2)});
             
         end
         function FracturesProperties = ReadFracturesProperties(obj)
@@ -212,7 +263,7 @@ classdef reader_darsim2 < reader
             FluidProperties.NofPhases = str2double(obj.InputMatrix{index+3});
             FluidProperties.NofComponents = str2double(obj.InputMatrix{index+5});
             if FluidProperties.FluidModel == "Geothermal_2T"
-                temp = strfind(obj.InputMatrix, 'AVERAGED_TEMPERATURE'); % Check the main input file and look for FRACTURED
+                temp = strfind(obj.InputMatrix, 'AVERAGED_TEMPERATURE');
                 T_ave = find(~cellfun('isempty', temp));
                 if isempty(T_ave)
                     FluidProperties.AveragedTemperature = "Off";
@@ -282,7 +333,7 @@ classdef reader_darsim2 < reader
         end
         function WellsInfo = ReadWellsInfo(obj, SimulationInput)
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
-            temp = regexp(obj.InputMatrix, 'INJ\d', 'match');
+            temp = regexp(obj.InputMatrix, 'INJ', 'match');
             inj = find(~cellfun('isempty', temp));
             WellsInfo.NofInj = length(inj);
             for i=1:WellsInfo.NofInj 
@@ -297,7 +348,7 @@ classdef reader_darsim2 < reader
                 end
             end
             
-            temp = regexp(obj.InputMatrix, 'PROD\d', 'match');
+            temp = regexp(obj.InputMatrix, 'PROD', 'match');
             prod = find(~cellfun('isempty', temp));
             WellsInfo.NofProd = length(prod);
             for i=1:WellsInfo.NofProd
@@ -623,7 +674,8 @@ classdef reader_darsim2 < reader
             end
             
             %% %%% LTS
-            lts = strfind(obj.SettingsMatrix, 'LTS');
+            % temp = sum(contains(obj.SettingsMatrix, 'LTS'));
+			lts = strfind(obj.SettingsMatrix, 'LTS');
             index = find(~cellfun('isempty', lts));
             if str2double(obj.SettingsMatrix(index + 1)) == 1
                 SimulatorSettings.LTS = 1;

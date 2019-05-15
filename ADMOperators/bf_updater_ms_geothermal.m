@@ -1,4 +1,4 @@
-%  Basis functions updater
+%%  Basis functions updater
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -27,10 +27,13 @@ classdef bf_updater_ms_geothermal < bf_updater_ms
         end
         function A_Medium = MediumRockTemperatureSystem(obj, FineGrid, k_cond)
             % Remove high contrast to avoid spikes
-            k_cond_max = max(k_cond(:,1));
-            k_cond(k_cond(:,1)./k_cond_max < obj.MaxContrast, 1) = obj.MaxContrast * k_cond_max;
-            k_cond(k_cond(:,2)./k_cond_max < obj.MaxContrast, 2) = obj.MaxContrast * k_cond_max;
-            k_cond(k_cond(:,3)./k_cond_max < obj.MaxContrast, 3) = obj.MaxContrast * k_cond_max;
+            % If MaxContrast is intentially set to 0, avoid this step
+            if obj.MaxContrast ~=0
+                k_cond_max = max(k_cond(:,1));
+                k_cond(k_cond(:,1)./k_cond_max < obj.MaxContrast, 1) = obj.MaxContrast * k_cond_max;
+                k_cond(k_cond(:,2)./k_cond_max < obj.MaxContrast, 2) = obj.MaxContrast * k_cond_max;
+                k_cond(k_cond(:,3)./k_cond_max < obj.MaxContrast, 3) = obj.MaxContrast * k_cond_max;
+            end
             
             % Initialize local variables
             Nx = FineGrid.Nx;
@@ -63,6 +66,11 @@ classdef bf_updater_ms_geothermal < bf_updater_ms
             Tx(2:Nx,:,:) = Ax./dx.*KHx(2:Nx,:,:);
             Ty(:,2:Ny,:) = Ay./dy.*KHy(:,2:Ny,:);
             Tz(:,:,2:Nz) = Az./dz.*KHz(:,:,2:Nz);
+            
+            % Correcting for pEDFM connectivities
+%             Tx(2:Nx,:,:) = Tx(2:Nx,:,:) .* ( 1 - FineGrid.Tx_Alpha(2:Nx,:,:) );
+%             Ty(:,2:Ny,:) = Ty(:,2:Ny,:) .* ( 1 - FineGrid.Ty_Alpha(:,2:Ny,:) );
+%             Tz(:,:,2:Nz) = Tz(:,:,2:Nz) .* ( 1 - FineGrid.Tz_Alpha(:,:,2:Nz) );
             
             %Construct rock temperature matrix
             x1 = reshape(Tx(1:Nx,:,:),N,1);

@@ -366,9 +366,12 @@ classdef Immiscible_formulation < formulation
             Mupz = reshape(Mupz, Nx, Ny, Nz);
             
             % Transmisibility Matrix
-            Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-            Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-            Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
+			if Nx>1 || Ny>1 || Nz>1 % (to avoid matlab error on full indexing of a scalar)																			  
+				Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
+				Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
+				Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
+			end
+			
             % Construct matrix
             x1 = reshape(Tx(1:Nx,:,:), N, 1);
             x2 = reshape(Tx(2:Nx+1,:,:), N, 1);

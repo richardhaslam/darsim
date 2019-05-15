@@ -73,4 +73,6 @@ disp(['The Total Simulation time is ' num2str(TotalTime) ' s']);
 
 %Tun off diary
 diary off
+fclose('all');
+
 end

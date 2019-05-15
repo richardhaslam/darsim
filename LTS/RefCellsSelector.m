@@ -218,7 +218,7 @@ classdef RefCellsSelector < handle
         function ComputeActiveCells(obj, DiscretizationModel, level)
             obj.ActCells = DiscretizationModel.FineGrid.Active;
             for i = level:  DiscretizationModel.maxLevel - 1
-                obj.ActCells(DiscretizationModel.CoarseGrid(i).GrandChildren(DiscretizationModel.CoarseGrid(i).Active == 1,:)) = 1;
+                obj.ActCells([DiscretizationModel.CoarseGrid(i).GrandChildren{DiscretizationModel.CoarseGrid(i).Active == 1,:}]) = 1;
             end
         end
         function numb = NumberOfActiveCells(obj, DiscretizationModel, level)
@@ -231,7 +231,7 @@ classdef RefCellsSelector < handle
                     % I need just the corrispondence between one cell of
                     % the fine that belongs to the coarse to count the
                     % number of Active in time coarse cells
-                    CellCoarse (DiscretizationModel.CoarseGrid(i).GrandChildren(DiscretizationModel.CoarseGrid(i).Active == 1,1)) = 1;
+                    CellCoarse ([DiscretizationModel.CoarseGrid(i).GrandChildren{DiscretizationModel.CoarseGrid(i).Active == 1,1}]) = 1;
                     numb = numb + sum(CellCoarse .* obj.ActCells);
                 end
             end

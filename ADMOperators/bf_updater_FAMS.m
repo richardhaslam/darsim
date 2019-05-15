@@ -1,4 +1,4 @@
-%  Basis functions updater F-AMS
+%% Basis functions updater F-AMS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Mousa HosseiniMehr & Matteo Cusini
@@ -11,7 +11,7 @@ classdef bf_updater_FAMS < bf_updater_ms
     end
     methods
         function ConstructPressureSystem(obj, ProductionSystem, FluidModel, FineGrid, CrossConnections)
-            % Builds fine-scale incompressible pressure system
+            % Builds fine-scale incompressible pressure system.
             
             % Reservoir
             Km = ProductionSystem.Reservoir.K;
@@ -67,7 +67,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                     MsP = []; % Prolongation operator
                     MsC = []; % Correction functions operator
                     cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);
-                    [G, Ni, Nf, Ne, Nv] = obj.FullyCoupledPermutationMatrix(FineGrid, CoarseGrid, cf);
+                    [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
                     tildeA = G * obj.A * G';
                     [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(1));
                     MsP = G' * MsP;

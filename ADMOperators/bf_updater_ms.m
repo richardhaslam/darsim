@@ -67,6 +67,11 @@ classdef bf_updater_ms < bf_updater
             Ty(:,2:Ny,:) = Ay./dy.*KHy(:,2:Ny,:);
             Tz(:,:,2:Nz) = Az./dz.*KHz(:,:,2:Nz);
             
+            % Correcting for pEDFM connectivities
+            Tx(2:Nx,:,:) = Tx(2:Nx,:,:) .* ( 1 - FineGrid.Tx_Alpha(2:Nx,:,:) );
+            Ty(:,2:Ny,:) = Ty(:,2:Ny,:) .* ( 1 - FineGrid.Ty_Alpha(:,2:Ny,:) );
+            Tz(:,:,2:Nz) = Tz(:,:,2:Nz) .* ( 1 - FineGrid.Tz_Alpha(:,:,2:Nz) );
+            
             %Construct pressure matrix
             x1 = reshape(Tx(1:Nx,:,:),N,1);
             x2 = reshape(Tx(2:Nx+1,:,:),N,1);

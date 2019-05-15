@@ -18,16 +18,16 @@ classdef adm_grid_selector_delta < adm_grid_selector
             % SELECT the ADM GRID for next time-step based on delta x
             %% 1. Reset all cells to be active and stor x{m}
             n_media = length(FineGrid);
-            S = cell(n_media, 1);
+            Var = cell(n_media, 1);
             for m=1:n_media
                 FineGrid(m).Active = ones(FineGrid(m).N, 1);
                 if m==1
                     % for now wells are only in the reservoir
                     CoarseGrid(m,1).Active = obj.NoWellsCoarseCells;
-                    S{m} = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
+                    Var{m} = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
                 else
                     CoarseGrid(m,1).Active = ones(CoarseGrid(m).N, 1);
-                    S{m} = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value;
+                    Var{m} = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value;
                 end
             end
             
@@ -41,9 +41,9 @@ classdef adm_grid_selector_delta < adm_grid_selector
                     % 2.b choose active cells of level l
                     if l==1
                         % coarse grid 1 to 0 (fine-scale)
-                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), S{m}, false);
+                        obj.SelectCoarseFine(FineGrid(m), CoarseGrid(m, 1), Var{m}, false);
                     elseif l <= maxLevel(m)
-                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), S{m}, true);
+                        obj.SelectCoarseFine(CoarseGrid(m, l-1), CoarseGrid(m, l), Var{m}, true);
                     else
                         CoarseGrid(m, l).Active = zeros(CoarseGrid(m, l).N, 1);
                     end
@@ -88,14 +88,14 @@ classdef adm_grid_selector_delta < adm_grid_selector
             end
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
-        
+
         function SelectCoarseFine(obj, FineGrid, CoarseGrid, S, flag)
             %Given a Fine and a Coarse Grid chooses the cells that have to be active
             %1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % Saturation of fine_cells belonging to coarse block c
-                S_children = S(CoarseGrid.GrandChildren(c, :));
+                S_children = S(CoarseGrid.Children{c, :});
                 % Max e Min saturation inside c
                 Smax = max(S_children);
                 Smin = min(S_children);
@@ -105,7 +105,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
                     i = 1;
                     while i <= Nn
                         % Man mix saturation of neighbour n(i)
-                        S_children = S(CoarseGrid.GrandChildren(n(i), :));
+                        S_children = S(CoarseGrid.GrandChildren{n(i), :});
                         Sn_max = max(S_children);
                         Sn_min = min(S_children);
                         if flag == false
@@ -128,19 +128,21 @@ classdef adm_grid_selector_delta < adm_grid_selector
                     end
                 end
             end
+            %2. Do not coarsen neighbours of cells that are fine
+            DummyActive = CoarseGrid.Active;
+            for i = 1:Nc
+                if (CoarseGrid.Active(i) == 0)
+                    DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
+                end
+            end
+            CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
             
-%             %2. Do not coarsen neighbours of cells that are fine
-%                         DummyActive = CoarseGrid.Active;
-%                         for i = 1:Nc
-%                             if (CoarseGrid.Active(i) == 0)
-%                                 DummyActive(CoarseGrid.Neighbours(i).indexes) = 0;
-%                             end
-%                         end
-%                         CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
-            FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
+            %3. Set to inactive fine block belonging to Active Coarse Blocks
+            %Cindeces = find();
+            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;
         end
         function SelectCoarseFineC(obj, FineGrid, CoarseGrid)
-            FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
+            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;
         end
     end
 end

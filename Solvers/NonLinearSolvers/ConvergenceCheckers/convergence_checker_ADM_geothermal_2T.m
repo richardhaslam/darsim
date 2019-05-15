@@ -62,12 +62,12 @@ classdef convergence_checker_ADM_geothermal_2T < convergence_checker_FS_geotherm
             end
 
             % Compute Norms            
-            [ResidualNorm] =  obj.NormCalculator.CalculateResidualNorm(Residual_ADM, Nt_ADM, Formulation);
+            [ResidualNorm] = obj.NormCalculator.CalculateResidualNorm(Residual_ADM, Nt_ADM, Formulation);
             [dp, dTf, dTr] = obj.NormCalculator.CalculateSolutionNorm(delta, Nt, State);
             
-            disp(['Iter ', num2str(iter, '%02d') '-->   ', num2str(ResidualNorm(1)/obj.FirstResidualNorm(1), '%5.5e'), '      ' ...
-                                                         , num2str(ResidualNorm(2)/obj.FirstResidualNorm(2), '%5.5e'), '      ' ...
-                                                         , num2str(ResidualNorm(3)/obj.FirstResidualNorm(3), '%5.5e'), '      ' ...
+            disp(['Iter ', num2str(iter, '%02d') '-->   ', num2str(ResidualNorm(1), '%5.5e'), '      ' ...
+                                                         , num2str(ResidualNorm(2), '%5.5e'), '      ' ...
+                                                         , num2str(ResidualNorm(3), '%5.5e'), '      ' ...
                                                          , num2str(dp, '%5.5e'), '    ', num2str(dTf, '%5.5e'), '    ', num2str(dTr, '%5.5e')]);
             
             % check if it is stagnating
@@ -79,7 +79,7 @@ classdef convergence_checker_ADM_geothermal_2T < convergence_checker_FS_geotherm
                ( (ResidualNorm(3) < obj.ResidualTol(3)) || (ResidualNorm(3)/obj.FirstResidualNorm(3) < obj.ResidualTol(3)) ) && ...
                ( dp < obj.SolutionTol(1) && dTf < obj.SolutionTol(2) && dTr < obj.SolutionTol(3) )
                 converged = 1;
-            elseif(isnan(ResidualNorm(1)) || isnan(ResidualNorm(2)) || isnan(ResidualNorm(3)) || stagnating || isnan(dp) || isnan(dTf) || isnan(dTr))
+            elseif(isnan(ResidualNorm(1)) || isnan(ResidualNorm(2)) || isnan(ResidualNorm(3)) || stagnating || isnan(dp) || isnan(dTf) || isnan(dTr) || ~isreal([dp;dTf;dTr]) )
                 converged = -1;
             end
         end

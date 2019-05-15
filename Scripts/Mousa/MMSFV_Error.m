@@ -7,7 +7,6 @@ TestCase_Name = 'SinglePhase';
 Lx = 75;  Nx = 135;  dx = Lx/Nx;
 Ly = 75;  Ny = 135;  dy = Ly/Ny;
 Lz = 01;  Nz = 001;  dz = Lz/Nz;
-Nf = 
  
 xcm = linspace(dx/2 , Lx-dx/2 , Nx)';
 ycm = linspace(dy/2 , Ly-dy/2 , Ny)';

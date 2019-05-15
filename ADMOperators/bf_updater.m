@@ -1,4 +1,4 @@
-%  Basis functions updater
+%%  Basis functions updater
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -17,7 +17,9 @@ classdef bf_updater < handle
             tildeA = G * obj.A * G';
             [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions);
             MsP = G' * MsP;
-            MsC = G' * MsC * G;
+            if ~isempty(MsC)
+                MsC = G' * MsC * G;
+            end
         end
         function [MsP, MsC] = ComputeMsP(obj, tildeA, Ni, Nf, Ne, Nv, Dimensions)
             switch(Dimensions)
@@ -59,12 +61,13 @@ classdef bf_updater < handle
                            Edges;...
                            Mvv];
                     
-                    % Correction functions operator 
-                    Mff_inv = slvblk(Mff, speye(Nf));
-                    Mee_inv = slvblk(Mee, speye(Ne));
-                    MsC = [Mff_inv        -Mff_inv*Mfe*Mee_inv      sparse(Nf,Nv);        ...
-                          sparse(Ne,Nf)               Mee_inv       sparse(Ne,Nv);        ...
-                          sparse(Nv,Nf)         sparse(Nv,Ne)       sparse(Nv,Nv)];
+                    % Correction functions operator
+                    MsC = [];
+%                     Mff_inv = slvblk(Mff, speye(Nf));
+%                     Mee_inv = slvblk(Mee, speye(Ne));
+%                     MsC = [Mff_inv        -Mff_inv*Mfe*Mee_inv      sparse(Nf,Nv);        ...
+%                           sparse(Ne,Nf)               Mee_inv       sparse(Ne,Nv);        ...
+%                           sparse(Nv,Nf)         sparse(Nv,Ne)       sparse(Nv,Nv)];
                     
 %                     Mff_inv = Mff^-1;
 %                     Mee_inv = Mee^-1;
@@ -139,89 +142,6 @@ classdef bf_updater < handle
             %     iyc = 2 ixc =1                       iyc = 2   ixc =2
             
             %% 0. Define local variables 
-            nxf = FineGrid.Nx;
-            nyf = FineGrid.Ny;
-            nzf = FineGrid.Nz;
-            nf  = FineGrid.N;
-            nxcf = cf(1);
-            nycf = cf(2);
-            nzcf = cf(3);
-            
-            nxc = CoarseGrid.Nx;
-            nyc = CoarseGrid.Ny;
-            nzc = CoarseGrid.Nz;
-            
-            %% 1. Define number of cells of each block
-            nii =  ((nxcf-1) * (nycf-1) * (nzcf-1)) * (nxc * nyc * nzc);% interiors
-            nff = ((nxcf-1)*(nycf-1) + (nycf-1)*(nzcf-1) + (nxcf-1)*(nzcf-1)) * nxc * nyc * nzc; % faces
-            nee = ((nxcf-1) + (nycf-1) + (nzcf-1)) * nxc * nyc * nzc; % edges
-            nvv = nxc *nyc*nzc; % verteces
-            
-            P = sparse(nf);
-            
-            %% 2. Construct matrix and vector
-            % Coarsening factors are assumed to be odd numbers. 
-            iii0 = 0;
-            iff0 = nii;
-            iee0 = nii + nff;
-            ivv0 = nii + nff + nee;
-            
-            nxd = nxc + 1;
-            nyd = nyc + 1;
-            nzd = nzc + 1;
-            icen = ceil(nxcf/2);
-            jcen = ceil(nycf/2);
-            kcen = ceil(nzcf/2);
-            % Now fill in entries of permutation matrix 
-            for k = 1:nzd
-                for j = 1:nyd
-                    for i = 1:nxd
-                        for kz= 1:nzcf
-                            for jy= 1:nycf
-                                for ix = 1:nxcf
-                                    % calculate the cell index in the original matrix
-                                    ii = (i-1) * nxcf - icen + ix;
-                                    jj = (j-1) * nycf - jcen + jy;
-                                    kk = (k-1) * nzcf - kcen + kz;
-                                    if ( ii >= 1 && ii <= nxf && jj >= 1 && jj <= nyf && kk >=1 && kk<=nzf)
-                                        % There are dual domains that are
-                                        % not within the domain
-                                        ijk = ii + (jj-1)*nxf + (kk-1)*nxf*nyf; % global index
-                                        if (ix  ~= 1 && jy ~= 1 && kz ~=1)
-                                            % internal point
-                                            iii0 = iii0 + 1;
-                                            P(iii0, ijk) = 1;  
-                                        elseif  (ix == 1 && jy == 1 && kz==1)
-                                            % node points
-                                            ivv0 = ivv0 + 1;
-                                            P(ivv0, ijk) = 1;
-                                        elseif (ix == 1 && jy == 1 && (kz ~=1 || kz~=nzcf))
-                                            % edge xy points
-                                            iee0 = iee0 + 1;
-                                            P(iee0, ijk) = 1;
-                                        elseif (ix == 1 && kz == 1 && (jy ~=1 || jy~=nycf))
-                                            % edge xz points
-                                            iee0 = iee0 + 1;
-                                            P(iee0, ijk) = 1;
-                                        elseif (jy == 1 && kz == 1 && (ix ~=1 || ix~=nxcf))
-                                            % edge yz points
-                                            iee0 = iee0 + 1;
-                                            P(iee0, ijk) = 1;
-                                        else
-                                            % face points
-                                            iff0 = iff0 + 1;
-                                            P(iff0, ijk) = 1;
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        function [P, nii, nff, nee, nvv] = FullyCoupledPermutationMatrix(obj, FineGrid, CoarseGrid, cf)
-            %% 0. Define local variables 
             nxf = vertcat(FineGrid(1:end).Nx);
             nyf = vertcat(FineGrid(1:end).Ny);
             nzf = vertcat(FineGrid(1:end).Nz);
@@ -229,30 +149,45 @@ classdef bf_updater < handle
             nxcf = cf(:,1);
             nycf = cf(:,2);
             nzcf = cf(:,3);
-            
+ 
             nxc = vertcat(CoarseGrid(1:end).Nx);
             nyc = vertcat(CoarseGrid(1:end).Ny);
             nzc = vertcat(CoarseGrid(1:end).Nz);
             
             %% 1. Define number of cells of each block
-            nii = ( (nxcf(1)-1)*(nycf(1)-1)*(nzcf(1)-1) ) * ( nxc(1) * nyc(1) * nzc(1) ); % interiors (only in matrix, no interiors in fractures)
-            
-            nff = ( (nxcf(1)-1)*(nycf(1)-1) + (nycf(1)-1)*(nzcf(1)-1) + (nxcf(1)-1)*(nzcf(1)-1) ) * nxc(1) * nyc(1) * nzc(1); % faces in matrix
-            for f = 2:length(FineGrid)
-                nff = nff + ( (nxcf(f)-1)*(nycf(f)-1) + (nycf(f)-1)*(nzcf(f)-1) + (nxcf(f)-1)*(nzcf(f)-1) ) * nxc(f) * nyc(f) * nzc(f); % faces in fractures
+            if ~CoarseGrid(1).Vertex_On_Corner
+                nxc_hybrid = nxc;
+                nyc_hybrid = nyc;
+                nzc_hybrid = nzc;
+            else
+                nxc_hybrid = max((nxc-1),1);
+                nyc_hybrid = max((nyc-1),1);
+                nzc_hybrid = max((nzc-1),1);
             end
             
-            nee = ( (nxcf(1)-1) + (nycf(1)-1) + (nzcf(1)-1) ) * nxc(1) * nyc(1) * nzc(1); % edges in matrix
-            for f = 2:length(FineGrid)
-                nee = nee + ( (nxcf(f)-1) + (nycf(f)-1) + (nzcf(f)-1) ) * nxc(f) * nyc(f) * nzc(f); % edges in fractures
-            end
+            nii = 0; % interiors
+            nff = 0; % faces
+            nee = 0; % edges
+            nvv = 0; % verteces
             
-            nvv = nxc(1) * nyc(1) * nzc(1); % verteces in matrix
-            for f = 2:length(FineGrid)
-                nvv = nvv + nxc(f) * nyc(f) * nzc(f); % verteces in fractures
+            % interiors (only in matrix, no interiors in fractures)
+            nii = ((nxcf(1)-1) * (nycf(1)-1) * (nzcf(1)-1)) * nxc_hybrid(1)*nyc_hybrid(1)*nzc_hybrid(1);
+
+            for m=1:length(FineGrid)
+                % faces
+                nff = nff + (nxcf(m)-1)*(nycf(m)-1)*nxc_hybrid(m)*nyc_hybrid(m)*nzc(m) + ...
+                            (nycf(m)-1)*(nzcf(m)-1)*nyc_hybrid(m)*nzc_hybrid(m)*nxc(m) + ...
+                            (nxcf(m)-1)*(nzcf(m)-1)*nxc_hybrid(m)*nzc_hybrid(m)*nyc(m);
+                        
+                % edges
+                nee = nee + (nxcf(m)-1)*nxc_hybrid(m)*nyc(m)*nzc(m) + ...
+                            (nycf(m)-1)*nyc_hybrid(m)*nxc(m)*nzc(m) + ...
+                            (nzcf(m)-1)*nzc_hybrid(m)*nxc(m)*nyc(m);
+                        
+                % verteces
+                nvv = nvv + nxc(m)*nyc(m)*nzc(m);
             end
-            
-            P = sparse(sum(nf), sum(nf));
+            P = sparse(sum(nf),sum(nf));
             
             %% 2. Construct matrix and vector
             % Coarsening factors are assumed to be odd numbers. 
@@ -261,53 +196,56 @@ classdef bf_updater < handle
             iee0 = nii + nff;
             ivv0 = nii + nff + nee;
             
-            nxd = nxc + 1;
-            nyd = nyc + 1;
-            nzd = nzc + 1;
-            icen = ceil(nxcf/2);
-            jcen = ceil(nycf/2);
-            kcen = ceil(nzcf/2);
-            
-            % Now fill in entries of permutation matrix 
-            for m = 1:length(FineGrid)
-                for k = 1:nzd(m)
-                    for j = 1:nyd(m)
-                        for i = 1:nxd(m)
-                            for kz= 1:nzcf(m)
-                                for jy= 1:nycf(m)
-                                    for ix = 1:nxcf(m)
-                                        % calculate the cell index in the original matrix
-                                        ii = (i-1) * nxcf(m) - icen(m) + ix;
-                                        jj = (j-1) * nycf(m) - jcen(m) + jy;
-                                        kk = (k-1) * nzcf(m) - kcen(m) + kz;
-                                        if ( ii >= 1 && ii <= nxf(m) && jj >= 1 && jj <= nyf(m) && kk >=1 && kk<=nzf(m))
-                                            % There are dual domains that are
-                                            % not within the domain
-                                            ijk = sum(nf(1:m-1)) + ii + (jj-1)*nxf(m) + (kk-1)*nxf(m)*nyf(m); % global index
-                                            if (ix  ~= 1 && jy ~= 1 && kz ~=1)
-                                                % internal point
-                                                iii0 = iii0 + 1;
-                                                P(iii0, ijk) = 1;
-                                            elseif  (ix == 1 && jy == 1 && kz==1)
-                                                % node points
-                                                ivv0 = ivv0 + 1;
-                                                P(ivv0, ijk) = 1;
-                                            elseif (ix == 1 && jy == 1 && (kz ~=1 || kz~=nzcf(m)))
-                                                % edge xy points
-                                                iee0 = iee0 + 1;
-                                                P(iee0, ijk) = 1;
-                                            elseif (ix == 1 && kz == 1 && (jy ~=1 || jy~=nycf(m)))
-                                                % edge xz points
-                                                iee0 = iee0 + 1;
-                                                P(iee0, ijk) = 1;
-                                            elseif (jy == 1 && kz == 1 && (ix ~=1 || ix~=nxcf(m)))
-                                                % edge yz points
-                                                iee0 = iee0 + 1;
-                                                P(iee0, ijk) = 1;
-                                            else
-                                                % face points
-                                                iff0 = iff0 + 1;
-                                                P(iff0, ijk) = 1;
+            if ~CoarseGrid(1).Vertex_On_Corner
+                % If the coarse grids are constructed normally (no coarse
+                % nodes on the corners)
+                nxd = nxc + 1;
+                nyd = nyc + 1;
+                nzd = nzc + 1;
+                icen = ceil(nxcf/2);
+                jcen = ceil(nycf/2);
+                kcen = ceil(nzcf/2);
+                % Now fill in entries of permutation matrix
+                for m = 1 : length(FineGrid)
+                    for k = 1:nzd(m) % k index of dual domain
+                        for j = 1:nyd(m) % j index of dual domain
+                            for i = 1:nxd(m) % i index of dual domain
+                                for kz= 1:nzcf(m) % k index within a primal coarse cell
+                                    for jy= 1:nycf(m) % j index within a primal coarse cell
+                                        for ix = 1:nxcf(m) % i index within a primal coarse cell
+                                            % calculate the cell index in the original matrix
+                                            ii = (i-1) * nxcf(m) - icen(m) + ix;
+                                            jj = (j-1) * nycf(m) - jcen(m) + jy;
+                                            kk = (k-1) * nzcf(m) - kcen(m) + kz;
+                                            if ( ii >= 1 && ii <= nxf(m) && jj >= 1 && jj <= nyf(m) && kk >=1 && kk<=nzf(m))
+                                                % There are dual domains that are
+                                                % not within the domain
+                                                ijk = sum(nf(1:m-1)) + ii + (jj-1)*nxf(m) + (kk-1)*nxf(m)*nyf(m); % global index
+                                                if (ix  ~= 1 && jy ~= 1 && kz ~=1)
+                                                    % internal point
+                                                    iii0 = iii0 + 1;
+                                                    P(iii0, ijk) = 1;
+                                                elseif  (ix == 1 && jy == 1 && kz==1)
+                                                    % node points
+                                                    ivv0 = ivv0 + 1;
+                                                    P(ivv0, ijk) = 1;
+                                                elseif (ix == 1 && jy == 1 && (kz ~=1 || kz~=nzcf(m)))
+                                                    % edge xy points
+                                                    iee0 = iee0 + 1;
+                                                    P(iee0, ijk) = 1;
+                                                elseif (ix == 1 && kz == 1 && (jy ~=1 || jy~=nycf(m)))
+                                                    % edge xz points
+                                                    iee0 = iee0 + 1;
+                                                    P(iee0, ijk) = 1;
+                                                elseif (jy == 1 && kz == 1 && (ix ~=1 || ix~=nxcf(m)))
+                                                    % edge yz points
+                                                    iee0 = iee0 + 1;
+                                                    P(iee0, ijk) = 1;
+                                                else
+                                                    % face points
+                                                    iff0 = iff0 + 1;
+                                                    P(iff0, ijk) = 1;
+                                                end
                                             end
                                         end
                                     end
@@ -316,7 +254,61 @@ classdef bf_updater < handle
                         end
                     end
                 end
-            end 
+            else
+                % If the coarse nodes are on the corners
+                icen = ceil(nxcf/2);
+                jcen = ceil(nycf/2);
+                kcen = ceil(nzcf/2);
+                % Now fill in entries of permutation matrix
+                for m = 1 : length(FineGrid)
+                    for k = 1:nzc(m)
+                        for j = 1:nyc(m)
+                            for i = 1:nxc(m)
+                                for kz= 1:nzcf(m)
+                                    for jy= 1:nycf(m)
+                                        for ix = 1:nxcf(m)
+                                            % calculate the cell index in the original matrix
+                                            ii = (i-1) * nxcf(m) - icen(m) + ix + 1;
+                                            jj = (j-1) * nycf(m) - jcen(m) + jy + 1;
+                                            kk = (k-1) * nzcf(m) - kcen(m) + kz + 1;
+                                            if ( ii >= 1 && ii <= nxf(m) && jj >= 1 && jj <= nyf(m) && kk >=1 && kk<=nzf(m))
+                                                % There are dual domains that are
+                                                % not within the domain
+                                                ijk = sum(nf(1:m-1)) + ii + (jj-1)*nxf(m) + (kk-1)*nxf(m)*nyf(m); % global index
+                                                if (ix  ~= icen(m) && jy ~= jcen(m) && kz ~=kcen(m))
+                                                    % internal point
+                                                    iii0 = iii0 + 1;
+                                                    P(iii0, ijk) = 1;
+                                                elseif (ix == icen(m) && jy == jcen(m) && kz == kcen(m))
+                                                    % node points
+                                                    ivv0 = ivv0 + 1;
+                                                    P(ivv0, ijk) = 1;
+                                                elseif (ix == icen(m) && jy == jcen(m) && kz ~=kcen(m))
+                                                    % edge xy points
+                                                    iee0 = iee0 + 1;
+                                                    P(iee0, ijk) = 1;
+                                                elseif (ix == icen(m) && kz == kcen(m) && jy ~= jcen(m))
+                                                    % edge xz points
+                                                    iee0 = iee0 + 1;
+                                                    P(iee0, ijk) = 1;
+                                                elseif (jy == jcen(m) && kz == kcen(m) && ix ~= icen(m))
+                                                    % edge yz points
+                                                    iee0 = iee0 + 1;
+                                                    P(iee0, ijk) = 1;
+                                                else
+                                                    % face points
+                                                    iff0 = iff0 + 1;
+                                                    P(iff0, ijk) = 1;
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
         end
         function UpdatePressureMatrix(obj, P, Grid)
             obj.A = P' * obj.A * P;

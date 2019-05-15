@@ -179,7 +179,7 @@ if MSL == 0
 else
     scaleText = strcat(num2str(MSL), ' Level Multiscale');
 end
-title([scaleText, ' ', varText]);
+%title([scaleText, ' ', varText]);
 
 set(0, 'DefaultAxesFontSize', 20, 'DefaultAxesFontWeight', 'normal');
 axis([0 Lm(1) 0 Lm(2) min([Prod(:).p]) max([Inj(:).p]) ]);
@@ -190,4 +190,6 @@ ylabel('y[m]');
 colorbar;
 view(0, 90);
 rotate3d on;
+set(gcf, 'Position', [100, 100, 1000, 800]);
+view(77, 25);
 end

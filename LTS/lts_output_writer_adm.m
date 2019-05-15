@@ -12,7 +12,7 @@ classdef lts_output_writer_adm < output_writer
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
-            obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
+            obj.Plotter.PlotPermeability(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotADMGrid(ProductionSystem, DiscretizationModel);
             if obj.basisfunctions
                 obj.Plotter.PlotBasisFunctions(DiscretizationModel.FineGrid, ...

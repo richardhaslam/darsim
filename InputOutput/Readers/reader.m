@@ -13,7 +13,12 @@ classdef reader < handle
     methods
         function obj = reader(dir, file, permdirectory)
             obj.Directory = dir;
+            
             obj.File = strcat(dir,'/',file);
+            
+            if ~strcmp('/',permdirectory) && ~strcmp('\',permdirectory)
+                permdirectory = strcat(permdirectory,'/');
+            end
             obj.PermDirectory = permdirectory;
         end
     end
