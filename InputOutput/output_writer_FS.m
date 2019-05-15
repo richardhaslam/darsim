@@ -13,7 +13,7 @@ classdef output_writer_FS < output_writer
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
-            obj.Plotter.PlotPermeability(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.K);
+            obj.Plotter.PlotPermeability(ProductionSystem, DiscretizationModel);
             obj.Plotter.VTKindex = obj.Plotter.VTKindex + 1; 
         end
         function WriteSummary(obj, Summary)

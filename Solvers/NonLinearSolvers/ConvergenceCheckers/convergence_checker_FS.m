@@ -23,10 +23,10 @@ classdef convergence_checker_FS < convergence_checker
             Nt = DiscretizationModel.N;
             
             % Compute Norms
-            [ResidualNorm, equilibrium] = obj.NormCalculator.CalculateResidualNorm(residual, Nt, Formulation);
+            [ResidualNorm] = obj.NormCalculator.CalculateResidualNorm(residual, Nt, Formulation);
             [dp, dS] = obj.NormCalculator.CalculateSolutionNorm(delta, DiscretizationModel.N, State);
             
-            disp(['Iter ', num2str(iter, '%02d') '      ', num2str(ResidualNorm(1), '%5.5e'), '        ' ...
+            disp(['Iter ', num2str(iter, '%02d') '-->   ', num2str(ResidualNorm(1), '%5.5e'), '        ' ...
                                                          , num2str(ResidualNorm(2), '%5.5e'), '        ' ...
                                                          , num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
             

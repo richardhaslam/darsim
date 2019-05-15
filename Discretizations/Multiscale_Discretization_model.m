@@ -8,6 +8,7 @@ classdef Multiscale_Discretization_model < Discretization_model
     properties
         Nf
         Nc
+        Vertex_On_Corner
         maxLevel
         Coarsening    
         CoarseGrid
@@ -54,19 +55,35 @@ classdef Multiscale_Discretization_model < Discretization_model
             disp(newline);
         end
         function ConstructCoarseGrids(obj, Inj, Prod)
+            if mod( obj.ReservoirGrid.Nx , obj.Coarsening(1,1,1) ) == 0 && ...
+               mod( obj.ReservoirGrid.Ny , obj.Coarsening(1,2,1) ) == 0 && ...
+               mod( obj.ReservoirGrid.Nz , obj.Coarsening(1,3,1) ) == 0
+                obj.Vertex_On_Corner = 0;
+                fprintf('The verteces are not on the corners.\n');
+            elseif mod( max((obj.ReservoirGrid.Nx-1),1) , obj.Coarsening(1,1,1) ) == 0 && ...
+                   mod( max((obj.ReservoirGrid.Ny-1),1) , obj.Coarsening(1,2,1) ) == 0 && ...
+                   mod( max((obj.ReservoirGrid.Nz-1),1) , obj.Coarsening(1,3,1) ) == 0
+                obj.Vertex_On_Corner = 1;
+                fprintf('The verteces are on the corners.\n');
+            else
+                error('The number of reservoir grid cells do not comply with coarsening ratios. Please check the input files.');
+            end
             %% 1. Reservoir
             % Construct all coarse grids for reservoir
             obj.CoarseGrid(1,1) = coarse_grid();
             obj.CoarseGrid(1,1).CoarseFactor = obj.Coarsening(1,:,1);
+            obj.CoarseGrid(1,1).Vertex_On_Corner = obj.Vertex_On_Corner;
             obj.CoarseGrid(1,1).BuildCoarseGrid(obj.ReservoirGrid);
             obj.GridMapper.BuildFamily(obj.CoarseGrid(1,1), obj.ReservoirGrid, obj.Coarsening(1,:,1), 1);
-            %obj.CoarseGrid(1,1).AddWells(Inj, Prod);
+            obj.CoarseGrid(1,1).AddWells(Inj, Prod);
             obj.Nc(1, 1) = obj.CoarseGrid(1,1).N;
             for i=2:obj.maxLevel(1)
                 obj.CoarseGrid(1,i) = coarse_grid();
                 obj.CoarseGrid(1,i).CoarseFactor = obj.Coarsening(1,:,i);
+                obj.CoarseGrid(1,i).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1,i).BuildCoarseGrid(obj.ReservoirGrid);
                 obj.GridMapper.BuildFamily(obj.CoarseGrid(1,i), obj.CoarseGrid(1,i-1), obj.Coarsening(1,:,1), i);
+                obj.CoarseGrid(1,i).AddWells(Inj, Prod);
                 obj.Nc(1, i) = obj.CoarseGrid(1,i).N;
             end
             
@@ -77,42 +94,51 @@ classdef Multiscale_Discretization_model < Discretization_model
             % Construct all coarse grids for fractures
             for f = 1 : size(obj.Coarsening,1) - 1
                 min_maxLevel = min( obj.maxLevel(1) , obj.maxLevel(1+f) );
+                % level 1
                 obj.CoarseGrid(1+f,1) = coarse_grid();
                 obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
+                obj.CoarseGrid(1+f,1).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1+f,1).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
                 obj.GridMapper.BuildFamily(obj.CoarseGrid(1+f,1), obj.FracturesGrid.Grids(f), obj.Coarsening(1+f,:,1), 1);
                 obj.Nc(f+1, 1) = obj.CoarseGrid(1+f,1).N;
+                % level 2+
                 for i=2:min_maxLevel
                     obj.CoarseGrid(1+f,i) = coarse_grid();
                     obj.CoarseGrid(1+f,i).CoarseFactor = obj.Coarsening(1+f,:,i);
+                    obj.CoarseGrid(1+f,i).Vertex_On_Corner = obj.Vertex_On_Corner;
                     obj.CoarseGrid(1+f,i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
                     obj.GridMapper.BuildFamily(obj.CoarseGrid(1+f,i), obj.CoarseGrid(1+f,i-1), obj.Coarsening(1+f,:,1), i);
                     obj.Nc(f+1, i) = obj.CoarseGrid(1+f,i).N;
                 end
                 % Fathers and Verteces
                 obj.GridMapper.AssignFathersandVerteces(obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:min_maxLevel), min_maxLevel)
-                
-                % Correcting for Fathers and Verteces
-                for i=2:min_maxLevel
-                    obj.CoarseGrid(1+f, i).Fathers = [obj.CoarseGrid(1+f, i).Fathers, ...
-                                                      obj.CoarseGrid(1+f, i).Fathers(:,end) .* ones( size(obj.CoarseGrid(1+f, i).Fathers,1), obj.maxLevel(1)-min_maxLevel )];
-                end
-                
+
+                % If "maxLevel" of the matrix is bigger than the one for
+                % this fracture, extra (virtual) CoarseGrid(s) should be
+                % added. Also the "Fathers" and "Verteces" of previous
+                % coarsening levels for this fracture need to be corrected:
                 for i=min_maxLevel + 1 :obj.maxLevel(1)
+                    % a) Adding virtual CoarseGrid(s)
                     obj.CoarseGrid(1+f, i) = coarse_grid();
                     obj.CoarseGrid(1+f, i).CoarseFactor = obj.Coarsening(1+f,:, i-1);
+                    obj.CoarseGrid(1+f, i).Vertex_On_Corner = obj.Vertex_On_Corner;
                     obj.CoarseGrid(1+f, i).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
-                    obj.CoarseGrid(1+f, i).Children = [1:obj.CoarseGrid(1+f, i).N]';
+                    obj.CoarseGrid(1+f, i).Children = num2cell([1:obj.CoarseGrid(1+f, i).N]');
                     obj.CoarseGrid(1+f, i).GrandChildren = obj.CoarseGrid(1+f,i-1).GrandChildren;
                     obj.CoarseGrid(1+f, i).Fathers = zeros(obj.CoarseGrid(1+f, i).N, max(obj.maxLevel));
-                    obj.CoarseGrid(1+f, i).Fathers(:, i) = [1:obj.CoarseGrid(1+f, i).N]';
+                    for ii = min_maxLevel : max(obj.maxLevel)
+                        obj.CoarseGrid(1+f, i).Fathers(:, ii) = [1:obj.CoarseGrid(1+f, i).N]';
+                    end
                     obj.CoarseGrid(1+f, i).Verteces = zeros(obj.CoarseGrid(1+f, i).N, obj.maxLevel(1));
-                    
                     obj.Nc(f+1, i) = obj.CoarseGrid(1+f,i).N;
-                    obj.FracturesGrid.Grids(f).Fathers(:, i) = obj.FracturesGrid.Grids(f).Fathers(:,obj.maxLevel(f+1));
-                    obj.FracturesGrid.Grids(f).Verteces(:,i) = obj.FracturesGrid.Grids(f).Verteces(:,obj.maxLevel(f+1));
+                    obj.FracturesGrid.Grids(f).Fathers (:, i) = obj.FracturesGrid.Grids(f).Fathers (:,obj.maxLevel(f+1));
+                    obj.FracturesGrid.Grids(f).Verteces(:, i) = obj.FracturesGrid.Grids(f).Verteces(:,obj.maxLevel(f+1));
+                end
+                for i=min_maxLevel + 1 :obj.maxLevel(1)
+                    % b) Correcting "Fathers" and "Verteces" of previous coarsening levels
                     for y=1:i-1
-                       obj.CoarseGrid(1+f, y).Fathers(:, i) = obj.CoarseGrid(1+f, y).Fathers(:, obj.maxLevel(f+1));
+                       obj.CoarseGrid(1+f, y).Fathers (:, i) = obj.CoarseGrid(1+f, y).Fathers (:, obj.maxLevel(f+1));
+                       obj.CoarseGrid(1+f, y).Verteces(:, i) = obj.CoarseGrid(1+f, y).Verteces(:, obj.maxLevel(f+1));
                    end
                 end  
             end

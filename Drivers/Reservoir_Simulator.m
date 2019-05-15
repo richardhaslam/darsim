@@ -49,6 +49,15 @@ classdef Reservoir_Simulator < handle
             disp(['N of phases: ', num2str(obj.Simulation.FluidModel.NofPhases)]);
             disp(['N of components:  ', num2str(obj.Simulation.FluidModel.NofComp)]);
             disp('---------------------------------------------------------');
+            
+            Time = obj.Simulation.TimeDriver.Sec2DHMS(obj.Simulation.TimeDriver.TotalTime);
+            disp(['Total Simulation Time: ' num2str(obj.Simulation.TimeDriver.TotalTime) ' seconds (', ...
+                num2str(Time.Days), ' days : ', num2str(Time.Hours), ' hrs : ', num2str(Time.Minutes), ' mins : ', num2str(Time.Seconds), ' sec)']);
+            disp(['Maximum Allowed Time-steps: ', num2str(obj.Builder.SimulatorSettings.MaxNumTimeSteps) ]);
+            disp(['Minimum Size of Time-step : ', num2str(obj.Builder.SimulatorSettings.MinMaxdt(1)) ]);
+            disp(['Maximum Size of Time-step : ', num2str(obj.Builder.SimulatorSettings.MinMaxdt(2)) ]);
+            disp(['Number of Reports         : ', num2str(obj.Builder.SimulatorSettings.reports)     ]);
+            disp('---------------------------------------------------------');
         end
         function Run(obj)
             % Initialize Simulation

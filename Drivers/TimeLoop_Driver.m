@@ -12,7 +12,7 @@ classdef TimeLoop_Driver < handle
         TStops % List of solution report times
         TotalTime
         Ndt
-        dt
+        dt =0;
         Coupling
         EndOfSimEvaluator
     end
@@ -25,6 +25,7 @@ classdef TimeLoop_Driver < handle
             else
                 obj.TStops = linspace(TotalTime/n_reports, TotalTime, n_reports);
             end 
+																	 
         end
         function AddCouplingStrategy(obj, coupling)
             obj.Coupling = coupling;
@@ -45,6 +46,12 @@ classdef TimeLoop_Driver < handle
                 
                 %% Solve Coupled problem at time-step n
                 obj.Coupling.TimeStepSelector.ReportDt = obj.TStops(index) - obj.Time;
+				% Adding the following three properties to the
+                % "TimeStepSelector" class and assigning them for smarter
+                % timestep selection.
+                obj.Coupling.TimeStepSelector.FirstReportDt = obj.TStops(1);
+                obj.Coupling.TimeStepSelector.BeforePreviousDt = obj.Coupling.TimeStepSelector.PreviousDt;
+                obj.Coupling.TimeStepSelector.PreviousDt = obj.dt;
                 obj.Coupling.TimeStepSelector.Index = index;
                 
                 [obj.dt, EndOfSimCriterion] = obj.Coupling.SolveTimeStep(ProductionSystem, FluidModel, DiscretizationModel, Formulation);                
@@ -63,8 +70,10 @@ classdef TimeLoop_Driver < handle
                 
                 %% %%%Increase time and timestep counter
                 obj.Time = obj.Time + obj.dt;
+				DT = obj.Sec2DHMS(obj.dt);
                 disp('-----------------------------------------------')
-                disp(['Final time: ' num2str((obj.Time)/(3600*24),4) ' days, dt= ' num2str(obj.dt) ' s']);
+                disp(['Final time: ' num2str((obj.Time)/(3600*24),4) ' days, dt= ' num2str(obj.dt) ' sec (', ...
+                      num2str(DT.Days), ' days : ', num2str(DT.Hours), ' hrs : ', num2str(DT.Minutes), ' mins : ', num2str(DT.Seconds), ' sec)']);																																  
                 disp(['end of time-step ' num2str(obj.Ndt)]);
                 disp(newline);
                 obj.Ndt = obj.Ndt + 1;
@@ -87,6 +96,17 @@ classdef TimeLoop_Driver < handle
                     index = index + 1;
                 end
             end
+        end
+		function Time = Sec2DHMS(obj, TimeInSec)
+            Time.Days  = floor( TimeInSec / (24*3600) );
+            TimeInSec  = TimeInSec - Time.Days * 24*3600;
+            
+            Time.Hours = floor( TimeInSec / 3600 );
+            TimeInSec  = TimeInSec - Time.Hours * 3600;
+            
+            Time.Minutes = floor( TimeInSec / 60 );
+            
+            Time.Seconds  = TimeInSec - Time.Minutes * 60;
         end
     end
 end

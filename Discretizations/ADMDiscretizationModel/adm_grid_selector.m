@@ -94,8 +94,8 @@ classdef adm_grid_selector < handle
                     ADMGrid.CellIndex(h) = i + N_global(level+1); % add current level global numbering
                     ADMGrid.level(h) = level;
                     ADMGrid.Fathers(h, :) = Grid.Fathers(i, :) + N_global(2:end); % add all coarse levels global numbering
-                    ADMGrid.Children{h} = Grid.Children(i,:) + N_global(max(level, 1)); % add level l-1 global numbering
-                    ADMGrid.GrandChildren{h} = Grid.GrandChildren(i,:) + N_global(1); % add fine-scale global numbering
+                    ADMGrid.Children{h} = Grid.Children{i, :} + N_global(max(level, 1)); % add level l-1 global numbering
+                    ADMGrid.GrandChildren{h} = Grid.GrandChildren{i, :} + N_global(1); % add fine-scale global numbering
                     ADMGrid.Verteces(h,:) = Grid.Verteces(i,:);
                     count = count + 1;
                 end

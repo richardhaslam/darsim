@@ -1,5 +1,4 @@
-
-%  Prolongation builder MS pressure
+%%  Prolongation builder MS pressure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
@@ -36,6 +35,7 @@ classdef prolongation_builder_MSRockTemperature < prolongation_builder
             obj.BFUpdater.ConstructRockTemperatureSystem(ProductionSystem, FineGrid, CrossConnections);
             %Build static restriction operator (FV)
             disp('Building Rock Temperature Restriction 1');
+            start1 = tic;
             obj.R{1} = obj.MsRestriction(FineGrid(1), CoarseGrid(1,1));
             % Build Prolongation operator
             disp('Building Rock Temperature Prolongation 1');
@@ -52,8 +52,11 @@ classdef prolongation_builder_MSRockTemperature < prolongation_builder
                 %Build tpfa coarse system of level x (with MsFE)
                 obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(1, x));
             end
+            StaticOperators = toc(start1);
+            disp(['Temperature static operators built in: ', num2str(StaticOperators), ' s']);
         end
         function ADMProlTr = ADMProlongation(obj, ADMGrid_original, GlobalGrids, ADMRest)
+            start1 = tic;
             %Copy ADM Grid
             ADMGrid = ADMGrid_original.copy();
             
@@ -76,6 +79,9 @@ classdef prolongation_builder_MSRockTemperature < prolongation_builder
             
             % Multiply by previous objects
             ADMProlTr = ProlTr * ADMProlTr;
+            
+            prolongation = toc(start1);
+            disp(['Rock Temperature Prolongation built in: ', num2str(prolongation), ' s']);
         end
         function ProlTr = LevelProlongation(obj, ADMGrid, FineGrid, level)
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

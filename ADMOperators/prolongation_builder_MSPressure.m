@@ -39,6 +39,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             end
             %Build static restriction operator (FV)
             disp('Building Pressure Restriction 1');
+            start1 = tic;
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(:,1));
             % Build Prolongation operator
             disp('Building Pressure Prolongation 1');
@@ -55,8 +56,11 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 %Build tpfa coarse system of level x (with MsFE)
                 obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(:, x));
             end
+            StaticOperators = toc(start1);
+            disp(['Pressure static operators built in: ', num2str(StaticOperators), ' s']);
         end
         function ADMProlp = ADMProlongation(obj, ADMGrid_original, GlobalGrids, ADMRest)
+            start1 = tic;
             % Copy ADM Grid
             ADMGrid = ADMGrid_original.copy();
             % Pressure prolongation
@@ -74,6 +78,9 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             
             % Multiply by previous objects
             ADMProlp = Prolp * ADMProlp;
+            
+            prolongation = toc(start1);
+            disp(['Pressure Prolongation built in: ', num2str(prolongation), ' s']);
         end
         function Prolp = LevelProlongation(obj, ADMGrid, FineGrid, level)
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

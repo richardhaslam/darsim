@@ -6,14 +6,14 @@
 %Created: 13 July 2016
 %Last modified: 13 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef reader_frac < handle
+classdef reader_FracGen < handle
     properties
         Directory
         File
         InputMatrix
     end
     methods
-        function obj = reader_frac(dir, file)
+        function obj = reader_FracGen(dir, file)
             obj.Directory = dir;
             obj.File = strcat(dir,'/',file);
         end

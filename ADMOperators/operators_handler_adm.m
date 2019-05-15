@@ -37,7 +37,7 @@ classdef operators_handler_adm < operators_handler
                 end
             end
             prolongation = toc(start2);
-            disp(['Prolongation built in: ', num2str(prolongation), ' s']);
+            disp(['Full Prolongation built in: ', num2str(prolongation), ' s']);
         end
         function ADMRestriction(obj, ADMGrid, FineGrid)
             % Assemble dynamic FV restriction operator
@@ -50,6 +50,7 @@ classdef operators_handler_adm < operators_handler
             % Coarse levels cells
             for c = Nf + 1:ADMGrid.Ntot
                 indexes = ADMGrid.GrandChildren{c};
+                indexes(indexes==0)=[];
                 obj.ADMRest(c, indexes) = 1;
             end
         end

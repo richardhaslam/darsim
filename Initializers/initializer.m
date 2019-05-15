@@ -58,9 +58,9 @@ classdef initializer < handle
             
             % Output initial status:      
             disp('Initial conditions:')
-            disp(['reservoir pressure: ' num2str(max(ProductionSystem.Reservoir.State.Properties('P_2').Value/1e5)), ' bar']);
-            disp(['reservoir saturation: ' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
-            disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp), ' K']);
+            disp(['Pressure: ' num2str(max(ProductionSystem.Reservoir.State.Properties('P_2').Value/1e5)), ' bar']);
+            disp(['Saturation: ' num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value))]);
+            disp(['Temperature: ', num2str(ProductionSystem.Reservoir.Temp), ' K']);
             disp('---------------------------------------------------------');
             %% Fractures
             if ProductionSystem.FracturesNetwork.Active
@@ -80,13 +80,6 @@ classdef initializer < handle
 
                     % 6. Compute initial Pc
                     FluidModel.ComputePc(ProductionSystem.FracturesNetwork.Fractures(f).State);
-
-                    % Output initial status:      
-                    disp('Initial conditions:')
-                    disp(['fracture #', num2str(f), ' pressure:' num2str(max(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_2').Value/1e5)), ' bar']);
-                    disp(['fracture #', num2str(f), ' saturation:' num2str(max(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value))]);
-                    disp(['fracture #', num2str(f), ' temperature: ', num2str(ProductionSystem.FracturesNetwork.Fractures(f).Temp)]);
-                    disp('---------------------------------------------------------');
                 end
             end
             disp(newline);

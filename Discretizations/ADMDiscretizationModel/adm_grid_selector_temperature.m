@@ -57,7 +57,7 @@ classdef adm_grid_selector_temperature < adm_grid_selector
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % temperature of fine_cells belonging to coarse block c
-                Tf_children = T(CoarseGrid.GrandChildren(c, :));
+                Tf_children = T(CoarseGrid.GrandChildren{c, :});
                 % Max e Min temperature inside c
                 Tfmax = max(Tf_children);
                 Tfmin = min(Tf_children);
@@ -67,7 +67,7 @@ classdef adm_grid_selector_temperature < adm_grid_selector
                     i = 1;
                     while i <= Nn
                         % Max min temperature of neighbour n(i)
-                        Tf_children = T(CoarseGrid.GrandChildren(n(i), :));
+                        Tf_children = T(CoarseGrid.GrandChildren{n(i), :});
                         Tfn_max = max(Tf_children);
                         Tfn_min = min(Tf_children);
                         if (abs(Tfmax-Tfn_min) > obj.tol || abs(Tfmin-Tfn_max) > obj.tol)
@@ -91,7 +91,7 @@ classdef adm_grid_selector_temperature < adm_grid_selector
             
             %3. Set to inactive fine block belonging to Active Coarse Blocks
             %Cindeces = find();
-            FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
+            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;
         end
     end
 end

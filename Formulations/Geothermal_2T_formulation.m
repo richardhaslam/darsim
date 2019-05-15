@@ -587,7 +587,7 @@ classdef Geothermal_2T_formulation < formulation
                     UpWind = DiscretizationModel.CrossConnections(c).UpWind;
                     i = c + Nm;
                     j = DiscretizationModel.CrossConnections(c).Cells;
-                    jj = j(j<=Nm); % a temporary "j" containing of only matrix indeces;
+                    jm = j(j<=Nm); % a temporary "j" containing of only matrix indeces;
                     
                     %% J_P_P Coupling
                     J_P_P_1_conn = - T_Geo .*  UpWind(:, ph) .* obj.Mob(j, ph) .* ( rho(j,ph) + obj.drhodp(j, ph) .* ( P(j,ph) - P(i,ph) ) );
@@ -656,32 +656,32 @@ classdef Geothermal_2T_formulation < formulation
                     J_Tf_Tf(sub2ind([Nt, Nt], j, j)) = J_Tf_Tf(sub2ind([Nt, Nt], j, j)) - J_Tf_Tf_1_conn;
                     
                     % frac - mat (Conduction part)
-                    J_Tf_Tf_conn = T_Geo(1:length(jj)) .* k_cond(jj);
+                    J_Tf_Tf_conn = T_Geo(1:length(jm)) .* k_cond(jm);
                     J_Tf_Tf(i, i ) = J_Tf_Tf(i, i) + sum(J_Tf_Tf_conn);
                     % Note that "AU(Tr-Tf)" is not neglected here. It is
                     % taken into account in term " k_cond(jj) .* (-1) "
                     
                     %% J_Tf_Tr Coupling
-                    J_Tf_Tr_conn = - T_Geo(1:length(jj)) .* k_cond(jj);
-                    if sum(J_Tf_Tr(i, jj))~=0
+                    J_Tf_Tr_conn = - T_Geo(1:length(jm)) .* k_cond(jm);
+                    if sum(J_Tf_Tr(i, jm))~=0
                         error('J_Tf_Tr(i, jj) is not zero!');
                     end
-                    J_Tf_Tr(i , jj) = J_Tf_Tr_conn;
+                    J_Tf_Tr(i , jm) = J_Tf_Tr_conn;
                     %J_Tf_Tr(sub2ind([Nt, Nm], jj, jj)) = J_Tf_Tr(sub2ind([Nt, Nm], jj, jj)) - J_Tf_Tr_conn;
                     
                     %% J_Tr_P
                     % J_Tr_P is zero.
                     
                     %% J_Tr_Tf Coupling
-                    J_Tr_Tf_conn = - T_Geo(1:length(jj)) .* k_cond(jj);
-                    if sum(J_Tr_Tf(jj, i))~=0
+                    J_Tr_Tf_conn = - T_Geo(1:length(jm)) .* k_cond(jm);
+                    if sum(J_Tr_Tf(jm, i))~=0
                         error('J_Tf_Tr(jj, i) is not zero!');
                     end
-                    J_Tr_Tf (jj , i) = J_Tr_Tf_conn';
+                    J_Tr_Tf (jm , i) = J_Tr_Tf_conn';
                     
                     %% J_Tr_Tr Coupling
-                    J_Tr_Tr_conn = T_Geo(1:length(jj)) .* k_cond(jj);
-                    J_Tr_Tr(sub2ind([Nm, Nm], jj, jj)) = J_Tr_Tr(sub2ind([Nm, Nm], jj, jj)) + J_Tr_Tr_conn;
+                    J_Tr_Tr_conn = T_Geo(1:length(jm)) .* k_cond(jm);
+                    J_Tr_Tr(sub2ind([Nm, Nm], jm, jm)) = J_Tr_Tr(sub2ind([Nm, Nm], jm, jm)) + J_Tr_Tr_conn;
                     % The coupling of J_Tr_Tr is non-existent for fractures
                     
                 end

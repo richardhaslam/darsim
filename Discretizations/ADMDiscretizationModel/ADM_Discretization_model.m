@@ -26,24 +26,62 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             obj.ADMGridSelector = gridselector;
         end
         function InitializeMapping(obj, ProductionSystem, FluidModel)
-            disp('Algebraic Dynamic Multilevel (ADM) method run')
+            fprintf('Algebraic Dynamic Multilevel (ADM) method run with %d levels and tolerance %s%s = %f\n', ...
+                 obj.maxLevel(1), char(916), obj.ADMGridSelector.key, obj.ADMGridSelector.tol);
             % Construct Coarse Grids
             disp(char(2));
             disp('Constructing coarse grids');
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             obj.FlagPerforatedCoarseCells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
+
+            % Modifying permeabilities to limit contrast for computation of 
+            % coupled basis functions
             
+            % Modifying matrix permeability (for now isotropic)
+            Km_Original = ProductionSystem.Reservoir.K;
+            KmAvg = mean(Km_Original(:));
+            if ~isequal( min(Km_Original(:)) , max(Km_Original(:)) )
+                K_Log10 = log10(Km_Original(:,1));
+                Ratio = (max(K_Log10) - min(K_Log10))/2;
+                K_Log10 = ( (K_Log10 - log10(KmAvg)) / Ratio ) + log10(KmAvg);
+                ProductionSystem.Reservoir.K(:, 1) = 10.^(K_Log10);
+                ProductionSystem.Reservoir.K(:, 2) = 10.^(K_Log10);
+                ProductionSystem.Reservoir.K(:, 3) = 10.^(K_Log10);
+            end
+            KmAvg = mean(ProductionSystem.Reservoir.K(:));
+            
+            % Modifying fractures permeability
+            if ProductionSystem.FracturesNetwork.Active
+                dm = mean([obj.ReservoirGrid.dx, obj.ReservoirGrid.dy, obj.ReservoirGrid.dz]);
+                Kf_Original = cell(ProductionSystem.FracturesNetwork.NumOfFrac, 1);
+                for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
+                    Kf_Original{f} = ProductionSystem.FracturesNetwork.Fractures(f).K;
+                    KfAvg = mean(Kf_Original{f}(:));
+                    if ~isequal( min(Kf_Original{f}(:)) , max(Kf_Original{f}(:)) )
+                        ProductionSystem.FracturesNetwork.Fractures(f).K( Kf_Original > KfAvg*10 ) = KfAvg*10;
+                        ProductionSystem.FracturesNetwork.Fractures(f).K( Kf_Original < KfAvg/10 ) = KfAvg/10;
+                    end
+                    KfAvg = mean(ProductionSystem.FracturesNetwork.Fractures(f).K(:));
+                    df = obj.FracturesGrid.Grids(f).dz  ;
+                    
+                    % Reducing the contrast between matrix and fractures
+                    Contrast = (KmAvg/dm) ./ (KfAvg/df);
+                    Ratio = 1e2;
+                    if Contrast > 1
+                        multiplier = Contrast / Ratio;
+                    else
+                        multiplier = Contrast * Ratio;
+                    end
+                    ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K * multiplier;
+                end
+            end
+            
+            
+            % Assigning obj.FineGrid and obj.Nf
             if ProductionSystem.FracturesNetwork.Active
                 obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
                 obj.FineGrid = [obj.ReservoirGrid, obj.FracturesGrid.Grids];
-                
-                % Modify Fracture Permeability to limit contrast for
-                % coupled bf computation
-                ratio = cell(ProductionSystem.FracturesNetwork.NumOfFrac, 1);
-                for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    ratio{f} = max(ProductionSystem.Reservoir.K(:, 1)) * 1e4 ./ ProductionSystem.FracturesNetwork.Fractures(f).K;
-                    ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K .* ratio{f};
-                end
+
                 % Adding the harmonic permeabilities to CrossConnections
                 obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
             else
@@ -64,11 +102,11 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                     obj.maxLevel, obj.CoarseGrid);
             end
             
-            % We reset the permeability of the fractures to the original
-            % value
+            % Resetting the permeabilities of matrix and fractures
+            ProductionSystem.Reservoir.K = Km_Original;
             if ProductionSystem.FracturesNetwork.Active
                 for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K ./ ratio{f};
+                    ProductionSystem.FracturesNetwork.Fractures(f).K = Kf_Original{f};
                 end
                 % Adding the harmonic permeabilities to CrossConnections
                 obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
@@ -85,13 +123,13 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             Nc1 = obj.CoarseGrid(1,1).N;
             if obj.maxLevel(1) > 1
                for i = 1:Nc1
-                   if obj.CoarseGrid(1,2).Wells(obj.CoarseGrid(1,1).Fathers(i, 2)) == 1
+                   if obj.CoarseGrid(1,2).Wells{obj.CoarseGrid(1,1).Fathers(i, 2)} == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
             else
                for i =1:Nc1
-                   if obj.CoarseGrid(1,1).Wells(i) == 1
+                   if obj.CoarseGrid(1,1).Wells{i} == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
@@ -103,8 +141,12 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 I = Inj(i).Cells;
                 for x = 1:obj.maxLevel(1)
                     for j =1:length(I)
-                        [r, ~] = find(obj.CoarseGrid(1,x).GrandChildren == I(j)); % Only in reservoir for now
-                        obj.CoarseGrid(1,x).Wells(r) = 1;
+                        for c = 1 : obj.CoarseGrid(1,x).N
+                            % [r, ~] = find([obj.CoarseGrid(1,x).GrandChildren{c,:}] == I(j)); % Only in reservoir for now
+                            if any(obj.CoarseGrid(1,x).GrandChildren{c,:} == I(j))
+                                obj.CoarseGrid(1,x).Wells{c} = 1;
+                            end
+                        end
                     end
                 end
             end
@@ -112,8 +154,12 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 P = Prod(i).Cells;
                 for x = 1:obj.maxLevel(1)
                     for j=1:length(P)
-                        [r, ~] = find(obj.CoarseGrid(1,x).GrandChildren == P(j));
-                        obj.CoarseGrid(1,x).Wells(r) = 1;
+                        for c = 1 : obj.CoarseGrid(1,x).N
+                            % [r, ~] = find([obj.CoarseGrid(1,x).GrandChildren{c,:}] == P(j));
+                            if any(obj.CoarseGrid(1,x).GrandChildren{c,:} == P(j))
+                                obj.CoarseGrid(1,x).Wells{c} = 1;
+                            end
+                        end
                     end
                 end
             end
@@ -198,6 +244,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 obj.ADMGrid_Reservoir.GrandChildren( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.GrandChildren( IndexFullStrart : IndexFullEnd , 1 );
                 obj.ADMGrid_Reservoir.Verteces     ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.Verteces     ( IndexFullStrart : IndexFullEnd , : );
                 obj.ADMGrid_Reservoir.CoarseFactor ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.CoarseFactor ( IndexFullStrart : IndexFullEnd , : );
+
             end    
         end
         function [R, P] = AssembleFullOperators(obj)

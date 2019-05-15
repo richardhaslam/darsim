@@ -49,20 +49,10 @@ classdef initializer_singlephase < initializer
             disp('Initial conditions:')
             
             % Initial status for reservoir:
-            disp(['reservoir pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5)), ' bar']);
-            disp(['Single phase reservoir']);
-            disp(['reservoir temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
+            disp(['Pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5)), ' bar']);
+            disp(['Saturation: ', num2str(1), ' (Single Phase)']);
+            disp(['Temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
             disp('---------------------------------------------------------');
-            
-            % Initial status for fractures:
-            if ProductionSystem.FracturesNetwork.Active
-                for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    disp(['Fracture ', num2str(f), ' pressure:', num2str(max(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_1').Value/1e5)), ' bar']);
-                    disp(['Single phase fracture']);
-                    disp(['Fracture ', num2str(f), ' temperature: ', num2str(ProductionSystem.FracturesNetwork.Fractures(f).Temp)]);
-                    disp('---------------------------------------------------------');
-                end
-            end
             
             disp(newline);
         end

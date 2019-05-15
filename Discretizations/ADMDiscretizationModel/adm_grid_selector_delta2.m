@@ -101,7 +101,7 @@ classdef adm_grid_selector_delta2 < adm_grid_selector
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % Saturation of fine_cells belonging to coarse block c
-                S_children = S(CoarseGrid.GrandChildren(c, :));
+                S_children = S([CoarseGrid.GrandChildren{c, :}]);
                 % Max e Min saturation inside c
                 Smax = max(S_children);
                 Smin = min(S_children);
@@ -111,14 +111,14 @@ classdef adm_grid_selector_delta2 < adm_grid_selector
                     i = 1;
                     while i <= Nn
                         % Man mix saturation of neighbour n(i)
-                        S_children = S(CoarseGrid.GrandChildren(n(i), :));
+                        S_children = S([CoarseGrid.GrandChildren{n(i), :}]);
                         Sn_max = max(S_children);
                         Sn_min = min(S_children);
                         if flag == false
                             if (abs(Smax-Sn_min) > obj.tol || abs(Smin-Sn_max) > obj.tol)
                                 CoarseGrid.Active(c) = 0;
                                 %CoarseGrid.Active(i) = 0;
-                                if max(delta(CoarseGrid.GrandChildren(c, :)))< 4e-3
+                                if max(delta([CoarseGrid.GrandChildren{c, :}]))< 4e-3
                                     CoarseGrid.Active(c) = 1;
                                 end
                                 i = Nn + 1;
@@ -146,10 +146,10 @@ classdef adm_grid_selector_delta2 < adm_grid_selector
 %                             end
 %                         end
 %                         CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
-            FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
+            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;
         end
         function SelectCoarseFineC(obj, FineGrid, CoarseGrid)
-            FineGrid.Active(CoarseGrid.Children(CoarseGrid.Active == 1,:)) = 0;
+            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;
         end
     end
 end

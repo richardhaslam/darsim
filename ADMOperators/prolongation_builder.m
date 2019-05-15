@@ -21,7 +21,7 @@ classdef prolongation_builder < matlab.mixin.Heterogeneous & handle
                 %% MSFV Restriction Operator
                 R = sparse([],[],[],Nc, Nf, Nf);
                 for c = 1:Nc
-                    R(c, CoarseGrid(i).Children(c,:)) = 1;
+                    R(c, CoarseGrid(i).Children{c,:}) = 1;
                 end
                 MsR = blkdiag(MsR, R);
             end

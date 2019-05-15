@@ -1,4 +1,4 @@
-%  Basis functions updater F-AMS
+%%  Basis functions updater F-AMS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Mousa HosseiniMehr & Matteo Cusini
@@ -43,54 +43,6 @@ classdef bf_updater_FAMS_geothermal < bf_updater_FAMS
                 obj.A(j,i) = obj.A(j,i) - T_Geo.* Mobt(i);
                 obj.A(sub2ind(size(obj.A), j, j)) = obj.A(sub2ind(size(obj.A), j, j)) + T_Geo.* Mobt(i);
             end 
-        end
-        function [MsP, MsC] = MsProlongation(obj, FineGrid, CoarseGrid, Dimensions)
-            % Prolongation operator for fractured reservoir (de-coupled)
-            switch(obj.BFtype)
-                case('DECOUPLED')
-                    MsP = []; % Prolongation operator
-                    MsC = []; % Correction functions operator
-                    Dimensions = Dimensions * ones(length(FineGrid), 1);
-                    Dimensions(2:end) = Dimensions(2:end) - 1;
-                    for i=1:length(FineGrid)
-                        cf = CoarseGrid(i).CoarseFactor ./ FineGrid(i).CoarseFactor;
-                        % Permutation Matrix
-                        [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid(i), CoarseGrid(i), cf);
-                        % Reorder A based on dual coarse grid partition
-                        tildeA = G * obj.Amedia{i} * G';
-                        [P, C]= obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(i));
-                        %obj.Amedia{i} = P' * obj.Amedia{i} * P;
-                        MsP = blkdiag(MsP, G'*P);
-                        if i==1 && ~isempty(MsC)
-                            MsC = blkdiag(MsC, G'*C*G);
-                        end
-                    end
-                case('COUPLED')
-                    MsP = []; % Prolongation operator
-                    MsC = []; % Correction functions operator
-                    cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);
-                    [G, Ni, Nf, Ne, Nv] = obj.FullyCoupledPermutationMatrix(FineGrid, CoarseGrid, cf);
-                    tildeA = G * obj.A * G';
-                    [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(1));
-                    MsP = G' * MsP;
-                    if ~isempty(MsC)
-                        MsC = G' * MsC * G;
-                    end
-            end
-        end
-        function UpdatePressureMatrix(obj, P, Grid)
-            Start_f = 1;
-            Start_c = 1;
-            for m=1:length(obj.Amedia)
-                [Nf, ~] = size(obj.Amedia{m});
-                End_f = Start_f + Nf - 1;
-                End_c = Start_c + Grid(m).N - 1 ;
-                obj.Amedia{m} = P(Start_f:End_f, Start_c:End_c)' * obj.Amedia{m} * P(Start_f:End_f, Start_c:End_c);
-                obj.Amedia{m} = obj.TransformIntoTPFA(obj.Amedia{m}, Grid(m));
-                Start_f = End_f + 1;
-                Start_c = End_c + 1;
-            end
-            obj.A = P' * obj.A * P;
         end
     end
 end

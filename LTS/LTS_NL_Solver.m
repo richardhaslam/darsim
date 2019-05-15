@@ -1,4 +1,4 @@
-                                                                                                                                                                     % NL solver base class
+% NL solver LTS class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Ludovica Delpopolo
