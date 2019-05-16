@@ -1,3 +1,1 @@
-DARSim2 Matlab simulator
-
-test
+# DARSim2 Matlab simulator
