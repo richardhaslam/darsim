@@ -20,8 +20,8 @@ classdef RefCellsSelector < handle
             % need to copy the class
             obj.ActFluxes = CellsSelectedOld.ActFluxes;
             obj.ActCells = CellsSelectedOld.ActCells;
-            obj.BCEnforcer.ViscousMatrixValue = CellsSelectedOld.BCEnforcer.ViscousMatrixValue;
-            obj.BCEnforcer.f = CellsSelectedOld.BCEnforcer.f;
+            obj.ViscousMatrixValue = CellsSelectedOld.ViscousMatrixValue;
+            obj.f = CellsSelectedOld.f;
         end
         function SelectRefCells(obj, ProductionSystem, Grid, Formulation)
             
@@ -38,8 +38,8 @@ classdef RefCellsSelector < handle
             Sold = ProductionSystem.Reservoir.State_old.Properties('S_1').Value;
             dS = Snew - Sold;
             % vector of active cells
-            % obj.ActCells = abs(dS) >= obj.tol;
-            obj.ActCells = (Snew < 0.65 & Snew > 0.105);
+            obj.ActCells = abs(dS) >= obj.tol;
+            % obj.ActCells = (Snew < 0.65 & Snew > 0.105);
             
             % to add also the next cell according to the upwind velocity
             

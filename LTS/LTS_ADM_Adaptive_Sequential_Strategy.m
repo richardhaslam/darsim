@@ -112,7 +112,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         
                         % store it in the vector and compute BC latent
                         % cells
-                        RefCells = RefCellsSelector('Sequential');
+                        RefCells = RefCellsSelector();
                         RefCells.CopyCellsSelected(obj.RefCellsSelector);
                         obj.RefCellsSelectorVec = RefCells;
                         
@@ -231,7 +231,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                     State_global.CopyProperties(ProductionSystem.Reservoir.State);
                                     obj.StateGlobalVec(lev) = State_global;
                                     
-                                    RefCells = RefCellsSelector('Sequential');
+                                    RefCells = RefCellsSelector();
                                     RefCells.CopyCellsSelected(obj.RefCellsSelector);
                                     obj.RefCellsSelectorVec(lev) = RefCells;
                                     obj.RefCellsSelectorVec(lev).ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(lev-1));
