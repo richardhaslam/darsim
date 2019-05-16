@@ -1,0 +1,4 @@
+[submodule "FracturesGenerator"]
+	path = FracturesGenerator
+	url = https://gitlab.com/darsim2simulator/FracturesGenerator.git
+	branch = master
