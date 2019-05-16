@@ -113,7 +113,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             itRef = 1;
                             % vector contains refCellst for
                             % each level of sub-refinement
-                            RefCells =  RefCellsSelector();
+                            RefCells =  RefCellsSelector('Sequential');
                             RefCells.CopyCellsSelected(obj.RefCellsSelector)
                             obj.RefCellsSelectorVec = RefCells;
                             % a the moment we save just the active comp of the
@@ -251,13 +251,8 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                 end
             end
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
-            obj.TimeStepSelector.UpdateSequential(dt, obj.itCount - 1, obj.TransportSolver.itCount - 1, obj.Chops);
-            
+            obj.TimeStepSelector.UpdateSequential(dt, obj.itCount - 1, obj.TransportSolver.itCount - 1, obj.Chops);  
         end
-        function UpdateSummary(obj, Summary, Wells, Ndt, dt)
-            Summary.CouplingStats.SaveStats(Ndt, obj.itCount - 1, obj.NLiter, obj.CFLGlobal, obj.NLiterLTS, obj.CFLLocal);
-            Summary.CouplingStats.SaveTimers(Ndt, obj.PressureTimer, obj.BalanceTimer, obj.TransportTimer);
-            Summary.SaveWellsData(Ndt+1, Wells.Inj, Wells.Prod, dt);
-        end
+        
     end
 end

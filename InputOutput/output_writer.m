@@ -161,7 +161,42 @@ classdef output_writer < handle
                     fileID = fopen(strcat(obj.Directory,'Timers.txt'),'w');
                     fprintf(fileID, '%10s %10s %10s\n', '# Timestep', 'Pressure', 'Transport');
                     fprintf(fileID, obj.FormatTimers, CouplingStats.TimersMatrix(Ndt));
-                    fclose(fileID);                   
+                    fclose(fileID);
+                    % Complexity of each LTS level
+                    fileID = fopen(strcat(obj.Directory,'LTSComplexity.txt'),'w');
+                    [~, nc] = size(CouplingStats.Complexity);
+                    format = '%8d';
+                    for i =1:nc-2
+                        format = [format, ' %8d'];
+                    end
+                    format = [format, ' %8d\n'];
+                    fprintf(fileID, format, CouplingStats.Complexity(1:Ndt, :)');
+                    fclose(fileID);
+                case('LTS_FIM')
+                    %Stats
+                    fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
+                    fprintf(fileID, '%10s %10s %10s %10.0s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
+                    fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
+                    fclose(fileID);
+                    %Timers
+                    fileID = fopen(strcat(obj.Directory,'Timers.txt'),'w');
+                    fprintf(fileID, '%10s %10s %10s %10s %10s\n', '# Timestep', 'Total Time', 'Construct', 'Solve', 'Flash');
+                    fprintf(fileID, obj.FormatTimers, CouplingStats.TimersMatrix(Ndt));
+                    fclose(fileID);
+                    % Complexity of each LTS level
+                    fileID = fopen(strcat(obj.Directory,'LTSComplexity.txt'),'w');
+                    [~, nc] = size(CouplingStats.Complexity);
+                    if nc >= 2
+                        format = '%8d';
+                        for i =1:nc-2
+                            format = [format, ' %8d'];
+                        end
+                        format = [format, ' %8d\n'];
+                    else
+                        format = '%8d\n';
+                    end
+                    fprintf(fileID, format, CouplingStats.Complexity(1:Ndt, :)');
+                    fclose(fileID);                    
             end
         end
     end

@@ -4,7 +4,6 @@
 %Author: Matteo Cusini
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 classdef Sequential_Stats < Coupling_Stats
     properties
         OuterIter
@@ -45,4 +44,5 @@ classdef Sequential_Stats < Coupling_Stats
             Matrix = [timesteps', obj.OuterIter(1:Ndt), obj.NLIter(1:Ndt), obj.CFLVal(1:Ndt)]';
         end
     end
+
 end

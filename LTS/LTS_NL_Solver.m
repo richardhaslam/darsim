@@ -1,4 +1,4 @@
-% NL solver LTS class
+% NL solver base class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Ludovica Delpopolo
@@ -97,11 +97,6 @@ methods
         % Set up the linear solver
         obj.LinearSolver.LTS_SetUp(DiscretizationModel, ActCells, l);
     end
-    
-    function TransportSolver.SetUpLinearSolverCoarse(obj, ProductionSystem, DiscretizationModel)
-         obj.LinearSolver.LTS_SetUpCoarse(ProductionSystem, DiscretizationModel, obj.Residual);
-    end
-    
     function SynchronizeProperties(obj, ProductionSystem, State_global, CellsSelected)
         obj.SystemBuilder.SynchronizeProperties(ProductionSystem, State_global, CellsSelected);
     end

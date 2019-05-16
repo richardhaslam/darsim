@@ -5,10 +5,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef RefCellsSelector < handle
     properties
-        tol =5e-2
+        tol = 1e-3
         NSten = 2
         ActFluxes
         ActCells
+        Dirichlet
         ActCellsMesh
         ViscousMatrixValue
         f
@@ -19,8 +20,8 @@ classdef RefCellsSelector < handle
             % need to copy the class
             obj.ActFluxes = CellsSelectedOld.ActFluxes;
             obj.ActCells = CellsSelectedOld.ActCells;
-            obj.ViscousMatrixValue = CellsSelectedOld.ViscousMatrixValue;
-            obj.f = CellsSelectedOld.f;
+            obj.BCEnforcer.ViscousMatrixValue = CellsSelectedOld.BCEnforcer.ViscousMatrixValue;
+            obj.BCEnforcer.f = CellsSelectedOld.BCEnforcer.f;
         end
         function SelectRefCells(obj, ProductionSystem, Grid, Formulation)
             
@@ -31,12 +32,14 @@ classdef RefCellsSelector < handle
             N = Grid.N;
             % We choose to resolve with a fine dt all cells which were
             % flooded during the coarse dt.
-            %For now it only works for the reservoir and not for the
-            %fractures
-            dS = ProductionSystem.Reservoir.State.Properties('S_1').Value - ...
-                ProductionSystem.Reservoir.State_old.Properties('S_1').Value;
+            % For now it only works for the reservoir and not for the
+            % fractures
+            Snew = ProductionSystem.Reservoir.State.Properties('S_1').Value;
+            Sold = ProductionSystem.Reservoir.State_old.Properties('S_1').Value;
+            dS = Snew - Sold;
             % vector of active cells
-            obj.ActCells = abs(dS) >= obj.tol;
+            % obj.ActCells = abs(dS) >= obj.tol;
+            obj.ActCells = (Snew < 0.65 & Snew > 0.105);
             
             % to add also the next cell according to the upwind velocity
             
@@ -54,7 +57,30 @@ classdef RefCellsSelector < handle
                 ActCellsM(:,:,1:Nz-1) = ActCellsM(:,:,1:Nz-1) + min(Utot.z(:,:,1:Nz-1),0) .* ActCellsM(:,:,2:Nz);
             end
             obj.ActCells = reshape(ActCellsM >0, N, 1);
+        end
+        function SetActiveInterfaces(obj, MatrixAssembler, Grid)
+            Nx = Grid.Nx;
+            Ny = Grid.Ny;
+            Nz = Grid.Nz;
             
+            % From the ActCells mask we define the Active Fluxes.
+            MatrixAssembler.ActInterfaces.x = zeros(Nx+1,Ny,Nz);
+            MatrixAssembler.ActInterfaces.y = zeros(Nx,Ny+1,Nz);
+            MatrixAssembler.ActInterfaces.z = zeros(Nx,Ny,Nz+1);
+            
+            ActCellsM = reshape(obj.ActCells, Nx, Ny, Nz);
+            
+            MatrixAssembler.ActInterfaces.x(1,:,:)    = ActCellsM(1,:,:);
+            MatrixAssembler.ActInterfaces.x(Nx+1,:,:) = ActCellsM(Nx,:,:);
+            MatrixAssembler.ActInterfaces.x(2:Nx,:,:) = (ActCellsM(1:Nx-1,:,:) + ActCellsM(2:Nx,:,:)) == 2;
+            
+            MatrixAssembler.ActInterfaces.y(:,1,:)    = ActCellsM(:,1,:);
+            MatrixAssembler.ActInterfaces.y(:,Ny+1,:) = ActCellsM(:,Ny,:);
+            MatrixAssembler.ActInterfaces.y(:,2:Ny,:) = (ActCellsM(:,1:Ny-1,:) + ActCellsM(:,2:Ny,:)) == 2;
+            
+            MatrixAssembler.ActInterfaces.z(:,:,1)    = ActCellsM(:,:,1);
+            MatrixAssembler.ActInterfaces.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
+            MatrixAssembler.ActInterfaces.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2;
         end
         function ActFluxes = SelectRefFluxes(obj, Grid)
             
@@ -186,7 +212,7 @@ classdef RefCellsSelector < handle
             y2 = reshape(Ypos(:,2:Ny+1,:), N, 1);
             z2 = reshape(Zpos(:,:,2:Nz+1), N, 1);
             
-            %fluxes at the boundary between an accepted and a refuced cell
+            %fluxes at the boundary between an accepted and a rejected cell
             BCFluxes.x(2:Nx,:,:) = (ActCellsM(1:Nx-1,:,:) + ActCellsM(2:Nx,:,:) == 1);
             BCFluxes.y(:,2:Ny,:) = (ActCellsM(:,1:Ny-1,:) + ActCellsM(:,2:Ny,:) == 1);
             BCFluxes.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz) == 1);
@@ -214,7 +240,7 @@ classdef RefCellsSelector < handle
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             
             obj.ViscousMatrixValue = spdiags(DiagVecs, DiagIndx, N, N);
-        end
+        end    
         function ComputeActiveCells(obj, DiscretizationModel, level)
             obj.ActCells = DiscretizationModel.FineGrid.Active;
             for i = level:  DiscretizationModel.maxLevel - 1
@@ -292,6 +318,14 @@ classdef RefCellsSelector < handle
             CoarseGrid = DiscretizationModel.CoarseGrid(level);
             ActCellCoarse = CoarseGrid.Active;
             obj.ActCells(DiscretizationModel.CoarseGrid(level).GrandChildren(ActCellCoarse == 1,:)) = 1;
+        end
+        function ResetInitialState(obj, State, State_old)
+            Names = State.Properties.keys;
+            N_prop = double(State.Properties.Count);
+            for i=1:N_prop
+                temp = State.Properties(Names{i});
+                temp.Value(obj.ActCells) = State_old.Properties(Names{i}).Value(obj.ActCells);
+            end
         end
     end
 end

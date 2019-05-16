@@ -4,7 +4,6 @@
 %Author: Matteo Cusini
 %TU Delft
 %Created: 12 July 2016
-%Last modified: 18 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef TimeLoop_Driver < handle
     properties
@@ -110,3 +109,4 @@ classdef TimeLoop_Driver < handle
         end
     end
 end
+
