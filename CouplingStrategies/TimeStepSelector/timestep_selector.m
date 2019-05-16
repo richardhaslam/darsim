@@ -80,23 +80,23 @@ classdef timestep_selector < handle
                 obj.ReportDt = obj.MaxDt;
             end
             
-            if obj.Index <= 5
-                dt = obj.MinDt;
-                %dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
-            else
-                dt = obj.MaxDt;
-            end
-            
-%             dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
-%             % If the previous "obj.ReportDt" forces the previous "dt" to be
-%             % smaller than its two previous consecutive timesteps
-%             % ("obj.PreviousDt" and "obj.BeforePreviousDt"), and if
-%             % timestep has not been chopped due to convergence issues, the
-%             % current  timestep is too small, and it can be as big as
-%             % "obj.ReportDt".
-%             if (obj.ReportDt == obj.FirstReportDt) && ( dt<obj.PreviousDt || dt<obj.BeforePreviousDt ) && ( obj.NextDt > obj.PreviousDt )
-%                 dt = min(obj.ReportDt, obj.MaxDt);
+%             if obj.Index <= 5
+%                 dt = obj.MinDt;
+%                 %dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
+%             else
+%                 dt = obj.MaxDt;
 %             end
+            
+            dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
+            % If the previous "obj.ReportDt" forces the previous "dt" to be
+            % smaller than its two previous consecutive timesteps
+            % ("obj.PreviousDt" and "obj.BeforePreviousDt"), and if
+            % timestep has not been chopped due to convergence issues, the
+            % current  timestep is too small, and it can be as big as
+            % "obj.ReportDt".
+            if (obj.ReportDt == obj.FirstReportDt) && ( dt<obj.PreviousDt || dt<obj.BeforePreviousDt ) && ( obj.NextDt > obj.PreviousDt )
+                dt = min(obj.ReportDt, obj.MaxDt);
+            end
         end
         function Update(obj, dt, itCount, chops)
             if itCount <= 6 && chops < 1
