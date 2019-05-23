@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef RefCellsSelector < handle
     properties
-        tol = 1e-3
+        tol = 5e-2
         NSten = 2
         ActFluxes
         ActCells

@@ -27,7 +27,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
             
             % Phase Mobilities and total Mobility
             Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
-            
+
             % Save state of current time-step
             ProductionSystem.SavePreviousState();
             
