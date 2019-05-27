@@ -79,21 +79,17 @@ classdef timestep_selector < handle
             if obj.ReportDt <= 0
                 obj.ReportDt = obj.MaxDt;
             end
-            
-%             if obj.Index <= 5
-%                 dt = obj.MinDt;
-%                 %dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
-%             else
-%                 dt = obj.MaxDt;
-%             end
-            
+
             dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
+
+            %dt = min([obj.ReportDt, obj.NextDt, obj.MaxDt]);
             % If the previous "obj.ReportDt" forces the previous "dt" to be
             % smaller than its two previous consecutive timesteps
             % ("obj.PreviousDt" and "obj.BeforePreviousDt"), and if
             % timestep has not been chopped due to convergence issues, the
             % current  timestep is too small, and it can be as big as
             % "obj.ReportDt".
+            
             if (obj.ReportDt == obj.FirstReportDt) && ( dt<obj.PreviousDt || dt<obj.BeforePreviousDt ) && ( obj.NextDt > obj.PreviousDt )
                 dt = min(obj.ReportDt, obj.MaxDt);
             end
@@ -110,13 +106,13 @@ classdef timestep_selector < handle
         function UpdateSequential(obj, dt, itOuter ,itTransp, chops)
             % We check for number of outer iterations and nubmer of
             % iterations of last transport solve.
-%             if itOuter <= 2 && itTransp < 6 && chops < 1
-%                obj.NextDt = 2*dt;
-%             elseif itTransp > 10 || chops > 1
-%                obj.NextDt = dt/2;
-%             else
+            if itOuter <= 2 && itTransp < 6 && chops < 1
+               obj.NextDt = 2*dt;
+            elseif itTransp > 10 || chops > 1
+               obj.NextDt = dt/2;
+            else
                obj.NextDt = dt;
-%             end
+            end
         end
     end
 end

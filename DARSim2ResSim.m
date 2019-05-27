@@ -20,7 +20,7 @@ clc;
 
 % Make sure you are in the correct folder
 CurrentDir = pwd();
-if if ~strcmp(CurrentDir(end-10:end), 'DARSim2/src') && ~strcmp(CurrentDir(end-10:end), 'DARSim2\src')
+if ~strcmp(CurrentDir(end-10:end), 'DARSim2/src') && ~strcmp(CurrentDir(end-10:end), 'DARSim2\src')
     error('DARSim2 error: you have to be in the folder src to run the code!');
 end
 clear CurrentDir

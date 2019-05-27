@@ -14,7 +14,7 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
         CFLLocal
         ActCellsSummary
         StatesSummary
-        NofRef = 10;
+        NofRef = 4;
     end
     methods
         function obj = LTS_Sequential_Strategy(name)
@@ -55,7 +55,6 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                 if (obj.Chops == 0)
                     obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                     obj.TransportSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
-                    obj.LTSTransportSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                 end
                 
                 % Outer loop (Flow transport coupling)
@@ -90,10 +89,7 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                     
                     State_iniTransp = status();
                     State_iniTransp.CopyProperties(ProductionSystem.Reservoir.State);
-                    %% 3. Solve transport
-                    if obj.itCount == 1 && obj.Chops == 0
-                        dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
-                    end
+
                     disp('Transport Solver');
                     disp('...............................................');
                     tstart3 = tic;

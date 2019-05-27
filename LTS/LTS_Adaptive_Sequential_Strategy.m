@@ -41,7 +41,6 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                 if (obj.Chops == 0)
                     obj.PressureSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                     obj.TransportSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
-                    obj.LTSTransportSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
                 end
                 
                 % Outer loop (Flow transport coupling)
@@ -75,11 +74,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                     % Save state before to compute the saturation
                     State_iniTransp = status();
                     State_iniTransp.CopyProperties(ProductionSystem.Reservoir.State);
-      
-                    %% 3. Solve transport
-                    if obj.itCount == 1 && obj.Chops == 0
-                        dt = obj.TimeStepSelector.StableTimeStep(ProductionSystem, DiscretizationModel, FluidModel, Formulation.Utot);
-                    end
+
                     disp('Transport Solver');
                     disp('...............................................');
                     tstart3 = tic;
@@ -113,7 +108,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             itRef = 1;
                             % vector contains refCellst for
                             % each level of sub-refinement
-                            RefCells =  RefCellsSelector('Sequential');
+                            RefCells =  RefCellsSelector();
                             RefCells.CopyCellsSelected(obj.RefCellsSelector)
                             obj.RefCellsSelectorVec = RefCells;
                             % a the moment we save just the active comp of the

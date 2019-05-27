@@ -864,7 +864,7 @@ classdef simulation_builder < handle
             switch(obj.SimulatorSettings.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
-                    if obj.SimulatorSettings.LTS
+                    if obj.SimulatorSettings.LTS && strcmp(obj.SimulatorSettings.CouplingType,'FIM') ==1
                         Formulation.MatrixAssembler = LTS_matrix_assembler();
                     else
                         Formulation.MatrixAssembler = matrix_assembler();
@@ -887,7 +887,7 @@ classdef simulation_builder < handle
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
         function TimeDriver = BuildTimeDriver(obj)
-            if obj.SimulatorSettings.LTSPlot == 1 ||  obj.SimulatorSettings.ADTPlot == 1
+            if obj.SimulatorSettings.LTSPlot == 1
                 TimeDriver = LTSPrint_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             % elseif obj.SimulatorSettings.ADT_SEQ == 1 
               %   TimeDriver = LTS_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
@@ -973,7 +973,7 @@ classdef simulation_builder < handle
                     %% Sequential coupling
                 case('Sequential')
                     % Sequential coupling
-                    if obj.SimulatorSettings.ADT_SEQ == 1
+                    if obj.SimulatorSettings.LTS == 1 && strcmp(obj.SimulatorSettings.DiscretizationModel,'ADM') == 1
                         Coupling =  LTS_ADM_Adaptive_Sequential_Strategy('Sequential');
                         
                         LTStransportsolver = LTS_NL_Solver();
@@ -1090,7 +1090,7 @@ classdef simulation_builder < handle
                                     pressuresolver.LinearSolver.CorrectionFunctions = true;
                                 end
                             otherwise
-                                pressuresolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
+                                pressuresolver.LinearSolver = linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 1);
                         end
                         if obj.incompressible
                             pressuresolver.ConvergenceChecker.Incompressible = 1;
@@ -1154,7 +1154,11 @@ classdef simulation_builder < handle
                     end
                     Coupling.AddPressureSolver(pressuresolver);
             end
-            Coupling.TimeStepSelector = timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
+            if obj.SimulatorSettings.LTS == 1 
+                Coupling.TimeStepSelector = LTS_timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
+            else
+                Coupling.TimeStepSelector = timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
+            end
             Coupling.TimeStepSelector.TotalTime = obj.SimulationInput.TotalTime;
             TimeDriver.AddCouplingStrategy(Coupling);
             switch(obj.SimulatorSettings.StopCriterion)
@@ -1178,7 +1182,7 @@ classdef simulation_builder < handle
                     end
                     
                 case('Sequential')
-                    if obj.SimulatorSettings.LTS == 1 || obj.SimulatorSettings.ADT_SEQ == 1
+                    if obj.SimulatorSettings.LTS == 1 
                         CouplingStats = LTS_Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'LTS_Sequential');
                     else
                         CouplingStats = Sequential_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'Sequential');
