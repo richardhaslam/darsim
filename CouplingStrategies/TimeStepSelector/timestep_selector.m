@@ -70,10 +70,7 @@ classdef timestep_selector < handle
             Lambdaz = abs(df) .* Uz(:);
             
             cfl = dt * (Lambdax + Lambday + Lambdaz) / pv;
-            
-            FormatSol = '%10.2f\n';
-            fileID = fopen(strcat('../Input/Barrier/Output/','Solution/','CFL',num2str(obj.Index),'.txt'),'w');
-            fprintf(fileID, FormatSol, cfl);
+           
         end
         function dt = ChooseTimeStep(obj)
             if obj.ReportDt <= 0

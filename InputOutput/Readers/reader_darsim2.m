@@ -682,6 +682,9 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'REF_CRITERION');
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.LTSCriterion = char(obj.SettingsMatrix(x+1));
+                temp = strfind(obj.SettingsMatrix, 'TIME_TOL');
+                x = find(~cellfun('isempty', temp));
+                SimulatorSettings.LTStol = str2double(obj.SettingsMatrix(x+1));
                 temp2 = strfind(obj.SettingsMatrix, 'PLOT_INTERNAL_STEPS');
                 x2 = find(~cellfun('isempty', temp2));
                 SimulatorSettings.LTSPlot = str2double(obj.SettingsMatrix(x2 + 1));

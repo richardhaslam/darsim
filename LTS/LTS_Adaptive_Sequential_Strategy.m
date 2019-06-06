@@ -10,6 +10,9 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
         StateGlobalVec
     end
     methods
+        function obj = LTS_Adaptive_Sequential_Strategy(name, tol)
+            obj@LTS_Sequential_Strategy(name, tol);
+        end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             End = 0;
             
@@ -108,7 +111,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             itRef = 1;
                             % vector contains refCellst for
                             % each level of sub-refinement
-                            RefCells =  RefCellsSelector();
+                            RefCells =  RefCellsSelector(obj.RefCellsSelector.tol);
                             RefCells.CopyCellsSelected(obj.RefCellsSelector)
                             obj.RefCellsSelectorVec = RefCells;
                             % a the moment we save just the active comp of the
@@ -163,7 +166,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                                 
                                 if sum(sum(obj.RefCellsSelector.ActCells)) > 0 && obj.CFLLocal > 1
                                     itRef = itRef + 1;
-                                    RefCells =  RefCellsSelector();
+                                    RefCells =  RefCellsSelector(obj.RefCellsSelector.tol);
                                     RefCells.CopyCellsSelected(obj.RefCellsSelector)
                                     obj.RefCellsSelectorVec(itRef) = RefCells;
                                     %Update the new boundary values

@@ -6,11 +6,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef adm_grid_selector_delta2 < adm_grid_selector
     properties
+        tol_time
     end
     methods
-        function obj = adm_grid_selector_delta2(tol, key)
-            obj@adm_grid_selector(tol);
+        function obj = adm_grid_selector_delta2(tol_space, tol_time, key)
+            obj@adm_grid_selector(tol_space);
             obj.key = key;
+            obj.tol_time = tol_time;
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step based on delta x
@@ -117,8 +119,8 @@ classdef adm_grid_selector_delta2 < adm_grid_selector
                         if flag == false
                             if (abs(Smax-Sn_min) > obj.tol || abs(Smin-Sn_max) > obj.tol)
                                 CoarseGrid.Active(c) = 0;
-                                %CoarseGrid.Active(i) = 0;
-                                if max(delta([CoarseGrid.GrandChildren{c, :}]))< 4e-3
+                                %CoarseGrid.Active(i) = 0 
+                                if max(delta([CoarseGrid.GrandChildren{c, :}]))< obj.tol_time
                                     CoarseGrid.Active(c) = 1;
                                 end
                                 i = Nn + 1;

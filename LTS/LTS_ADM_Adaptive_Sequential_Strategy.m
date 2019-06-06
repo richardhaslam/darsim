@@ -4,9 +4,9 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
         LTS_Complexity;
     end
     methods
-        function obj = LTS_ADM_Adaptive_Sequential_Strategy(name)
-            obj@ LTS_Adaptive_Sequential_Strategy(name);
-            obj.RefCellsSelector = RefCellsSelector();
+        function obj = LTS_ADM_Adaptive_Sequential_Strategy(name,tol)
+            obj@ LTS_Adaptive_Sequential_Strategy(name, tol);
+            
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             End = 0;
@@ -112,7 +112,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         
                         % store it in the vector and compute BC latent
                         % cells
-                        RefCells = RefCellsSelector();
+                        RefCells = RefCellsSelector(obj.RefCellsSelector.tol);
                         RefCells.CopyCellsSelected(obj.RefCellsSelector);
                         obj.RefCellsSelectorVec = RefCells;
                         
@@ -231,7 +231,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                     State_global.CopyProperties(ProductionSystem.Reservoir.State);
                                     obj.StateGlobalVec(lev) = State_global;
                                     
-                                    RefCells = RefCellsSelector();
+                                    RefCells = RefCellsSelector(obj.RefCellsSelector.tol);
                                     RefCells.CopyCellsSelected(obj.RefCellsSelector);
                                     obj.RefCellsSelectorVec(lev) = RefCells;
                                     obj.RefCellsSelectorVec(lev).ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(lev-1));

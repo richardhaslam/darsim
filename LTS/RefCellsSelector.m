@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef RefCellsSelector < handle
     properties
-        tol = 5e-2
+        tol
         NSten = 2
         ActFluxes
         ActCells
@@ -15,6 +15,9 @@ classdef RefCellsSelector < handle
         f
     end
     methods
+        function obj = RefCellsSelector(tol)
+            obj.tol = tol;
+        end
         function CopyCellsSelected(obj, CellsSelectedOld)
             % to create a vector of Cells Selected inside the sub-ref I
             % need to copy the class
