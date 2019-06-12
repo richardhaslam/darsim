@@ -1156,8 +1156,8 @@ classdef simulation_builder < handle
                     end
                     Coupling.AddPressureSolver(pressuresolver);
             end
-            if obj.SimulatorSettings.LTS == 1 
-                Coupling.TimeStepSelector = LTS_timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
+            if obj.SimulatorSettings.LTS == 1 || obj.SimulatorSettings.FixedStep == 1
+                Coupling.TimeStepSelector = fixed_timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
             else
                 Coupling.TimeStepSelector = timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
             end

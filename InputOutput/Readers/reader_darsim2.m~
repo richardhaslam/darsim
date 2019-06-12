@@ -453,10 +453,7 @@ classdef reader_darsim2 < reader
             xv = find(~cellfun('isempty', temp));
             SimulatorSettings.MaxNumTimeSteps = str2double(obj.SettingsMatrix(xv+1));
             if  strcmp(obj.SettingsMatrix(xv+2),'Fix')
-                SimulatorSettings.FixedStep = 1;
-            else
-                SimulatorSettings.FixedStep = 0;
-            end
+                SImulatorSettings.FixTime = 
                 % 2. Min and max time-step sizes
             temp = strfind(obj.SettingsMatrix, 'MINMAXDT');
             xv = find(~cellfun('isempty', temp));

@@ -1,10 +1,10 @@
-%LTS TimeStep Selector
+%fixed TimeStep Selector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
 %Author: Ludovica Delpopolo
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef LTS_timestep_selector < timestep_selector
+classdef fixed_timestep_selector < timestep_selector
     properties
 
     end
