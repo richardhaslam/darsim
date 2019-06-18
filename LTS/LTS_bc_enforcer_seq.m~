@@ -77,14 +77,14 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             
             obj.BCFluxMatrix = spdiags(DiagVecs, DiagIndx, N, N);
         end
-        function ComputeBoundaryValuesSubRef(obj, DiscretizationModel, Formulation, CellsSelected_old, CellsSelected)
+        function ComputeBoundaryValuesSubRef(obj, DiscretizationModel, Formulation, CellsSelected_old, ActCells)
             % merge the new accepted fractional flow with those occepted at
             % the previous sub-ref
             
             obj.f = Formulation.f .* (CellsSelected_old.ActCells) + ...
                 CellsSelected_old.f .* (1 - CellsSelected_old.ActCells);
-           
-            CellsSelected.f = obj.f;
+            
+            
             
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
@@ -96,7 +96,7 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             BCFluxes.x = zeros(Nx+1,Ny,Nz);
             BCFluxes.y = zeros(Nx,Ny+1,Nz);
             BCFluxes.z = zeros(Nx,Ny,Nz+1);
-            ActCellsM = reshape(CellsSelected.ActCells, Nx, Ny, Nz);
+            ActCellsM = reshape(ActCells, Nx, Ny, Nz);
             % Compute the fluxes values
             Utot = Formulation.Utot;
             

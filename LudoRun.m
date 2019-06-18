@@ -2,11 +2,11 @@ clc;
 
 
 % %Homogeneous 2D permeability fiead
-% Directory = '../Input/Examples/ImmiscibleTwoPhaseFlow/Homogeneous2D';
-% File = 'Homo2D.txt';
-% % %  
-% DARSim2Res = DARSim2ResSim(Directory, File,'');
-% 
+Directory = '../Input/Examples/ImmiscibleTwoPhaseFlow/Homogeneous2D';
+File = 'Homo2D.txt';
+% %  
+DARSim2Res = DARSim2ResSim(Directory, File,'');
+
 % % %Homogeneous 3D permeability fiead
 % Directory = '../Input/Examples/ImmiscibleTwoPhaseFlow/Homogeneous3D';
 % File = 'Homo3D.txt';
@@ -21,7 +21,7 @@ clc;
 
 
 % %SPE10 Top permeability fiead
-Directory = '../Input/Examples/ImmiscibleTwoPhaseFlow/SPE10TOP/ADM_fine';
-File = 'SPE10TOP.txt';
-  
-DARSim2Res = DARSim2ResSim(Directory, File,'../Permeability');
+% Directory = '../Input/Examples/ImmiscibleTwoPhaseFlow/SPE10TOP/ADM_fine';
+% File = 'SPE10TOP.txt';
+%   
+% DARSim2Res = DARSim2ResSim(Directory, File,'../Permeability');

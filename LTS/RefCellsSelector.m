@@ -7,11 +7,7 @@ classdef RefCellsSelector < handle
     properties
         tol
         NSten = 2
-        ActFluxes
         ActCells
-        Dirichlet
-        ActCellsMesh
-        ViscousMatrixValue
         f
     end
     methods
@@ -21,9 +17,7 @@ classdef RefCellsSelector < handle
         function CopyCellsSelected(obj, CellsSelectedOld)
             % to create a vector of Cells Selected inside the sub-ref I
             % need to copy the class
-            obj.ActFluxes = CellsSelectedOld.ActFluxes;
             obj.ActCells = CellsSelectedOld.ActCells;
-            obj.ViscousMatrixValue = CellsSelectedOld.ViscousMatrixValue;
             obj.f = CellsSelectedOld.f;
         end
         function SelectRefCells(obj, ProductionSystem, Grid, Formulation)
@@ -60,6 +54,7 @@ classdef RefCellsSelector < handle
                 ActCellsM(:,:,1:Nz-1) = ActCellsM(:,:,1:Nz-1) + min(Utot.z(:,:,1:Nz-1),0) .* ActCellsM(:,:,2:Nz);
             end
             obj.ActCells = reshape(ActCellsM >0, N, 1);
+            obj.f = Formulation.f;
         end
         function SetActiveInterfaces(obj, MatrixAssembler, Grid)
             Nx = Grid.Nx;
@@ -85,165 +80,7 @@ classdef RefCellsSelector < handle
             MatrixAssembler.ActInterfaces.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
             MatrixAssembler.ActInterfaces.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2;
         end
-        function ActFluxes = SelectRefFluxes(obj, Grid)
-            
-            Nx = Grid.Nx;
-            Ny = Grid.Ny;
-            Nz = Grid.Nz;
-            
-            % From the ActCells mask we define the Active Fluxes.
-            ActFluxes.x = zeros(Nx+1,Ny,Nz);
-            ActFluxes.y = zeros(Nx,Ny+1,Nz);
-            ActFluxes.z = zeros(Nx,Ny,Nz+1);
-            
-            ActCellsM = reshape(obj.ActCells, Nx, Ny, Nz);
-            
-            ActFluxes.x(1,:,:)    = ActCellsM(1,:,:);
-            ActFluxes.x(Nx+1,:,:) = ActCellsM(Nx,:,:);
-            ActFluxes.x(2:Nx,:,:) = (ActCellsM(1:Nx-1,:,:) + ActCellsM(2:Nx,:,:)) == 2;
-            
-            ActFluxes.y(:,1,:)    = ActCellsM(:,1,:);
-            ActFluxes.y(:,Ny+1,:) = ActCellsM(:,Ny,:);
-            ActFluxes.y(:,2:Ny,:) = (ActCellsM(:,1:Ny-1,:) + ActCellsM(:,2:Ny,:)) == 2;
-            
-            ActFluxes.z(:,:,1)    = ActCellsM(:,:,1);
-            ActFluxes.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
-            ActFluxes.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2;
-            obj.ActFluxes = ActFluxes;
-        end
-        function ComputeBoundaryValues(obj, DiscretizationModel, Formulation)
-            % store the past values of the fractional flow
-            obj.f = Formulation.f;
-            
-            Nx = DiscretizationModel.ReservoirGrid.Nx;
-            Ny = DiscretizationModel.ReservoirGrid.Ny;
-            Nz = DiscretizationModel.ReservoirGrid.Nz;
-            N  = DiscretizationModel.ReservoirGrid.N;
-            
-            BCFluxes.x = zeros(Nx+1,Ny,Nz);
-            BCFluxes.y = zeros(Nx,Ny+1,Nz);
-            BCFluxes.z = zeros(Nx,Ny,Nz+1);
-            ActCellsM = reshape(obj.ActCells, Nx, Ny, Nz);
-            
-            % Compute the fluxes values
-            Utot = Formulation.Utot;
-            
-            % right to left and top to bottom (negative x, y, z)
-            Xneg = min(Utot.x, 0);
-            Yneg = min(Utot.y, 0);
-            Zneg = min(Utot.z, 0);
-            
-            x1 = reshape(Xneg(1:Nx,:,:),N,1);
-            y1 = reshape(Yneg(:,1:Ny,:),N,1);
-            z1 = reshape(Zneg(:,:,1:Nz),N,1);
-            
-            % left to right and bottom to top (positive x, y, z)
-            Xpos = max(Utot.x, 0);
-            Ypos = max(Utot.y, 0);
-            Zpos = max(Utot.z, 0);
-            
-            x2 = reshape(Xpos(2:Nx+1,:,:), N, 1);
-            y2 = reshape(Ypos(:,2:Ny+1,:), N, 1);
-            z2 = reshape(Zpos(:,:,2:Nz+1), N, 1);
-            
-            
-            %fluxes at the boundaty between an accepted and a refuced cell
-            BCFluxes.x(2:Nx,:,:) = (ActCellsM(1:Nx-1,:,:) + ActCellsM(2:Nx,:,:) == 1);
-            BCFluxes.y(:,2:Ny,:) = (ActCellsM(:,1:Ny-1,:) + ActCellsM(:,2:Ny,:) == 1);
-            BCFluxes.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz) == 1);
-            
-            
-            %select only the bc fluxes
-            x1A = reshape(BCFluxes.x(1:Nx,:,:),N,1);
-            y1A = reshape(BCFluxes.y(:,1:Ny,:),N,1);
-            z1A = reshape(BCFluxes.z(:,:,1:Nz),N,1);
-            
-            x1 = x1 .* x1A;
-            y1 = y1 .* y1A;
-            z1 = z1 .* z1A;
-            
-            %select only the bc fluxes
-            x2A = reshape(BCFluxes.x(2:Nx+1,:,:),N,1);
-            y2A = reshape(BCFluxes.y(:,2:Ny+1,:),N,1);
-            z2A = reshape(BCFluxes.z(:,:,2:Nz+1),N,1);
-            
-            x2 = x2 .* x2A;
-            y2 = y2 .* y2A;
-            z2 = z2 .* z2A;
-            
-            DiagVecs = [z2, y2, x2, +x1-x2+y1-y2+z1-z2, -x1, -y1, -z1]; % diagonal vectors
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            
-            obj.ViscousMatrixValue = spdiags(DiagVecs, DiagIndx, N, N);
-        end
-        function ComputeBoundaryValuesSubRef(obj, DiscretizationModel, Formulation, CellsSelected_old)
-            % merge the new accepted fractional flow with those occepted at
-            % the previous sub-ref
-            
-            obj.f = Formulation.f .* (CellsSelected_old.ActCells) + ...
-                CellsSelected_old.f .* (1 - CellsSelected_old.ActCells);
-            
-            Nx = DiscretizationModel.ReservoirGrid.Nx;
-            Ny = DiscretizationModel.ReservoirGrid.Ny;
-            Nz = DiscretizationModel.ReservoirGrid.Nz;
-            N  = DiscretizationModel.ReservoirGrid.N;
-            % merge the new fluxes interfaces with those obtained at the
-            % previous sub-ref.
-            
-            BCFluxes.x = zeros(Nx+1,Ny,Nz);
-            BCFluxes.y = zeros(Nx,Ny+1,Nz);
-            BCFluxes.z = zeros(Nx,Ny,Nz+1);
-            ActCellsM = reshape(obj.ActCells, Nx, Ny, Nz);
-            % Compute the fluxes values
-            Utot = Formulation.Utot;
-            
-            % right to left and top to bottom (negative x, y, z)
-            Xneg = min(Utot.x, 0);
-            Yneg = min(Utot.y, 0);
-            Zneg = min(Utot.z, 0);
-            
-            x1 = reshape(Xneg(1:Nx,:,:),N,1);
-            y1 = reshape(Yneg(:,1:Ny,:),N,1);
-            z1 = reshape(Zneg(:,:,1:Nz),N,1);
-            
-            % left to right and bottom to top (positive x, y, z)
-            Xpos = max(Utot.x, 0);
-            Ypos = max(Utot.y, 0);
-            Zpos = max(Utot.z, 0);
-            
-            x2 = reshape(Xpos(2:Nx+1,:,:), N, 1);
-            y2 = reshape(Ypos(:,2:Ny+1,:), N, 1);
-            z2 = reshape(Zpos(:,:,2:Nz+1), N, 1);
-            
-            %fluxes at the boundary between an accepted and a rejected cell
-            BCFluxes.x(2:Nx,:,:) = (ActCellsM(1:Nx-1,:,:) + ActCellsM(2:Nx,:,:) == 1);
-            BCFluxes.y(:,2:Ny,:) = (ActCellsM(:,1:Ny-1,:) + ActCellsM(:,2:Ny,:) == 1);
-            BCFluxes.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz) == 1);
-            
-            
-            %select only the bc fluxes
-            x1A = reshape(BCFluxes.x(1:Nx,:,:),N,1);
-            y1A = reshape(BCFluxes.y(:,1:Ny,:),N,1);
-            z1A = reshape(BCFluxes.z(:,:,1:Nz),N,1);
-            
-            x1 = x1 .* x1A;
-            y1 = y1 .* y1A;
-            z1 = z1 .* z1A;
-            
-            %select only the bc fluxes
-            x2A = reshape(BCFluxes.x(2:Nx+1,:,:),N,1);
-            y2A = reshape(BCFluxes.y(:,2:Ny+1,:),N,1);
-            z2A = reshape(BCFluxes.z(:,:,2:Nz+1),N,1);
-            
-            x2 = x2 .* x2A;
-            y2 = y2 .* y2A;
-            z2 = z2 .* z2A;
-            
-            DiagVecs = [z2, y2, x2, +x1-x2+y1-y2+z1-z2, -x1, -y1, -z1]; % diagonal vectors
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            
-            obj.ViscousMatrixValue = spdiags(DiagVecs, DiagIndx, N, N);
-        end    
+     
         function ComputeActiveCells(obj, DiscretizationModel, level)
             obj.ActCells = DiscretizationModel.FineGrid.Active;
             for i = level:  DiscretizationModel.maxLevel - 1
@@ -315,12 +152,6 @@ classdef RefCellsSelector < handle
                 ActLevel(DiscretizationModel.FineGrid.Active(:)==1) = 1;
             end
                 obj.ActCells = obj.ActCells .* ActLevel;
-        end
-        function EffectiveActiveCellsDD(obj, DiscretizationModel, level)
-            obj.ActCells= zeros(size(DiscretizationModel.FineGrid.Active));
-            CoarseGrid = DiscretizationModel.CoarseGrid(level);
-            ActCellCoarse = CoarseGrid.Active;
-            obj.ActCells(DiscretizationModel.CoarseGrid(level).GrandChildren(ActCellCoarse == 1,:)) = 1;
         end
         function ResetInitialState(obj, State, State_old)
             Names = State.Properties.keys;

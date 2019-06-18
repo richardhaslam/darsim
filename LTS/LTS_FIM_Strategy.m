@@ -30,7 +30,7 @@ classdef LTS_FIM_Strategy < FIM_Strategy
             %% 1. Solve with coarse time-step (predictor)
             % 1.1 Set Up non-linear solverLTSNONLSolver
             ProductionSystem.SavePreviousState(); % Save state of current time-step
-            Formulation.MatrixAssembler.ResetAcitveInterfaces(DiscretizationModel);
+            Formulation.MatrixAssembler.ResetActiveInterfaces(DiscretizationModel);
             obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);
             obj.NLSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
             

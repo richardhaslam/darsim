@@ -9,7 +9,7 @@ classdef LTS_matrix_assembler < matrix_assembler
         ActInterfaces
     end
     methods
-        function ResetAcitveInterfaces(obj, DiscretizationModel)
+        function ResetActiveInterfaces(obj, DiscretizationModel)
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             Nz = DiscretizationModel.ReservoirGrid.Nz;

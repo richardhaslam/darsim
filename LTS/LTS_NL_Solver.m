@@ -30,7 +30,7 @@ methods
         % Update Derivatives
         obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         % Compute residual
-        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected);
+        obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
         % Compute the first residual norm
         obj.ConvergenceChecker.ComputeFirstResidualNorm(obj.Residual, DiscretizationModel, obj.LinearSolver);
         
@@ -42,7 +42,7 @@ methods
             
             % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
             start1 = tic;
-            obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected);
+            obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
             obj.TimerConstruct(obj.itCount) = toc(start1);
             
             % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
@@ -61,7 +61,7 @@ methods
             obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
             
             % 5. Compute residual
-            obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected);
+            obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
             
             % 6. Check NonLinear convergencel
             obj.CheckConvergence(Formulation, DiscretizationModel, ProductionSystem, CellsSelected.ActCells);
@@ -73,14 +73,14 @@ methods
             obj.itCount = obj.itCount + 1;
         end
     end
-    function BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected)
-        obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected);
+    function BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
+        obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
     end
     function SolveLinearSystem(obj, ActCells)
         obj.Delta = obj.LinearSolver.Solve(obj.Jacobian, -obj.Residual, ActCells);
     end
-    function BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected)
-        obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected);
+    function BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
+        obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
     end
     function CheckConvergence(obj, Formulation, DiscretizationModel, ProductionSystem,  ActCells)
         obj.Converged = obj.ConvergenceChecker.CheckLTS(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver,  ActCells);

@@ -866,7 +866,7 @@ classdef simulation_builder < handle
             switch(obj.SimulatorSettings.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
-                    if obj.SimulatorSettings.LTS && strcmp(obj.SimulatorSettings.CouplingType,'FIM') ==1
+                    if obj.SimulatorSettings.LTS 
                         Formulation.MatrixAssembler = LTS_matrix_assembler();
                     else
                         Formulation.MatrixAssembler = matrix_assembler();
