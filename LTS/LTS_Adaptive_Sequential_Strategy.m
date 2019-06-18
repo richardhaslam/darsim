@@ -135,7 +135,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             
                             % Compute the numerical fluxes used as boundary
                             % values between the accepted and rejected area.
-                            obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+                            obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
                             obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef).ActCells);
                             %obj.RefCellsSelectorVec(itRef).ComputeBoundaryValues(DiscretizationModel, Formulation);
                             
