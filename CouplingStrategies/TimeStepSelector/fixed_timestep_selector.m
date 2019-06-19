@@ -17,10 +17,12 @@ classdef fixed_timestep_selector < timestep_selector
                 dt = obj.MinDt;
             else
                 dt = obj.MaxDt;
+
+                
             end
-            if (obj.ReportDt == obj.FirstReportDt) && ( dt<obj.PreviousDt || dt<obj.BeforePreviousDt ) && ( obj.NextDt > obj.PreviousDt )
-                dt = min(obj.ReportDt, obj.MaxDt);
-            end
+%             if (obj.ReportDt == obj.FirstReportDt) && ( dt<obj.PreviousDt || dt<obj.BeforePreviousDt ) && ( obj.NextDt > obj.PreviousDt )
+%                 dt = min(obj.ReportDt, obj.MaxDt);
+%             end
         end
         function Update(obj, dt, itCount, chops)
             if itCount <= 6 && chops < 1

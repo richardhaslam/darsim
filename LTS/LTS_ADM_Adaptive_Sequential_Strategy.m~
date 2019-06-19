@@ -112,11 +112,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         RefCells.CopyCellsSelected(obj.RefCellsSelector);
                         obj.RefCellsSelectorVec = RefCells;
                                                     
-                        obj.RefCellsSelectorVec.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
-                        obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec);
-                        obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(lev));
-                        %obj.RefCellsSelectorVec.ComputeBoundaryValues(DiscretizationModel, Formulation);
-
+           
                         dtGlob = dtRef;
                         dtRef = dtRef / obj.time_ref;
                         sum_dtLoc = zeros(factorial(NofLevel) * obj.time_ref);
@@ -131,7 +127,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         %Set initial values for the saturation
                         ProductionSystem.Reservoir.State.CopyProperties(State_iniTransp);
                         ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
-                        
+                       
                         Newton_IniGuess = status();
                         Newton_IniGuess.CopyProperties(ProductionSystem.Reservoir.State);
                         temp = Newton_IniGuess.Properties('S_1');                        
@@ -145,6 +141,8 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         temp2.Value = S2_old + (dtRef)/dtGlob * (S2_next - S2_old);
 
                         while sum_dtLoc(lev) < dtGlob(lev)
+                            obj.RefCellsSelectorVec(lev).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid);
+
                             % we sum up all the timer for the refinemets
                             obj.LTSTransportTimer(obj.itCount) = 0;
                             disp('Transport Solver Sub-rebinements');
@@ -156,10 +154,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                             disp('...............................................');
                             disp(['SubRef step: ', num2str(lev)]);
                             disp('...............................................');
-                            obj.RefCellsSelectorVec(lev).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid);
-                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(lev));
                             % Set up for LinearSolver R and P
-                            
                             if lev == NofLevel
                                 obj.LTSTransportSolver.SetUpRP_LTS_ADM(DiscretizationModel, obj.RefCellsSelectorVec(lev).ActCells(:), lev)  
                                 obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(lev));
@@ -238,7 +233,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                     obj.RefCellsSelectorVec(lev) = RefCells;
                                     obj.RefCellsSelectorVec(lev).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid);
                                     obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(lev), obj.RefCellsSelectorVec(lev-1));
-                                    obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(lev));
+
                                     
                                     %Set initial values for the saturation
                                     ProductionSystem.Reservoir.State.CopyProperties(State_iniTransp);

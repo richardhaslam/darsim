@@ -55,7 +55,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                     disp(['Outer iteration: ', num2str(obj.itCount)]);
                 
                     Formulation.MatrixAssembler.ResetActiveInterfaces(DiscretizationModel);
-
+                    
                     %% 1. Solve pressure equation
                     disp('...............................................');
                     disp('Pressure Solver')
@@ -136,7 +136,9 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             % Compute the numerical fluxes used as boundary
                             % values between the accepted and rejected area.
                             obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
-                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef).ActCells);
+                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef));
+                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(itRef));
+                            
                             %obj.RefCellsSelectorVec(itRef).ComputeBoundaryValues(DiscretizationModel, Formulation);
                             
                             % we sum up all the time for the refinemets
@@ -152,6 +154,8 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                                 
                                 State_iniTransp = status();
                                 State_iniTransp.CopyProperties(ProductionSystem.Reservoir.State);
+                                obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+                                obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(itRef));
                                 
                                 obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(itRef));
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(itRef));
@@ -179,7 +183,8 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                                     %Update the new boundary values
                                     
                                     obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
-                                    obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation,obj.RefCellsSelectorVec(itRef-1), obj.RefCellsSelectorVec(itRef));
+                                    obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation,obj.RefCellsSelectorVec(itRef), obj.RefCellsSelectorVec(itRef-1));
+                                    obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(itRef));
                                     %obj.RefCellsSelectorVec(itRef).ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef-1)); 
                                     
                                     State_global = status(); 

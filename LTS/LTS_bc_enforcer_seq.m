@@ -11,10 +11,9 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
         Vr
     end
     methods
-        function ComputeBoundaryValues(obj, DiscretizationModel, Formulation, ActCells)
+        function ComputeBoundaryValues(obj, DiscretizationModel, Formulation, CellsSelected)
             % store the past values of the fractional flow
-            obj.f = Formulation.f;
-            
+            CellsSelected.f = Formulation.f;
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             Nz = DiscretizationModel.ReservoirGrid.Nz;
@@ -23,8 +22,8 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             BCFluxes.x = zeros(Nx+1,Ny,Nz);
             BCFluxes.y = zeros(Nx,Ny+1,Nz);
             BCFluxes.z = zeros(Nx,Ny,Nz+1);
-            obj.ActCells = ActCells;
-            ActCellsM = reshape(ActCells, Nx, Ny, Nz);
+            
+            ActCellsM = reshape(CellsSelected.ActCells, Nx, Ny, Nz);
             
             % Compute the fluxes values
             Utot = Formulation.Utot;
@@ -75,16 +74,14 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             DiagVecs = [z2, y2, x2, +x1-x2+y1-y2+z1-z2, -x1, -y1, -z1]; % diagonal vectors
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             
-            obj.BCFluxMatrix = spdiags(DiagVecs, DiagIndx, N, N);
+            CellsSelected.BCFluxMatrix = spdiags(DiagVecs, DiagIndx, N, N);
         end
-        function ComputeBoundaryValuesSubRef(obj, DiscretizationModel, Formulation, CellsSelected_old, CellsSelected)
+        function ComputeBoundaryValuesSubRef(obj, DiscretizationModel, Formulation, CellsSelected, CellsSelected_old)
             % merge the new accepted fractional flow with those occepted at
             % the previous sub-ref
             
-            obj.f = Formulation.f .* (CellsSelected_old.ActCells) + ...
+            CellsSelected.f = Formulation.f .* (CellsSelected_old.ActCells) + ...
                 CellsSelected_old.f .* (1 - CellsSelected_old.ActCells);
-           
-            CellsSelected.f = obj.f;
 
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
@@ -99,7 +96,6 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             ActCellsM = reshape(CellsSelected.ActCells, Nx, Ny, Nz);
             % Compute the fluxes values
             Utot = Formulation.Utot;
-            obj.ActCells = CellsSelected.ActCells;
             
             % right to left and top to bottom (negative x, y, z)
             Xneg = min(Utot.x, 0);
@@ -146,7 +142,13 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             DiagVecs = [z2, y2, x2, +x1-x2+y1-y2+z1-z2, -x1, -y1, -z1]; % diagonal vectors
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             
-            obj.BCFluxMatrix = spdiags(DiagVecs, DiagIndx, N, N);
+            CellsSelected.BCFluxMatrix = spdiags(DiagVecs, DiagIndx, N, N);
+        end
+        
+        function SetCorrectActiveCells(obj, CellsSelected)
+            obj.f = CellsSelected.f;
+            obj.ActCells = CellsSelected.ActCells;
+            obj.BCFluxMatrix = CellsSelected.BCFluxMatrix;
         end
         function ViscousMatrixLTS(obj, Grid, Formulation)
             %Builds Upwind Flux matrix
@@ -218,7 +220,7 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             N = DiscretizationModel.ReservoirGrid.N;
             rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
 
-            Jacobian = Jacobian + Formulation.V * spdiags(Formulation.df.*rho,0,N,N) + ...
+            Jacobian = (Jacobian + Formulation.V * spdiags(Formulation.df.*rho,0,N,N)).*spdiags(obj.ActCells,0,N,N) + ...
                 - obj.Vr * spdiags(Formulation.df .* rho .* obj.ActCells,0,N,N); 
         end
     end

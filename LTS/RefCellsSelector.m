@@ -8,8 +8,8 @@ classdef RefCellsSelector < handle
         tol
         NSten = 2
         ActCells
+        BCFluxMatrix
         f
-        MatrixAssembler
     end
     methods
         function obj = RefCellsSelector(tol)
@@ -80,14 +80,14 @@ classdef RefCellsSelector < handle
             MatrixAssembler.ActInterfaces.z(:,:,1)    = ActCellsM(:,:,1);
             MatrixAssembler.ActInterfaces.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
             MatrixAssembler.ActInterfaces.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2;
-            obj.MatrixAssembler = MatrixAssembler;
         end
      
-        function ComputeActiveCells(obj, DiscretizationModel, level)
+        function ComputeActiveCells(obj, DiscretizationModel, Formulation, level)
             obj.ActCells = DiscretizationModel.FineGrid.Active;
             for i = level:  DiscretizationModel.maxLevel - 1
                 obj.ActCells([DiscretizationModel.CoarseGrid(i).GrandChildren{DiscretizationModel.CoarseGrid(i).Active == 1,:}]) = 1;
             end
+            obj.f = Formulation.f;
         end
         function numb = NumberOfActiveCells(obj, DiscretizationModel, level)
             if level == DiscretizationModel.maxLevel
