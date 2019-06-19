@@ -9,6 +9,7 @@ classdef RefCellsSelector < handle
         NSten = 2
         ActCells
         f
+        MatrixAssembler
     end
     methods
         function obj = RefCellsSelector(tol)
@@ -79,6 +80,7 @@ classdef RefCellsSelector < handle
             MatrixAssembler.ActInterfaces.z(:,:,1)    = ActCellsM(:,:,1);
             MatrixAssembler.ActInterfaces.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
             MatrixAssembler.ActInterfaces.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2;
+            obj.MatrixAssembler = MatrixAssembler;
         end
      
         function ComputeActiveCells(obj, DiscretizationModel, level)
