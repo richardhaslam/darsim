@@ -217,13 +217,11 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
         end
         function CFL = ComputeCFLNumberLTS(obj, DiscretizationModel, ProductionSystem, dt, Formulation)
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
-            
-            ActFluxes = Formulation.MatrixAssembler.ActInterfaces;
-            
-            maxdf = max(abs(Formulation.df .* obj.ActCells));
-            maxUx = max(max(max(abs(Formulation.Utot.x .* ActFluxes.x))));
-            maxUy = max(max(max(abs(Formulation.Utot.y .* ActFluxes.y))));
-            maxUz = max(max(max(abs(Formulation.Utot.z .* ActFluxes.z))));
+
+            maxdf = max(abs(obj.df .* obj.ActCells));
+            maxUx = max(max(max(abs(obj.Utot.x .* CellsSelected.ActFluxes.x))));
+            maxUy = max(max(max(abs(obj.Utot.y .* CellsSelected.ActFluxes.y))));
+            maxUz = max(max(max(abs(obj.Utot.z .* CellsSelected.ActFluxes.z))));
             CFL = dt * maxdf * (maxUx + maxUy + maxUz) / pv;
         end
         function Jacobian = AddBC2Jacobian(obj, Jacobian, ProductionSystem, Formulation, DiscretizationModel, dt)

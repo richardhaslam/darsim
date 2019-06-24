@@ -167,7 +167,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(lev));
                                 obj.LTS_Complexity = [obj.LTS_Complexity, (obj.LTSTransportSolver.itCount-1)*obj.RefCellsSelectorVec(lev).NumberOfActiveCells(DiscretizationModel, lev)];
                             
-                                obj.CFLLocal = obj.CFLGlobal/(2^(lev));
+                                obj.CFLLocal = obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeCFLNumberLTS(DiscretizationModel, ProductionSystem, dtRef, Formulation);
                                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
                             else 
                                 obj.LTSTransportSolver.SetUpRP_LTS_ADM(DiscretizationModel, obj.RefCellsSelectorVec(lev).ActCells(:), lev)

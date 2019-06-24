@@ -168,7 +168,8 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                             end
                             
                             disp('...............................................');
-                            obj.CFLLocal = obj.CFLGlobal / obj.NofRef;
+                            obj.CFLLocal = obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeCFLNumberLTS(DiscretizationModel, ProductionSystem, dtRef, Formulation);
+
                             obj.LTSTransportSolver.SynchronizeProperties(ProductionSystem, State_global, obj.RefCellsSelector);
                             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                         else

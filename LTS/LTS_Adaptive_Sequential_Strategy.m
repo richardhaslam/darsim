@@ -29,7 +29,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
             
             % Pressure timestep
             dt = obj.TimeStepSelector.ChooseTimeStep();
-            %dt = 5 * 60 * 60 * 24;
+            
             % Phase Mobilities and total Mobility
             Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
             
@@ -123,8 +123,6 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             State_global.CopyProperties(ProductionSystem.Reservoir.State);
                             obj.StateGlobalVec = State_global;
                             
-                            
-                            
                             dtRef = dt/2;
                             dtGlob = dt;
                             sum_dtLoc(itRef) = 0;                           
@@ -159,8 +157,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                                 
                                 % at the moment I am just storing the
                                 % smallest one
-                                obj.CFLLocal = obj.CFLGlobal / (2^itRef);
-
+                                obj.CFLLocal = obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeCFLNumberLTS(DiscretizationModel, ProductionSystem, dtRef, Formulation);
                                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
                                                                 
                                 if obj.LTSTransportSolver.Converged == 0
