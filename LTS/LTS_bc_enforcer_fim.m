@@ -39,7 +39,6 @@ classdef LTS_bc_enforcer_fim < LTS_bc_enforcer
             BCFluxes.y = U.y .* BC.y;
             BCFluxes.z = U.z .* BC.z;
             
-            
             % right to left and top to bottom (negative x, y, z)
             Xneg = min(BCFluxes.x, 0);
             Yneg = min(BCFluxes.y, 0);

@@ -16,10 +16,10 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
         StatesSummary
         NofRef = 4;
     end
-    methods
-        function obj = LTS_Sequential_Strategy(name)
+    methods 
+        function obj = LTS_Sequential_Strategy(name,tol)
             obj@Sequential_Strategy(name);
-            obj.RefCellsSelector = RefCellsSelector();
+            obj.RefCellsSelector = RefCellsSelector(tol);
         end
         function AddLTSTransportSolver(obj, LTStransportsolver)
             obj.LTSTransportSolver = LTStransportsolver;
@@ -40,10 +40,8 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
             
             % Pressure timestep
             dt = obj.TimeStepSelector.ChooseTimeStep();
-            
             % Phase Mobilities and total Mobility
             Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
-            
             % Save state of current time-step
             ProductionSystem.SavePreviousState();
             
@@ -64,6 +62,8 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                     State_old.CopyProperties(ProductionSystem.Reservoir.State);
                     disp(newline);
                     disp(['Outer iteration: ', num2str(obj.itCount)]);
+                    
+                    Formulation.MatrixAssembler.ResetActiveInterfaces(DiscretizationModel);
 
                     %% 1. Solve pressure equation
                     disp('...............................................');
@@ -97,6 +97,7 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                     if obj.itCount == 1
                         obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
                     end
+                    
                     obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
                     obj.NLiter = obj.NLiter + obj.TransportSolver.itCount - 1;
                     obj.CFLGlobal = Formulation.ComputeCFLNumberTransport(DiscretizationModel, ProductionSystem, dt);
@@ -125,17 +126,18 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                             ProductionSystem.Reservoir.State.CopyProperties(State_iniTransp);
                             % Compute the numerical fluxes used as boundary
                             % values between the accepted and rejected area.
-                            obj.RefCellsSelector.ComputeBoundaryValues(DiscretizationModel, Formulation);
-                            %Set initial values for the saturation
-                            %obj.TransportSolver.SystemBuilder.SetInitalGuess(ProductionSystem);
-                            
+                            obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelector);
+                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelector);
+
                             % we sum up all the timer for the refinemets
                             obj.LTSTransportTimer(obj.itCount) = 0;
                             disp('Transport Solver Sub-rebinements');
                             disp('...............................................');
                             for itSub = 1 : obj.NofRef
                                 % Solve the transport eq for the subref cells
-                                
+                                                            obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+
                                 disp(['SubRef step: ', num2str(itSub)]);
                                 disp('...............................................');
                                 tstart4 = tic;
@@ -144,7 +146,7 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelector);
                                 ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                                 
-                                % save summary data
+                                % save summary data 
                                 obj.ActCellsSummary(:,idxSummary) = obj.RefCellsSelector.ActCells(:);
                                 StateSum = status(); 
                                 StateSum.CopyProperties(ProductionSystem.Reservoir.State);
@@ -166,7 +168,8 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                             end
                             
                             disp('...............................................');
-                            obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelector);
+                            obj.CFLLocal = obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeCFLNumberLTS(DiscretizationModel, ProductionSystem, dtRef, Formulation);
+
                             obj.LTSTransportSolver.SynchronizeProperties(ProductionSystem, State_global, obj.RefCellsSelector);
                             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                         else

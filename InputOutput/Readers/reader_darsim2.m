@@ -452,7 +452,12 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.SettingsMatrix, 'TIMESTEPS');
             xv = find(~cellfun('isempty', temp));
             SimulatorSettings.MaxNumTimeSteps = str2double(obj.SettingsMatrix(xv+1));
-            % 2. Min and max time-step sizes
+            if  strcmp(obj.SettingsMatrix(xv+2),'Fix')
+                SimulatorSettings.FixedStep = 1;
+            else
+                SimulatorSettings.FixedStep = 0;
+            end
+                % 2. Min and max time-step sizes
             temp = strfind(obj.SettingsMatrix, 'MINMAXDT');
             xv = find(~cellfun('isempty', temp));
             if ~isempty(xv)
@@ -461,6 +466,7 @@ classdef reader_darsim2 < reader
                 % default value
                 SimulatorSettings.MinMaxdt = [0.1, 30];
             end
+            temp = strfind(obj.SettingsMatrix, '');
             % 3. Number of reports --> report is written every
             % T_total/n_reports s; if 0 report at every dt
             temp = strfind(obj.SettingsMatrix, 'REPORTS');
@@ -682,6 +688,9 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'REF_CRITERION');
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.LTSCriterion = char(obj.SettingsMatrix(x+1));
+                temp = strfind(obj.SettingsMatrix, 'TIME_TOL');
+                x = find(~cellfun('isempty', temp));
+                SimulatorSettings.LTStol = str2double(obj.SettingsMatrix(x+1));
                 temp2 = strfind(obj.SettingsMatrix, 'PLOT_INTERNAL_STEPS');
                 x2 = find(~cellfun('isempty', temp2));
                 SimulatorSettings.LTSPlot = str2double(obj.SettingsMatrix(x2 + 1));

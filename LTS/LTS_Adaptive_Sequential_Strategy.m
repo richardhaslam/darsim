@@ -10,6 +10,9 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
         StateGlobalVec
     end
     methods
+        function obj = LTS_Adaptive_Sequential_Strategy(name, tol)
+            obj@LTS_Sequential_Strategy(name, tol);
+        end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             End = 0;
             
@@ -26,7 +29,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
             
             % Pressure timestep
             dt = obj.TimeStepSelector.ChooseTimeStep();
-            %dt = 5 * 60 * 60 * 24;
+            
             % Phase Mobilities and total Mobility
             Formulation.ComputeTotalMobility(ProductionSystem, FluidModel);
             
@@ -50,6 +53,8 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                     State_old.CopyProperties(ProductionSystem.Reservoir.State);
                     disp(newline);
                     disp(['Outer iteration: ', num2str(obj.itCount)]);
+                
+                    Formulation.MatrixAssembler.ResetActiveInterfaces(DiscretizationModel);
                     
                     %% 1. Solve pressure equation
                     disp('...............................................');
@@ -108,7 +113,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             itRef = 1;
                             % vector contains refCellst for
                             % each level of sub-refinement
-                            RefCells =  RefCellsSelector();
+                            RefCells =  RefCellsSelector(obj.RefCellsSelector.tol);
                             RefCells.CopyCellsSelected(obj.RefCellsSelector)
                             obj.RefCellsSelectorVec = RefCells;
                             % a the moment we save just the active comp of the
@@ -128,12 +133,14 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             
                             % Compute the numerical fluxes used as boundary
                             % values between the accepted and rejected area.
-                            obj.RefCellsSelectorVec(itRef).ComputeBoundaryValues(DiscretizationModel, Formulation);
-                            
+                            obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef));
+                                                        
                             % we sum up all the time for the refinemets
                             obj.LTSTransportTimer(obj.itCount) = 0;
                             disp('Transport Solver Sub-rebinements');
                            
+                            
                             while sum_dtLoc(itRef) < dtGlob(itRef)
                                 % Solve the transport eq for the subref cells
                                 disp('...............................................');
@@ -142,14 +149,15 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                                 
                                 State_iniTransp = status();
                                 State_iniTransp.CopyProperties(ProductionSystem.Reservoir.State);
+                                obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+                                obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(itRef));
                                 
                                 obj.LTSTransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dtRef, obj.RefCellsSelectorVec(itRef));
                                 obj.LTSTransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dtRef, obj.RefCellsSelectorVec(itRef));
                                 
                                 % at the moment I am just storing the
                                 % smallest one
-                                obj.CFLLocal = Formulation.ComputeCFLNumberTransportLTS(DiscretizationModel, ProductionSystem, dtRef, obj.RefCellsSelectorVec(itRef));
-
+                                obj.CFLLocal = obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeCFLNumberLTS(DiscretizationModel, ProductionSystem, dtRef, Formulation);
                                 obj.NLiterLTS = obj.NLiterLTS + obj.LTSTransportSolver.itCount - 1;
                                                                 
                                 if obj.LTSTransportSolver.Converged == 0
@@ -163,11 +171,13 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                                 
                                 if sum(sum(obj.RefCellsSelector.ActCells)) > 0 && obj.CFLLocal > 1
                                     itRef = itRef + 1;
-                                    RefCells =  RefCellsSelector();
+                                    RefCells =  RefCellsSelector(obj.RefCellsSelector.tol);
                                     RefCells.CopyCellsSelected(obj.RefCellsSelector)
                                     obj.RefCellsSelectorVec(itRef) = RefCells;
                                     %Update the new boundary values
-                                    obj.RefCellsSelectorVec(itRef).ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef-1)); 
+                                    
+                                    obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+                                    obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation,obj.RefCellsSelectorVec(itRef), obj.RefCellsSelectorVec(itRef-1));
                                     
                                     State_global = status(); 
                                     State_global.CopyProperties(ProductionSystem.Reservoir.State);

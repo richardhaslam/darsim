@@ -440,8 +440,10 @@ classdef simulation_builder < handle
                             if obj.SimulatorSettings.Formulation == "Geothermal_2T"
                                 gridselector = adm_grid_selector_temperature(ADMSettings.tol, ADMSettings.key);
                             else
-                                gridselector = adm_grid_selector_delta2(ADMSettings.tol, ADMSettings.key);
+                                gridselector = adm_grid_selector_delta(ADMSettings.tol, ADMSettings.key);
                             end
+                        case('dfdx2')
+                            gridselector = adm_grid_selector_delta2(ADMSettings.tol, obj.SimulatorSettings.LTStol, ADMSettings.key);
                         case('dfdt')
                             gridselector = adm_grid_selector_time(ADMSettings.tol, ADMSettings.key, ReservoirGrid.N, ADMSettings.maxLevel(1));
                         case('residual')
@@ -864,7 +866,7 @@ classdef simulation_builder < handle
             switch(obj.SimulatorSettings.Formulation)
                 case('Immiscible')
                     Formulation = Immiscible_formulation();
-                    if obj.SimulatorSettings.LTS && strcmp(obj.SimulatorSettings.CouplingType,'FIM') ==1
+                    if obj.SimulatorSettings.LTS 
                         Formulation.MatrixAssembler = LTS_matrix_assembler();
                     else
                         Formulation.MatrixAssembler = matrix_assembler();
@@ -974,7 +976,7 @@ classdef simulation_builder < handle
                 case('Sequential')
                     % Sequential coupling
                     if obj.SimulatorSettings.LTS == 1 && strcmp(obj.SimulatorSettings.DiscretizationModel,'ADM') == 1
-                        Coupling =  LTS_ADM_Adaptive_Sequential_Strategy('Sequential');
+                        Coupling =  LTS_ADM_Adaptive_Sequential_Strategy('Sequential', obj.SimulatorSettings.LTStol);
                         
                         LTStransportsolver = LTS_NL_Solver();
                         LTStransportsolver.LinearSolver = LTS_linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
@@ -1047,9 +1049,9 @@ classdef simulation_builder < handle
                         if obj.SimulatorSettings.LTS == 1
                             switch (obj.SimulatorSettings.LTSCriterion)
                                 case('Fixed')
-                                    Coupling = LTS_Sequential_Strategy('Sequential');
+                                    Coupling = LTS_Sequential_Strategy('Sequential', obj.SimulatorSettings.LTStol);
                                 case('Adaptive')
-                                    Coupling = LTS_Adaptive_Sequential_Strategy('Sequential');
+                                    Coupling = LTS_Adaptive_Sequential_Strategy('Sequential', obj.SimulatorSettings.LTStol);
                             end
                             LTStransportsolver = LTS_NL_Solver();
                             LTStransportsolver.MaxIter = obj.SimulatorSettings.TransportSolver.MaxIter;
@@ -1067,7 +1069,7 @@ classdef simulation_builder < handle
                         Coupling.ConvergenceChecker = convergence_checker_outer();
                         Coupling.ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
                         Coupling.MaxIter = obj.SimulatorSettings.MaxIterations;
-                        % pressuresolver = incompressible_pressure_solver();
+                        
                         pressuresolver = NL_Solver();
                         pressuresolver.MaxIter = 15;
                         ConvergenceChecker = convergence_checker_pressure();
@@ -1154,8 +1156,8 @@ classdef simulation_builder < handle
                     end
                     Coupling.AddPressureSolver(pressuresolver);
             end
-            if obj.SimulatorSettings.LTS == 1 
-                Coupling.TimeStepSelector = LTS_timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
+            if obj.SimulatorSettings.LTS == 1 || obj.SimulatorSettings.FixedStep == 1
+                Coupling.TimeStepSelector = fixed_timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
             else
                 Coupling.TimeStepSelector = timestep_selector(obj.SimulatorSettings.cfl, obj.SimulatorSettings.MinMaxdt(1), obj.SimulatorSettings.MinMaxdt(2));
             end

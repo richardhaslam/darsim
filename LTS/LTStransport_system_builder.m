@@ -6,17 +6,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef LTStransport_system_builder < transport_system_builder
     properties
+        LTSBCEnforcer = LTS_bc_enforcer_seq();
     end
     methods
-        function ComputePropertiesAndDerivatives(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
-            Formulation.UpdateFractionalFlow(ProductionSystem, FluidModel);
-            Formulation.ComputeDfDS(ProductionSystem, FluidModel);
+        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
+           Residual = Formulation.BuildTransportResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
+           % Add b.c. to the residual
+          Residual = obj.LTSBCEnforcer.AddBC2Residual(Residual, ProductionSystem, Formulation, DiscretizationModel,  obj.State, dt);
         end
-        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt, CellsSelected)
-           Residual = Formulation.BuildTransportResidualLTS(ProductionSystem, DiscretizationModel, dt, obj.State, CellsSelected);
-        end
-        function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt, CellsSelected)
-            Jacobian = Formulation.BuildTransportJacobianLTS(ProductionSystem, DiscretizationModel, dt, CellsSelected);
+        function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
+            Jacobian = Formulation.BuildTransportJacobian(ProductionSystem, DiscretizationModel, dt);
+            % Add b.c. to the Jacobian
+            Jacobian = obj.LTSBCEnforcer.AddBC2Jacobian(Jacobian, ProductionSystem, Formulation, DiscretizationModel, dt);
         end
         function SynchronizeProperties(obj, ProductionSystem, State_global, CellsSelected)
            Names = obj.State.Properties.keys;
