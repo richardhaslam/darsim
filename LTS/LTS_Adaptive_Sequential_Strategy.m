@@ -137,10 +137,7 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                             % values between the accepted and rejected area.
                             obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
                             obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef));
-                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(itRef));
-                            
-                            %obj.RefCellsSelectorVec(itRef).ComputeBoundaryValues(DiscretizationModel, Formulation);
-                            
+                                                        
                             % we sum up all the time for the refinemets
                             obj.LTSTransportTimer(obj.itCount) = 0;
                             disp('Transport Solver Sub-rebinements');
@@ -184,8 +181,6 @@ classdef LTS_Adaptive_Sequential_Strategy < LTS_Sequential_Strategy
                                     
                                     obj.RefCellsSelectorVec(itRef).SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
                                     obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation,obj.RefCellsSelectorVec(itRef), obj.RefCellsSelectorVec(itRef-1));
-                                    obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(itRef));
-                                    %obj.RefCellsSelectorVec(itRef).ComputeBoundaryValuesSubRef(DiscretizationModel, Formulation, obj.RefCellsSelectorVec(itRef-1)); 
                                     
                                     State_global = status(); 
                                     State_global.CopyProperties(ProductionSystem.Reservoir.State);

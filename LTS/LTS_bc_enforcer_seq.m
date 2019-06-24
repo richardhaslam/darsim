@@ -13,7 +13,6 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
     methods
         function ComputeBoundaryValues(obj, DiscretizationModel, Formulation, CellsSelected)
             % store the past values of the fractional flow
-            CellsSelected.f = Formulation.f;
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             Nz = DiscretizationModel.ReservoirGrid.Nz;
@@ -202,7 +201,7 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny]; % diagonal index
             obj.Vr = spdiags(DiagVecs, DiagIndx, N, N);
         end
-        function Residual = AddBC2Residual(obj, Residual, ProductionSystem, Formulation, DiscretizationModel)
+        function Residual = AddBC2Residual(obj, Residual, ProductionSystem, Formulation, DiscretizationModel, State0, dt)
             
             obj.ViscousMatrixLTS(DiscretizationModel.ReservoirGrid, Formulation);   
             
@@ -216,10 +215,10 @@ classdef LTS_bc_enforcer_seq < LTS_bc_enforcer
             Residual = Residual - (obj.BCFluxMatrix * (obj.f .* rho)).* obj.ActCells ;
 
         end
-        function Jacobian = AddBC2Jacobian(obj, Jacobian, ProductionSystem, Formulation, DiscretizationModel)
+        function Jacobian = AddBC2Jacobian(obj, Jacobian, ProductionSystem, Formulation, DiscretizationModel, dt)
             N = DiscretizationModel.ReservoirGrid.N;
             rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
-
+            
             Jacobian = (Jacobian + Formulation.V * spdiags(Formulation.df.*rho,0,N,N)).*spdiags(obj.ActCells,0,N,N) + ...
                 - obj.Vr * spdiags(Formulation.df .* rho .* obj.ActCells,0,N,N); 
         end
