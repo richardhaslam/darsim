@@ -48,7 +48,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 [K_temp2,~] = FunctionOnefull(K_temp',gridX,gridY);
                 K_temp2 = K_temp2';
                 obj.CoarseGrid(1,c).Perm = repmat(K_temp2(:),1,3)*1e-15;
-                fprintf('Effective permeability - Level %i\n',c)
+                fprintf('Effective permeability - coarsening level %i\n',c)
             end
             disp('------------------------')
             disp(newline)
