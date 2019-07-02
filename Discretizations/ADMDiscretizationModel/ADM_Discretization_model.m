@@ -39,7 +39,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             Km = ProductionSystem.Reservoir.K*1e+15;
             disp(newline)
             disp('------------------------')
-            disp('Homogenization: Calculation effective permeability');
+            disp('Homogenization: Calculating effective permeability');
             for c = 1:obj.maxLevel(1)
                 % HOMOGENIZATION
                 gridX = linspace(0,obj.Coarsening(1,1,c)*obj.CoarseGrid(1,c).Nx,obj.CoarseGrid(1,c).Nx+1);
