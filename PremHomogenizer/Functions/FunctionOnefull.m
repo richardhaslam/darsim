@@ -20,12 +20,12 @@
 % Position_indicators, MicroSolver_FEM, EfectivePermTensor
 
 %-------------------------------------------------------
-function [PermEffective,PermEffectiveFull] = FunctionOnefull(K_perm,gridX,gridY)
+function [PermEffective] = FunctionOnefull(K_perm,gridX,gridY)
 
 longX = diff(gridX)';
 longY = diff(gridY)';
 
-PermEffective = zeros(length(gridY)-1,length(gridX)-1,1);
+PermEffective = zeros(length(gridX)-1,length(gridY)-1,1);
 PermEffectiveFull = zeros(size(K_perm,1),size(K_perm,2),1);
 
 for ii = 1:length(gridX)-1
@@ -65,7 +65,7 @@ for ii = 1:length(gridX)-1
 %         PermEffective(jj,ii,:) = [K_eff(1,1) K_eff(2,2)];
         PermEffective(jj,ii,:) = K_eff(1,1);
         
-        PermEffectiveFull(micro_gridY,micro_gridX,1) = kron(PermEffective(jj,ii,1),ones(longX(ii),longY(jj)));
+%         PermEffectiveFull(micro_gridY,micro_gridX,1) = kron(PermEffective(jj,ii,1),ones(longX(ii),longY(jj)));
 %         PermEffectiveFull(micro_gridY,micro_gridX,2) = kron(PermEffective(jj,ii,2),ones(longX(ii),longY(jj)));
     end
 end
