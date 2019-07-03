@@ -25,7 +25,7 @@ function [PermEffective] = FunctionOnefull(K_perm,gridX,gridY)
 longX = diff(gridX)';
 longY = diff(gridY)';
 
-PermEffective = zeros(length(gridX)-1,length(gridY)-1,1);
+PermEffective = zeros(length(gridY)-1,length(gridX)-1,1);
 PermEffectiveFull = zeros(size(K_perm,1),size(K_perm,2),1);
 
 for ii = 1:length(gridX)-1

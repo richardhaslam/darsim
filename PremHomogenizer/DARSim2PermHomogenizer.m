@@ -52,7 +52,8 @@ disp(['The total time for Homogenization is ' num2str(TotalTime) ' s']); fprintf
 %% Output Results
 
 for c = 1:maxLevel
-    File =sprintf('Perm_Coarse_L%i.txt',c);
+    name =sprintf('Perm_Coarse_L%i.txt',c);
+    File = strcat(PermDir,'/',name);
     delete(File);
     fid = fopen(File,'a+');
     fprintf(fid, '%1.6e\n',Grid_N(1)/Coarsening(1)^c);
