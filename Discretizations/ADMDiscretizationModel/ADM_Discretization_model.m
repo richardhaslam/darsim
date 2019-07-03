@@ -258,7 +258,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             for level = 1:length(obj.CoarseGrid)
                 for c =1: obj.CoarseGrid(1, level).N
                     if obj.CoarseGrid(1, level).Active(c) == 1
-                        FineCells = obj.CoarseGrid(1, level).GrandChildren(c, :);
+                        FineCells = cell2mat(obj.CoarseGrid(1, level).GrandChildren(c, :));
                         ProductionSystem.Reservoir.K(FineCells, 1) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 1);
                         ProductionSystem.Reservoir.K(FineCells, 2) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 2);
                         ProductionSystem.Reservoir.K(FineCells, 3) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 3);
@@ -269,5 +269,3 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         end
     end
 end
-
-
