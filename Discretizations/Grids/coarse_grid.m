@@ -14,7 +14,6 @@ classdef coarse_grid < grid_darsim
         I
         J
         K
-        Perm % Homogenized permeability
         Neighbours
         Wells
         DeltaS

@@ -170,32 +170,41 @@ classdef reader_darsim2 < reader
                 end
             end
 			
-            %%%% UPSCALING LEVEL PERM UPSCALING %%%%%%%
-            clear perm
-            % level 1
-            temp = strfind(obj.InputMatrix, 'PERM_X1');
+            %%%% Homogenized/upscaled permeabilities for each coarsening level %%%%%%%
+            temp = strfind(obj.SettingsMatrix, 'DLGR');
             x = find(~cellfun('isempty', temp));
-            temp = strfind(obj.InputMatrix, 'PERM_Y1');
-            y = find(~cellfun('isempty', temp));
-            perm = [x; y];
-            if ~isempty(perm)
-                for i=1:2
-                    ReservoirProperties.CoarsePermFile{1, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
+            if isempty(temp)
+                DLGR = 0;
+            else
+                DLGR = str2double(obj.SettingsMatrix(x+1));
+            end
+            if DLGR
+                temp = strfind(obj.SettingsMatrix, 'ADM');
+                adm = find(~cellfun('isempty', temp));
+                if str2double(obj.SettingsMatrix(adm + 1)) == 1
+                    temp = strfind(obj.SettingsMatrix, 'LEVELS');
+                    x = find(~cellfun('isempty', temp));
+                    CoarseningLevel = str2double(obj.SettingsMatrix(x+1));
+                    for L = 1:CoarseningLevel
+                        temp = strfind( obj.InputMatrix , strcat('PERMX_COARSE_L',num2str(L)) );
+                        permx = find(~cellfun('isempty', temp));
+                        temp = strfind( obj.InputMatrix , strcat('PERMY_COARSE_L',num2str(L)) );
+                        permy = find(~cellfun('isempty', temp));
+                        temp = strfind( obj.InputMatrix , strcat('PERMZ_COARSE_L',num2str(L)) );
+                        permz = find(~cellfun('isempty', temp));
+                        if ~isempty(permx)
+                            ReservoirProperties.CoarsePermFile{L,1} = strcat(obj.PermDirectory, char(obj.InputMatrix(permx+1)));
+                        end
+                        if ~isempty(permy)
+                            ReservoirProperties.CoarsePermFile{L,2} = strcat(obj.PermDirectory, char(obj.InputMatrix(permy+1)));
+                        end
+                        if ~isempty(permz)
+                            ReservoirProperties.CoarsePermFile{L,3} = strcat(obj.PermDirectory, char(obj.InputMatrix(permz+1)));
+                        end
+                    end
                 end
             end
-            % level 2
-            clear x y perm
-            temp = strfind(obj.InputMatrix, 'PERM-X2');
-            x = find(~cellfun('isempty', temp));
-            temp = strfind(obj.InputMatrix, 'PERM-Y2');
-            y = find(~cellfun('isempty', temp));
-            perm = [x; y];
-            if ~isempty(perm)
-                for i=1:2
-                    ReservoirProperties.CoarsePermFile{2, i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
-                end
-            end
-            
+
             % 4. Porosity 
             temp = strfind(obj.InputMatrix, 'POR');
             index = find(~cellfun('isempty', temp));

@@ -595,15 +595,15 @@ classdef simulation_builder < handle
                     if obj.SimulatorSettings.ADMSettings.DLGR
                         K_coarse = cell(obj.SimulatorSettings.ADMSettings.maxLevel + 1, 1);
                         K_coarse{1} = K;
-                        for l=2:obj.SimulatorSettings.ADMSettings.maxLevel + 1
+                        for L= 2:obj.SimulatorSettings.ADMSettings.maxLevel + 1
                             for d=1:2
                                 % load the file in a vector
-                                field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{l-1,d});
+                                field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{L-1,d});
                                 % reshape it to specified size
-                                k = field(4:end)*1e-15;
-                                K_coarse{l}(:, d) = k;
+                                k = field(4:end)*1e-15; % for now the cparse permeabilities are in [mD] unit
+                                K_coarse{L}(:, d) = k;
                             end
-                            K_coarse{l}(:, 3) = k;
+                            K_coarse{L}(:, 3) = k;
                         end
                         % Save them in ProductionSystem.
                         Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
