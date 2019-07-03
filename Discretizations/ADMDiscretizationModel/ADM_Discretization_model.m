@@ -34,25 +34,6 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             obj.FlagPerforatedCoarseCells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             
-            % Adding the homogenized permeability for each coarsening level
-            % only for matrix
-            Km = ProductionSystem.Reservoir.K*1e+15;
-            disp(newline)
-            disp('------------------------')
-            disp('Homogenization: Calculating effective permeability');
-            for c = 1:obj.maxLevel(1)
-                % HOMOGENIZATION
-                gridX = linspace(0,obj.Coarsening(1,1,c)*obj.CoarseGrid(1,c).Nx,obj.CoarseGrid(1,c).Nx+1);
-                gridY = linspace(0,obj.Coarsening(1,2,c)*obj.CoarseGrid(1,c).Ny,obj.CoarseGrid(1,c).Ny+1);
-                K_temp = reshape(Km(:,1),obj.Coarsening(1,1,c)*obj.CoarseGrid(1,c).Nx,obj.Coarsening(1,2,c)*obj.CoarseGrid(1,c).Ny);
-                [K_temp2,~] = FunctionOnefull(K_temp',gridX,gridY);
-                K_temp2 = K_temp2';
-                obj.CoarseGrid(1,c).Perm = repmat(K_temp2(:),1,3)*1e-15;
-                fprintf('Effective permeability - coarsening level %i\n',c)
-            end
-            disp('------------------------')
-            disp(newline)
-            
             % Modifying permeabilities to limit contrast for computation of 
             % coupled basis functions
             
@@ -94,8 +75,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                     ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K * multiplier;
                 end
             end
-            
-            
+
             % Assigning obj.FineGrid and obj.Nf
             if ProductionSystem.FracturesNetwork.Active
                 obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
