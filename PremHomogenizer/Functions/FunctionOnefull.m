@@ -63,7 +63,7 @@ for ii = 1:length(gridX)-1
         
         [K_eff] = EfectivePermTensor(Micro_geo,xx_micro,yy_micro,K_micro,Vel1,Vel2);
 %         PermEffective(jj,ii,:) = [K_eff(1,1) K_eff(2,2)];
-        PermEffective(jj,ii,:) = K_eff(1,1);
+        PermEffective(jj,ii,:) = abs(K_eff(1,1));
         
 %         PermEffectiveFull(micro_gridY,micro_gridX,1) = kron(PermEffective(jj,ii,1),ones(longX(ii),longY(jj)));
 %         PermEffectiveFull(micro_gridY,micro_gridX,2) = kron(PermEffective(jj,ii,2),ones(longX(ii),longY(jj)));
