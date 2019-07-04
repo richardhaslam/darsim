@@ -39,7 +39,7 @@ for c = 1:maxLevel
     K_temp = reshape(K_original(:,1),Grid_N(1),Grid_N(2));
     [K_temp2] = FunctionOnefull(K_temp',gridX,gridY);
     K_temp2 = K_temp2';
-    Homogenized_Perm{c} = repmat(K_temp2(:),1,3);
+    Homogenized_Perm{c} = K_temp2(:);
     fprintf('Effective permeability - coarsening level %i\n',c)
 end
 
