@@ -384,6 +384,9 @@ classdef VTK_Plotter < Plotter
             %% Plot ADM Grid
             % 1. Reservoir
             obj.PlotReservoirADMGrid(DiscretizationModel.CoarseGrid(1,:));
+            if ~isempty(ProductionSystem.Reservoir.K_coarse)
+                obj.PlotCoarsePermeability(DiscretizationModel.CoarseGrid(1,:), ProductionSystem.Reservoir.K_coarse);
+            end
             % 2. Fractures
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
                 obj.PlotFractureADMGrid(DiscretizationModel.CoarseGrid(1+f,:), f);
@@ -431,6 +434,16 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, 'CELL_DATA %d\n', CoarseGrid(i).N);
                 fprintf(fileID, '\n');
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+                fprintf(fileID, '\n');
+                fclose(fileID);
+            end
+        end
+        function PlotCoarsePermeability(obj, CoarseGrid, K_coarse)
+            for i=1:length(CoarseGrid)
+                fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'a');
+                obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,1), CoarseGrid(i).N, 1), ' PERMX');
+                obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,2), CoarseGrid(i).N, 1), ' PERMY');
+                obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,3), CoarseGrid(i).N, 1), ' PERMZ');
                 fprintf(fileID, '\n');
                 fclose(fileID);
             end
