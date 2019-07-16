@@ -1,6 +1,6 @@
 before_script:
 
 Test:
-  script:
-    - chmod +x RunTests.sh
-    - ./RunTests.sh
+ script:
+  - chmod +x RunTests.sh
+  - ./RunTests.sh
