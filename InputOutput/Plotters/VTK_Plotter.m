@@ -384,6 +384,9 @@ classdef VTK_Plotter < Plotter
             %% Plot ADM Grid
             % 1. Reservoir
             obj.PlotReservoirADMGrid(DiscretizationModel.CoarseGrid(1,:));
+            if ~isempty(ProductionSystem.Reservoir.K_coarse)
+                obj.PlotCoarsePermeability(DiscretizationModel.CoarseGrid(1,:), ProductionSystem.Reservoir.K_coarse);
+            end
             % 2. Fractures
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
                 obj.PlotFractureADMGrid(DiscretizationModel.CoarseGrid(1+f,:), f);
@@ -396,21 +399,9 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
                 fprintf(fileID, 'BINARY\n');
                 fprintf(fileID, '\n');
-%               fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
                 fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
                 fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', CoarseGrid(i).Nx+1, CoarseGrid(i).Ny+1, CoarseGrid(i).Nz+1);
                 fprintf(fileID, '\n');				  
-%                 fprintf(fileID, ['X_COORDINATES ' num2str(CoarseGrid(i).Nx+1) ' float\n']);                
-%                 %fprintf(fileID, '%f ', 0 : Grid.dx * CoarseGrid(i).CoarseFactor(1) : Grid.dx * Grid.Nx);
-%                 fwrite(fileID, 0 : Grid.dx * CoarseGrid(i).CoarseFactor(1) : Grid.dx * Grid.Nx, 'float', 'b');
-%                 fprintf(fileID, '\n');
-%                 fprintf(fileID, ['Y_COORDINATES ' num2str(CoarseGrid(i).Ny+1) ' float\n']);
-%                 %fprintf(fileID, '%f ', 0 : Grid.dy * CoarseGrid(i).CoarseFactor(2) : Grid.dy * Grid.Ny);
-%                 fwrite(fileID, 0 : Grid.dy * CoarseGrid(i).CoarseFactor(2) : Grid.dy * Grid.Ny, 'float', 'b');
-%                 fprintf(fileID, '\n');
-%                 fprintf(fileID, ['Z_COORDINATES ' num2str(CoarseGrid(i).Nz+1) ' float\n']);
-%                 %fprintf(fileID, '%f ', 0 : Grid.dz * CoarseGrid(i).CoarseFactor(3) : Grid.dz * Grid.Nz);
-%                 fwrite(fileID, 0 : Grid.dz * CoarseGrid(i).CoarseFactor(3) : Grid.dz * Grid.Nz, 'float', 'b');
                 fprintf(fileID, 'POINTS    %d   double\n', size(CoarseGrid(i).GridCoords, 1) );
                 fwrite(fileID, CoarseGrid(i).GridCoords', 'double', 'b');														 
                 fprintf(fileID, '\n');
@@ -443,6 +434,16 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, 'CELL_DATA %d\n', CoarseGrid(i).N);
                 fprintf(fileID, '\n');
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+                fprintf(fileID, '\n');
+                fclose(fileID);
+            end
+        end
+        function PlotCoarsePermeability(obj, CoarseGrid, K_coarse)
+            for i=1:length(CoarseGrid)
+                fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'a');
+                obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,1), CoarseGrid(i).N, 1), ' PERMX');
+                obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,2), CoarseGrid(i).N, 1), ' PERMY');
+                obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,3), CoarseGrid(i).N, 1), ' PERMZ');
                 fprintf(fileID, '\n');
                 fclose(fileID);
             end

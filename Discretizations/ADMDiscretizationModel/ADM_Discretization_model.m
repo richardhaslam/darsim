@@ -33,7 +33,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             disp('Constructing coarse grids');
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             obj.FlagPerforatedCoarseCells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
-
+            
             % Modifying permeabilities to limit contrast for computation of 
             % coupled basis functions
             
@@ -75,8 +75,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                     ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K * multiplier;
                 end
             end
-            
-            
+
             % Assigning obj.FineGrid and obj.Nf
             if ProductionSystem.FracturesNetwork.Active
                 obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
@@ -259,7 +258,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             for level = 1:length(obj.CoarseGrid)
                 for c =1: obj.CoarseGrid(1, level).N
                     if obj.CoarseGrid(1, level).Active(c) == 1
-                        FineCells = obj.CoarseGrid(1, level).GrandChildren(c, :);
+                        FineCells = cell2mat(obj.CoarseGrid(1, level).GrandChildren(c, :));
                         ProductionSystem.Reservoir.K(FineCells, 1) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 1);
                         ProductionSystem.Reservoir.K(FineCells, 2) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 2);
                         ProductionSystem.Reservoir.K(FineCells, 3) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 3);
@@ -270,5 +269,3 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         end
     end
 end
-
-
