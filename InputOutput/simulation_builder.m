@@ -968,7 +968,7 @@ classdef simulation_builder < handle
                         LTSNLSolver.MaxIter = obj.SimulatorSettings.MaxIterations;
                         LTSNLSolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                         LTSNLSolver.AddConvergenceChecker(ConvergenceChecker);
-                        Coupling = LTS_FIM_Strategy('FIM', NLSolver, LTSNLSolver);
+                        Coupling = LTS_FIM_Strategy('FIM', NLSolver, LTSNLSolver, obj.SimulatorSettings.LTStol);
                     else
                         Coupling = FIM_Strategy('FIM', NLSolver);
                     end

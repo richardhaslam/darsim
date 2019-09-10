@@ -10,6 +10,8 @@ classdef explicit_transport_system_builder < system_builder
     methods
         function ComputePropertiesAndDerivatives(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel)
             Formulation.UpdateFractionalFlow(ProductionSystem, FluidModel);
+            Formulation.UpdateCapillaryPressure(ProductionSystem, FluidModel);
+            Formulation.ComputeDfDS(ProductionSystem, FluidModel);
         end
         function Residual = BuildResidual(obj)
             % not used: it's a virtual call

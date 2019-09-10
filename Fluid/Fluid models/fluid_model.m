@@ -120,6 +120,23 @@ classdef fluid_model < handle
             end
             
         end
+        function dPcdS = ComputeDPcDSDS(obj, S)
+            switch(obj.WettingPhaseIndex)
+                case(1)
+                    s = (S - obj.Phases(1).sr)./(1 - obj.Phases(1).sr);
+                    s = max(s, 0.05);
+                    dPcdS = obj.CapillaryModel.dPcdSdS(s);
+                    dPcdS (S < obj.Phases(1).sr) = 0.0;
+                case(2)
+                    S = 1 - S;
+                    s = (S - obj.Phases(2).sr)./(1 - obj.Phases(2).sr);
+                    s = max(s, 0.05);
+                    % There is a double negative sign. P1 = P2 - Pc. Pc = -Pc so dPc = -dPc and dPcdS1 = -dPcdS2
+                    dPcdS = obj.CapillaryModel.dPcdSdS(s);  
+                    dPcdS (S < obj.Phases(2).sr) = 0.0;
+            end
+            
+        end
         function drhotdp = ComputeDrhotDp(obj, Status, drho, dS)
             N = length(Status.Properties('rho_1').Value);
             rho = zeros(N, obj.NofPhases);
