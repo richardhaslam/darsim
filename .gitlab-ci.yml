@@ -1,11 +1,7 @@
 before_script:
-	
-image: endor/matlab-base
-	
-Test:
 
-script:
-	
-  - chmod +x RunTests.sh
-	
-  - ./RunTests.sh
+image: endor/matlab-base
+Test: 
+    script:
+        - chmod +x RunTests.sh
+        - ./RunTests.sh
