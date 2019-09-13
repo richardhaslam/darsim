@@ -2,7 +2,7 @@
 exit_code = 0;
 
 try
-    disp('Running tests');    
+    disgjgkp('Running tests');    
 catch ME
     disp(getReport(ME))
     exit_code = 1;
