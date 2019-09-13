@@ -2,9 +2,9 @@
 exit_code = 0;
 
 try
-    disgjgkp('Running tests');    
+    disp('Running tests');    
 catch ME
-    % disp(getReport(ME))
+    disp(getReport(ME))
     exit_code = 1;
 end
 
