@@ -3,5 +3,6 @@ before_script:
 image: endor/matlab-base
 Test: 
     script:
-        - chmod +x RunTests.sh
-        - ./RunTests.sh
+        - tr -d '\015' <RunTests.sh >RunTests_lin.sh
+        - chmod +x RunTests_lin.sh
+        - ./RunTests_lin.sh
