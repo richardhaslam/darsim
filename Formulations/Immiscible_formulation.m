@@ -17,9 +17,7 @@ classdef Immiscible_formulation < formulation
         V
         Vr
         Ths
-        UpWindSat
-        USat
-        d2Pc
+        UPc
     end
     methods
         %% constructor
@@ -512,8 +510,8 @@ classdef Immiscible_formulation < formulation
             obj.f = obj.Mob(:,1) ./ (obj.Mob(:,1) + obj.Mob(:, 2));
         end
         function UpdateCapillaryPressure(obj, ProductionSystem, FluidModel)
+            FluidModel.ComputePc(ProductionSystem.Reservoir.State);
             obj.dPc = FluidModel.ComputeDPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            obj.d2Pc = FluidModel.ComputeDPcDSDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
         end
         function ComputeDfDS(obj, ProductionSystem, FluidModel)
             obj.dMob = FluidModel.ComputeDMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
@@ -891,15 +889,17 @@ classdef Immiscible_formulation < formulation
             
             % viscous fluxes matrix
             obj.ViscousMatrix(DiscretizationModel.ReservoirGrid); 
-            vect = rho .* obj.Mob(1:N, 2) .* obj.f .* obj.dPc; 
+            vect = obj.Mob(1:N, 2) .* obj.f;
             
-            [obj.Ths, obj.UpWindSat, obj.USat] = obj.MatrixAssembler.TransmissibilityforS(DiscretizationModel.ReservoirGrid, vect, ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            Pc = ProductionSystem.Reservoir.State.Properties('Pc').Value;
             
+            [obj.Ths, obj.UPc] =  obj.MatrixAssembler.TransmissibilityforS(DiscretizationModel.ReservoirGrid, obj.UpWind{1, 1}, vect, rho, Pc);
+    
             q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
             
             % Compute residual
             Residual = pv/dt .* rho .* (s - s_old)  - max(q(:, 1), 0) - obj.V * (obj.f .* rho) - ...
-                       obj.Ths * (s);
+                       obj.Ths * (Pc);
         end
         function Jacobian = BuildTransportJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             % Build Transport Jacobian
@@ -911,63 +911,44 @@ classdef Immiscible_formulation < formulation
             
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
             rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
-            s = ProductionSystem.Reservoir.State.Properties('S_1').Value;
             
             % 1.a: saturation partial derivative in time + total velocity
             
             D = spdiags(pv/dt*rho, 0, N, N);
-            Jacobian = D - obj.V * spdiags(obj.df.*rho,0,N,N) - obj.Ths;
-                    
+            Jacobian = D - obj.V * spdiags(obj.df.*rho,0,N,N);
+            Jacobian = Jacobian - obj.Ths * spdiags(obj.dPc,0,N,N);
+       
             % 1.a: capillarity part -> diffusive term
-            dMupx = obj.UpWindSat.x*(obj.Mob(1:N, 2) .* obj.df .*obj.dPc .* rho);
-            dMupy = obj.UpWindSat.y*(obj.Mob(1:N, 2) .* obj.df .*obj.dPc .* rho);
-            dMupz = obj.UpWindSat.z*(obj.Mob(1:N, 2) .* obj.df .*obj.dPc .* rho);
+            dMupx = obj.UpWind{1,1}.x*(obj.Mob(1:N, 2) .* obj.df .* rho);
+            dMupy = obj.UpWind{1,1}.y*(obj.Mob(1:N, 2) .* obj.df .* rho);
+            dMupz = obj.UpWind{1,1}.z*(obj.Mob(1:N, 2) .* obj.df .* rho);
             
-            vecX1 = min(reshape(obj.USat.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-            vecX2 = max(reshape(obj.USat.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.USat.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-            vecY2 = max(reshape(obj.USat.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.USat.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-            vecZ2 = max(reshape(obj.USat.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
+            vecX1 = min(reshape(obj.UPc.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
+            vecX2 = max(reshape(obj.UPc.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
+            vecY1 = min(reshape(obj.UPc.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
+            vecY2 = max(reshape(obj.UPc.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
+            vecZ1 = min(reshape(obj.UPc.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
+            vecZ2 = max(reshape(obj.UPc.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
            
             DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1, vecX1, vecY1, vecZ1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             Jacobian  = Jacobian - spdiags(DiagVecs, DiagIndx, N, N);
             
+            dMupx = obj.UpWind{1,1}.x*(obj.dMob(1:N, 2) .* obj.f .* rho);
+            dMupy = obj.UpWind{1,1}.y*(obj.dMob(1:N, 2) .* obj.f .* rho);
+            dMupz = obj.UpWind{1,1}.z*(obj.dMob(1:N, 2) .* obj.f .* rho);
             
-            
-            dMupx = obj.UpWindSat.x*(obj.dMob(1:N, 2) .* obj.f .*obj.dPc .* rho);
-            dMupy = obj.UpWindSat.y*(obj.dMob(1:N, 2) .* obj.f .*obj.dPc .* rho);
-            dMupz = obj.UpWindSat.z*(obj.dMob(1:N, 2) .* obj.f .*obj.dPc .* rho);
-            
-            vecX1 = min(reshape(obj.USat.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-            vecX2 = max(reshape(obj.USat.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.USat.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-            vecY2 = max(reshape(obj.USat.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.USat.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-            vecZ2 = max(reshape(obj.USat.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
+            vecX1 = min(reshape(obj.UPc.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
+            vecX2 = max(reshape(obj.UPc.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
+            vecY1 = min(reshape(obj.UPc.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
+            vecY2 = max(reshape(obj.UPc.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
+            vecZ1 = min(reshape(obj.UPc.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
+            vecZ2 = max(reshape(obj.UPc.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
            
             DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1, vecX1, vecY1, vecZ1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             Jacobian  = Jacobian - spdiags(DiagVecs, DiagIndx, N, N);
-
             
-            
-            dMupx = obj.UpWindSat.x*(obj.Mob(1:N, 2) .* obj.f .*obj.d2Pc .* rho);
-            dMupy = obj.UpWindSat.y*(obj.Mob(1:N, 2) .* obj.f .*obj.d2Pc .* rho);
-            dMupz = obj.UpWindSat.z*(obj.Mob(1:N, 2) .* obj.f .*obj.d2Pc .* rho);
-            
-            vecX1 = min(reshape(obj.USat.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-            vecX2 = max(reshape(obj.USat.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.USat.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-            vecY2 = max(reshape(obj.USat.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.USat.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-            vecZ2 = max(reshape(obj.USat.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-           
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            Jacobian  = Jacobian - spdiags(DiagVecs, DiagIndx, N, N);
-                   
         end
         function delta = UpdateSaturation(obj, ProductionSystem, delta, FluidModel, DiscretizationModel)
             s_old = ProductionSystem.Reservoir.State.Properties('S_1').Value;
@@ -1003,7 +984,6 @@ classdef Immiscible_formulation < formulation
             end
             Sm = ProductionSystem.Reservoir.State.Properties(['S_', num2str(obj.NofPhases)]);
             Sm.update(-DeltaLast);
-            FluidModel.ComputePc(ProductionSystem.Reservoir.State);
         end
         function CFL = ComputeCFLNumberTransport(obj, DiscretizationModel, ProductionSystem, dt)
             pv = ProductionSystem.Reservoir.Por * DiscretizationModel.ReservoirGrid.Volume;
@@ -1028,14 +1008,17 @@ classdef Immiscible_formulation < formulation
             B = T * obj.V;
             injector = max(obj.Qwells, 0) .* dt/pv;  % injection flux * dt/pv
             
+            
             S = ProductionSystem.Reservoir.State.Properties('S_1');
             s_old = S.Value;
+            vect =  obj.Mob(1:N, 2) .* obj.f; 
+            Pc = ProductionSystem.Reservoir.State.Properties('Pc').Value; 
             
-            obj.Ths = obj.MatrixAssembler.TransmissibilityforS(DiscretizationModel.ReservoirGrid, ones(N,1), S.Value);
+            [obj.Ths, ~] = obj.MatrixAssembler.TransmissibilityforS(DiscretizationModel.ReservoirGrid, obj.UpWind{1, 1}, vect, ones(size(s_old)), Pc);
             Pcap = T * obj.Ths;
             
             
-            delta = S.Value - s_old + (B * obj.f  + injector) + (Pcap * (s_old.* obj.f .* obj.Mob(1:N,2) .* obj.dPc));
+            delta = S.Value - s_old + (B * obj.f  + injector) + Pcap * (Pc);
             
             % Now update values
             Nm = DiscretizationModel.ReservoirGrid.N;
