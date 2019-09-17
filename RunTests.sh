@@ -1,5 +1,5 @@
 # runtests.sh
-cd IntegratedTests
+cd CITests
 
 LOGFILE=log.txt
 
