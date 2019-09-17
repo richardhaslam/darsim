@@ -1,9 +1,8 @@
 # runtests.sh
-cd CITests
 
 LOGFILE=log.txt
 
-matlab -nodesktop -nosplash -logfile "$LOGFILE" -r 'RunTests';
+matlab -nodesktop -nosplash -logfile "$LOGFILE" -r 'CITests/RunTests';
 CODE=$?
 
 cat "$LOGFILE"
