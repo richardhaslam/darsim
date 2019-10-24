@@ -24,7 +24,7 @@ classdef fim_system_builder < system_builder
             x = Formulation.GetPrimaryUnknowns(ProductionSystem, DiscretizationModel);
             SolutionChopper.DefineMaxDelta(x);
         end
-        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
+        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel, iter)
             % Update Reservoir State
             delta = Formulation.UpdateState(delta, ProductionSystem, FluidModel, DiscretizationModel);
             % UpdateWells

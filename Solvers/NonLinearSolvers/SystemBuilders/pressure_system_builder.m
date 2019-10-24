@@ -22,7 +22,7 @@ classdef pressure_system_builder < system_builder
             x = Formulation.GetPrimaryPressure(ProductionSystem, N);
             SolutionChopper.DefineMaxDelta(x);
         end
-        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
+        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel, iter)
             % Update Reservoir State
             Formulation.UpdatePressure(delta, ProductionSystem, FluidModel, DiscretizationModel);
             % UpdateWells

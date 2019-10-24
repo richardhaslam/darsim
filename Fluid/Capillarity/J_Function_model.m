@@ -23,19 +23,19 @@ classdef  J_Function_model < capillary_pressure_model
             % Capillary Pressure
             
             %J-leverett curve
-            J = 0.1.* ((S).^(-0.5) - 1);
+            J = 0.04.* ((S).^(-0.5) - 1);
             
             %Compute Pc and dPc analytically
             Pc = obj.sigma .* obj.PorPermTerm.*J; 
         end
         function dPc = dPcdS(obj, S)
             % Derivative
-            dJ = - 0.1*0.5*(S).^(-1.5);
+            dJ = - 0.04*0.5*(S).^(-1.5);
             dPc = obj.sigma .* obj.PorPermTerm .* dJ;
         end
         function d2Pc = dPcdSdS(obj, S)
             % Derivative
-            dJ = - 0.1*0.5*(-1.5)*(S).^(-2.5);
+            dJ = - 0.04*0.5*(-1.5)*(S).^(-2.5);
             d2Pc = obj.sigma .* obj.PorPermTerm .* dJ;
         end
     end

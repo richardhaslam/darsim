@@ -19,7 +19,7 @@ classdef Immiscible_formulation < formulation
         Ths
         UPc
         Ghs
-
+        UpCap
     end
     methods
         %% constructor
@@ -869,7 +869,8 @@ classdef Immiscible_formulation < formulation
             vect = obj.Mob(1:N, 2) .* obj.f;
             
             Pc = ProductionSystem.Reservoir.State.Properties('Pc').Value;
-            [obj.Ths, obj.UPc, obj.Ghs] =  obj.MatrixAssembler.TransmissibilityforS(DiscretizationModel.ReservoirGrid, obj.UpWind{1, 1}, vect, rho, Pc, obj.GravityModel.RhoInt);
+            P = ProductionSystem.Reservoir.State.Properties('P_1').Value;
+            [obj.Ths, obj.UPc, obj.Ghs, obj.UpCap] =  obj.MatrixAssembler.TransmissibilityforS(DiscretizationModel.ReservoirGrid, obj.UpWind{1, 1}, vect, rho, Pc, obj.GravityModel.RhoInt, P);
             
             q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
             depth = DiscretizationModel.ReservoirGrid.Depth;
@@ -896,10 +897,15 @@ classdef Immiscible_formulation < formulation
             Jacobian = Jacobian - obj.Ths * spdiags(obj.dPc,0,N,N);
        
             % 1.a: capillarity part -> diffusive term
-            dMupx = obj.UpWind{1,1}.x*(obj.Mob(1:N, 2) .* obj.df .* rho);
-            dMupy = obj.UpWind{1,1}.y*(obj.Mob(1:N, 2) .* obj.df .* rho);
-            dMupz = obj.UpWind{1,1}.z*(obj.Mob(1:N, 2) .* obj.df .* rho);
-                      
+%             dMupx = obj.UpWind{1,1}.x*(obj.Mob(1:N, 2) .* obj.df .* rho);
+%             dMupy = obj.UpWind{1,1}.y*(obj.Mob(1:N, 2) .* obj.df .* rho);
+%             dMupz = obj.UpWind{1,1}.z*(obj.Mob(1:N, 2) .* obj.df .* rho);
+            
+            
+            
+            dMupx = obj.UpCap{1,1}.x*(obj.Mob(1:N, 2) .* obj.df .* rho);
+            dMupy = obj.UpCap{1,1}.y*(obj.Mob(1:N, 2) .* obj.df .* rho);
+            dMupz = obj.UpCap{1,1}.z*(obj.Mob(1:N, 2) .* obj.df .* rho);           
             
             vecX1 = min(reshape(obj.UPc.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
             vecX2 = max(reshape(obj.UPc.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
@@ -916,6 +922,11 @@ classdef Immiscible_formulation < formulation
             dMupy = obj.UpWind{1,1}.y*(obj.dMob(1:N, 2) .* obj.f .* rho);
             dMupz = obj.UpWind{1,1}.z*(obj.dMob(1:N, 2) .* obj.f .* rho);
  
+            
+                        dMupx = obj.UpWind{1,1}.x*(obj.dMob(1:N, 2) .* obj.f .* rho);
+            dMupy = obj.UpWind{1,1}.y*(obj.dMob(1:N, 2) .* obj.f .* rho);
+            dMupz = obj.UpWind{1,1}.z*(obj.dMob(1:N, 2) .* obj.f .* rho);
+            
             vecX1 = min(reshape(obj.UPc.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
             vecX2 = max(reshape(obj.UPc.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
             vecY1 = min(reshape(obj.UPc.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
@@ -948,7 +959,8 @@ classdef Immiscible_formulation < formulation
             snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
             delta = snew-s_old;
             
-            %delta = sign(delta) .* min(0.2, abs(delta));
+            
+            %delta = sign(delta) .* min(0.2.^iter, abs(delta));
             
             % This is the actual update
             Nm = DiscretizationModel.ReservoirGrid.N;

@@ -9,7 +9,6 @@ classdef simulation_builder < handle
         SimulationInput
         SimulatorSettings
         incompressible = 0;
-        capillarymodel = 0;
         NofEq
     end
     methods
@@ -861,7 +860,7 @@ classdef simulation_builder < handle
             %% Capillary pressure model
             switch (obj.SimulationInput.FluidProperties.Capillarity.name)
                 case('JLeverett')
-                    obj.capillarymodel = 1;
+                    capillarymodel = 1;
                     FluidModel.CapillaryModel = J_Function_model();
                     FluidModel.WettingPhaseIndex = obj.SimulationInput.FluidProperties.Capillarity.wetting;
                 case('Linear')
@@ -872,6 +871,7 @@ classdef simulation_builder < handle
                     FluidModel.CapillaryModel = 'Not implemented';
                 otherwise
                     FluidModel.CapillaryModel = No_Pc_model();
+                    capillarymodel = 0;
             end
             
         end
@@ -1001,7 +1001,7 @@ classdef simulation_builder < handle
                         LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
                         LTStransportsolver.ConvergenceChecker.adm = 1;
                         LTStransportsolver.ConvergenceChecker.lts = 1;
-                        if obj.capillarymodel == 1
+                        if capillarymodel == 1
                             LTStransportsolver.ConvergenceChecker.capillary = 1;
                         end
                         
@@ -1060,7 +1060,7 @@ classdef simulation_builder < handle
                         transportsolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-2, 500);
                         transportsolver.LinearSolver.OperatorsAssembler = LTS_operators_assembler_seq(2, obj.NofEq);
                         transportsolver.ConvergenceChecker.adm = 1;
-                        if obj.capillarymodel == 1
+                        if capillarymodel == 1
                             transportsolver.ConvergenceChecker.capillary = 1;
                         end
                         transportsolver.ConvergenceChecker.OperatorsAssembler = LTS_operators_assembler_seq(2, obj.NofEq);
@@ -1080,9 +1080,6 @@ classdef simulation_builder < handle
                             ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
                             ConvergenceChecker.SolutionTol = 2e-2;
                             LTStransportsolver.AddConvergenceChecker(ConvergenceChecker);
-                            if obj.capillarymodel == 1
-                                LTStransportsolver.ConvergenceChecker.capillary = 1;
-                            end
                             LTStransportsolver.SystemBuilder = LTStransport_system_builder();
                             LTStransportsolver.LinearSolver = LTS_linear_solver(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             Coupling.AddLTSTransportSolver(LTStransportsolver);
@@ -1130,9 +1127,6 @@ classdef simulation_builder < handle
                                 ConvergenceChecker.ResidualTol = obj.SimulatorSettings.TransportSolver.Tol;
                                 ConvergenceChecker.SolutionTol = 1e-3;
                                 transportsolver.AddConvergenceChecker(ConvergenceChecker);
-                                if obj.capillarymodel == 1
-                                    transportsolver.ConvergenceChecker.capillary = 1;
-                                end
                                 transportsolver.SystemBuilder = transport_system_builder();
                                 Coupling.ConvergenceChecker = convergence_checker_outer();
                                 Coupling.ConvergenceChecker.SolutionTol = obj.SimulatorSettings.Tolerance;

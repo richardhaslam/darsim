@@ -85,7 +85,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         obj.TransportSolver.SetUp(Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt);
                     end
                     obj.TransportSolver.Solve(ProductionSystem, FluidModel, DiscretizationModel, Formulation, dt);
-                    obj.NLiter = obj.NLiter + (obj.TransportSolver.itCount - 1)*DiscretizationModel.ADMGrid.Ntot;
+                    obj.NLiter = obj.NLiter + (obj.TransportSolver.itCount - 1)* DiscretizationModel.ADMGrid.Ntot;
                     obj.CFLGlobal = Formulation.ComputeCFLNumberTransport(DiscretizationModel, ProductionSystem, dt);
                     obj.TransportTimer(obj.itCount) = toc(tstart3);
                     if obj.TransportSolver.Converged == 0
@@ -103,7 +103,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         lev = 1;
                         dtRef = dt;
                         % Compute active cells on the basis of the active cells on ADM grid
-                        obj.RefCellsSelector.ComputeActiveCells(DiscretizationModel, Formulation, lev);
+                        obj.RefCellsSelector.ComputeActiveCells(ProductionSystem, DiscretizationModel, Formulation, lev);
                         
                         
                         % store it in the vector and compute BC latent
@@ -113,8 +113,10 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                         obj.RefCellsSelectorVec = RefCells;
                                                     
                         obj.RefCellsSelectorVec.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
-                        obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec);
                         obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelectorVec(lev));
+                        obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelectorVec);
+
+                        
                         %obj.RefCellsSelectorVec.ComputeBoundaryValues(DiscretizationModel, Formulation);
 
                         dtGlob = dtRef;
@@ -221,7 +223,7 @@ classdef LTS_ADM_Adaptive_Sequential_Strategy < LTS_Adaptive_Sequential_Strategy
                                     end
                                 end
                             else
-                                obj.RefCellsSelector.ComputeActiveCells(DiscretizationModel, Formulation, lev+1);
+                                obj.RefCellsSelector.ComputeActiveCells(ProductionSystem, DiscretizationModel, Formulation, lev+1);
                                 if lev == DiscretizationModel.maxLevel - 1
                                     obj.RefCellsSelector.ActCellCheckError(ProductionSystem, DiscretizationModel.ReservoirGrid, Formulation);
                                 end

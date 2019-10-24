@@ -105,7 +105,7 @@ classdef LTS_bc_enforcer_fim < LTS_bc_enforcer
             N = DiscretizationModel.ReservoirGrid.N;
             Mob = Formulation.Mob;
             dMob = Formulation.dMob;
-            rho1 = ProductionSystem.Reservoir.State.Properties('rho_1');  
+            rho1 = ProductionSystem.Reservoir.State.Properties('rho_1');   
             rho2 = ProductionSystem.Reservoir.State.Properties('rho_2');  
             KH = ProductionSystem.Reservoir.K(obj.CellBc,1);
             P1 = ProductionSystem.Reservoir.State.Properties('P_1');  

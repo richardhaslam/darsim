@@ -43,6 +43,7 @@ methods
         obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         % Compute residual
         obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
+               
         % Compute the first residual norm
         obj.ConvergenceChecker.ComputeFirstResidualNorm(obj.Residual, DiscretizationModel, obj.LinearSolver);
         
@@ -62,7 +63,7 @@ methods
             obj.SolveLinearSystem();
             obj.TimerSolve(obj.itCount) = toc(start2);
             obj.Delta = obj.SolutionChopper.Chop(obj.Delta);
-            
+
             % 3. Update Solution
             start3 = tic;
             obj.UpdateState(ProductionSystem, Formulation, FluidModel, DiscretizationModel);
@@ -97,7 +98,7 @@ methods
         obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver);
     end
     function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
-        obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
+        obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel, obj.itCount);
     end
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
         % 1. Save initial state
@@ -121,6 +122,10 @@ methods
         
     function SetUpLinearSolverCoarse(obj, ProductionSystem, DiscretizationModel)
          obj.LinearSolver.LTS_SetUpCoarse(ProductionSystem, DiscretizationModel, obj.Residual);
+    end
+    
+    function ImproveDeltaNewton(obj, ResidualOld)
+          obj.Lambda = obj.NewtonImprovement.UpdateDelta(obj.Residual, ResidualOld, obj.Lambda);
     end
 end
 end
