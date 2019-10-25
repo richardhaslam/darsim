@@ -98,7 +98,7 @@ methods
         obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver);
     end
     function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
-        obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel, obj.itCount);
+        obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
     end
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
         % 1. Save initial state

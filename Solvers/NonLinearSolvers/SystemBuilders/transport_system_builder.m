@@ -19,8 +19,8 @@ classdef transport_system_builder < system_builder
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
             Jacobian = Formulation.BuildTransportJacobian(ProductionSystem, DiscretizationModel, dt);
         end
-        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel, iter)
-            delta = Formulation.UpdateSaturation(ProductionSystem, delta, FluidModel, DiscretizationModel, iter);
+        function delta = UpdateState(obj, delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
+            delta = Formulation.UpdateSaturation(ProductionSystem, delta, FluidModel, DiscretizationModel);
             % UpdateWells
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end

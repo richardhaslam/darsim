@@ -928,7 +928,7 @@ classdef Immiscible_formulation < formulation
             Jacobian  = Jacobian - spdiags(DiagVecs, DiagIndx, N, N);
             
         end
-        function delta = UpdateSaturation(obj, ProductionSystem, delta, FluidModel, DiscretizationModel, iter)
+        function delta = UpdateSaturation(obj, ProductionSystem, delta, FluidModel, DiscretizationModel)
             s_old = ProductionSystem.Reservoir.State.Properties('S_1').Value;
             rho = 0 * obj.Mob;
             for i=1:obj.NofPhases
@@ -947,9 +947,7 @@ classdef Immiscible_formulation < formulation
             Ddf = obj.ComputeDfDSDS(snew, rho, FluidModel);           
             snew = snew.*(Ddf.*Ddf_old >= 0) + 0.5*(snew + s_old).*(Ddf.*Ddf_old<0);
             delta = snew-s_old;
-            
-            %delta = sign(delta) .* min(0.2, abs(delta));
-            
+             
             % This is the actual update
             Nm = DiscretizationModel.ReservoirGrid.N;
             DeltaLast = zeros(Nm, 1);
