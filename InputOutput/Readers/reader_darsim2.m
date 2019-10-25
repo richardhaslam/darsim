@@ -498,6 +498,8 @@ classdef reader_darsim2 < reader
                 SimulatorSettings.Tolerance     = str2double(obj.SettingsMatrix(index + 2));
                 SimulatorSettings.cfl           = str2double(obj.SettingsMatrix(index + 3));
                 SimulatorSettings.TransportSolver.Type = 'EXPLICIT';
+                SimulatorSettings.TransportSolver.Tol  = 1e-3;
+                SimulatorSettings.TransportSolver.MaxIter  = 100;
                 temp = strfind(obj.SettingsMatrix, 'IMPSAT');
                 index = find(~cellfun('isempty', temp));
                 if ~isempty(index)

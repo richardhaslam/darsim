@@ -8,6 +8,7 @@ classdef convergence_checker_transport < convergence_checker
     properties
         adm = 0
         lts = 0
+        capillary = 0
         OperatorsAssembler
     end
     methods 
@@ -33,8 +34,14 @@ classdef convergence_checker_transport < convergence_checker
             disp(['Iter ' num2str(iter) '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
             
             %Check convergence
-            if (Norm1 < obj.ResidualTol && Norm2 < obj.SolutionTol)
+            if obj.capillary
+                if (Norm1 < obj.ResidualTol)
+                    converged = 1;
+                end
+            else
+                if (Norm1 < obj.ResidualTol && Norm2 < obj.SolutionTol)
                 converged = 1;
+                end
             end
         end
         function converged = CheckLTS(obj, iter, residual, delta, Formulation, DiscretizationModel, State, LinearSolver, ActCells)
@@ -63,8 +70,14 @@ classdef convergence_checker_transport < convergence_checker
             disp(['Iter ' num2str(iter) '    ' num2str(Norm1, '%5.5e'), '    ', num2str(Norm2,'%5.5e')]);
             
             %Check convergence
-            if (Norm1 < obj.ResidualTol && Norm2 < obj.SolutionTol)
-                converged = 1;
+            if obj.capillary
+                if (Norm1 < obj.ResidualTol)
+                    converged = 1;
+                end
+            else
+                if (Norm1 < obj.ResidualTol && Norm2 < obj.SolutionTol)
+                    converged = 1;
+                end
             end
         end
     end

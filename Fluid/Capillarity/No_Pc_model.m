@@ -19,5 +19,8 @@ classdef  No_Pc_model < capillary_pressure_model
         function dPc = dPcdS(obj, S)
             dPc = zeros(length(S), 1); 
         end
+        function d2Pc = dPcdSdS(obj, S)
+            d2Pc = zeros(length(S), 1); 
+        end
     end
 end

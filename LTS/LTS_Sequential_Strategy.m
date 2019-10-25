@@ -124,19 +124,20 @@ classdef LTS_Sequential_Strategy < Sequential_Strategy
                             dtRef = dt / obj.NofRef;
                             %Set initial values for the saturation
                             ProductionSystem.Reservoir.State.CopyProperties(State_iniTransp);
+                           
                             % Compute the numerical fluxes used as boundary
                             % values between the accepted and rejected area.
                             obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
+                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelector)
                             obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.ComputeBoundaryValues(DiscretizationModel, Formulation, obj.RefCellsSelector);
-                            obj.LTSTransportSolver.SystemBuilder.LTSBCEnforcer.SetCorrectActiveCells(obj.RefCellsSelector);
-
+                            
+                          
                             % we sum up all the timer for the refinemets
                             obj.LTSTransportTimer(obj.itCount) = 0;
                             disp('Transport Solver Sub-rebinements');
                             disp('...............................................');
                             for itSub = 1 : obj.NofRef
                                 % Solve the transport eq for the subref cells
-                                                            obj.RefCellsSelector.SetActiveInterfaces(Formulation.MatrixAssembler, DiscretizationModel.ReservoirGrid)
 
                                 disp(['SubRef step: ', num2str(itSub)]);
                                 disp('...............................................');
