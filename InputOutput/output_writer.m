@@ -51,7 +51,7 @@ classdef output_writer < handle
             
             %Format for Stats
             obj.FormatStats = '%10.0f';
-            for i = 2:n_stats 
+            for i = 2:n_stats +1
                 obj.FormatStats = [obj.FormatStats, ' %10.0f'];
             end
             obj.FormatStats = [obj.FormatStats, ' %10.2f\n'];
@@ -132,7 +132,7 @@ classdef output_writer < handle
                 case('Sequential')
                     %Stats
                     fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
-                    fprintf(fileID, '%10s %10s %10s\n', 'Timestep', 'OutIt.', 'NLIter.');
+                    fprintf(fileID, '%10s %10s %10s %10s\n', 'Timestep', 'OutIt.', 'NLIter.', 'CFLval');
                     fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
                     fclose(fileID);
                     %Timers

@@ -13,10 +13,10 @@ classdef LTS_FIM_Strategy < FIM_Strategy
         LTSComplexity
     end
     methods
-        function obj = LTS_FIM_Strategy(name, NONLinearSolver, LTSNONLSolver)
+        function obj = LTS_FIM_Strategy(name, NONLinearSolver, LTSNONLSolver,tol)
             obj@FIM_Strategy(name, NONLinearSolver);
             obj.LTSNLSolver = LTSNONLSolver;
-            obj.RefCellsSelector = RefCellsSelector();
+            obj.RefCellsSelector = RefCellsSelector(tol);
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             % Initialise

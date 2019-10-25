@@ -9,7 +9,11 @@ classdef RefCellsSelector < handle
         NSten = 2
         ActCells
         BCFluxMatrix
+        ThsBC
         f
+        Pc
+        Mob2
+        rho
     end
     methods
         function obj = RefCellsSelector(tol)
@@ -20,6 +24,9 @@ classdef RefCellsSelector < handle
             % need to copy the class
             obj.ActCells = CellsSelectedOld.ActCells;
             obj.f = CellsSelectedOld.f;
+            obj.Mob2 = CellsSelectedOld.Mob2;
+            obj.Pc = CellsSelectedOld.Pc;
+            obj.rho = CellsSelectedOld.rho;
         end
         function SelectRefCells(obj, ProductionSystem, Grid, Formulation)
             
@@ -54,8 +61,12 @@ classdef RefCellsSelector < handle
                 ActCellsM(:,:,2:Nz) = ActCellsM(:,:,2:Nz) + max(Utot.z(:,:,2:Nz),0) .* ActCellsM(:,:,1:Nz-1);
                 ActCellsM(:,:,1:Nz-1) = ActCellsM(:,:,1:Nz-1) + min(Utot.z(:,:,1:Nz-1),0) .* ActCellsM(:,:,2:Nz);
             end
+            
             obj.ActCells = reshape(ActCellsM >0, N, 1);
             obj.f = Formulation.f;
+            obj.Pc = ProductionSystem.Reservoir.State.Properties('Pc').Value;
+            obj.Mob2 = Formulation.Mob(1:N, 2);
+            obj.rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
         end
         function SetActiveInterfaces(obj, MatrixAssembler, Grid)
             Nx = Grid.Nx;
@@ -80,14 +91,22 @@ classdef RefCellsSelector < handle
             MatrixAssembler.ActInterfaces.z(:,:,1)    = ActCellsM(:,:,1);
             MatrixAssembler.ActInterfaces.z(:,:,Nz+1) = ActCellsM(:,:,Nz);
             MatrixAssembler.ActInterfaces.z(:,:,2:Nz) = (ActCellsM(:,:,1:Nz-1) + ActCellsM(:,:,2:Nz)) == 2;
+            
+            MatrixAssembler.ActCells = obj.ActCells;
         end
      
-        function ComputeActiveCells(obj, DiscretizationModel, Formulation, level)
+        function ComputeActiveCells(obj, ProductionSystem, DiscretizationModel, Formulation, level)
             obj.ActCells = DiscretizationModel.FineGrid.Active;
+            N = DiscretizationModel.ReservoirGrid.N;
+            
             for i = level:  DiscretizationModel.maxLevel - 1
                 obj.ActCells([DiscretizationModel.CoarseGrid(i).GrandChildren{DiscretizationModel.CoarseGrid(i).Active == 1,:}]) = 1;
             end
             obj.f = Formulation.f;
+            obj.Pc = ProductionSystem.Reservoir.State.Properties('Pc').Value;
+            obj.Mob2 = Formulation.Mob(1:N, 2);
+            obj.rho = ProductionSystem.Reservoir.State.Properties('rho_1').Value;
+            
         end
         function numb = NumberOfActiveCells(obj, DiscretizationModel, level)
             if level == DiscretizationModel.maxLevel

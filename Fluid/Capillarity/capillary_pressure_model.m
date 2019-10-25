@@ -12,5 +12,6 @@ classdef capillary_pressure_model < handle
     methods (Abstract)
         obj = ComputePc(obj);
         obj = dPcdS(obj);
+        obj = dPcdSdS(obj);
     end
 end

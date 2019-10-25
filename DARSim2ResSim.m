@@ -60,6 +60,7 @@ ResSimulator.BuildObjects();
 ResSimulator.PrintInfo();
 
 %% Run Simulation
+
 TotalStart = tic;
 ResSimulator.Run();
 TotalTime = toc(TotalStart);
