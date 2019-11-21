@@ -261,7 +261,7 @@ classdef Geothermal_2T_formulation < formulation
             end
         end
         function U = ComputeOverallHeat(obj, Medium, Grid, Index, ph, f)
-            Ks = mean(Medium.k_cond,2);
+            Ks = mean(Medium.K_Cond_eff,2);
             Nu = ComputeNusselt(obj, Medium, Grid, Index, ph, f);
             U = 1./(Medium.Dp./(Nu*obj.Kf) + Medium.Dp./(10*Ks));
             function Nu = ComputeNusselt(obj, Medium, Grid, Index, ph, f)
@@ -274,12 +274,6 @@ classdef Geothermal_2T_formulation < formulation
                 else
                     Re = 1./(1-Por) .* rho .* v(:) .* Medium.Dp .* obj.Mob(Index.Start:Index.End);
                 end
-%                 if ~isreal(Re)
-%                     error('Reynold is not real!');
-%                 end
-%                 if ~isreal(Pr)
-%                     error('Prandtl is not real!');
-%                 end
                 Nu = 0.225./Por .* Pr.^0.33 .* Re.^0.67;
                 
                 function v = ComputeVelocity(obj, Medium, Index, Grid, f)
@@ -430,7 +424,6 @@ classdef Geothermal_2T_formulation < formulation
             v1 = Grid.Volume/dt .* obj.Cp .* por .*( drhodT .* T + rho );
             v2 = U .* area;
             DiagVecs = [-z2, -y2, -x2, z2+y2+x2-z1-y1-x1+v1+v2, x1, y1, z1];
-%             DiagVecs = [-z2, -y2, -x2, z2+y2+x2-z1-y1-x1+v1, x1, y1, z1]; 
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
             J_Tf_Tf = spdiags(DiagVecs,DiagIndx,N,N);
             
@@ -577,7 +570,7 @@ classdef Geothermal_2T_formulation < formulation
                 P = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'P_'); % useful for cross connections assembly
                 rho = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly
                 h = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'h_'); % useful for cross connections assembly
-                k_cond = ProductionSystem.Reservoir.k_cond(:,1);
+                K_Cond = ProductionSystem.Reservoir.K_Cond_eff(:,1);
                 obj.drhodp = obj.drho(:,1);
                 drhodT = obj.drho(:,2);
                 dhdp = obj.dh(:,1);
@@ -656,13 +649,13 @@ classdef Geothermal_2T_formulation < formulation
                     J_Tf_Tf(sub2ind([Nt, Nt], j, j)) = J_Tf_Tf(sub2ind([Nt, Nt], j, j)) - J_Tf_Tf_1_conn;
                     
                     % frac - mat (Conduction part)
-                    J_Tf_Tf_conn = T_Geo(1:length(jm)) .* k_cond(jm);
+                    J_Tf_Tf_conn = T_Geo(1:length(jm)) .* K_Cond(jm);
                     J_Tf_Tf(i, i ) = J_Tf_Tf(i, i) + sum(J_Tf_Tf_conn);
                     % Note that "AU(Tr-Tf)" is not neglected here. It is
                     % taken into account in term " k_cond(jj) .* (-1) "
                     
                     %% J_Tf_Tr Coupling
-                    J_Tf_Tr_conn = - T_Geo(1:length(jm)) .* k_cond(jm);
+                    J_Tf_Tr_conn = - T_Geo(1:length(jm)) .* K_Cond(jm);
                     if sum(J_Tf_Tr(i, jm))~=0
                         error('J_Tf_Tr(i, jj) is not zero!');
                     end
@@ -673,14 +666,14 @@ classdef Geothermal_2T_formulation < formulation
                     % J_Tr_P is zero.
                     
                     %% J_Tr_Tf Coupling
-                    J_Tr_Tf_conn = - T_Geo(1:length(jm)) .* k_cond(jm);
+                    J_Tr_Tf_conn = - T_Geo(1:length(jm)) .* K_Cond(jm);
                     if sum(J_Tr_Tf(jm, i))~=0
                         error('J_Tf_Tr(jj, i) is not zero!');
                     end
                     J_Tr_Tf (jm , i) = J_Tr_Tf_conn';
                     
                     %% J_Tr_Tr Coupling
-                    J_Tr_Tr_conn = T_Geo(1:length(jm)) .* k_cond(jm);
+                    J_Tr_Tr_conn = T_Geo(1:length(jm)) .* K_Cond(jm);
                     J_Tr_Tr(sub2ind([Nm, Nm], jm, jm)) = J_Tr_Tr(sub2ind([Nm, Nm], jm, jm)) + J_Tr_Tr_conn;
                     % The coupling of J_Tr_Tr is non-existent for fractures
                     
@@ -949,15 +942,13 @@ classdef Geothermal_2T_formulation < formulation
                 Qw(c, :) = Wells.Prod(i).QPhases(:,:);
                 Qhw(c, :) = Wells.Prod(i).Qh(:,:);
             end
-            % 
         end
         function [Qf, Qhf, QTfTr]= ComputeSourceTerms_frac_mat(obj, ProductionSystem, DiscretizationModel)
             Qf = zeros(DiscretizationModel.N, obj.NofPhases);     % Mass Flow flux between each two media 
             Qhf = zeros(DiscretizationModel.N, obj.NofPhases);    % Heat Flow flux betweem each two media
             QTfTr = zeros(DiscretizationModel.N, obj.NofPhases);  % Convect-conduct heat flux between matrix rock and fracture fluid
             Nm = DiscretizationModel.ReservoirGrid.N;
-            k_cond = ProductionSystem.Reservoir.k_cond(:,1);
-%             U = zeros(DiscretizationModel.N,1);                   % Heat exchange coefficient
+            k_cond = ProductionSystem.Reservoir.K_Cond_eff(:,1);
 
             % Global variables
             P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly

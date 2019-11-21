@@ -29,18 +29,20 @@ classdef initializer_singlephase < initializer
             % Reservoir
             FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State); % call initial density
             switch FluidModel.name  
-                case 'Geothermal_2T'
+                case {'Geothermal_1T','Geothermal_2T'}
                 FluidModel.ComputePhaseEnthalpies(ProductionSystem.Reservoir.State); % call enthalpy
                 FluidModel.ComputePhaseViscosities(ProductionSystem.Reservoir.State); % call viscosity
+                FluidModel.AddPhaseConductivities(ProductionSystem.Reservoir.State);
             end
             % Fractures
             if ProductionSystem.FracturesNetwork.Active
                 for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
                     FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(f).State);
                     switch FluidModel.name
-                        case 'Geothermal_2T'
+                        case {'Geothermal_1T','Geothermal_2T'}
                             FluidModel.ComputePhaseEnthalpies(ProductionSystem.FracturesNetwork.Fractures(f).State); % call enthalpy to fracture
                             FluidModel.ComputePhaseViscosities(ProductionSystem.FracturesNetwork.Fractures(f).State); % call viscosity to fracture
+                            FluidModel.AddPhaseConductivities(ProductionSystem.FracturesNetwork.Fractures(f).State);
                     end
                 end
             end

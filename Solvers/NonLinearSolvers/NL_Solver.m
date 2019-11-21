@@ -17,6 +17,7 @@ properties
     TimerSolve
     TimerInner
     Delta
+    InitialTime=true;
 end
 properties (Access = private)
     Residual
@@ -51,16 +52,17 @@ methods
         obj.ConvergenceChecker.PrintTitles();
         
         % NEWTON-RAPHSON LOOP
-        while ((obj.Converged==0)  && (obj.itCount <= obj.MaxIter))
+        while ((obj.Converged==0) && (obj.itCount <= obj.MaxIter))
             
             % 1. Build Jacobian Matrix for nu+1: everything is computed at nu
             start1 = tic;
             obj.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
             obj.TimerConstruct(obj.itCount) = toc(start1);
+            
             % 2. Solve full system at nu+1: J(nu)*Delta(nu+1) = -Residual(nu)
             obj.SystemBuilder.SetUpSolutionChopper(obj.SolutionChopper, Formulation, ProductionSystem, DiscretizationModel);
             start2 = tic;
-            obj.SolveLinearSystem();
+            obj.SolveLinearSystem();            
             obj.TimerSolve(obj.itCount) = toc(start2);
             obj.Delta = obj.SolutionChopper.Chop(obj.Delta);
 
@@ -101,27 +103,15 @@ methods
         obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
     end
     function SetUp(obj, Formulation, ProductionSystem, FluidModel, DiscretizationModel, dt)
-        % 1. Save initial state
+        % Save initial state
         obj.SystemBuilder.SaveInitialState(ProductionSystem, Formulation);
-     
-%         % Use CPR for Pressure (only for geothermal)
-%         if obj.InitialTimeStep
-%             switch(FluidModel.name)
-%                 case ('Geothermal_2T')
-%                     Formulation.ConstrainedPressureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
-%                     obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel); 
-%                 obj.InitialTimeStep = false;
-%             end
-%         end
-        
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)
         % Set up the linear solver
         obj.LinearSolver.SetUp(ProductionSystem, DiscretizationModel, 0); % We may need the residual for ADM but for now let's pass a 0.
     end
-        
     function SetUpLinearSolverCoarse(obj, ProductionSystem, DiscretizationModel)
-         obj.LinearSolver.LTS_SetUpCoarse(ProductionSystem, DiscretizationModel, obj.Residual);
+        obj.LinearSolver.LTS_SetUpCoarse(ProductionSystem, DiscretizationModel, obj.Residual);
     end
     
     function ImproveDeltaNewton(obj, ResidualOld)

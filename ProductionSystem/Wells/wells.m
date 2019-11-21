@@ -35,10 +35,10 @@ classdef wells < handle
         function UpdateState(obj, Reservoir, FluidModel)
             K = Reservoir.K(:,1);
             switch FluidModel.name 
-                case ('Geothermal_2T')
-                Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('mu_1').Value); %
+                case {'Geothermal_1T','Geothermal_2T'}
+                    Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('mu_1').Value);
                 otherwise
-                Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('S_1').Value);
+                    Mob = FluidModel.ComputePhaseMobilities(Reservoir.State.Properties('S_1').Value);
             end
             
             % Injectors

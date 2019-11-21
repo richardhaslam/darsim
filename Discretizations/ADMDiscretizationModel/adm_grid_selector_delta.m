@@ -49,11 +49,9 @@ classdef adm_grid_selector_delta < adm_grid_selector
                     end
                 end
             end
-             %% 3. Create ADM Grid
+            %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
-        
-        
         function SelectGridCoarse(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step based on delta x
             %% 1. Reset all cells to be active and stor x{m}
@@ -88,38 +86,35 @@ classdef adm_grid_selector_delta < adm_grid_selector
             end
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
-
-        function SelectCoarseFine(obj, FineGrid, CoarseGrid, S, flag)
+        function SelectCoarseFine(obj, FineGrid, CoarseGrid, Var, flag)
             %Given a Fine and a Coarse Grid chooses the cells that have to be active
             %1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % Saturation of fine_cells belonging to coarse block c
-                S_children = S(CoarseGrid.Children{c, :});
+                Var_children = Var(CoarseGrid.Children{c, :});
                 % Max e Min saturation inside c
-                Smax = max(S_children);
-                Smin = min(S_children);
+                VarMax = max(Var_children);
+                VarMin = min(Var_children);
                 if CoarseGrid.Active(c) == 1
                     n = CoarseGrid.Neighbours(c).indexes;
                     Nn = length(n);
                     i = 1;
                     while i <= Nn
                         % Man mix saturation of neighbour n(i)
-                        S_children = S(CoarseGrid.GrandChildren{n(i), :});
-                        Sn_max = max(S_children);
-                        Sn_min = min(S_children);
+                        Var_children = Var(CoarseGrid.GrandChildren{n(i), :});
+                        VarN_max = max(Var_children);
+                        VarN_min = min(Var_children);
                         if flag == false
-                            if (abs(Smax-Sn_min) > obj.tol || abs(Smin-Sn_max) > obj.tol)
+                            if (abs(VarMax-VarN_min) > obj.tol || abs(VarMin-VarN_max) > obj.tol)
                                 CoarseGrid.Active(c) = 0;
-                                %CoarseGrid.Active(i) = 0;
                                 i = Nn + 1;
                             else
                                 i = i+1;
                             end
                         else
-                            if (abs(Smax-Sn_min) > 2*obj.tol || abs(Smin-Sn_max) > 2*obj.tol)
+                            if (abs(VarMax-VarN_min) > 2*obj.tol || abs(VarMin-VarN_max) > 2*obj.tol)
                                 CoarseGrid.Active(c) = 0;
-                                %CoarseGrid.Active(i) = 0;
                                 i = Nn + 1;
                             else
                                 i = i+1;

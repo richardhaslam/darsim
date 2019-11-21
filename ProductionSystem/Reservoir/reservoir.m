@@ -22,7 +22,8 @@ classdef reservoir < handle
         MaxLevel
         P0
         Cr % rock compressibility
-        k_cond % rock conductivity
+        K_Cond_rock % rock conductivity
+        K_Cond_eff % effective conductivity
         Cpr % rock specific heat
         Rho % density of reservoir rock
         Dp = 1e-3;% grain diameter
@@ -47,6 +48,10 @@ classdef reservoir < handle
             obj.Por0 = por0;
             obj.Por = por0;
             obj.TotalPV = obj.Length * obj.Width * obj.Thickness * obj.Por;
+        end
+        function AddConductivity(obj, k_cond_rock, k_cond_fluid)
+            obj.K_Cond_rock = k_cond_rock;
+            obj.K_Cond_eff  = k_cond_fluid * obj.Por + k_cond_rock * (1-obj.Por) * ones(size(obj.K));
         end
         function AddCoarsePermeability(obj, k_coarse)
             obj.K_coarse = k_coarse;

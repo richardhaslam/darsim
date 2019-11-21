@@ -160,13 +160,17 @@ classdef reader_darsim2 < reader
             perm(2) = find(~cellfun('isempty', temp));
             temp = strfind(obj.InputMatrix, 'PERMZ');
             perm(3) = find(~cellfun('isempty', temp));
+            DimChar = {'x' , 'y' , 'z'};
             for i=1:3
-                if strcmp(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
+                if contains(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
                     ReservoirProperties.PermInclude(i) = 1;
                     ReservoirProperties.PermFile{i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
                 else
                     ReservoirProperties.PermInclude(i) = 0;
                     ReservoirProperties.Perm(i) = str2double(obj.InputMatrix(perm(i) +1));
+                    if isnan(ReservoirProperties.Perm(i))
+                        error('The permeability value in %s direction is not valid. Please check the input file.\n',DimChar{i});
+                    end
                 end
             end
 			
@@ -231,24 +235,24 @@ classdef reader_darsim2 < reader
             % 7. Rock Density
             temp = strfind(obj.InputMatrix, 'DENSITY');
             index_density = find(~cellfun('isempty', temp));
-            ReservoirProperties.Density = str2double(obj.InputMatrix{index_density+((NofPhases+1)*2)});
-            if isnan(ReservoirProperties.Density)
-                ReservoirProperties.Density = 2750; % Default value if not defined [kg/m3]
+            ReservoirProperties.RockDensity = str2double(obj.InputMatrix{index_density+((NofPhases+1)*2)});
+            if isnan(ReservoirProperties.RockDensity)
+                ReservoirProperties.RockDensity = 2750; % Default value if not defined [kg/m3]
             end
             
             % 8. Rock Conductivity
             temp = strfind(obj.InputMatrix, 'CONDUCTIVITY');
             index_conduc = find(~cellfun('isempty', temp));
             if isempty(index_conduc)
-                ReservoirProperties.Conductivity = 4; % Default value if not defined [W/m/K]
+                ReservoirProperties.RockConductivity = 4; % Default value if not defined [W/m/K]
             else
-                ReservoirProperties.Conductivity = str2double(obj.InputMatrix{index_conduc+((NofPhases+1)*2)});
+                ReservoirProperties.RockConductivity = str2double(obj.InputMatrix{index_conduc+((NofPhases+1)*2)});
             end
             
             % 9. Rock Specific Heat
             temp = strfind(obj.InputMatrix, 'SPECIFIC HEAT');
             index_spec_heat = find(~cellfun('isempty', temp));
-            if isempty(index_conduc)
+            if isempty(index_spec_heat)
                 ReservoirProperties.SpecificHeat = 790; % Default value if not defined [J/Kg/K]
             else
                 ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+((NofPhases+1)*2)});
@@ -300,7 +304,7 @@ classdef reader_darsim2 < reader
                 FluidProperties.Density(i) = str2double(char(obj.InputMatrix{index_density+(i*2)}));
                 FluidProperties.mu(i) = str2double(char(obj.InputMatrix{index_viscosity+(i*2)}));
                 FluidProperties.Comp(i) = str2double(char(obj.InputMatrix{index_comp+(i*2)}));
-                FluidProperties.Conductivity(i) = str2double(char(obj.InputMatrix(index_conduc+(i*2))));
+                FluidProperties.FluidConductivity(i) = str2double(char(obj.InputMatrix(index_conduc+(i*2))));
                 FluidProperties.SpecificHeat(i) = str2double(char(obj.InputMatrix(index_spec_heat+(i*2))));
             end
          
@@ -352,7 +356,7 @@ classdef reader_darsim2 < reader
                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
                 WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
                 switch (SimulationInput.FluidProperties.FluidModel)
-                    case ("Geothermal_2T")
+                    case {'Geothermal_1T', 'Geothermal_2T'}
                     WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12)); % read injection temperature
                 end
             end
@@ -518,6 +522,8 @@ classdef reader_darsim2 < reader
                         SimulatorSettings.Formulation = 'Immiscible';
                     case('Immiscible')
                         SimulatorSettings.Formulation = 'Immiscible';
+                    case("Geothermal_1T")
+                        SimulatorSettings.Formulation = "Geothermal_1T";
                     case("Geothermal_2T")
                         SimulatorSettings.Formulation = "Geothermal_2T";
                     otherwise
@@ -587,12 +593,31 @@ classdef reader_darsim2 < reader
                 else
                     SimulatorSettings.ADMSettings.DLGR = str2double(obj.SettingsMatrix(x+1));
                 end
-                                
-                temp = sum(contains(obj.SettingsMatrix, 'COUPLED'));
-                if temp
-                    SimulatorSettings.ADMSettings.BFtype = 'COUPLED';
+                
+                % Coupled or de-coupled basis function
+                temp = strfind(obj.SettingsMatrix, 'PRESSURE_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                SimulatorSettings.ADMSettings.BFtype = char(obj.SettingsMatrix(x+2));
+                if ~strcmp(SimulatorSettings.ADMSettings.BFtype,'COUPLED') && ~strcmp(SimulatorSettings.ADMSettings.BFtype,'DECOUPLED')
+                    SimulatorSettings.ADMSettings.BFtype= 'COUPLED';
+                end
+                
+                % Maximum heterogeneity contrast for basis functions
+                temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_MAX_CONTRAST');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.ADMSettings.BF_MaxContrast = 1e2;
                 else
-                    SimulatorSettings.ADMSettings.BFtype = 'DECOUPLED';
+                    SimulatorSettings.ADMSettings.BF_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
+                end
+                
+                % Maximum heterogeneity contrast of pEDFM alpha factors for basis functions
+                temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = 1e1;
+                else
+                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
                 
                 % ADM settings in the fractures
@@ -655,13 +680,31 @@ classdef reader_darsim2 < reader
                 else
                     SimulatorSettings.MMsSettings.CorrectionFunctions = 0;
                 end
+
+                % Coupled or de-coupled basis function
+                temp = strfind(obj.SettingsMatrix, 'PRESSURE_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                SimulatorSettings.MMsSettings.BFtype = char(obj.SettingsMatrix(x+2));
+                if ~strcmp(SimulatorSettings.MMsSettings.BFtype,'COUPLED') && ~strcmp(SimulatorSettings.MMsSettings.BFtype,'DECOUPLED')
+                    SimulatorSettings.MMsSettings.BFtype= 'COUPLED';
+                end
                 
-                temp = sum(contains(obj.SettingsMatrix, 'COUPLED'));
-                if temp
-                    SimulatorSettings.MMsSettings.BFtype = 'COUPLED';
-                    SimulatorSettings.MMsSettings.BFtype = 'COUPLED';
+                % Maximum heterogeneity contrast for basis functions
+                temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_MAX_CONTRAST');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.MMsSettings.BF_MaxContrast = 1e2;
                 else
-                    SimulatorSettings.MMsSettings.BFtype = 'DECOUPLED';
+                    SimulatorSettings.MMsSettings.BF_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
+                end
+                
+                % Maximum heterogeneity contrast of pEDFM alpha factors for basis functions
+                temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = 1e1;
+                else
+                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
                 
                 % MMs settings in fractures

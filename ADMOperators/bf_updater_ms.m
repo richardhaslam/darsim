@@ -6,6 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef bf_updater_ms < bf_updater
     properties
+        pEDFM_MaxContrast
         MaxContrast
         CorrectionFunctions = false;
     end
@@ -23,11 +24,12 @@ classdef bf_updater_ms < bf_updater
         function A_Medium = MediumPressureSystem(obj, FineGrid, K, Mob)
             % Remove high contrast to avoid spikes
             % If MaxContrast is intentially set to 0, avoid this step
-            if obj.MaxContrast ~=0
+            Reduction = 1/obj.MaxContrast;
+            if obj.MaxContrast > 1
                 lambdaMax = max(K(:,1));
-                K(K(:,1)./lambdaMax < obj.MaxContrast, 1) = obj.MaxContrast * lambdaMax;
-                K(K(:,2)./lambdaMax < obj.MaxContrast, 2) = obj.MaxContrast * lambdaMax;
-                K(K(:,3)./lambdaMax < obj.MaxContrast, 3) = obj.MaxContrast * lambdaMax;
+                K(K(:,1)./lambdaMax < Reduction, 1) = Reduction * lambdaMax;
+                K(K(:,2)./lambdaMax < Reduction, 2) = Reduction * lambdaMax;
+                K(K(:,3)./lambdaMax < Reduction, 3) = Reduction * lambdaMax;
             end
             
             % Initialize local variables
@@ -68,9 +70,16 @@ classdef bf_updater_ms < bf_updater
             Tz(:,:,2:Nz) = Az./dz.*KHz(:,:,2:Nz);
             
             % Correcting for pEDFM connectivities
-            Tx(2:Nx,:,:) = Tx(2:Nx,:,:) .* ( 1 - FineGrid.Tx_Alpha(2:Nx,:,:) );
-            Ty(:,2:Ny,:) = Ty(:,2:Ny,:) .* ( 1 - FineGrid.Ty_Alpha(:,2:Ny,:) );
-            Tz(:,:,2:Nz) = Tz(:,:,2:Nz) .* ( 1 - FineGrid.Tz_Alpha(:,:,2:Nz) );
+            Reduction = 1/obj.pEDFM_MaxContrast;
+            Tx_Alpha = FineGrid.Tx_Alpha(2:Nx,:,:);
+            Ty_Alpha = FineGrid.Ty_Alpha(:,2:Ny,:);
+            Tz_Alpha = FineGrid.Tz_Alpha(:,:,2:Nz);
+            Tx_Alpha(Tx_Alpha>(1-Reduction))=Tx_Alpha(Tx_Alpha>(1-Reduction)).*(1-Reduction);
+            Ty_Alpha(Ty_Alpha>(1-Reduction))=Ty_Alpha(Ty_Alpha>(1-Reduction)).*(1-Reduction);
+            Tz_Alpha(Tz_Alpha>(1-Reduction))=Tz_Alpha(Tz_Alpha>(1-Reduction)).*(1-Reduction);
+            Tx(2:Nx,:,:) = Tx(2:Nx,:,:) .* ( 1 - Tx_Alpha );
+            Ty(:,2:Ny,:) = Ty(:,2:Ny,:) .* ( 1 - Ty_Alpha );
+            Tz(:,:,2:Nz) = Tz(:,:,2:Nz) .* ( 1 - Tz_Alpha );
             
             %Construct pressure matrix
             x1 = reshape(Tx(1:Nx,:,:),N,1);
