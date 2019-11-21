@@ -69,7 +69,7 @@ classdef TimeLoop_Driver < handle
                 
                 %% %%%Increase time and timestep counter
                 obj.Time = obj.Time + obj.dt;
-				DT = obj.Sec2DHMS(obj.dt);
+				DT = obj.Coupling.TimeStepSelector.Sec2DHMS(obj.dt);
                 disp('-----------------------------------------------')
                 disp(['Final time: ' num2str((obj.Time)/(3600*24),4) ' days, dt= ' num2str(obj.dt) ' sec (', ...
                       num2str(DT.Days), ' days : ', num2str(DT.Hours), ' hrs : ', num2str(DT.Minutes), ' mins : ', num2str(DT.Seconds), ' sec)']);																																  

@@ -6,7 +6,7 @@
 %Created: 13 October 2016
 %Last modified: 13 October 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef norm_calculator_immiscible_geothermal < norm_calculator
+classdef norm_calculator_geothermal_2T < norm_calculator
     properties
         
     end

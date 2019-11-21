@@ -49,28 +49,29 @@ classdef adm_grid_selector_temperature < adm_grid_selector
                     end
                 end
             end
+            %% 3. Create ADM Grid
             obj.CreateADMGrid(ADMGrid, FineGrid, CoarseGrid, maxLevel);
         end
-        function SelectCoarseFine(obj, FineGrid, CoarseGrid, T)
+        function SelectCoarseFine(obj, FineGrid, CoarseGrid, Var)
             %Given a Fine and a Coarse Grids chooses the cells that have to be active
             %1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % temperature of fine_cells belonging to coarse block c
-                Tf_children = T(CoarseGrid.GrandChildren{c, :});
+                Var_children = Var(CoarseGrid.GrandChildren{c, :});
                 % Max e Min temperature inside c
-                Tfmax = max(Tf_children);
-                Tfmin = min(Tf_children);
+                VarMax = max(Var_children);
+                VARMin = min(Var_children);
                 if CoarseGrid.Active(c) == 1
                     n = CoarseGrid.Neighbours(c).indexes;
                     Nn = length(n);
                     i = 1;
                     while i <= Nn
                         % Max min temperature of neighbour n(i)
-                        Tf_children = T(CoarseGrid.GrandChildren{n(i), :});
-                        Tfn_max = max(Tf_children);
-                        Tfn_min = min(Tf_children);
-                        if (abs(Tfmax-Tfn_min) > obj.tol || abs(Tfmin-Tfn_max) > obj.tol)
+                        Var_children = Var(CoarseGrid.GrandChildren{n(i), :});
+                        VarN_max = max(Var_children);
+                        VarN_min = min(Var_children);
+                        if (abs(VarMax-VarN_min) > obj.tol || abs(VARMin-VarN_max) > obj.tol)
                             CoarseGrid.Active(c) = 0;
                             i = Nn + 1;
                         else

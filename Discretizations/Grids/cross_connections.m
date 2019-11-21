@@ -5,6 +5,7 @@ classdef cross_connections < handle
         Cells
         CI
         T_Geo
+        T_Geo_Cond
         UpWind
         U_Geo
     end

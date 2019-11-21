@@ -58,7 +58,7 @@ classdef cartesian_grid < grid_darsim
             obj.Az = obj.dx * obj.dy;
             obj.Volume = obj.dx * obj.dy * obj.dz;
             obj.ComputeRockTransmissibilities(Reservoir.K);
-            obj.ComputeRockHeatConductivities(Reservoir.k_cond);
+%             obj.ComputeRockHeatConductivities(Reservoir.K_Cond_eff);
             obj.CoarseFactor = [1, 1, 1];
             obj.Children = cell(obj.N, 1);
             obj.GrandChildren = cell(obj.N, 1);
@@ -97,11 +97,11 @@ classdef cartesian_grid < grid_darsim
             obj.THy(:,2:obj.Ny,:) = obj.THy(:,2:obj.Ny,:) .* ( 1 - obj.Ty_Alpha(:,2:obj.Ny,:) );
             obj.THz(:,:,2:obj.Nz) = obj.THz(:,:,2:obj.Nz) .* ( 1 - obj.Tz_Alpha(:,:,2:obj.Nz) );
         end
-        function ComputeRockHeatConductivities(obj, K)
+        function ComputeRockHeatConductivities(obj, K_Cond)
             %Harmonic average of permeability.
-            Kx = reshape(K(:,1), obj.Nx, obj.Ny, obj.Nz);
-            Ky = reshape(K(:,2), obj.Nx, obj.Ny, obj.Nz);
-            Kz = reshape(K(:,3), obj.Nx, obj.Ny, obj.Nz);
+            Kx = reshape(K_Cond(:,1), obj.Nx, obj.Ny, obj.Nz);
+            Ky = reshape(K_Cond(:,2), obj.Nx, obj.Ny, obj.Nz);
+            Kz = reshape(K_Cond(:,3), obj.Nx, obj.Ny, obj.Nz);
             
             KHx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
             KHy = zeros(obj.Nx, obj.Ny+1, obj.Nz);

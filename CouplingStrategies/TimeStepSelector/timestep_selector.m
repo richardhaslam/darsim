@@ -111,5 +111,16 @@ classdef timestep_selector < handle
                obj.NextDt = dt;
             end
         end
+        function Time = Sec2DHMS(obj, TimeInSec)
+            Time.Days  = floor( TimeInSec / (24*3600) );
+            TimeInSec  = TimeInSec - Time.Days * 24*3600;
+            
+            Time.Hours = floor( TimeInSec / 3600 );
+            TimeInSec  = TimeInSec - Time.Hours * 3600;
+            
+            Time.Minutes = floor( TimeInSec / 60 );
+            
+            Time.Seconds  = TimeInSec - Time.Minutes * 60;
+        end
     end
 end

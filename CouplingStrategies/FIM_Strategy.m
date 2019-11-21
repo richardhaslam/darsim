@@ -16,7 +16,7 @@ classdef FIM_Strategy < Coupling_Strategy
             obj@Coupling_Strategy(name);
             obj.NLSolver = NONLinearSolver;
             obj.chops = 0;
-            obj.MaxChops = 10;
+            obj.MaxChops = 15;
         end
         function [dt, End] = SolveTimeStep(obj, ProductionSystem, FluidModel, DiscretizationModel, Formulation)
             
@@ -25,6 +25,9 @@ classdef FIM_Strategy < Coupling_Strategy
             obj.Converged = 0;
             obj.chops = 0;
             End = 0;
+            
+            DT = obj.TimeStepSelector.Sec2DHMS(dt);
+            disp(['dt= ' num2str(dt) ' sec (', num2str(DT.Days), ' days : ', num2str(DT.Hours), ' hrs : ', num2str(DT.Minutes), ' mins : ', num2str(DT.Seconds), ' sec)']);
             
             % Set Up non-linear solver
             obj.NLSolver.SetUpLinearSolver(ProductionSystem, DiscretizationModel);

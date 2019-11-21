@@ -33,16 +33,22 @@ methods
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 'scalar', false, 0, 2000);
                 end
                 obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);
-            case('Geothermal_2T')
+            case{'Geothermal_1T','Geothermal_2T'}
                 %%% Add properties of geothermal
                 for i=1:FluidModel.NofPhases % for now this will be only 1
                     obj.Properties(['P_', num2str(i)]) = property(N, 1, 'scalar', true, 1e7, 2e7);
-                    obj.Properties('Tf') = property(N, 1, 'scalar', true, 0, 2000); % Fluid Temperature Tf
-                    obj.Properties('Tr') = property(N, 1, 'scalar', true, 0, 2000); % Rock temperature Tr
                     obj.Properties(['S_', num2str(i)]) = property(N, 1, 'scalar', false, 0, 1);
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
                     obj.Properties(['h_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
                     obj.Properties(['mu_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
+                    obj.Properties(['cond_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
+                end
+                switch (FluidModel.name)
+                    case{'Geothermal_1T'}
+                        obj.Properties('T') = property(N, 1, 'scalar', true, 0, 2000);
+                    case{'Geothermal_2T'}    
+                        obj.Properties('Tf') = property(N, 1, 'scalar', true, 0, 2000); % Fluid Temperature Tf
+                        obj.Properties('Tr') = property(N, 1, 'scalar', true, 0, 2000); % Rock temperature Tr
                 end
             otherwise
                 %% Saturation and Pc
