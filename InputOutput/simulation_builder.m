@@ -839,6 +839,9 @@ classdef simulation_builder < handle
                     if Phase.cf0 == 0
                         obj.incompressible = 1;
                     end
+                case{'Geothermal_Multiphase'}
+                    FluidModel = Geothermal_Multiphase_fluid_model();
+                    %%% To be continued
             end
             
             %%  RelPerm model
