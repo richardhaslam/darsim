@@ -1,3 +1,10 @@
+%% CornerPointGrid Converter for DARSim2
+% Based on MRST, it reads the input files of CornerPointGrids (from Eclipse formating)
+% and generates the input file that can be read by DARSim2.
+% 
+% Author: Janio Piguave
+% Modified on: 2020/01/21
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear all;
 close all;
 clc;
