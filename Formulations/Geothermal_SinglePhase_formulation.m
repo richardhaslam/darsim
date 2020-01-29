@@ -6,7 +6,7 @@
 %Created: 24 January 2018
 %Last modified: 24 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Geothermal_1T_formulation < formulation
+classdef Geothermal_SinglePhase_formulation < formulation
     properties
         drhodT
         d2rhodT2
@@ -23,7 +23,7 @@ classdef Geothermal_1T_formulation < formulation
         Th % transmisibility of rho .* h
     end
     methods
-        function obj = Geothermal_1T_formulation()
+        function obj = Geothermal_SinglePhase_formulation()
             obj@formulation();
             obj.Tph = cell(2,1);
             obj.Gph = cell(2,1);

@@ -58,24 +58,19 @@ classdef simulation_builder < handle
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    %                     % Perturb initial S
-                    %                     nx = simulation.DiscretizationModel.ReservoirGrid.Nx;
-                    %                     rng(0);
-                    %                     perturbations = rand(20, 1);
-                    %                     np = nx / 20;
-                    %                     for i=1:20
-                    %                         newval((i-1)*np + 1:i*np) = perturbations(i);
-                    %                     end
-                    %                     index = 1:nx:N;
-                    %                     VarValues(index, 2) = newval;
-                    %                     VarValues(:, 3) = 1 - VarValues(:, 2);
+                    % % Perturb initial S
+                    % nx = simulation.DiscretizationModel.ReservoirGrid.Nx;
+                    % rng(0);
+                    % perturbations = rand(20, 1);
+                    % np = nx / 20;
+                    % for i=1:20
+                    %     newval((i-1)*np + 1:i*np) = perturbations(i);
+                    % end
+                    % index = 1:nx:N;
+                    % VarValues(index, 2) = newval;
+                    % VarValues(:, 3) = 1 - VarValues(:, 2);
                     simulation.Initializer = initializer(VarNames, VarValues);
-                case("Geothermal_2T")
-                    VarNames = {'P_1', 'Tf', 'Tr' ,'S_1'};
-                    VarValues(:, 4) = 1;
-                    VarValues(:, 2:3) = obj.SimulationInput.ReservoirProperties.Temperature;
-                    simulation.Initializer = initializer_singlephase(VarNames, VarValues);
-                case("Geothermal_1T")
+                case("Geothermal_SinglePhase")
                     VarNames = {'P_1', 'T', 'S_1'};
                     VarValues(:, 3) = 1;
                     VarValues(:, 2) = obj.SimulationInput.ReservoirProperties.Temperature;
@@ -385,14 +380,14 @@ classdef simulation_builder < handle
                             prolongationbuilder = prolongation_builder_MSPressure(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
                             if ~obj.SimulationInput.FracturesProperties.Fractured
                                 switch obj.SimulatorSettings.Formulation
-                                    case {'Geothermal_1T','Geothermal_2T'}
+                                    case {'Geothermal_SinglePhase'}
                                         prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
                                     otherwise
                                         prolongationbuilder.BFUpdater = bf_updater_ms();
                                 end
                             else % Fractured
                                 switch obj.SimulatorSettings.Formulation
-                                    case {'Geothermal_1T','Geothermal_2T'}
+                                    case {'Geothermal_SinglePhase'}
                                         prolongationbuilder.BFUpdater = bf_updater_FAMS_geothermal();
                                     otherwise
                                         prolongationbuilder.BFUpdater = bf_updater_FAMS();
@@ -420,7 +415,7 @@ classdef simulation_builder < handle
                         end
                         operatorshandler.AddProlongationBuilder(prolongationbuilder, i);
                     end
-                    if obj.SimulatorSettings.Formulation == "Geothermal_1T" || obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                    if obj.SimulatorSettings.Formulation == "Geothermal_SinglePhase"
                         switch(ADMSettings.HInterpolator)
                             case('Constant')
                                 prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
@@ -431,25 +426,7 @@ classdef simulation_builder < handle
                         i = length(operatorshandler.ProlongationBuilders);
                         operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
                     end
-                    
-                    % a.3 Rock Temperature operator builder
-                    if obj.SimulatorSettings.Formulation == "Geothermal_2T"
-                        switch (ADMSettings.TrInterpolator)
-                            case ('Constant')
-                                prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
-                            otherwise
-                                prolongationbuilder = prolongation_builder_MSRockTemperature(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
-                                prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
-                                if strcmp(ADMSettings.TrInterpolator, 'Homogeneous')
-                                    prolongationbuilder.BFUpdater.MaxContrast = 1;
-                                else
-                                    prolongationbuilder.BFUpdater.MaxContrast = ADMSettings.BF_MaxContrast;
-                                end
-                        end
-                        i = length(operatorshandler.ProlongationBuilders);
-                        operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
-                    end
-                    
+
                     % b. Grid selection criterion (time\space based)
                     switch (ADMSettings.GridSelCriterion)
                         case('dfdx')
@@ -471,7 +448,7 @@ classdef simulation_builder < handle
                     operatorshandler = operators_handler_MMs(MMsSettings.Coarsening(1,:,:));
                     prolongationbuilder = prolongation_builder_MSPressure(MMsSettings.maxLevel(1), MMsSettings.Coarsening(:,:,1) );
                     if ~obj.SimulationInput.FracturesProperties.Fractured
-                        if obj.SimulatorSettings.Formulation == "Geothermal_2T"
+                        if obj.SimulatorSettings.Formulation == "Geothermal_SinlgePhase"
                             prolongationbuilder.BFUpdater = bf_updater_ms_P_geothermal();
                         else
                             prolongationbuilder.BFUpdater = bf_updater_ms();
@@ -644,7 +621,7 @@ classdef simulation_builder < handle
                 end
                 coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
                 switch (obj.SimulationInput.FluidProperties.FluidModel)
-                    case {'Geothermal_1T','Geothermal_2T'}
+                    case {'Geothermal_SinlgePhase','Geothermal_MultiPhase'}
                         temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
                     otherwise
                         temperature = Tres;
@@ -813,15 +790,9 @@ classdef simulation_builder < handle
                         FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     end
                     FluidModel.FlashCalculator = FlashCalculator;
-                case{'Geothermal_1T','Geothermal_2T'}
-                    % build the geothermal fluid model
-                    switch (obj.SimulationInput.FluidProperties.FluidModel)
-                        case{'Geothermal_1T'}
-                            FluidModel = Geothermal_1T_fluid_model();
-                        case{'Geothermal_2T'}
-                            FluidModel = Geothermal_2T_fluid_model();
-                            FluidModel.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
-                    end
+                case{'Geothermal_SinglePhase'}
+                    % build the geothermal singlephase fluid model
+                    FluidModel = Geothermal_SinglePhase_fluid_model();
                     Phase = therm_comp_phase();
                     FluidModel.AddPhase(Phase, 1);
                     obj.SimulatorSettings.CouplingType = 'FIM';
@@ -840,20 +811,21 @@ classdef simulation_builder < handle
                         obj.incompressible = 1;
                     end
                 case{'Geothermal_Multiphase'}
+                    % build the geothermal multiphase fluid model
                     FluidModel = Geothermal_Multiphase_fluid_model(n_phases);
                     
                     % Read thermodynamic property tables; 1 = Water, 2 = Steam
-                    FluidModel.TablePH.rho_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamDensity_P1to220in0.1_H20to4800in1.txt');
-                    FluidModel.TablePH.U_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamInternalEnergy_P1to220in0.1_H20to4800in1.txt');
-                    FluidModel.TablePH.S_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamSaturation_P1to220in0.1_H20to4800in1.txt');
-                    FluidModel.TablePH.mu_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamViscosity_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.rho_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamDensity_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.U_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamInternalEnergy_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.S_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamSaturation_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.mu_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamViscosity_P1to220in0.1_H20to4800in1.txt'));
                     
-                    FluidModel.TablePH.rho_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterDensity_P1to220in0.1_H20to4800in1.txt');
-                    FluidModel.TablePH.U_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterInternalEnergy_P1to220in0.1_H20to4800in1.txt');
-                    FluidModel.TablePH.S_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterSaturation_P1to220in0.1_H20to4800in1.txt');
-                    FluidModel.TablePH.mu_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterViscosity_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.rho_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterDensity_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.U_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterInternalEnergy_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.S_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterSaturation_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.mu_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterViscosity_P1to220in0.1_H20to4800in1.txt'));
 
-                    FluidModel.TablePH.Temperature = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_Temperature_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.Temperature = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_Temperature_P1to220in0.1_H20to4800in1.txt'));
                     
                     % Add phases
                     for i = 1:FluidModel.NofPhases
@@ -877,9 +849,6 @@ classdef simulation_builder < handle
                     
                     % Have a look at initializer_singlephase.m; we can make one for multiphase
                     % to initialize the model based on an initial P and T,H distribution.
-                    
-                    
-                    
                
             end
             

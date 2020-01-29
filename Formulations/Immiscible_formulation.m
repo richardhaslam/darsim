@@ -68,7 +68,6 @@ classdef Immiscible_formulation < formulation
                 x(1:Nm) = ProductionSystem.Reservoir.State.Properties('P_1').Value;
             end
         end
-        
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             %% 1. Reservoir Properteis and Derivatives
             obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State);
@@ -83,7 +82,6 @@ classdef Immiscible_formulation < formulation
                 obj.dPc = [obj.dPc; FluidModel.ComputeDPcDS(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
             end
         end
-        
         %% Methods for FIM Coupling
         function Residual = BuildMediumResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
             % Create local variables

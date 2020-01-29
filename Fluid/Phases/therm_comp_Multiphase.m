@@ -9,20 +9,9 @@
 classdef therm_comp_Multiphase < phase
     properties
         Kf % Conductivity
-        Ptable
-        Htable 
-        Pindex
-        Hindex
     end
     % the first derivative is an AVERAGE derivative
     methods
-        function GetTableIndex(obj, p, h)
-            obj.Ptable = (1:0.1:220)'; % define input of tabulated pressure values in input file
-            obj.Htable = (20:1:4800)';
-            [~,obj.Pindex] = ismember(round(p,1),round(obj.Ptable,1));
-            [~,obj.Hindex] = ismember(round(h,0),round(obj.Htable,0));
-        end
-        
         function [S_w, S_s] = ComputeSaturation(obj, p, h) 
             S_w = TablePH.WaterSaturation(sub2ind(size(TablePH.WaterSaturation), obj.Pindex, obj.Hindex));
             S_s = TablePH.SteamSaturation(sub2ind(size(TablePH.SteamSaturation), obj.Pindex, obj.Hindex));        
@@ -55,38 +44,33 @@ classdef therm_comp_Multiphase < phase
             d2Td2h = table_d2Td2h(sub2ind(size(table_d2Td2h), obj.Pindex, obj.Hindex)); 
         end
         
-        function [rho_w,rho_s] = ComputeDensity(obj, p, h)  
-            % This one may become obsolete
-            rho_w = TablePH.WaterDensity(sub2ind(size(TablePH.rho_1), obj.Pindex, obj.Hindex)); 
-            rho_s = TablePH.SteamDensity(sub2ind(size(TablePH.rho_2), obj.Pindex, obj.Hindex)); 
+        
+        
+        function rho = ComputeDensity(obj, Pindex, Hindex, rhoTable) % CORRECT !!
+            rho = rhoTable( sub2ind(size(rhoTable), Pindex, Hindex) );
         end
-        function [drhodp_w, drhodp_s, d2rhod2p_w, d2rhod2p_s] = ComputeDrhoDp(obj, p, h)
+        function [drhodp, d2rhod2p] = ComputeDrhoDp(obj, Pindex, Hindex, rhoTable) % CORRECT !!
             % derivative using matlab gradient() -> you must specify the step size!!
-            [~,table_drhodp_w] = gradient(TablePH.rho_1,1,0.1); %gradient('matrix','stepsize hor(j)','stepsize vert(i)') and you have P,H as i,j
-            [~,table_drhodp_s] = gradient(TablePH.rho_2,1,0.1); 
-            drhodp_w = table_drhodp_w(sub2ind(size(table_drhodp_w), obj.Pindex, obj.Hindex));
-            drhodp_s = table_drhodp_s(sub2ind(size(table_drhodp_s), obj.Pindex, obj.Hindex));
+            [~,table_drhodp] = gradient(rhoTable,1,0.1); %gradient('matrix','stepsize hor(j)','stepsize vert(i)') and you have P,H as i,j
+            drhodp = table_drhodp(sub2ind(size(table_drhodp), Pindex, Hindex));
             
             % 2nd derivatives
-            [~,table_d2rhod2p_w] = gradient(table_drhodp_w,0.1); % specify stepsize for pressure (make this generic)
-            [~,table_d2rhod2p_s] = gradient(table_drhodp_s,0.1);
-            d2rhod2p_w = table_d2rhod2p_w(sub2ind(size(table_d2rhod2p_w), obj.Pindex, obj.Hindex));
-            d2rhod2p_s = table_d2rhod2p_s(sub2ind(size(table_d2rhod2p_s), obj.Pindex, obj.Hindex)); 
-            % Option: store all 4 in a matrix, i.e. 4 column vectors in 1 matrix
+            [~,table_d2rhod2p] = gradient(table_drhodp,0.1); % specify stepsize for pressure (make this generic)
+            d2rhod2p = table_d2rhod2p(sub2ind(size(table_d2rhod2p), Pindex, Hindex));
         end
-        function [drhodh_w,drhodh_s, d2rhod2h_w, d2rhod2h_s] = ComputeDrhoDh(obj, p, h)
+        function [drhodh, d2rhod2h] = ComputeDrhoDh(obj, Pindex, Hindex, rhoTable) % CORRECT !!
             % 1st derivatives
-            [table_drhodh_w,~] = gradient(TablePH.WaterDensity,1,0.1); %gradient('matrix','stepsize hor(j)','stepsize vert(i)') and you have P,H as i,j
-            [table_drhodh_s,~] = gradient(TablePH.SteamDensity,1,0.1); 
-            drhodh_w = table_drhodh_w(sub2ind(size(table_drhodh_w), obj.Pindex, obj.Hindex));
-            drhodh_s = table_drhodh_s(sub2ind(size(table_drhodh_s), obj.Pindex, obj.Hindex));
+            [table_drhodh,~] = gradient(rhoTable,1,0.1); %gradient('matrix','stepsize hor(j)','stepsize vert(i)') and you have P,H as i,j
+            drhodh = table_drhodh(sub2ind(size(table_drhodh), Pindex, Hindex));
             
             % 2nd derivatives
-            [table_d2rhod2h_w,~] = gradient(table_drhodh_w,1); % specify stepsize for enthalpy (make this generic)
-            [table_d2rhod2h_s,~] = gradient(table_drhodh_s,1);
-            d2rhod2h_w = table_d2rhod2h_w(sub2ind(size(table_d2rhod2h_w), obj.Pindex, obj.Hindex));
-            d2rhod2h_s = table_d2rhod2h_s(sub2ind(size(table_d2rhod2h_s), obj.Pindex, obj.Hindex));
+            [table_d2rhod2h,~] = gradient(table_drhodh,1); % specify stepsize for enthalpy (make this generic)
+            d2rhod2h = table_d2rhod2h(sub2ind(size(table_d2rhod2h), Pindex, Hindex));
         end
+        
+        
+        
+        
         
         function [mu_w, mu_s] = ComputeViscosity(obj, p, h)
             mu_w = TablePH.WaterViscosity(sub2ind(size(TablePH.WaterViscosity), obj.Pindex, obj.Hindex)); 

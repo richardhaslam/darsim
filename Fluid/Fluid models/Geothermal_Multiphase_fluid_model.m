@@ -9,7 +9,12 @@
 classdef Geothermal_Multiphase_fluid_model < fluid_model
     properties
         TablePH
-        SinglePhase % is this necessary ??
+        Ptable = (1:0.1:220)'; % The range of pressure for all the tables
+        Htable = (20:1:4800)'; % The range of enthalpy for all the tables
+        Pindex % The index of pressure value for lookup in the tables
+        Hindex % The index of enthalpy value for lookup in the tables
+        Pstepsize = 0.1;
+        Hstepsize = 1; % implement this
     end
     methods
         function obj = Geothermal_Multiphase_fluid_model(n_phases)
@@ -17,18 +22,17 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             obj.name = 'Geothermal_Multiphase';
         end
         function SinglePhase = Flash(obj, Status)
+            % What does 'SinglePhase' do ??
             % Composition in this case is fixed to be 1 and 0
             SinglePhase = zeros(length(Status.Properties('S_1').Value), 1);
             SinglePhase (Status.Properties('S_1').Value == 1) = 1;
             SinglePhase (Status.Properties('S_2').Value == 1) = 2;            
         end
-        % What does 'SinglePhase' do ??
-        
-        
-        % do we need GetTableIndex function here as well??
-        
-        
-        function InitializeInjectors(obj, Inj)
+        function GetTableIndex(obj, p, h)
+            [~,obj.Pindex] = ismember(round(p,1),round(obj.Ptable,1));
+            [~,obj.Hindex] = ismember(round(h,0),round(obj.Htable,0));
+        end
+        function InitializeInjectors(obj, Inj) % This one needs to change to something that looks like Init_Inj in SinglePhase
             for i=1:length(Inj)
                 Inj(i).z = [1 0];
                 Inj(i).x = [1 0 0 1];
@@ -44,11 +48,11 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
 %         function ComputeTemperature()
 %         end
         
-        function ComputePhaseDensities(obj, Status)
+        function ComputePhaseDensities(obj, Status) % correct
             for i=1:obj.NofPhases
                 rho = Status.Properties(['rho_', num2str(i)]);
-                TemporaryPhaseIndex = TablePH.(rho{1});
-                rho.Value = TemporaryPhaseIndex(sub2ind(size(TemporaryPhaseIndex), obj.Pindex, obj.Hindex));
+                rhoTable = TablePH.(['rho_', num2str(i)]);
+                rho.Value = obj.Phases(i).ComputeDensity(obj.Pindex, obj.Hindex, rhoTable);
             end
         end
         function ComputePhaseSaturations(obj, Status)
@@ -78,23 +82,23 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         end
 
 
-        function ComputeDensityDerivatives(obj, Status)
+        function [drhodp, d2rhod2p] = ComputeDrhoDp(obj)
+            drhodp = zeros(length(obj.Pindex,obj.NofPhases));
+            d2rhod2p = zeros(length(obj.Pindex,obj.NofPhases));
             for i=1:obj.NofPhases
-                rho = Status.Properties(['rho_', num2str(i)]); % only for structure table_index in this case (line 'TemporaryPhaseIndex')
-                
-                drhodp = Status.Properties(['drhodp_',num2str(i)]);
-                d2rhod2p = Status.Properties(['d2rhod2p_',num2str(i)]);
-                TemporaryPhaseIndex = TablePH.(rho{1});
-                % 1st derivative 
-                [~,table_drhodp] = gradient(TemporaryPhaseIndex,1,0.1); %gradient('matrix','stepsize hor(j)','stepsize vert(i)') and you have P,H as i,j
-                drhodp.Value = table_drhodp(sub2ind(size(table_drhodp), obj.Pindex, obj.Hindex));
-
-                % 2nd derivative
-                [~,table_d2rhod2p] = gradient(table_drhodp,0.1); % specify stepsize for pressure (make this generic)
-                d2rhod2p.Value = table_d2rhod2p(sub2ind(size(table_d2rhod2p), obj.Pindex, obj.Hindex));
-            end        
+                rhoTable = TablePH.(['rho_', num2str(i)]);
+                [drhodp(:,i), d2rhod2p(:,i)] = obj.Phases(i).ComputeDrhoDp(obj.Pindex, obj.Hindex, rhoTable);
+            end
         end
         
+        function [drhodh, d2rhod2h] = ComputeDrhoDh(obj)
+            drhodh = zeros(length(obj.Hindex,obj.NofPhases));
+            d2rhod2h = zeros(length(obj.Hindex,obj.NofPhases));
+            for i=1:obj.NofPhases
+                rhoTable = TablePH.(['rho_', num2str(i)]);
+                [drhodh(:,i), d2rhod2h(:,i)] = obj.Phases(i).ComputeDrhoDh(obj.Pindex, obj.Hindex, rhoTable);
+            end
+        end
 
 %         function ComputeTotalDensity(obj, Status)   % In the accumulation term?
 %             % Compute the total density

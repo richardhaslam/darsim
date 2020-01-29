@@ -6,7 +6,7 @@
 %Created: 24 January 2018
 %Last modified: 24 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef convergence_checker_FS_geothermal_1T < convergence_checker
+classdef convergence_checker_FS_geothermal < convergence_checker
     properties
     end
     methods

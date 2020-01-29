@@ -275,15 +275,6 @@ classdef reader_darsim2 < reader
             FluidProperties.FluidModel = char(obj.InputMatrix{index+1});
             FluidProperties.NofPhases = str2double(obj.InputMatrix{index+3});
             FluidProperties.NofComponents = str2double(obj.InputMatrix{index+5});
-            if FluidProperties.FluidModel == "Geothermal_2T"
-                temp = strfind(obj.InputMatrix, 'AVERAGED_TEMPERATURE');
-                T_ave = find(~cellfun('isempty', temp));
-                if isempty(T_ave)
-                    FluidProperties.AveragedTemperature = "Off";
-                else
-                    FluidProperties.AveragedTemperature = "On";
-                end
-            end
             % 2. Density
             temp = strfind(obj.InputMatrix, 'DENSITY');
             index_density = find(~cellfun('isempty', temp));
@@ -356,7 +347,7 @@ classdef reader_darsim2 < reader
                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
                 WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
                 switch (SimulationInput.FluidProperties.FluidModel)
-                    case {'Geothermal_1T', 'Geothermal_2T'}
+                    case {'Geothermal_SinglePhase'}
                     WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12)); % read injection temperature
                 end
             end
@@ -522,10 +513,8 @@ classdef reader_darsim2 < reader
                         SimulatorSettings.Formulation = 'Immiscible';
                     case('Immiscible')
                         SimulatorSettings.Formulation = 'Immiscible';
-                    case("Geothermal_1T")
-                        SimulatorSettings.Formulation = "Geothermal_1T";
-                    case("Geothermal_2T")
-                        SimulatorSettings.Formulation = "Geothermal_2T";
+                    case("Geothermal_SinglePhase")
+                        SimulatorSettings.Formulation = "Geothermal_SinglePhase";
                     otherwise
                         SimulatorSettings.Formulation = 'Molar';
                 end

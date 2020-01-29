@@ -26,24 +26,24 @@ classdef single_phase_fluid_model < fluid_model
                 for ph=1:obj.NofPhases
                     Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
                 end
-                Inj(i).Mob = 1/obj.Phases(1).mu;   
+                Inj(i).Mob = 1/obj.Phases(1).mu;
             end
         end
         function ComputePhaseDensities(obj, Status)
-            rho = Status.Properties('rho_1'); 
+            rho = Status.Properties('rho_1');
             rho.Value = obj.Phases(1).ComputeDensity(Status.Properties('P_1').Value, obj.Components);
         end
-         function ComputeTotalDensity(obj, Status)
+        function ComputeTotalDensity(obj, Status)
             % Compute the total density
             rhoT = Status.Properties('rhoT');
-            rhoT.Value = Status.Properties('rho_1').Value; 
+            rhoT.Value = Status.Properties('rho_1').Value;
             % For 1 phase rhoT is rho1
-         end
+        end
         function Mob = ComputePhaseMobilities(obj, s)
             Mob = ones(length(s), obj.NofPhases);
             Mob(:,1) = 1/obj.Phases(1).mu;
         end
-         function dMobdS = ComputeDMobDS(obj, S)
+        function dMobdS = ComputeDMobDS(obj, S)
             dMobdS = zeros(length(S), 1);
         end
         function dPcdS = ComputeDPcDS(obj, S)
