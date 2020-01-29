@@ -1,55 +1,109 @@
 % Geothermal Fluid model base class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Rhadityo ...
+%Author: Arjan Marelis
 %TU Delft
-%Created: 24 January 2018
-%Last modified: 24 January 2018
+%Created: 21 January 2020
+%Last modified: 21 January 2020
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Geothermal_Multiphase_fluid_model < fluid_model
     properties
-        SteamTable
-        WaterTable
+        TablePH
+        SinglePhase % is this necessary ??
     end
     methods
-        function obj = Geothermal_Multiphase_fluid_model()
-            obj@fluid_model(1, 1);
+        function obj = Geothermal_Multiphase_fluid_model(n_phases)
+            obj@fluid_model(n_phases, n_phases);
             obj.name = 'Geothermal_Multiphase';
         end
         function SinglePhase = Flash(obj, Status)
-            SinglePhase (:) = 1;
+            % Composition in this case is fixed to be 1 and 0
+            SinglePhase = zeros(length(Status.Properties('S_1').Value), 1);
+            SinglePhase (Status.Properties('S_1').Value == 1) = 1;
+            SinglePhase (Status.Properties('S_2').Value == 1) = 2;            
         end
+        % What does 'SinglePhase' do ??
+        
+        
+        % do we need GetTableIndex function here as well??
+        
+        
         function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)
-                Inj(i).z = 1;
-                Inj(i).x = [1 0];
+                Inj(i).z = [1 0];
+                Inj(i).x = [1 0 0 1];
                 Inj(i).S = 1;
                 for ph=1:obj.NofPhases
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p, Inj(i).T);
-                    Inj(i).h(:, ph)= obj.Phases(ph).ComputeEnthalpy(Inj(i).p, Inj(i).T);
-                    mu = obj.Phases(ph).ComputeViscosity(Inj(i).T);   
+                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p);
                 end
-                Inj(i).Mob = 1/mu;   
+                Inj(i).x2 = 1 - Inj(i).x;
+                Inj(i).Mob = obj.ComputePhaseMobilities(Inj(i).S);   
+            end
+        end   % is this one correct?
+        
+%         function ComputeTemperature()
+%         end
+        
+        function ComputePhaseDensities(obj, Status)
+            for i=1:obj.NofPhases
+                rho = Status.Properties(['rho_', num2str(i)]);
+                TemporaryPhaseIndex = TablePH.(rho{1});
+                rho.Value = TemporaryPhaseIndex(sub2ind(size(TemporaryPhaseIndex), obj.Pindex, obj.Hindex));
             end
         end
-        function ComputePhaseDensities(obj, Status)
-            % here you decide how to compute densities as function of P&T
-            rho = Status.Properties('rho_1'); 
-            rho.Value = obj.Phases(1).ComputeDensity(Status.Properties('P_1').Value, Status.Properties('T').Value);
+        function ComputePhaseSaturations(obj, Status)
+            for i=1:obj.NofPhases
+                S = Status.Properties(['S_',num2str(i)]);
+                TemporaryPhaseIndex = TablePH.(S{1});
+                S.Value = TemporaryPhaseIndex(sub2ind(size(TemporaryPhaseIndex), obj.Pindex, obj.Hindex));
+            end
         end
-        function AddPhaseConductivities(obj, Status)
+        function AddPhaseConductivities(obj, Status) % !!!
             cond = Status.Properties('cond_1');
             cond.Value = obj.Phases(1).AddConductivity(Status.Properties('P_1').Value, Status.Properties('T').Value);
         end
-        function ComputePhaseEnthalpies(obj, Status)
-            % here you decide how to compute enthalpy as function of P&T
-            h = Status.Properties('h_1'); 
-            h.Value = obj.Phases(1).ComputeEnthalpy(Status.Properties('P_1').Value, Status.Properties('T').Value);
+        function ComputePhaseInternalEnergies(obj, Status)
+            for i=1:NofPhases
+                U = Status.Properties(['U_1',num2str(i)]);
+                TemporaryPhaseIndex = TablePH.(U{1});
+                U.Value = TemporaryPhaseIndex(sub2ind(size(TemporaryPhaseIndex), obj.Pindex, obj.Hindex));
+            end
         end
         function ComputePhaseViscosities(obj, Status)
-            mu = Status.Properties('mu_1'); 
-            [mu.Value,~,~] = obj.Phases(1).ComputeViscosity(Status.Properties('T').Value);
+            for i=1:NofPhases
+                mu = Status.Properties(['mu_1',num2str(i)]);
+                TemporaryPhaseIndex = TablePH.(mu{1});
+                mu.Value = TemporaryPhaseIndex(sub2ind(size(TemporaryPhaseIndex), obj.Pindex, obj.Hindex));
+            end
         end
+
+
+        function ComputeDensityDerivatives(obj, Status)
+            for i=1:obj.NofPhases
+                rho = Status.Properties(['rho_', num2str(i)]); % only for structure table_index in this case (line 'TemporaryPhaseIndex')
+                
+                drhodp = Status.Properties(['drhodp_',num2str(i)]);
+                d2rhod2p = Status.Properties(['d2rhod2p_',num2str(i)]);
+                TemporaryPhaseIndex = TablePH.(rho{1});
+                % 1st derivative 
+                [~,table_drhodp] = gradient(TemporaryPhaseIndex,1,0.1); %gradient('matrix','stepsize hor(j)','stepsize vert(i)') and you have P,H as i,j
+                drhodp.Value = table_drhodp(sub2ind(size(table_drhodp), obj.Pindex, obj.Hindex));
+
+                % 2nd derivative
+                [~,table_d2rhod2p] = gradient(table_drhodp,0.1); % specify stepsize for pressure (make this generic)
+                d2rhod2p.Value = table_d2rhod2p(sub2ind(size(table_d2rhod2p), obj.Pindex, obj.Hindex));
+            end        
+        end
+        
+
+%         function ComputeTotalDensity(obj, Status)   % In the accumulation term?
+%             % Compute the total density
+%             rhoT = Status.Properties('rhoT');
+%             rhoT.Value = Status.Properties('rho_1').Value; 
+%             % For 1 phase rhoT is rho1
+%         end
+               
+        
         function [dmudT,d2mudT2] = ComputeDmuDT(obj, Status)
                 [~,dmudT,d2mudT2] = obj.Phases.ComputeViscosity(Status.Properties('T').Value);
         end

@@ -840,8 +840,47 @@ classdef simulation_builder < handle
                         obj.incompressible = 1;
                     end
                 case{'Geothermal_Multiphase'}
-                    FluidModel = Geothermal_Multiphase_fluid_model();
-                    %%% To be continued
+                    FluidModel = Geothermal_Multiphase_fluid_model(n_phases);
+                    
+                    % Read thermodynamic property tables; 1 = Water, 2 = Steam
+                    FluidModel.TablePH.rho_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamDensity_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.U_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamInternalEnergy_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.S_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamSaturation_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.mu_2 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_SteamViscosity_P1to220in0.1_H20to4800in1.txt');
+                    
+                    FluidModel.TablePH.rho_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterDensity_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.U_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterInternalEnergy_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.S_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterSaturation_P1to220in0.1_H20to4800in1.txt');
+                    FluidModel.TablePH.mu_1 = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_WaterViscosity_P1to220in0.1_H20to4800in1.txt');
+
+                    FluidModel.TablePH.Temperature = readmatrix('D:\AES Master courses\MSc Thesis\DARSim2\HEOS_Table_Temperature_P1to220in0.1_H20to4800in1.txt');
+                    
+                    % Add phases
+                    for i = 1:FluidModel.NofPhases
+                        Phase = therm_comp_Multiphase();
+                        FluidModel.AddPhase(Phase, i);
+                        %%% These things should be initialized based on initial pressure and temperature distribution
+                        %Gets all densities [kg/m^3]
+                        Phase.rho0 = obj.SimulationInput.FluidProperties.Density(i);
+                        %Gets all viscosities [Pa sec]
+                        Phase.mu0 = obj.SimulationInput.FluidProperties.mu(i);
+                        % Compressibility
+                        Phase.cf0 = obj.SimulationInput.FluidProperties.Comp(i);
+                        % Conductivity
+                        Phase.Kf = obj.SimulationInput.FluidProperties.FluidConductivity(i);
+                        %                     % Specific Heat
+                        %                     Phase.Cp = obj.SimulationInput.FluidProperties.SpecificHeat;
+                        % What do we do with the rock internal energy in P,H formulation? write as  Cp?
+                    end
+                    obj.SimulatorSettings.CouplingType = 'FIM';
+                    % obj.SimulatorSettings.Formulation = 'Immiscible';
+                    
+                    % Have a look at initializer_singlephase.m; we can make one for multiphase
+                    % to initialize the model based on an initial P and T,H distribution.
+                    
+                    
+                    
+               
             end
             
             %%  RelPerm model
