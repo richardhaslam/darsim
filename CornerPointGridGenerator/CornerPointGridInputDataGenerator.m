@@ -5,8 +5,10 @@
 % Author: Janio Piguave
 % Modified on: 2020/01/22
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+close all; clear; clc;
 % Read subset of ECLIPSE GRID file. Return: CartDims + ZCORN + COORD + ACTNUM
 grdecl = readGRDECL('NPD5.grdecl');
+% grdecl = simpleGrdecl([4, 2, 3], 0.12, 'flat', true);
 % Extract Corner Point Nodes of the cells (8 nodes * X,Y,Z(coordinates))
 [x,y,z] = buildCornerPtNodes(grdecl);
 % Dimensions of the Grid in the X, Y and Z coordinates
@@ -70,31 +72,24 @@ TF = Nodes_XYZ(:,2) == 0;
 Nodes_XYZ(TF,:) = []; Nodes_XYZ(:,2) = [];
 Nodes_XYZi = [Nodes_XYZ(:,1:25), G.cells.centroids, G.cells.volumes];
 
-% SECTION 2: CENTROID VECTORS
-% ncwf = diff(G.cells.facePos);
-% CC = [CellsN G.cells.centroids];
-% CC2 = repelem(CC,ncwf,1);
-% ftc = [FacesN, G.faces.centroids];
-cellNo = gridCellNo(G);
-cc = G.cells.centroids;
-ctf = G.faces.centroids(G.cells.faces(:,1), :) - cc(cellNo,:);
-fmctf = [cellNo G.cells.faces ctf];
-
-% SECTION 3: INTERNAL FACES (FACES CONNECTED TO CELLS)
+% SECTION 2: INTERNAL FACES (FACES CONNECTED TO CELLS)
 % Create Face Index Vector (Total Number of Faces)
 FacesN = linspace(1, G.faces.num, G.faces.num)';
 % Assembly Matrix with all the Faces
 FC = [FacesN, G.faces.neighbors, G.faces.areas, G.faces.centroids, G.faces.normals];
 TF = (FC(:,2) == 0)|(FC(:,3) == 0);
 FC(TF,:) = [];
+vcctfc = [G.faces.centroids(FC(:,1),:) - G.cells.centroids(FC(:,2),:), G.faces.centroids(FC(:,1),:) - G.cells.centroids(FC(:,3),:)];
+FC2 = [FC(:,1) FC(:,4:10) FC(:,2) vcctfc(:,1:3) FC(:,3) vcctfc(:,4:6)];
 
-% SECTION 4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
-FD = [FacesN, G.faces.neighbors, G.faces.areas];
+% SECTION 3: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
+FD = [FacesN, G.faces.neighbors, G.faces.areas, G.faces.centroids, G.faces.normals];
 TF = (FD(:,2) ~= 0)&(FD(:,3) ~= 0);
 FD(TF,:) = [];
+
 %% OUTPUT FILE: WRITING
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'Test_5.txt';
+OutputFileName = 'CornerPointGrid_DARSim_InputData.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -120,37 +115,25 @@ for ii = 1:10%size(Nodes_XYZi,1)
     fprintf(fid,'%6.0d: % 6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f ,   %6.5f;   %6.5f;    %6.5f      %6.5f\n', Nodes_XYZi(ii,:)');
 end
 
-fprintf(fid, '\n\n\n');
-fprintf(fid, '%% Section 2: Centroid Vectors (Cell Centroid to Face Centroid) \n');
-fprintf(fid, '%% [Cell Index] + [Face Index] + [Face Tag] + [Centroid Vector(x,y,z)]\n');
-fprintf(fid, '%% Face Tag:[1 = West] | [2 = East] | [3 = South] | [4 = North] | [5 = Top] | [6 = Bottom]\n');
-fprintf(fid, '\n');
-fprintf(fid, 'CENTROID_VECTOR\n');
-fprintf(fid,'%s %s %s %s %s %s\n','Cell No.  ',' Face Index   ','Face Tag','  Centroid Vector (x) ', ' Centroid Vector (y) ',' Centroid Vector (z) ');      
-
-for ii = 1:10%size(FC,1)
-    fprintf(fid,'%8.0d: %9d %11d          %.6f      ;      %.6f      ;      %.6f\n', fmctf(ii,:)');
-end
-
-fprintf(fid, '\n\n\n');
-fprintf(fid, '%% Section 3: Faces Connected to Cells\n');
-fprintf(fid, '%% [Face Index] + [Cell Index] + [Cell Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)]\n');
+fprintf(fid, '\n\n');
+fprintf(fid, '%% Section 2: Faces Connected to Cells\n');
+fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Cell Index West/Left] + [Centroid Vector W/L (x,y,z)] + [Cell Index East/Right] + [Centroid Vector E/R (x,y,z)]\n');
 fprintf(fid, '\n');
 fprintf(fid, 'INTERNAL_FACES\n');
-fprintf(fid,'%s %s %s %8s %27s %18s %8s %21s %16s %8s\n','Faces No.','West/Left','East/Right','Area', 'Face Centroid (x)','Face Centroid (y)','Face Centroid (z)','Face Normal(x)','Face Normal(y)','Face Normal(z)');      
+fprintf(fid,'%s %12s %18s %s %s %18s %15s %s %12s %s %s %s %12s %s %s %s\n','Faces No.','Face Area','Face Centroid(x)','Face Centroid(y)','Face Centroid(z)','Face Normal(x)','Face Normal(y)','Face Normal(z)','Cell(W/L)','Centroid Vector(x)','Centroid Vector(y)','Centroid Vector(z)','Cell(E/R)','Centroid Vector(x)','Centroid Vector(y)','Centroid Vector(z)');      
 
 for ii = 1:10%size(FC,1)
-    fprintf(fid,'%8.0d: %5d %9d       %.6f    ,    %6.6f  ;  %6.6f  ;  %6.6f      ,      %6.6f  ;  %6.6f  ;  %6.6f\n', FC(ii,:)');
+    fprintf(fid,'%8.0d: %13.6f   %13.6f  ;  %13.6f  ;  %11.6f   ,   % 13.6f ; % 12.6f  ;  % 8.6f    ,  %5d      % 12.6f  ;  % 14.6f    ;   % 11.6f      ,  %5d      % 12.6f  ;  % 14.6f    ;   % 11.6f  \n', FC2(ii,:)');
 end
 
-fprintf(fid, '\n\n\n');
-fprintf(fid, '%% Section 4: External Faces (At Boundaries | No Shared with Cells)\n');
-fprintf(fid, '%% [Face Index] + [Cell Index] + [Cell Index] + [Face Area]:\n');
+fprintf(fid, '\n\n');
+fprintf(fid, '%% Section 3: External Faces (At Boundaries | No Shared with Cells)\n');
+fprintf(fid, '%% [Face Index] + [Cell Index] + [Cell Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)]:\n');
 fprintf(fid, '\n');
 fprintf(fid, 'EXTERNAL_FACES\n');
-fprintf(fid,'%s %s %s %8s\n','Faces No.','West/Left','East/Right','Area');      
+fprintf(fid,'%s %s %s %9s %21s %s %s %18s %15s %s\n','Faces No.','Cell(W/L)','Cell(E/R)','Area','Face Centroid(x)','Face Centroid(y)','Face Centroid(z)','Face Normal(x)','Face Normal(y)','Face Normal(z)');      
 
 for ii = 1:10%size(FD,1)
-    fprintf(fid,'%8.0d: %5d %9d      %.6f\n', FD(ii,:)');
+    fprintf(fid,'%8.0d: %5d %10d %16.6f   %13.6f  ;  %13.6f  ;  %11.6f   ,   % 13.6f ; % 12.6f  ;  % 8.6f\n', FD(ii,:)');
 end
 fclose(fid);
