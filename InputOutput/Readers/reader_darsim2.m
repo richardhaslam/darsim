@@ -11,6 +11,7 @@ classdef reader_darsim2 < reader
         InputMatrix
         SettingsMatrix
         FractureMatrix
+        CornerPointGridMatrix
     end
     methods
         function obj = reader_darsim2(dir, file, permdirectory)
@@ -98,21 +99,43 @@ classdef reader_darsim2 < reader
         end
         function ReservoirProperties = ReadReservoirProperties(obj)
             %%%%%%%%%%%%%PROPERTIES OF THE RESERVOIR%%%%%%%%%%%%%%%%
-            % 1. size of the reservoir
-            temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
+            temp = strfind(obj.InputMatrix, 'GRID_DISCRETIZATION');
             index = find(~cellfun('isempty', temp));
-            ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
-                                        str2double(obj.InputMatrix{index+2});
-                                        str2double(obj.InputMatrix{index+3})];
-            % 2. GridSize
-            temp = strfind(obj.InputMatrix, 'SPECGRID');
-            index = find(~cellfun('isempty', temp));
-            ReservoirProperties.Grid.N = [str2double(obj.InputMatrix{index+1});...
-                                          str2double(obj.InputMatrix{index+2});
-                                          str2double(obj.InputMatrix{index+3})];
+            if ~isempty(index)
+                ReservoirProperties.Discretization = obj.InputMatrix{index+1};
+            else
+                ReservoirProperties.Discretization = 'Cartesian';
+            end
+            
+            if strcmp(ReservoirProperties.Discretization,'CornerPointGrid')
+                % Read the cornerpointgrid file
+                CornerPointGridFile = strcat(obj.Directory, '/CornerPointGrid_DARSim_InputData.txt');
+                fileID = fopen(CornerPointGridFile, 'r');
+                matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                obj.CornerPointGridMatrix = matrix{1};
+                fclose(fileID);
+                
+            elseif strcmp(ReservoirProperties.Discretization,'Cartesian')
+                % Assume it Cartesian
+                % 1. size of the reservoir
+                temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
+                index = find(~cellfun('isempty', temp));
+                ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
+                                            str2double(obj.InputMatrix{index+2});
+                                            str2double(obj.InputMatrix{index+3})];
+                % 2. GridSize
+                temp = strfind(obj.InputMatrix, 'SPECGRID');
+                index = find(~cellfun('isempty', temp));
+                ReservoirProperties.Grid.N = [str2double(obj.InputMatrix{index+1});...
+                                              str2double(obj.InputMatrix{index+2});
+                                              str2double(obj.InputMatrix{index+3})];
+            else
+                error('The discretization method should either be "Cartesian" or "CornerPointGrid". Check the input file!\n');
+            end
+            
             
             % 3. Permeability
-			temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
+            temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
             index = find(~cellfun('isempty', temp));
             if ~isempty(index)
                 ReservoirProperties.PermUnit = obj.InputMatrix{index+1};
@@ -266,6 +289,9 @@ classdef reader_darsim2 < reader
             index = find(~cellfun('isempty', temp));
             temp = strsplit(obj.FractureMatrix{index},' ');
             FracturesProperties.NrOfFrac = str2double( temp{end} );
+        end
+        function CornerPointGridData = ReadCornerPointGridData(obj)
+            % Read the goddamn file!
         end
         function FluidProperties = ReadFluidProperties(obj)
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
