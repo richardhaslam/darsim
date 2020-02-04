@@ -14,7 +14,7 @@ grdecl = readGRDECL('NPD5.grdecl');
 % Dimensions of the Grid in the X, Y and Z coordinates
 Nx = grdecl.cartDims(1); Ny = grdecl.cartDims(2); Nz = grdecl.cartDims(3);
 % Vector with the total number of cells
-CellsN = linspace(1, Nx*Ny*Nz, Nx*Ny*Nz)';
+NumberCells = linspace(1, Nx*Ny*Nz, Nx*Ny*Nz)';
 % Compute grid topology and geometry from pillar grid description
 G = processGRDECL(grdecl, 'Verbose', true);
 % Compute geometry information (centroids, volumes, areas) of the cells
@@ -65,27 +65,31 @@ C=reshape(C,8,[])';
 
 % SECTION 1: CELLS NODES (X, Y, Z) + CENTROIDS + VECTORS A, B, C (X, Y, Z COORDINATES)
 % Only Active Cells (Based on ACTNUM info)
-Nodes_XYZ = [CellsN, grdecl.ACTNUM, A(:,2), B(:,2), C(:,2), A(:,6), B(:,6), C(:,6), A(:,1), B(:,1), C(:,1),...
+Cell_Nodes = [NumberCells, grdecl.ACTNUM, A(:,2), B(:,2), C(:,2), A(:,6), B(:,6), C(:,6), A(:,1), B(:,1), C(:,1),...
     A(:,5), B(:,5), C(:,5),A(:,4), B(:,4), C(:,4), A(:,8), B(:,8), C(:,8), A(:,3), B(:,3), C(:,3),...
     A(:,7), B(:,7), C(:,7)];
-TF = Nodes_XYZ(:,2) == 0;
-Nodes_XYZ(TF,:) = []; Nodes_XYZ(:,2) = [];
-Nodes_XYZi = [Nodes_XYZ(:,1:25), G.cells.centroids, G.cells.volumes];
+LI = Cell_Nodes(:,2) == 0;                            % Logical Index                 
+Cell_Nodes(LI,:) = [];                                % Delete Cells that are not active
+Cell_Nodes(:,2) = [];                                 % Delete Columns of Active Cells
+Cell_Data = [Cell_Nodes, G.cells.centroids, G.cells.volumes];
 
 % SECTION 2: INTERNAL FACES (FACES CONNECTED TO CELLS)
 % Create Face Index Vector (Total Number of Faces)
-FacesN = linspace(1, G.faces.num, G.faces.num)';
+NumberFaces = linspace(1, G.faces.num, G.faces.num)';
 % Assembly Matrix with all the Faces
-FC = [FacesN, G.faces.neighbors, G.faces.areas, G.faces.centroids, G.faces.normals];
-TF = (FC(:,2) == 0)|(FC(:,3) == 0);
-FC(TF,:) = [];
-vcctfc = [G.faces.centroids(FC(:,1),:) - G.cells.centroids(FC(:,2),:), G.faces.centroids(FC(:,1),:) - G.cells.centroids(FC(:,3),:)];
-FC2 = [FC(:,1) FC(:,4:10) FC(:,2) vcctfc(:,1:3) FC(:,3) vcctfc(:,4:6)];
+IF = [NumberFaces, G.faces.neighbors, G.faces.areas, G.faces.centroids, G.faces.normals];
+LI = (IF(:,2) == 0)|(IF(:,3) == 0);
+IF(LI,:) = [];
+c_vec_IF = [G.faces.centroids(IF(:,1),:) - G.cells.centroids(IF(:,2),:), G.faces.centroids(IF(:,1),:) - G.cells.centroids(IF(:,3),:)];
+FC2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec_IF(:,1:3) IF(:,3) c_vec_IF(:,4:6)];
 
 % SECTION 3: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
-FD = [FacesN, G.faces.neighbors, G.faces.areas, G.faces.centroids, G.faces.normals];
-TF = (FD(:,2) ~= 0)&(FD(:,3) ~= 0);
-FD(TF,:) = [];
+EF = [NumberFaces, G.faces.areas, G.faces.centroids, G.faces.normals, G.faces.neighbors];
+LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);
+EF(LI,:) = [];
+EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];
+c_vec_EF = G.faces.centroids(EF2(:,1),:) - G.cells.centroids(EF2(:,9));
+EF3 = [EF2 c_vec_EF ];
 
 %% OUTPUT FILE: WRITING
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
@@ -109,43 +113,42 @@ fprintf(fid, '%d\n', G.cells.num);
 fprintf(fid, 'N_INTERNAL_FACES\n');
 fprintf(fid, '%d\n', size(FC2,1));
 fprintf(fid, 'N_EXTERNAL_FACES\n');
-fprintf(fid, '%d\n', size(FD,1));
+fprintf(fid, '%d\n', size(EF,1));
 
 fprintf(fid, '\n');
 fprintf(fid, '%% Section 1: Grid Points Coordinates\n');
-fprintf(fid, '%% [X,Y,Z Nodes Coordinates (Top & Bottom)] + [Cell Centroid(x,y,z)] + [Cell Volume]\n');
+fprintf(fid, '%% [Nodes Coordinates (x;y;z) (Top & Bottom)] + [Cell Centroid(x;y;z)] + [Cell Volume]\n');
 fprintf(fid, 'CELL_GEOMETRY\n');
-fprintf(fid,'%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n', ...
-          'Cell No.  ', ... 
-          'NW_TOP(x) ', '   NW_TOP(y) ', ' NW_TOP(z) ', '   NE_TOP(x)  ', ' NE_TOP(y) ', '  NE_TOP(z) ',...
-          '   SW_TOP(x) ', '  SW_TOP(y) ', '  SW_TOP(z) ', '   SE_TOP(x) ', '  SE_TOP(y) ', '  SE_TOP(z) ', ...
-          '   NW_BTM(x) ', '  NW_BTM(y) ', '  NW_BTM(z) ', '   NE_BTM(x) ', '  NE_BTM(y) ', '  NE_BTM(z) ', ...
-          '   SW_BTM(x) ', '  SW_BTM(y )', '  SW_BTM(z) ', '   SE_BTM(x) ', '  SE_BTM(y) ', '  SE_BTM(z) ', ...
-          ' Cell Centroid(x)', 'Cell Centroid(y)', 'Cell Centroid(z)','  Cell Volume');      
+ 
+fprintf(fid,'%s %31s %39s %39s %39s %40s %38s %39s %39s %35s %22s\n', ...
+          'Cell No.  ','North-West Top Corner(x;y;z)','North-East Top Corner(x;y;z)','South-West Top Corner(x;y;z)',...
+          'South-East Top Corner(x;y;z)','North-West Bttm Corner(x;y;z)','North-East Bttm Corner(x;y;z)',...
+          'South-West Bttm Corner(x;y;z)','South-East Bttm Corner(x;y;z)','Cell Centroid(x;y;z)','Cell Volume');   
       
 for ii = 1:10%size(Nodes_XYZi,1)
-    fprintf(fid,'%6.0d: % 6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f ,   %6.5f;   %6.5f;    %6.5f      %6.5f\n', Nodes_XYZi(ii,:)');
+    fprintf(fid,'%6.0d , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f\n', Cell_Data(ii,:)');
 end
 
 fprintf(fid, '\n\n');
 fprintf(fid, '%% Section 2: Faces Connected to Cells\n');
-fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Cell Index West/Left] + [Centroid Vector W/L (x,y,z)] + [Cell Index East/Right] + [Centroid Vector E/R (x,y,z)]\n');
+fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell 1] + [Centroid Vector 1(x,y,z)] + [Neighboring Cell 2] + [Centroid Vector 2(x,y,z)]\n');
 fprintf(fid, '\n');
-fprintf(fid, 'INTERNAL_FACES\n');
-fprintf(fid,'%s %12s %18s %s %s %18s %15s %s %12s %s %s %s %12s %s %s %s\n','Faces No.','Face Area','Face Centroid(x)','Face Centroid(y)','Face Centroid(z)','Face Normal(x)','Face Normal(y)','Face Normal(z)','Cell(W/L)','Centroid Vector(x)','Centroid Vector(y)','Centroid Vector(z)','Cell(E/R)','Centroid Vector(x)','Centroid Vector(y)','Centroid Vector(z)');      
+fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
+fprintf(fid,'%s %12s %34s %39s %13s %32s %10s %32s\n','Faces No.','Face Area',...
+            'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)');      
 
-for ii = 1:10%size(FC,1)
-    fprintf(fid,'%8.0d: %13.6f   %13.6f  ;  %13.6f  ;  %11.6f   ,   % 13.6f ; % 12.6f  ;  % 8.6f    ,  %5d      % 12.6f  ;  % 14.6f    ;   % 11.6f      ,  %5d      % 12.6f  ;  % 14.6f    ;   % 11.6f  \n', FC2(ii,:)');
+for ii = 1:10%size(FC2,1)
+    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %d , % 12.6f;% 12.6f;% 11.6f , %d , % 12.6f;% 12.6f;% 11.6f  \n', FC2(ii,:)');
 end
 
 fprintf(fid, '\n\n');
 fprintf(fid, '%% Section 3: External Faces (At Boundaries | No Shared with Cells)\n');
-fprintf(fid, '%% [Face Index] + [Cell Index] + [Cell Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)]:\n');
+fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell] + [Centroid Vector (x,y,z)]:\n');
 fprintf(fid, '\n');
-fprintf(fid, 'EXTERNAL_FACES\n');
-fprintf(fid,'%s %s %s %9s %21s %s %s %18s %15s %s\n','Faces No.','Cell(W/L)','Cell(E/R)','Area','Face Centroid(x)','Face Centroid(y)','Face Centroid(z)','Face Normal(x)','Face Normal(y)','Face Normal(z)');      
+fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
+fprintf(fid,'%s %12s %34s %39s %13s %32s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)');      
 
 for ii = 1:10%size(FD,1)
-    fprintf(fid,'%8.0d: %5d %10d %16.6f   %13.6f  ;  %13.6f  ;  %11.6f   ,   % 13.6f ; % 12.6f  ;  % 8.6f\n', FD(ii,:)');
+    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %d , % 12.6f;% 12.6f; % 11.6f \n', EF3(ii,:)');
 end
 fclose(fid);
