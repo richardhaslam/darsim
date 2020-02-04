@@ -40,5 +40,9 @@ classdef fracture < handle
             obj.K_Cond_rock = k_cond_rock;
             obj.K_Cond_eff  = k_cond_fluid * obj.Por + k_cond_rock * (1-obj.Por) * ones(size(obj.K));
         end
+        function ModifyFracturesBasedOnStress(obj)
+            % @ Daan:
+            % Add the same function you added to the builder_fracgen.
+        end
     end
 end
