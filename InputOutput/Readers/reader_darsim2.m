@@ -18,7 +18,7 @@ classdef reader_darsim2 < reader
             obj@reader(dir, file, permdirectory);          
         end
         function ReadInputFile(obj, Builder)
-            % ReadInputFile
+            %% Read Input File
             fileID = fopen(obj.File, 'r');
             % Read lines from input file
             matrix = textscan(fileID, '%s', 'Delimiter', '\n');
@@ -27,7 +27,8 @@ classdef reader_darsim2 < reader
             % Remove lines which are commented (contain --)
             Commented = startsWith(obj.InputMatrix, '--');
             obj.InputMatrix(Commented) = {'--'}; % removing the string if it is commented.
-            %ReadSettingFile
+            
+            %% Read Settings File
             SettingsFile = strcat(obj.Directory, '/SimulatorSettings.txt');
             fileID = fopen(SettingsFile, 'r');
             matrix = textscan(fileID, '%s', 'Delimiter', '\n');
@@ -36,7 +37,8 @@ classdef reader_darsim2 < reader
             % Remove lines which are commented (contain --)
             Commented = startsWith(obj.SettingsMatrix, '--');
             obj.SettingsMatrix(Commented) = {'--'}; % removing the string if it is commented.
-            %ReadSettingFile
+            
+            %% Read Fracture File
             fractured = sum(contains(obj.InputMatrix, 'FRACTURED'));
             if fractured 
                 FractureFile = strcat(obj.Directory, '/Fracture_Output.txt');
@@ -114,6 +116,9 @@ classdef reader_darsim2 < reader
                 matrix = textscan(fileID, '%s', 'Delimiter', '\n');
                 obj.CornerPointGridMatrix = matrix{1};
                 fclose(fileID);
+                
+                CornerPointGridProperties = obj.ReadCornerPointGridData();
+                % To be continued
                 
             elseif strcmp(ReservoirProperties.Discretization,'Cartesian')
                 % Assume it Cartesian
@@ -287,11 +292,146 @@ classdef reader_darsim2 < reader
             FracturesProperties.Fractured = 1;
             temp = strfind(obj.FractureMatrix, 'NUM_FRACS');
             index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "NUM_FRACS" is missing. Please check the Fracture_Output file!\n');
+            end
             temp = strsplit(obj.FractureMatrix{index},' ');
             FracturesProperties.NrOfFrac = str2double( temp{end} );
+            
         end
         function CornerPointGridData = ReadCornerPointGridData(obj)
-            % Read the goddamn file!
+            fprintf('Reading the CornerPointGrid input file:\n');
+            temp = strfind(obj.CornerPointGridMatrix, 'RESERVOIR_GRID_NX');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "RESERVOIR_GRID_NX" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.Nx = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            temp = strfind(obj.CornerPointGridMatrix, 'RESERVOIR_GRID_NY');
+            if isempty(index)
+                error('The keyword "RESERVOIR_GRID_NY" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            index = find(~cellfun('isempty', temp));
+            CornerPointGridData.Ny = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            temp = strfind(obj.CornerPointGridMatrix, 'RESERVOIR_GRID_NZ');
+            if isempty(index)
+                error('The keyword "RESERVOIR_GRID_NZ" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            index = find(~cellfun('isempty', temp));
+            CornerPointGridData.Nz = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            temp = strfind(obj.CornerPointGridMatrix, 'ACTIVE_CELLS');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.N_ActiveCells = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            temp = strfind(obj.CornerPointGridMatrix, 'N_INTERNAL_FACES');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "N_INTERNAL_FACES" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.N_InternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            temp = strfind(obj.CornerPointGridMatrix, 'N_EXTERNAL_FACES');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "N_EXTERNAL_FACES" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.N_ExternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            % Reading cell information line by line
+            temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "CELL_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            Cell.NW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.NE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.NW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.NE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.Centroid = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.Volume   = zeros(CornerPointGridData.N_ActiveCells , 1);
+            
+            fprintf('---> Cell ');
+            for i = 1 : CornerPointGridData.N_ActiveCells
+                if (i>1),  fprintf(repmat('\b', 1, 13));  end
+                fprintf('%06d/%06d',i,CornerPointGridData.N_ActiveCells);
+                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
+                Cell.NW_Top_Corner(i,:) = str2double( strsplit( Temp{2} , ';' ) );
+                Cell.NE_Top_Corner(i,:) = str2double( strsplit( Temp{3} , ';' ) );
+                Cell.SW_Top_Corner(i,:) = str2double( strsplit( Temp{4} , ';' ) );
+                Cell.SE_Top_Corner(i,:) = str2double( strsplit( Temp{5} , ';' ) );
+                Cell.NW_Bot_Corner(i,:) = str2double( strsplit( Temp{6} , ';' ) );
+                Cell.NE_Bot_Corner(i,:) = str2double( strsplit( Temp{7} , ';' ) );
+                Cell.SW_Bot_Corner(i,:) = str2double( strsplit( Temp{8} , ';' ) );
+                Cell.SE_Bot_Corner(i,:) = str2double( strsplit( Temp{9} , ';' ) );
+                Cell.Centroid(i,:) = str2double( strsplit( Temp{10} , ';' ) );
+                Cell.Volume(i) = str2double( Temp{11} );
+            end
+            fprintf('\n');
+            
+            % Reading internal face information line by line
+            temp = strfind(obj.CornerPointGridMatrix, 'INTERNAL_FACE_GEOMETRY');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "INTERNAL_FACE_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            Internal_Face.Area = zeros(CornerPointGridData.N_InternalFaces , 1);
+            Internal_Face.Centroid = zeros(CornerPointGridData.N_InternalFaces , 3);
+            Internal_Face.Nvec = zeros(CornerPointGridData.N_InternalFaces , 3);
+            Internal_Face.CellNeighbor1Index = zeros(CornerPointGridData.N_InternalFaces , 1);
+            Internal_Face.CellNeighbor1Vec = zeros(CornerPointGridData.N_InternalFaces , 3);
+            Internal_Face.CellNeighbor2Index = zeros(CornerPointGridData.N_InternalFaces , 1);
+            Internal_Face.CellNeighbor2Vec = zeros(CornerPointGridData.N_InternalFaces , 3);
+            
+            fprintf('---> Internal Face ');
+            for i = 1 : CornerPointGridData.N_InternalFaces
+                if (i>1),  fprintf(repmat('\b', 1, 13));  end
+                fprintf('%06d/%06d',i,CornerPointGridData.N_InternalFaces);
+                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
+                Internal_Face.Area(i) =  str2double( Temp{2} );
+                Internal_Face.Centroid(i,:) = str2double( strsplit( Temp{3} , ';' ) );
+                Internal_Face.Nvec(i,:) = str2double( strsplit( Temp{4} , ';' ) );
+                Internal_Face.CellNeighbor1Index(i) = str2double( Temp{5} );
+                Internal_Face.CellNeighbor1Vec(i,:) = str2double( strsplit( Temp{6} , ';' ) );
+                Internal_Face.CellNeighbor2Index(i) = str2double( Temp{7} );
+                Internal_Face.CellNeighbor2Vec(i,:) = str2double( strsplit( Temp{8} , ';' ) );
+            end
+            fprintf('\n');
+            
+            % Reading external face information line by line
+            temp = strfind(obj.CornerPointGridMatrix, 'EXTERNAL_FACE_GEOMETRY');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "EXTERNAL_FACE_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            External_Face.Area = zeros(CornerPointGridData.N_ExternalFaces , 1);
+            External_Face.Centroid = zeros(CornerPointGridData.N_ExternalFaces , 3);
+            External_Face.Nvec = zeros(CornerPointGridData.N_ExternalFaces , 3);
+            External_Face.CellNeighborIndex = zeros(CornerPointGridData.N_ExternalFaces , 1);
+            External_Face.CellNeighborVec = zeros(CornerPointGridData.N_ExternalFaces , 3);
+            
+            fprintf('---> External Face ');
+            for i = 1 : CornerPointGridData.N_ExternalFaces
+                if (i>1),  fprintf(repmat('\b', 1, 13));  end
+                fprintf('%06d/%06d',i,CornerPointGridData.N_ExternalFaces);
+                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
+                External_Face.Area(i) =  str2double( Temp{2} );
+                External_Face.Centroid(i,:) = str2double( strsplit( Temp{3} , ';' ) );
+                External_Face.Nvec(i,:) = str2double( strsplit( Temp{4} , ';' ) );
+                External_Face.CellNeighborIndex(i) = str2double( Temp{5} ) + str2double( Temp{6} ); % An external face has only one connection (to only one cell). Therefore one index is zero (meaning no connection).
+                % External_Face.CellNeighborVec(i,:) = str2double( strsplit( Temp{7} , ';' ) );
+            end
+            fprintf('\n');
+            
         end
         function FluidProperties = ReadFluidProperties(obj)
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
