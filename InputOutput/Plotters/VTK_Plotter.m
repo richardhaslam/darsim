@@ -7,7 +7,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef VTK_Plotter < Plotter
     properties
-        FileName 
+        FileName
+        isBinary
     end
     methods
         function obj = VTK_Plotter(Directory, Problem)
@@ -68,23 +69,35 @@ classdef VTK_Plotter < Plotter
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-            %fprintf(fileID, 'ASCII\n');
-            fprintf(fileID, 'BINARY\n');
+            if obj.isBinary
+                fprintf(fileID, 'BINARY\n');
+            else
+            	fprintf(fileID, 'ASCII\n');
+            end
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, Grid.Nz+1);
             fprintf(fileID, '\n');
             fprintf(fileID, ['X_COORDINATES ' num2str(Grid.Nx+1) ' float\n']);
-            %fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
-            fwrite(fileID,[0:Grid.dx:Grid.dx * Grid.Nx],'float', 'b');
+            if obj.isBinary
+                fwrite(fileID,[0:Grid.dx:Grid.dx * Grid.Nx],'float', 'b');
+            else
+            	fprintf(fileID, '%f ', 0:Grid.dx:Grid.dx * Grid.Nx);
+            end
             fprintf(fileID, '\n');
             fprintf(fileID, ['Y_COORDINATES ' num2str(Grid.Ny+1) ' float\n']);
-            fwrite(fileID,[0:Grid.dy:Grid.dy * Grid.Ny],'float', 'b');
-            %fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
+            if obj.isBinary
+                fwrite(fileID,[0:Grid.dy:Grid.dy * Grid.Ny],'float', 'b');
+            else
+            	fprintf(fileID, '%f ', 0:Grid.dy:Grid.dy * Grid.Ny);
+            end
             fprintf(fileID, '\n');
             fprintf(fileID, ['Z_COORDINATES ' num2str(Grid.Nz+1) ' float\n']);
-            %fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
-            fwrite(fileID,[0:Grid.dz:Grid.dz * Grid.Nz],'float','b');
+            if obj.isBinary
+                fwrite(fileID,[0:Grid.dz:Grid.dz * Grid.Nz],'float','b');
+            else
+            	fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
+            end
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
@@ -455,15 +468,21 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, ' \n');
             fprintf(fileID, strcat('SCALARS  ', name,' float 1\n'));
             fprintf(fileID, 'LOOKUP_TABLE default\n');
-            %fprintf(fileID,'%d ', scalar);
-            fwrite(fileID, scalar','float', 'b');
+            if obj.isBinary
+                fwrite(fileID, scalar','float', 'b');
+            else
+            	fprintf(fileID,'%d ', scalar);
+            end
         end
         function PrintVector2VTK(obj, fileID, vector, name)
             %Print a vector in VTK format
             fprintf(fileID, ' \n');
             fprintf(fileID, strcat('VECTORS  ', name,' float \n'));
-            %fprintf(fileID,'%d ', vector);
-            fwrite(fileID, vector','float', 'b');
+            if obj.isBinary
+                fwrite(fileID, vector','float', 'b');
+            else
+            	fprintf(fileID,'%d ', vector);
+            end
         end
     end
 end
