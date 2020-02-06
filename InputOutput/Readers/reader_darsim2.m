@@ -60,6 +60,9 @@ classdef reader_darsim2 < reader
             % 2. Total time
             temp = strfind(obj.InputMatrix, 'TOTALTIME');
             xv = find(~cellfun('isempty', temp));
+            if isempty(xv)
+                error('The keyword "TOTALTIME" is missing. Please check the input file!\n');
+            end
             Time = strsplit( obj.InputMatrix{xv + 1} , ' ');
             Hours = 0; Minutes = 0; Seconds = 0;
             Days = str2double(Time{1});
@@ -81,6 +84,9 @@ classdef reader_darsim2 < reader
             % 5. Initial conditions
             temp = strfind(obj.InputMatrix, 'INIT');
             index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "INIT" is missing. Please check the input file!\n');
+            end
             SimulationInput.Init = str2double(strsplit(char(obj.InputMatrix(index + 1))));
             
             % 6. Read wells info
@@ -106,6 +112,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 ReservoirProperties.Discretization = obj.InputMatrix{index+1};
             else
+                warning('The keyword "GRID_DISCRETIZATION" is missing. Cartesian discretization is set by default.\n');
                 ReservoirProperties.Discretization = 'Cartesian';
             end
             
@@ -125,12 +132,18 @@ classdef reader_darsim2 < reader
                 % 1. size of the reservoir
                 temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
                 index = find(~cellfun('isempty', temp));
+                if isempty(index)
+                    error('The keyword "DIMENS" is missing. Please check the input file!\n');
+                end
                 ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
                                             str2double(obj.InputMatrix{index+2});
                                             str2double(obj.InputMatrix{index+3})];
                 % 2. GridSize
                 temp = strfind(obj.InputMatrix, 'SPECGRID');
                 index = find(~cellfun('isempty', temp));
+                if isempty(index)
+                    error('The keyword "SPECGRID" is missing. Please check the input file!\n');
+                end
                 ReservoirProperties.Grid.N = [str2double(obj.InputMatrix{index+1});...
                                               str2double(obj.InputMatrix{index+2});
                                               str2double(obj.InputMatrix{index+3})];
@@ -145,6 +158,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 ReservoirProperties.PermUnit = obj.InputMatrix{index+1};
             else
+                warning('The keyword "PERMEABILITY_UNIT" is missing. SI unit "m2" is set by default.\n');
                 ReservoirProperties.PermUnit = 'm2';
             end
             
@@ -153,6 +167,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 ReservoirProperties.PermScale = obj.InputMatrix{index+1};
             else
+                warning('The keyword "PERMEABILITY_SCALE" is missing. Linear scale is set by default.\n');
                 ReservoirProperties.PermScale = 'Linear';
             end
             if ~strcmp(ReservoirProperties.PermScale, 'Linear') && ~strcmp(ReservoirProperties.PermScale, 'Logarithmic')
@@ -184,10 +199,19 @@ classdef reader_darsim2 < reader
             perm = zeros(3, 1);
             temp = strfind(obj.InputMatrix, 'PERMX');
             perm(1) = find(~cellfun('isempty', temp));
+            if isempty(perm(1))
+                error('The keyword "PERMX" is missing. Please check the input file!\n');
+            end
             temp = strfind(obj.InputMatrix, 'PERMY');
             perm(2) = find(~cellfun('isempty', temp));
+            if isempty(perm(2))
+                error('The keyword "PERMX" is missing. Please check the input file!\n');
+            end
             temp = strfind(obj.InputMatrix, 'PERMZ');
             perm(3) = find(~cellfun('isempty', temp));
+            if isempty(perm(3))
+                error('The keyword "PERMX" is missing. Please check the input file!\n');
+            end
             DimChar = {'x' , 'y' , 'z'};
             for i=1:3
                 if contains(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
