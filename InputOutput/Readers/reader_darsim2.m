@@ -92,7 +92,7 @@ classdef reader_darsim2 < reader
             % 6. Read wells info
             SimulationInput.WellsInfo = obj.ReadWellsInfo(SimulationInput);
             
-            % 7. Read Fractures' Properties            
+            % 7. Read Fractures' Properties (if any)
             temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
             Fractured = find(~cellfun('isempty', temp));
             if isempty(Fractured)
@@ -118,13 +118,28 @@ classdef reader_darsim2 < reader
             
             if strcmp(ReservoirProperties.Discretization,'CornerPointGrid')
                 % Read the cornerpointgrid file
-                CornerPointGridFile = strcat(obj.Directory, '/CornerPointGrid_DARSim_InputData.txt');
+                FileName = obj.InputMatrix{index+2};
+                if isempty(FileName)
+                    FileName = 'CornerPointGrid_DARSim_InputData.txt';
+                end
+                CornerPointGridFile = strcat(obj.Directory, '/', FileName);
                 fileID = fopen(CornerPointGridFile, 'r');
                 matrix = textscan(fileID, '%s', 'Delimiter', '\n');
                 obj.CornerPointGridMatrix = matrix{1};
                 fclose(fileID);
                 
-                CornerPointGridProperties = obj.ReadCornerPointGridData();
+                if isfile(strcat(obj.Directory, '/','CornerPointGridData.mat'))
+                    load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
+                else
+                    ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
+                    save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
+                end
+                
+                ReservoirProperties.Grid.Nx = ReservoirProperties.CornerPointGridData.Nx;
+                ReservoirProperties.Grid.Ny = ReservoirProperties.CornerPointGridData.Ny;
+                ReservoirProperties.Grid.Nz = ReservoirProperties.CornerPointGridData.Nz;
+                ReservoirProperties.Grid.N  = ReservoirProperties.CornerPointGridData.N_ActiveCells;
+                
                 % To be continued
                 
             elseif strcmp(ReservoirProperties.Discretization,'Cartesian')
@@ -401,6 +416,7 @@ classdef reader_darsim2 < reader
                 Cell.Volume(i) = str2double( Temp{11} );
             end
             fprintf('\n');
+            CornerPointGridData.Cell = Cell;
             
             % Reading internal face information line by line
             temp = strfind(obj.CornerPointGridMatrix, 'INTERNAL_FACE_GEOMETRY');
@@ -430,6 +446,7 @@ classdef reader_darsim2 < reader
                 Internal_Face.CellNeighbor2Vec(i,:) = str2double( strsplit( Temp{8} , ';' ) );
             end
             fprintf('\n');
+            CornerPointGridData.Internal_Face = Internal_Face;
             
             % Reading external face information line by line
             temp = strfind(obj.CornerPointGridMatrix, 'EXTERNAL_FACE_GEOMETRY');
@@ -451,11 +468,11 @@ classdef reader_darsim2 < reader
                 External_Face.Area(i) =  str2double( Temp{2} );
                 External_Face.Centroid(i,:) = str2double( strsplit( Temp{3} , ';' ) );
                 External_Face.Nvec(i,:) = str2double( strsplit( Temp{4} , ';' ) );
-                External_Face.CellNeighborIndex(i) = str2double( Temp{5} ) + str2double( Temp{6} ); % An external face has only one connection (to only one cell). Therefore one index is zero (meaning no connection).
-                % External_Face.CellNeighborVec(i,:) = str2double( strsplit( Temp{7} , ';' ) );
+                External_Face.CellNeighborIndex(i) = str2double( Temp{5} ); % An external face has only one connection (to only one cell).
+                External_Face.CellNeighborVec(i,:) = str2double( strsplit( Temp{6} , ';' ) );
             end
             fprintf('\n');
-            
+            CornerPointGridData.External_Face = External_Face;
         end
         function FluidProperties = ReadFluidProperties(obj)
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
@@ -649,6 +666,24 @@ classdef reader_darsim2 < reader
                 k_final = str2double(obj.InputMatrix{index + 6});
             end
             Coord = [i_init, i_final; j_init, j_final; k_init, k_final];
+        end
+        function FindPerforatedCells(obj, CornerPointGridData, Well)
+            Well = struct;
+            Start = [1000;340;500];
+            End = [1200;360;200];
+            for w = 1 : 1%length(Well)
+                %Start = Well(w).Start; % [x;y;z]
+                %End   = Well(w).End  ; % [x;y;z]
+                PerfIndex = [];
+                for i = 1 : CornerPointGridData.N_ActiveCells
+                    % Find the perforated cell indeces
+                    % ...
+                    if perforated
+                        PerfIndex = [PerfIndex; i];
+                    end
+                end
+                Well(w).PerforatedCellsIndex = PerfIndex;
+            end
         end
         function SimulatorSettings = ReadSimulatorSettings(obj, SimulationInput)
             % 1. Max number of time-steps
