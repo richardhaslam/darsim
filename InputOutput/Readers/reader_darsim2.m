@@ -129,6 +129,7 @@ classdef reader_darsim2 < reader
                 fclose(fileID);
                 
                 if isfile(strcat(obj.Directory, '/','CornerPointGridData.mat'))
+                    fprintf('"CornerPointGridData.mat" file already exists. No need to load the CornerPointGrid data input file.\n');
                     load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
                 else
                     ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
@@ -557,7 +558,7 @@ classdef reader_darsim2 < reader
             inj = find(~cellfun('isempty', temp));
             WellsInfo.NofInj = length(inj);
             for i=1:WellsInfo.NofInj 
-                WellsInfo.Inj(i).Coord = obj.ReadCoordinates(inj(i), SimulationInput);
+                WellsInfo.Inj(i).Coord = obj.ReadWellCoordinates(inj(i), SimulationInput);
                 WellsInfo.Inj(i).Constraint.name = char(obj.InputMatrix(inj(i) + 7));
                 WellsInfo.Inj(i).Constraint.value = str2double(obj.InputMatrix(inj(i) + 8));
                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
@@ -572,14 +573,14 @@ classdef reader_darsim2 < reader
             prod = find(~cellfun('isempty', temp));
             WellsInfo.NofProd = length(prod);
             for i=1:WellsInfo.NofProd
-                WellsInfo.Prod(i).Coord = obj.ReadCoordinates(prod(i), SimulationInput);
+                WellsInfo.Prod(i).Coord = obj.ReadWellCoordinates(prod(i), SimulationInput);
                 WellsInfo.Prod(i).Constraint.name = char(obj.InputMatrix(prod(i) + 7));
                 WellsInfo.Prod(i).Constraint.value = str2double(obj.InputMatrix(prod(i) + 8));
                 WellsInfo.Prod(i).PI.type = char(obj.InputMatrix(prod(i) + 9));
                 WellsInfo.Prod(i).PI.value = str2double(obj.InputMatrix(prod(i) + 10));
             end
         end
-        function Coord = ReadCoordinates(obj, index, SimulationInput)
+        function Coord = ReadWellCoordinates(obj, index, SimulationInput)
             % Read coordinates of the wells
             %i_init
             Well_Coord_Temp = strsplit(obj.InputMatrix{index + 1}, ' ');
