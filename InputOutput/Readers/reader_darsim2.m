@@ -383,48 +383,13 @@ classdef reader_darsim2 < reader
             end
             CornerPointGridData.N_ExternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
             
-            % Reading cell information line by line
-            temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
-            index = find(~cellfun('isempty', temp));
-            if isempty(index)
-                error('The keyword "CELL_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
-            end
-            Cell.NW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.NE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.NW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.NE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.Centroid = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.Volume   = zeros(CornerPointGridData.N_ActiveCells , 1);
-            
-            fprintf('---> Cell ');
-            for i = 1 : CornerPointGridData.N_ActiveCells
-                if (i>1),  fprintf(repmat('\b', 1, 13));  end
-                fprintf('%06d/%06d',i,CornerPointGridData.N_ActiveCells);
-                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
-                Cell.NW_Top_Corner(i,:) = str2double( strsplit( Temp{2} , ';' ) );
-                Cell.NE_Top_Corner(i,:) = str2double( strsplit( Temp{3} , ';' ) );
-                Cell.SW_Top_Corner(i,:) = str2double( strsplit( Temp{4} , ';' ) );
-                Cell.SE_Top_Corner(i,:) = str2double( strsplit( Temp{5} , ';' ) );
-                Cell.NW_Bot_Corner(i,:) = str2double( strsplit( Temp{6} , ';' ) );
-                Cell.NE_Bot_Corner(i,:) = str2double( strsplit( Temp{7} , ';' ) );
-                Cell.SW_Bot_Corner(i,:) = str2double( strsplit( Temp{8} , ';' ) );
-                Cell.SE_Bot_Corner(i,:) = str2double( strsplit( Temp{9} , ';' ) );
-                Cell.Centroid(i,:) = str2double( strsplit( Temp{10} , ';' ) );
-                Cell.Volume(i) = str2double( Temp{11} );
-            end
-            fprintf('\n');
-            CornerPointGridData.Cell = Cell;
-            
             % Reading internal face information line by line
             temp = strfind(obj.CornerPointGridMatrix, 'INTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "INTERNAL_FACE_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
             end
+            
             Internal_Face.Area = zeros(CornerPointGridData.N_InternalFaces , 1);
             Internal_Face.Centroid = zeros(CornerPointGridData.N_InternalFaces , 3);
             Internal_Face.Nvec = zeros(CornerPointGridData.N_InternalFaces , 3);
@@ -474,6 +439,51 @@ classdef reader_darsim2 < reader
             end
             fprintf('\n');
             CornerPointGridData.External_Face = External_Face;
+            
+            % Reading cell information line by line
+            temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "CELL_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            Cell.NW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.NE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.NW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.NE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.SE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.Centroid = zeros(CornerPointGridData.N_ActiveCells , 3);
+            Cell.Volume   = zeros(CornerPointGridData.N_ActiveCells , 1);
+            Cell.N_Neighbors = zeros(CornerPointGridData.N_ActiveCells , 1);
+            Cell.Index_Neighbors = cell(CornerPointGridData.N_ActiveCells , 1);
+            
+            fprintf('---> Cell ');
+            for i = 1 : CornerPointGridData.N_ActiveCells
+                if (i>1),  fprintf(repmat('\b', 1, 13));  end
+                fprintf('%06d/%06d',i,CornerPointGridData.N_ActiveCells);
+                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
+                Cell.NW_Top_Corner(i,:) = str2double( strsplit( Temp{2} , ';' ) );
+                Cell.NE_Top_Corner(i,:) = str2double( strsplit( Temp{3} , ';' ) );
+                Cell.SW_Top_Corner(i,:) = str2double( strsplit( Temp{4} , ';' ) );
+                Cell.SE_Top_Corner(i,:) = str2double( strsplit( Temp{5} , ';' ) );
+                Cell.NW_Bot_Corner(i,:) = str2double( strsplit( Temp{6} , ';' ) );
+                Cell.NE_Bot_Corner(i,:) = str2double( strsplit( Temp{7} , ';' ) );
+                Cell.SW_Bot_Corner(i,:) = str2double( strsplit( Temp{8} , ';' ) );
+                Cell.SE_Bot_Corner(i,:) = str2double( strsplit( Temp{9} , ';' ) );
+                Cell.Centroid(i,:) = str2double( strsplit( Temp{10} , ';' ) );
+                Cell.Volume(i) = str2double( Temp{11} );
+                % Obtaining the cell neighbors
+                faceIndex = find(Internal_Face.CellNeighbor1Index==i);
+                neighborIndex = Internal_Face.CellNeighbor2Index(faceIndex);
+                faceIndex = find(Internal_Face.CellNeighbor2Index==i);
+                neighborIndex = [neighborIndex; Internal_Face.CellNeighbor1Index(faceIndex)];
+                Cell.N_Neighbors(i) = length(neighborIndex);
+                Cell.Index_Neighbors{i} = sort(neighborIndex);
+            end
+            fprintf('\n');
+            CornerPointGridData.Cell = Cell;
         end
         function FluidProperties = ReadFluidProperties(obj)
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
@@ -554,31 +564,54 @@ classdef reader_darsim2 < reader
         end
         function WellsInfo = ReadWellsInfo(obj, SimulationInput)
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
-            temp = regexp(obj.InputMatrix, 'INJ', 'match');
+            temp = regexp(obj.InputMatrix, 'WELL_START', 'match');
+            well_start = find(~cellfun('isempty', temp));
+            temp = regexp(obj.InputMatrix, 'WELL_END', 'match');
+            well_end = find(~cellfun('isempty', temp));
+            WellsInfo.NofWell = length(well_start);
+            temp  = regexp(obj.InputMatrix, 'INJ', 'match'); 
             inj = find(~cellfun('isempty', temp));
             WellsInfo.NofInj = length(inj);
-            for i=1:WellsInfo.NofInj 
-                WellsInfo.Inj(i).Coord = obj.ReadWellCoordinates(inj(i), SimulationInput);
-                WellsInfo.Inj(i).Constraint.name = char(obj.InputMatrix(inj(i) + 7));
-                WellsInfo.Inj(i).Constraint.value = str2double(obj.InputMatrix(inj(i) + 8));
-                WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
-                WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
-                switch (SimulationInput.FluidProperties.FluidModel)
-                    case {'Geothermal_1T', 'Geothermal_2T'}
-                    WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12)); % read injection temperature
-                end
-            end
-            
             temp = regexp(obj.InputMatrix, 'PROD', 'match');
             prod = find(~cellfun('isempty', temp));
             WellsInfo.NofProd = length(prod);
-            for i=1:WellsInfo.NofProd
-                WellsInfo.Prod(i).Coord = obj.ReadWellCoordinates(prod(i), SimulationInput);
-                WellsInfo.Prod(i).Constraint.name = char(obj.InputMatrix(prod(i) + 7));
-                WellsInfo.Prod(i).Constraint.value = str2double(obj.InputMatrix(prod(i) + 8));
-                WellsInfo.Prod(i).PI.type = char(obj.InputMatrix(prod(i) + 9));
-                WellsInfo.Prod(i).PI.value = str2double(obj.InputMatrix(prod(i) + 10));
+            
+            for w = 1 : WellsInfo.NofWell
+                temp = regexp(obj.InputMatrix(well_start(w):well_end(w)), 'Type', 'match');
+                type = find(~cellfun('isempty', temp));
+                if strcmp(type,'INJ')
+                    
+                elseif strcmp(type,'PROD')
+                else
+                    error('Wrong well type\n');
+                end
             end
+            
+%             temp = regexp(obj.InputMatrix, 'INJ', 'match');
+%             inj = find(~cellfun('isempty', temp));
+%             WellsInfo.NofInj = length(inj);
+%             for i=1:WellsInfo.NofInj 
+%                 WellsInfo.Inj(i).Coord = obj.ReadWellCoordinates(inj(i), SimulationInput);
+%                 WellsInfo.Inj(i).Constraint.name = char(obj.InputMatrix(inj(i) + 7));
+%                 WellsInfo.Inj(i).Constraint.value = str2double(obj.InputMatrix(inj(i) + 8));
+%                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
+%                 WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
+%                 switch (SimulationInput.FluidProperties.FluidModel)
+%                     case {'Geothermal_Single', 'Geothermal_MultiPhase'}
+%                     WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12)); % read injection temperature
+%                 end
+%             end
+%             
+%             temp = regexp(obj.InputMatrix, 'PROD', 'match');
+%             prod = find(~cellfun('isempty', temp));
+%             WellsInfo.NofProd = length(prod);
+%             for i=1:WellsInfo.NofProd
+%                 WellsInfo.Prod(i).Coord = obj.ReadWellCoordinates(prod(i), SimulationInput);
+%                 WellsInfo.Prod(i).Constraint.name = char(obj.InputMatrix(prod(i) + 7));
+%                 WellsInfo.Prod(i).Constraint.value = str2double(obj.InputMatrix(prod(i) + 8));
+%                 WellsInfo.Prod(i).PI.type = char(obj.InputMatrix(prod(i) + 9));
+%                 WellsInfo.Prod(i).PI.value = str2double(obj.InputMatrix(prod(i) + 10));
+%             end
         end
         function Coord = ReadWellCoordinates(obj, index, SimulationInput)
             % Read coordinates of the wells
