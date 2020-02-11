@@ -16,7 +16,7 @@ classdef simulation_builder < handle
         function simulation = BuildSimulation(obj, FractureMatrix)
             simulation = Reservoir_Simulation();
             simulation.DiscretizationModel = obj.BuildDiscretization(FractureMatrix);
-            simulation.ProductionSystem = obj.BuildProductionSystem(FractureMatrix,simulation.DiscretizationModel.FracturesGrid);
+            simulation.ProductionSystem = obj.BuildProductionSystem(FractureMatrix,simulation.DiscretizationModel);
             simulation.FluidModel = obj.BuildFluidModel();
             simulation.Formulation = obj.BuildFormulation();
             simulation.TimeDriver = obj.BuildTimeDriver();
@@ -505,7 +505,7 @@ classdef simulation_builder < handle
                 Discretization.AddCrossConnections(CrossConnections);
             end
         end
-        function ProductionSystem = BuildProductionSystem (obj, FractureMatrix, FracturesGrid)
+        function ProductionSystem = BuildProductionSystem (obj, FractureMatrix, DiscretizationModel)
             ProductionSystem = Production_System();
             %% RESERVOIR
             Lx = obj.SimulationInput.ReservoirProperties.size(1);       %Dimension in x-direction [m]
@@ -634,52 +634,53 @@ classdef simulation_builder < handle
             %Injectors
             for i=1:Wells.NofInj
                 switch(obj.SimulationInput.WellsInfo.Inj(i).PI.type)
-                    case ('Dirichlet')
+                    case ('DIRICHLET')
                         PI = dy*dz/(dx/2);
                     case ('PI')
                         PI = obj.SimulationInput.WellsInfo.Inj(i).PI.value;
-                    case ('Radius')
+                    case ('RADIUS')
                         radius = obj.SimulationInput.WellsInfo.Inj(i).PI.value;
-                        error('DARSim2 error: Radius calculation of PI is not implemented for now')
+                        error('DARSim error: Radius calculation of PI is not implemented for now')
                 end
                 coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
                 switch (obj.SimulationInput.FluidProperties.FluidModel)
-                    case {'Geothermal_1T','Geothermal_2T'}
+                    case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                         temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
                     otherwise
                         temperature = Tres;
                 end
                 switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.name)
-                    case('pressure')
+                    case('PRESSURE')
                         pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         % temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
                         Injector = injector_pressure(PI, coord, pressure, temperature, n_phases);
-                    case('rate')
+                    case('RATE')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         p_init = obj.SimulationInput.Init(1);
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Injector = injector_rate(PI, coord, rate, p_init, temperature, n_phases);
                 end
+                %Injector.Cell = DiscretizationModel.DefinePerforatedCells(Injector);
                 Wells.AddInjector(Injector);
             end
             
             %Producers
             for i=1:Wells.NofProd
                 switch(obj.SimulationInput.WellsInfo.Prod(i).PI.type)
-                    case ('Dirichlet')
+                    case ('DIRICHLET')
                         PI = dy*dz/(dx/2);
                     case ('PI')
                         PI = obj.SimulationInput.WellsInfo.Prod(i).PI.value;
-                    case ('Radius')
+                    case ('RADIUS')
                         radius = obj.SimulationInput.WellsInfo.Prod(i).PI.value;
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
                 coord = obj.SimulationInput.WellsInfo.Prod(i).Coord;
                 switch (obj.SimulationInput.WellsInfo.Prod(i).Constraint.name)
-                    case('pressure')
+                    case('PRESSURE')
                         pressure = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
                         Producer = producer_pressure(PI, coord, pressure);
-                    case('rate')
+                    case('RATE')
                         rate = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Producer = producer_rate(PI, coord, rate);
@@ -713,7 +714,7 @@ classdef simulation_builder < handle
                     
                     Porosity = str2double( frac_info_split{6} );                                        % Porosity  of each fracture
                     Permeability = str2double( frac_info_split{7} );                                    % Permeability of each fracture
-                    Kx = ones(FracturesGrid.N(f), 1)*Permeability;
+                    Kx = ones(DiscretizationModel.FracturesGrid.N(f), 1)*Permeability;
                     Ky = Kx;
                     Kz = Kx;
                     K = [Kx, Ky, Kz];

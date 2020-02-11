@@ -136,15 +136,25 @@ classdef reader_darsim2 < reader
                     save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
                 end
                 
-                ReservoirProperties.Grid.Nx = ReservoirProperties.CornerPointGridData.Nx;
-                ReservoirProperties.Grid.Ny = ReservoirProperties.CornerPointGridData.Ny;
-                ReservoirProperties.Grid.Nz = ReservoirProperties.CornerPointGridData.Nz;
-                ReservoirProperties.Grid.N  = ReservoirProperties.CornerPointGridData.N_ActiveCells;
+                ReservoirProperties.Grid.N(1) = ReservoirProperties.CornerPointGridData.Nx;
+                ReservoirProperties.Grid.N(2) = ReservoirProperties.CornerPointGridData.Ny;
+                ReservoirProperties.Grid.N(3) = ReservoirProperties.CornerPointGridData.Nz;
+                ReservoirProperties.Grid.N_ActiveCells = ReservoirProperties.CornerPointGridData.N_ActiveCells;
                 
-                % To be continued
+                % For now temporarily, we get Lx,Ly,LZ of the reservoir
+                % from the main input file. Soon, we will read this from
+                % the CornerPointGrid data.
+                temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
+                index = find(~cellfun('isempty', temp));
+                if isempty(index)
+                    error('The keyword "DIMENS" is missing. Please check the input file!\n');
+                end
+                ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
+                                            str2double(obj.InputMatrix{index+2});
+                                            str2double(obj.InputMatrix{index+3})];
                 
             elseif strcmp(ReservoirProperties.Discretization,'Cartesian')
-                % Assume it Cartesian
+                % Assume it is Cartesian
                 % 1. size of the reservoir
                 temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
                 index = find(~cellfun('isempty', temp));
@@ -285,7 +295,7 @@ classdef reader_darsim2 < reader
             % 5. Temperature
             temp = strfind(obj.InputMatrix, 'TEMPERATURE (K)');
             index = find(~cellfun('isempty', temp));
-            ReservoirProperties.Temperature = str2double(obj.InputMatrix(index + 1));
+            ReservoirProperties.Temperature = str2double(obj.InputMatrix(index(1) + 1));
             
             % Reading the number of phases
             temp = strfind(obj.InputMatrix, 'FLUID MODEL');
@@ -576,147 +586,74 @@ classdef reader_darsim2 < reader
             prod = find(~cellfun('isempty', temp));
             WellsInfo.NofProd = length(prod);
             
+            inj=0; prod=0;
             for w = 1 : WellsInfo.NofWell
-                temp = regexp(obj.InputMatrix(well_start(w):well_end(w)), 'Type', 'match');
+                WellInputMatrix = obj.InputMatrix(well_start(w)+1:well_end(w)-1);
+                temp = regexp(WellInputMatrix, 'TYPE', 'match');
                 type = find(~cellfun('isempty', temp));
-                if strcmp(type,'INJ')
-                    
-                elseif strcmp(type,'PROD')
-                else
-                    error('Wrong well type\n');
-                end
-            end
-            
-%             temp = regexp(obj.InputMatrix, 'INJ', 'match');
-%             inj = find(~cellfun('isempty', temp));
-%             WellsInfo.NofInj = length(inj);
-%             for i=1:WellsInfo.NofInj 
-%                 WellsInfo.Inj(i).Coord = obj.ReadWellCoordinates(inj(i), SimulationInput);
-%                 WellsInfo.Inj(i).Constraint.name = char(obj.InputMatrix(inj(i) + 7));
-%                 WellsInfo.Inj(i).Constraint.value = str2double(obj.InputMatrix(inj(i) + 8));
-%                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
-%                 WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
-%                 switch (SimulationInput.FluidProperties.FluidModel)
-%                     case {'Geothermal_Single', 'Geothermal_MultiPhase'}
-%                     WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12)); % read injection temperature
-%                 end
-%             end
-%             
-%             temp = regexp(obj.InputMatrix, 'PROD', 'match');
-%             prod = find(~cellfun('isempty', temp));
-%             WellsInfo.NofProd = length(prod);
-%             for i=1:WellsInfo.NofProd
-%                 WellsInfo.Prod(i).Coord = obj.ReadWellCoordinates(prod(i), SimulationInput);
-%                 WellsInfo.Prod(i).Constraint.name = char(obj.InputMatrix(prod(i) + 7));
-%                 WellsInfo.Prod(i).Constraint.value = str2double(obj.InputMatrix(prod(i) + 8));
-%                 WellsInfo.Prod(i).PI.type = char(obj.InputMatrix(prod(i) + 9));
-%                 WellsInfo.Prod(i).PI.value = str2double(obj.InputMatrix(prod(i) + 10));
-%             end
-        end
-        function Coord = ReadWellCoordinates(obj, index, SimulationInput)
-            % Read coordinates of the wells
-            %i_init
-            Well_Coord_Temp = strsplit(obj.InputMatrix{index + 1}, ' ');
-            if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
-                Well_Coord_Temp = strsplit(obj.InputMatrix{index + 1}, ' ');
-                if length(Well_Coord_Temp)>1
-                    if Well_Coord_Temp{2}=='-',  i_init =SimulationInput.ReservoirProperties.Grid.N(1)-1;
-                    else,  error('For Injection Well Coordination, you can only use "NX" with minus sign "-"!');
+                temp = regexp(WellInputMatrix, 'COORDINATE', 'match');
+                coordinate = find(~cellfun('isempty', temp));
+                temp = regexp(WellInputMatrix, 'CONSTRAINT', 'match');
+                constraint = find(~cellfun('isempty', temp));
+                temp = regexp(WellInputMatrix, 'FORMULA', 'match');
+                formula = find(~cellfun('isempty', temp));
+                temp = regexp(WellInputMatrix, 'TEMPERATURE', 'match');
+                temperature = find(~cellfun('isempty', temp));
+                
+                % Reading the coordinates of well trajectory
+                if strcmp(WellInputMatrix(coordinate+1),'IJK')
+                    ijk_1 = strsplit(WellInputMatrix{coordinate+2}, {'	',' ',',','[',']'} );
+                    ijk_1 = ijk_1(2:end-1);
+                    ijk_1 = strrep(ijk_1,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
+                    ijk_1 = strrep(ijk_1,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
+                    ijk_1 = strrep(ijk_1,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
+                    ijk_1 = [str2num(ijk_1{1}), str2num(ijk_1{2}), str2num(ijk_1{3})];
+                    ijk_2 = strsplit(WellInputMatrix{coordinate+3}, {'	',' ',',','[',']'} );
+                    ijk_2 = ijk_2(2:end-1);
+                    ijk_2 = strrep(ijk_2,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
+                    ijk_2 = strrep(ijk_2,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
+                    ijk_2 = strrep(ijk_2,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
+                    ijk_2 = [str2num(ijk_2{1}), str2num(ijk_2{2}), str2num(ijk_2{3})];
+                    Well.Coord = [ijk_1;ijk_2];
+                    if any(mod(Well.Coord(:),1) ~= 0)
+                        error('In well #%d, the ijk coordinates result in non-integer cell indeces. Check the input file!\n', w);
+                    end
+                elseif strcmp(WellInputMatrix(coordinate+1),'XYZ')
+                    Well.Coord = zeros(constraint-coordinate-2,3);
+                    for p = 1 : size(Well.Coord,1)
+                        xyz = strsplit(WellInputMatrix{coordinate+2+p-1}, {'	',' ',',','[',']'} );
+                        xyz = xyz(2:end-1);
+                        xyz = strrep(xyz,'LX',num2str(SimulationInput.ReservoirProperties.size(1)));
+                        xyz = strrep(xyz,'LY',num2str(SimulationInput.ReservoirProperties.size(2)));
+                        xyz = strrep(xyz,'LZ',num2str(SimulationInput.ReservoirProperties.size(3)));
+                        Well.Coord(p,:) = [str2num(xyz{1}), str2num(xyz{2}), str2num(xyz{3})];
                     end
                 else
-                    i_init =SimulationInput.ReservoirProperties.Grid.N(1);
+                    error('In well #%d, the coordination keyword "IJK" or "XYZ" is missing. Check the input file!\n', w);
                 end
-            else
-                i_init = str2double(obj.InputMatrix{index + 1});
-            end
-            %i_final
-            Well_Coord_Temp = strsplit(obj.InputMatrix{index + 2}, ' ');
-            if sum( strcmp('NX' , Well_Coord_Temp) ) > 0
-                Well_Coord_Temp = strsplit(obj.InputMatrix{index + 2}, ' ');
-                if length(Well_Coord_Temp)>1
-                    if Well_Coord_Temp{2}=='-',  i_final =SimulationInput.ReservoirProperties.Grid.N(1)-1;
-                    else,  error('For Injection Well Coordination, you can only use "NX" with minus sign "-"!');
-                    end
+                
+                % Reading the contraint of well
+                Well.Constraint.name = char(WellInputMatrix(constraint+1));
+                Well.Constraint.value = str2double(WellInputMatrix(constraint+2));
+                
+                % Reading the formula type of well
+                Well.PI.type = char(WellInputMatrix(formula+1));
+                Well.PI.value = str2double(WellInputMatrix(formula+2));
+                
+                % Reading the temperature of well (only for injection)
+                switch SimulationInput.FluidProperties.FluidModel
+                    case{'Geothermal_SinlgePhase','Geothermal_MultiPhase'}
+                        Well.Temperature = str2double(WellInputMatrix(temperature+1));
+                end
+                if strcmp(WellInputMatrix(type+1),'INJ')
+                    inj = inj+1;
+                    WellsInfo.Inj(inj) = Well;
+                elseif strcmp(WellInputMatrix(type+1),'PROD')
+                    prod = prod+1;
+                    WellsInfo.Prod(prod) = Well;
                 else
-                    i_final =SimulationInput.ReservoirProperties.Grid.N(1);
+                    error('In well #%d, the type of the well should either be "INJ" or "PROD". Check the input file!\n', w);
                 end
-            else
-                i_final = str2double(obj.InputMatrix{index + 2});
-            end
-            %j_init
-            Well_Coord_Temp = strsplit(obj.InputMatrix{index + 3}, ' ');
-            if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
-                Well_Coord_Temp = strsplit(obj.InputMatrix{index + 3}, ' ');
-                if length(Well_Coord_Temp)>1
-                    if Well_Coord_Temp{2}=='-',  j_init =SimulationInput.ReservoirProperties.Grid.N(2)-1;
-                    else,  error('For Injection Well Coordination, you can only use "NY" with minus sign "-"!');
-                    end
-                else
-                    j_init =SimulationInput.ReservoirProperties.Grid.N(2);
-                end
-            else
-                j_init = str2double(obj.InputMatrix{index + 3});
-            end
-            %j_final
-            Well_Coord_Temp = strsplit(obj.InputMatrix{index + 4}, ' ');
-            if sum( strcmp('NY' , Well_Coord_Temp) ) > 0
-                Well_Coord_Temp = strsplit(obj.InputMatrix{index + 4}, ' ');
-                if length(Well_Coord_Temp)>1
-                    if Well_Coord_Temp{2}=='-',  j_final =SimulationInput.ReservoirProperties.Grid.N(2)-1;
-                    else,  error('For Injection Well Coordination, while you can only use "NY" with minus sign "-"!');
-                    end
-                else
-                    j_final =SimulationInput.ReservoirProperties.Grid.N(2);
-                end
-            else
-                j_final = str2double(obj.InputMatrix{index + 4});
-            end
-            %k_init
-            Well_Coord_Temp = strsplit(obj.InputMatrix{index + 5}, ' ');
-            if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
-                Well_Coord_Temp = strsplit(obj.InputMatrix{index + 5}, ' ');
-                if length(Well_Coord_Temp)>1
-                    if Well_Coord_Temp{2}=='-',  k_init =SimulationInput.ReservoirProperties.Grid.N(3)-1;
-                    else,  error('For Injection Well Coordination, you can only use "NZ" with minus sign "-"!');
-                    end
-                else
-                    k_init =SimulationInput.ReservoirProperties.Grid.N(3);
-                end
-            else
-                k_init = str2double(obj.InputMatrix{index + 5});
-            end
-            Well_Coord_Temp = strsplit(obj.InputMatrix{index + 6}, ' ');
-            %k_final
-            if sum( strcmp('NZ' , Well_Coord_Temp) ) > 0
-                Well_Coord_Temp = strsplit(obj.InputMatrix{index + 6}, ' ');
-                if length(Well_Coord_Temp)>1
-                    if Well_Coord_Temp{2}=='-',  k_final =SimulationInput.ReservoirProperties.Grid.N(3)-1;
-                    else,  error('For Injection Well Coordination, while you can only use "NZ" with minus sign "-"!');
-                    end
-                else
-                    k_final =SimulationInput.ReservoirProperties.Grid.N(3);
-                end
-            else
-                k_final = str2double(obj.InputMatrix{index + 6});
-            end
-            Coord = [i_init, i_final; j_init, j_final; k_init, k_final];
-        end
-        function FindPerforatedCells(obj, CornerPointGridData, Well)
-            Well = struct;
-            Start = [1000;340;500];
-            End = [1200;360;200];
-            for w = 1 : 1%length(Well)
-                %Start = Well(w).Start; % [x;y;z]
-                %End   = Well(w).End  ; % [x;y;z]
-                PerfIndex = [];
-                for i = 1 : CornerPointGridData.N_ActiveCells
-                    % Find the perforated cell indeces
-                    % ...
-                    if perforated
-                        PerfIndex = [PerfIndex; i];
-                    end
-                end
-                Well(w).PerforatedCellsIndex = PerfIndex;
             end
         end
         function SimulatorSettings = ReadSimulatorSettings(obj, SimulationInput)

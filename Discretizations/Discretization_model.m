@@ -60,9 +60,9 @@ classdef Discretization_model < handle
             % Has to be improved for Diagonal wells (maybe using trajectories)
             % Injectors
             for i = 1:Wells.NofInj
-                I = Wells.Inj(i).Coord(1,1):1:Wells.Inj(i).Coord(1,2);
-                J = Wells.Inj(i).Coord(2,1):1:Wells.Inj(i).Coord(2,2);
-                K = Wells.Inj(i).Coord(3,1):1:Wells.Inj(i).Coord(3,2);
+                I = Wells.Inj(i).Coord(1,1):1:Wells.Inj(i).Coord(2,1);
+                J = Wells.Inj(i).Coord(1,2):1:Wells.Inj(i).Coord(2,2);
+                K = Wells.Inj(i).Coord(1,3):1:Wells.Inj(i).Coord(2,3);
                 if (sum(I > obj.ReservoirGrid.Nx) == 1 || sum(J > obj.ReservoirGrid.Ny) == 1 || sum(K > obj.ReservoirGrid.Nz) == 1)
                     error(['ERROR: coordinates of injector num ', num2str(i),' fall outside of the domain']);
                 else
@@ -73,9 +73,9 @@ classdef Discretization_model < handle
             
             % Producers
             for i = 1:Wells.NofProd
-                I = Wells.Prod(i).Coord(1,1):1:Wells.Prod(i).Coord(1,2);
-                J = Wells.Prod(i).Coord(2,1):1:Wells.Prod(i).Coord(2,2);
-                K = Wells.Prod(i).Coord(3,1):1:Wells.Prod(i).Coord(3,2);
+                I = Wells.Prod(i).Coord(1,1):1:Wells.Prod(i).Coord(2,1);
+                J = Wells.Prod(i).Coord(1,2):1:Wells.Prod(i).Coord(2,2);
+                K = Wells.Prod(i).Coord(1,3):1:Wells.Prod(i).Coord(2,3);
                 if (sum(I > obj.ReservoirGrid.Nx) == 1 || sum(J > obj.ReservoirGrid.Ny) == 1 || sum(K > obj.ReservoirGrid.Nz) == 1)
                     error(['ERROR: coordinates of producer num ', num2str(i),' fall outside of the domain']);
                 else
