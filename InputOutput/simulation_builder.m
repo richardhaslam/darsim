@@ -495,7 +495,15 @@ classdef simulation_builder < handle
                     Discretization.AddOperatorsHandler(operatorshandler);
                 case('FS')
                     % Fine-scale discretization model
-                    Discretization = FS_Discretization_model();
+                    switch obj.SimulationInput.ReservoirProperties.Discretization
+                        case('Cartesian')
+                            Discretization = Cartesian_Discretization_model();
+                        case('CornerPointGrid')
+                            Discretization = CornerPointGrid_Discretization_model();
+                            Discretization.CornerPointGridData = obj.SimulationInput.ReservoirProperties.CornerPointGridData;
+                        otherwise
+                            error('At this moment, only "Cartesian" and "CornerPointGrid" discretization models are supported in DARSim!\n');
+                    end
             end
             
             %% 3. Add Grids to the Discretization Model
@@ -660,7 +668,6 @@ classdef simulation_builder < handle
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Injector = injector_rate(PI, coord, rate, p_init, temperature, n_phases);
                 end
-                %Injector.Cell = DiscretizationModel.DefinePerforatedCells(Injector);
                 Wells.AddInjector(Injector);
             end
             
