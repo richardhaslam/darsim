@@ -748,9 +748,10 @@ classdef reader_darsim2 < reader
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation
             
             %% %%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
-            temp = strfind(obj.SettingsMatrix, 'OUTPUT'); 
+            temp = strfind(obj.SettingsMatrix, 'OUTPUT');
             xv = find(~cellfun('isempty', temp));
-            SimulatorSettings.plotting = char(obj.SettingsMatrix(xv+1)); %Matlab or VTK
+            SimulatorSettings.plotting.Software = char(obj.SettingsMatrix(xv+1)); %Matlab or ParaView/VTK
+            SimulatorSettings.plotting.Format = char(obj.SettingsMatrix(xv+2)); % ASCII or BINARY
         end
     end
 end

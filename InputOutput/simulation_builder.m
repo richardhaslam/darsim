@@ -903,13 +903,13 @@ classdef simulation_builder < handle
                 case('OBL')
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
-                case('Geothermal_1T')
-                    Formulation = Geothermal_1T_formulation();
+                case('Geothermal_SinglePhase')
+                    Formulation = Geothermal_SinglePhase_formulation();
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 1;
-                case('Geothermal_2T')
-                    Formulation = Geothermal_2T_formulation();
+                case('Geothermal_MultiPhase')
+                    Formulation = Geothermal_MultiPhase_formulation();
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 2;
-                    Formulation.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
+                    % How many equations in total for Geothermal_MultiPhase?
             end
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
@@ -927,7 +927,7 @@ classdef simulation_builder < handle
                     % FIM coupling
                     %%%%FIM settings
                     switch obj.SimulatorSettings.Formulation
-                        case {'Geothermal_1T','Geothermal_2T'}
+                        case {'Geothermal_SinglePhase'}
                             NLSolver = NL_Solver_geothermal();
                         otherwise
                             NLSolver = NL_Solver();
@@ -937,11 +937,8 @@ classdef simulation_builder < handle
                         case ('ADM')
                             % Build a different convergence cheker and a proper LS for ADM
                             switch obj.SimulatorSettings.Formulation
-                                case ('Geothermal_1T')
-                                    ConvergenceChecker = convergence_checker_ADM_geothermal_1T();
-                                case ('Geothermal_2T')
-                                    ConvergenceChecker = convergence_checker_ADM_geothermal_2T();
-                                    ConvergenceChecker.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
+                                case ('Geothermal_SinglePhase')
+                                    ConvergenceChecker = convergence_checker_ADM_geothermal();
                                 otherwise
                                     ConvergenceChecker = convergence_checker_ADM();
                             end
@@ -949,11 +946,7 @@ classdef simulation_builder < handle
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
-                            if obj.SimulatorSettings.Formulation == "Geothermal_2T" && ConvergenceChecker.AveragedTemperature == "On"
-                                % In this case, two Tf and Tr eqations with be summed up to represent one average temperature
-                                % and for OperatorsAssembler, we have only one equation less (average T instead of Tf and Tr).
-                                NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq-1);
-                            end
+                            
                             if obj.SimulatorSettings.ADMSettings.DLGR
                                 % it will change perm during ADM
                                 % simulaiton to use upscaled ones
@@ -963,11 +956,8 @@ classdef simulation_builder < handle
                             switch (obj.SimulatorSettings.Formulation)
                                 case('Molar')
                                     ConvergenceChecker = convergence_checker_FS_molar();
-                                case ('Geothermal_1T')
-                                    ConvergenceChecker = convergence_checker_FS_geothermal_1T();
-                                case ('Geothermal_2T')
-                                    ConvergenceChecker = convergence_checker_FS_geothermal_2T();
-                                    ConvergenceChecker.AveragedTemperature = obj.SimulationInput.FluidProperties.AveragedTemperature;
+                                case ('Geothermal_SinglePhase')
+                                    ConvergenceChecker = convergence_checker_FS_geothermal();
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
@@ -987,10 +977,8 @@ classdef simulation_builder < handle
                     switch (obj.SimulatorSettings.Formulation)
                         case('Immiscible')
                             ConvergenceChecker.NormCalculator = norm_calculator_immiscible();
-                        case('Geothermal_1T')
-                            ConvergenceChecker.NormCalculator = norm_calculator_geothermal_1T();
-                        case('Geothermal_2T')
-                            ConvergenceChecker.NormCalculator = norm_calculator_geothermal_2T();
+                        case('Geothermal_SinglePhase')
+                            ConvergenceChecker.NormCalculator = norm_calculator_geothermal();
                         otherwise
                             ConvergenceChecker.NormCalculator = norm_calculator_comp();
                     end
@@ -1252,15 +1240,23 @@ classdef simulation_builder < handle
         end
         function Writer = BuildWriter(obj, InputDirectory, simulation)
             % Build Plotter
-            switch(obj.SimulatorSettings.plotting)
+            switch(obj.SimulatorSettings.plotting.Software)
                 case('Matlab')
                     if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
                         plotter = Matlab_Plotter_1D();
                     else
                         plotter = Matlab_Plotter_2D();
                     end
-                case('VTK')
+                case({'ParaView','VTK'})
                     plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
+                    switch obj.SimulatorSettings.plotting.Format
+                        case{'BINARY'}
+                            plotter.isBinary = 1;
+                        case{'ASCII'}    
+                            plotter.isBinary = 0;
+                        otherwise
+                            warning('WARNING: NO valid output file format ("BINARY" or "ASCII") for Plotting was selected. Binary format is set by default.\n');
+                    end
                 otherwise
                     warning('WARNING: NO valid Plotter was selected. Results will not be plotted.');
                     plotter = no_Plotter();
