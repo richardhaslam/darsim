@@ -12,6 +12,7 @@ classdef reader_darsim2 < reader
         SettingsMatrix
         FractureMatrix
         CornerPointGridMatrix
+        CornerPointGridRockPropertiesMatrix
     end
     methods
         function obj = reader_darsim2(dir, file, permdirectory)
@@ -179,118 +180,146 @@ classdef reader_darsim2 < reader
             
             
             % 3. Permeability
-            temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
-            index = find(~cellfun('isempty', temp));
-            if ~isempty(index)
-                ReservoirProperties.PermUnit = obj.InputMatrix{index+1};
-            else
-                warning('The keyword "PERMEABILITY_UNIT" is missing. SI unit "m2" is set by default.\n');
-                ReservoirProperties.PermUnit = 'm2';
-            end
-            
-            temp = strfind(obj.InputMatrix, 'PERMEABILITY_SCALE');
-            index = find(~cellfun('isempty', temp));
-            if ~isempty(index)
-                ReservoirProperties.PermScale = obj.InputMatrix{index+1};
-            else
-                warning('The keyword "PERMEABILITY_SCALE" is missing. Linear scale is set by default.\n');
-                ReservoirProperties.PermScale = 'Linear';
-            end
-            if ~strcmp(ReservoirProperties.PermScale, 'Linear') && ~strcmp(ReservoirProperties.PermScale, 'Logarithmic')
-                error('The permeability scale is either Linear or Logarithmic. Please check the input file.\n');
-            end
-            
-            temp = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_REDUCTION');
-            index = find(~cellfun('isempty', temp));
-            if ~isempty(index)
-                ReservoirProperties.PermContrastReduction = 1;
-                temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_MEAN');
-                index1 = find(~cellfun('isempty', temp1));
-                if ~isempty(index1)
-                    ReservoirProperties.PermContrastMean = obj.InputMatrix{index1+1};
-                else
-                    ReservoirProperties.PermContrastMean = 'Default';
+            if strcmp(ReservoirProperties.Discretization,'CornerPointGrid')
+                temp = strfind(obj.InputMatrix, 'ROCKPROPERTIES_FILE');
+                index = find(~cellfun('isempty', temp));
+                FileName = obj.InputMatrix{index+1};
+                if isempty(FileName)
+                    FileName = 'CornerPointGrid_DARSim_RockPropertiesData.txt';
                 end
-                temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_ORDER');
-                index1 = find(~cellfun('isempty', temp1));
-                if ~isempty(index1)
-                    ReservoirProperties.PermContrastOrder = str2double(obj.InputMatrix{index1+1});
+                CornerPointGridRockPropertiesFile = strcat(obj.Directory, '/', FileName);
+                fileID = fopen(CornerPointGridRockPropertiesFile, 'r');
+                matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                obj.CornerPointGridRockPropertiesMatrix = matrix{1};
+                fclose(fileID);
+                
+                if isfile(strcat(obj.Directory, '/','CornerPointGridRockPropertiesData.mat'))
+                    fprintf('"CornerPointGridRockPropertiesData.mat" file already exists. No need to load the CornerPointGridRockProperties data input file.\n');
+                    load(strcat(obj.Directory, '/','CornerPointGridRockPropertiesData.mat'),'ReservoirProperties');
                 else
-                    ReservoirProperties.PermContrastOrder = 3;
+                    ReservoirProperties.CornerPointGridRockPropertiesData = obj.ReadCornerPointGridRockPropertiesData();
+                    save(strcat(obj.Directory, '/','CornerPointGridRockPropertiesData.mat'),'ReservoirProperties');
                 end
+                
             else
-                ReservoirProperties.PermContrastReduction = 0;
-            end
-			
-            perm = zeros(3, 1);
-            temp = strfind(obj.InputMatrix, 'PERMX');
-            perm(1) = find(~cellfun('isempty', temp));
-            if isempty(perm(1))
-                error('The keyword "PERMX" is missing. Please check the input file!\n');
-            end
-            temp = strfind(obj.InputMatrix, 'PERMY');
-            perm(2) = find(~cellfun('isempty', temp));
-            if isempty(perm(2))
-                error('The keyword "PERMX" is missing. Please check the input file!\n');
-            end
-            temp = strfind(obj.InputMatrix, 'PERMZ');
-            perm(3) = find(~cellfun('isempty', temp));
-            if isempty(perm(3))
-                error('The keyword "PERMX" is missing. Please check the input file!\n');
-            end
-            DimChar = {'x' , 'y' , 'z'};
-            for i=1:3
-                if contains(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
-                    ReservoirProperties.PermInclude(i) = 1;
-                    ReservoirProperties.PermFile{i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
+                
+                strcmp(ReservoirProperties.Discretization,'Cartesian')
+                temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    ReservoirProperties.PermUnit = obj.InputMatrix{index+1};
                 else
-                    ReservoirProperties.PermInclude(i) = 0;
-                    ReservoirProperties.Perm(i) = str2double(obj.InputMatrix(perm(i) +1));
-                    if isnan(ReservoirProperties.Perm(i))
-                        error('The permeability value in %s direction is not valid. Please check the input file.\n',DimChar{i});
+                    warning('The keyword "PERMEABILITY_UNIT" is missing. SI unit "m2" is set by default.\n');
+                    ReservoirProperties.PermUnit = 'm2';
+                end
+                 
+                temp = strfind(obj.InputMatrix, 'PERMEABILITY_SCALE');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    ReservoirProperties.PermScale = obj.InputMatrix{index+1};
+                else
+                    warning('The keyword "PERMEABILITY_SCALE" is missing. Linear scale is set by default.\n');
+                    ReservoirProperties.PermScale = 'Linear';
+                end
+                 
+                if ~strcmp(ReservoirProperties.PermScale, 'Linear') && ~strcmp(ReservoirProperties.PermScale, 'Logarithmic')
+                    error('The permeability scale is either Linear or Logarithmic. Please check the input file.\n');
+                end
+                 
+                temp = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_REDUCTION');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    ReservoirProperties.PermContrastReduction = 1;
+                    temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_MEAN');
+                    index1 = find(~cellfun('isempty', temp1));
+                    if ~isempty(index1)
+                        ReservoirProperties.PermContrastMean = obj.InputMatrix{index1+1};
+                    else
+                        ReservoirProperties.PermContrastMean = 'Default';
                     end
+                    temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_ORDER');
+                    index1 = find(~cellfun('isempty', temp1));
+                    if ~isempty(index1)
+                        ReservoirProperties.PermContrastOrder = str2double(obj.InputMatrix{index1+1});
+                    else
+                        ReservoirProperties.PermContrastOrder = 3;
+                    end
+                else
+                    ReservoirProperties.PermContrastReduction = 0;
                 end
-            end
 			
-            %%%% Homogenized/upscaled permeabilities for each coarsening level %%%%%%%
-            temp = strfind(obj.SettingsMatrix, 'DLGR');
-            x = find(~cellfun('isempty', temp));
-            if isempty(temp)
-                DLGR = 0;
-            else
-                DLGR = str2double(obj.SettingsMatrix(x+1));
-            end
-            if DLGR
-                temp = strfind(obj.SettingsMatrix, 'ADM');
-                adm = find(~cellfun('isempty', temp));
-                if str2double(obj.SettingsMatrix(adm + 1)) == 1
-                    temp = strfind(obj.SettingsMatrix, 'LEVELS');
-                    x = find(~cellfun('isempty', temp));
-                    CoarseningLevel = str2double(obj.SettingsMatrix(x+1));
-                    for L = 1:CoarseningLevel
-                        temp = strfind( obj.InputMatrix , strcat('PERM_COARSE_L',num2str(L),'_X') );
-                        permx = find(~cellfun('isempty', temp));
-                        temp = strfind( obj.InputMatrix , strcat('PERM_COARSE_L',num2str(L),'_Y') );
-                        permy = find(~cellfun('isempty', temp));
-                        temp = strfind( obj.InputMatrix , strcat('PERM_COARSE_L',num2str(L),'_Z') );
-                        permz = find(~cellfun('isempty', temp));
-                        if ~isempty(permx)
-                            ReservoirProperties.CoarsePermFile{L,1} = strcat(obj.PermDirectory, char(obj.InputMatrix(permx+1)));
-                        end
-                        if ~isempty(permy)
-                            ReservoirProperties.CoarsePermFile{L,2} = strcat(obj.PermDirectory, char(obj.InputMatrix(permy+1)));
-                        end
-                        if ~isempty(permz)
-                            ReservoirProperties.CoarsePermFile{L,3} = strcat(obj.PermDirectory, char(obj.InputMatrix(permz+1)));
+                perm = zeros(3, 1);
+                temp = strfind(obj.InputMatrix, 'PERMX');
+                perm(1) = find(~cellfun('isempty', temp));
+                if isempty(perm(1))
+                    error('The keyword "PERMX" is missing. Please check the input file!\n');
+                end
+                temp = strfind(obj.InputMatrix, 'PERMY');
+                perm(2) = find(~cellfun('isempty', temp));
+                if isempty(perm(2))
+                    error('The keyword "PERMY" is missing. Please check the input file!\n');
+                end
+                temp = strfind(obj.InputMatrix, 'PERMZ');
+                perm(3) = find(~cellfun('isempty', temp));
+                if isempty(perm(3))
+                    error('The keyword "PERMX" is missing. Please check the input file!\n');
+                end
+                DimChar = {'x' , 'y' , 'z'};
+                for i=1:3
+                    if contains(obj.InputMatrix(perm(i) - 1), 'INCLUDE')
+                        ReservoirProperties.PermInclude(i) = 1;
+                        ReservoirProperties.PermFile{i} = strcat(obj.PermDirectory, char(obj.InputMatrix(perm(i) +1)));
+                    else
+                        ReservoirProperties.PermInclude(i) = 0;
+                        ReservoirProperties.Perm(i) = str2double(obj.InputMatrix(perm(i) +1));
+                        if isnan(ReservoirProperties.Perm(i))
+                            error('The permeability value in %s direction is not valid. Please check the input file.\n',DimChar{i});
                         end
                     end
                 end
+			
+                %%%% Homogenized/upscaled permeabilities for each coarsening level %%%%%%%
+                temp = strfind(obj.SettingsMatrix, 'DLGR');
+                x = find(~cellfun('isempty', temp));
+                if isempty(temp)
+                    DLGR = 0;
+                else
+                    DLGR = str2double(obj.SettingsMatrix(x+1));
+                end
+                if DLGR
+                    temp = strfind(obj.SettingsMatrix, 'ADM');
+                    adm = find(~cellfun('isempty', temp));
+                    if str2double(obj.SettingsMatrix(adm + 1)) == 1
+                        temp = strfind(obj.SettingsMatrix, 'LEVELS');
+                        x = find(~cellfun('isempty', temp));
+                        CoarseningLevel = str2double(obj.SettingsMatrix(x+1));
+                        for L = 1:CoarseningLevel
+                            temp = strfind( obj.InputMatrix , strcat('PERM_COARSE_L',num2str(L),'_X') );
+                            permx = find(~cellfun('isempty', temp));
+                            temp = strfind( obj.InputMatrix , strcat('PERM_COARSE_L',num2str(L),'_Y') );
+                            permy = find(~cellfun('isempty', temp));
+                            temp = strfind( obj.InputMatrix , strcat('PERM_COARSE_L',num2str(L),'_Z') );
+                            permz = find(~cellfun('isempty', temp));
+                            if ~isempty(permx)
+                                ReservoirProperties.CoarsePermFile{L,1} = strcat(obj.PermDirectory, char(obj.InputMatrix(permx+1)));
+                            end
+                            if ~isempty(permy)
+                                ReservoirProperties.CoarsePermFile{L,2} = strcat(obj.PermDirectory, char(obj.InputMatrix(permy+1)));
+                            end
+                            if ~isempty(permz)
+                                ReservoirProperties.CoarsePermFile{L,3} = strcat(obj.PermDirectory, char(obj.InputMatrix(permz+1)));
+                            end
+                        end
+                    end
+                end
+                
+                % 4. Porosity
+                temp = strfind(obj.InputMatrix, 'POR');
+                index = find(~cellfun('isempty', temp));
+                ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
+                
             end
-
-            % 4. Porosity 
-            temp = strfind(obj.InputMatrix, 'POR');
-            index = find(~cellfun('isempty', temp));
-            ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
+            
             
             % 5. Temperature
             temp = strfind(obj.InputMatrix, 'TEMPERATURE (K)');
@@ -333,7 +362,7 @@ classdef reader_darsim2 < reader
             if isempty(index_spec_heat)
                 ReservoirProperties.SpecificHeat = 790; % Default value if not defined [J/Kg/K]
             else
-                ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+((NofPhases+1)*2)});
+                ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+(Permeability(NofPhases+1)*2)});
             end
             
         end
@@ -494,6 +523,100 @@ classdef reader_darsim2 < reader
             end
             fprintf('\n');
             CornerPointGridData.Cell = Cell;
+        end
+        function CornerPointGridRockPropertiesData = ReadCornerPointGridRockPropertiesData(obj)
+            fprintf('Reading the CornerPointGridRockProperties input file:\n');
+            
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NX');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "RESERVOIR_GRID_NX" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridRockPropertiesData.Nx = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+            
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NY');
+            if isempty(index)
+                error('The keyword "RESERVOIR_GRID_NY" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            index = find(~cellfun('isempty', temp));
+            CornerPointGridRockPropertiesData.Ny = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+                
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NZ');
+            if isempty(index)
+                error('The keyword "RESERVOIR_GRID_NZ" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            index = find(~cellfun('isempty', temp));
+            CornerPointGridRockPropertiesData.Nz = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+                
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'ACTIVE_CELLS');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridRockPropertiesData.N_ActiveCells = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+                
+            % Reading Permeability values information line by line(Kx,Ky,Kz)
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_XYZ');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "PERMEABILITY_XYZ" is missing. Please check the CornerPointGridRockProperties input file!\n');
+            end
+            
+            Permeability.X_Y_Z = zeros(CornerPointGridRockPropertiesData.N_ActiveCells, 3);
+                
+            fprintf('---> Permeability X Y Z ');
+            for i = 1 : CornerPointGridRockPropertiesData.N_ActiveCells
+%                 if (i>1),  fprintf(repmat('\b', 1, 13));
+%                 end
+%                 fprintf('%06d/%06d',i,ReservoirProperties.CornerPointGridRockPropertiesData.N_ActiveCells);
+                Temp = strsplit(obj.CornerPointGridRockPropertiesMatrix{index+2-1+i},{' , '});
+                Permeability.X_Y_Z(i,:) = str2double( strsplit( Temp{2} , ';' ) );
+            end
+            fprintf('\n');
+                       
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_TENSOR');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "PERMEABILITY_TENSOR" is missing. Please check the CornerPointGridRockProperties input file!\n');
+            end
+                
+            Permeability.Tensor = zeros(CornerPointGridRockPropertiesData.N_ActiveCells, 9);
+                
+            fprintf('---> Permeability Tensor ');
+            for i = 1 : CornerPointGridRockPropertiesData.N_ActiveCells
+%                 if (i>1),  fprintf(repmat('\b', 1, 13));
+%                 end
+%                 fprintf('%06d/%06d',i,ReservoirProperties.CornerPointGridRockPropertiesData.N_ActiveCells);
+                Temp = strsplit(obj.CornerPointGridRockPropertiesMatrix{index+2-1+i},{' , '});
+                Permeability.Tensor(i,1:3) = str2double( strsplit( Temp{2} , ';' ) );
+                Permeability.Tensor(i,4:6) = str2double( strsplit( Temp{3} , ';' ) );
+                Permeability.Tensor(i,7:9) = str2double( strsplit( Temp{4} , ';' ) );
+            end
+            fprintf('\n');
+            
+            CornerPointGridRockPropertiesData.Permeability = Permeability;
+            
+            % Reading Porosity values data line by line
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'POROSITY');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "POROSITY" is missing. Please check the CornerPointGridRockProperties input file!\n');
+            end
+                                   
+            fprintf('---> Porosity ');
+            Porosity = zeros(CornerPointGridRockPropertiesData.N_ActiveCells, 1);
+
+            for i = 1 : CornerPointGridRockPropertiesData.N_ActiveCells
+%                 if (i>1),  fprintf(repmat('\b', 1, 13));
+%                 end
+%                 fprintf('%06d/%06d',i,ReservoirProperties.CornerPointGridRockPropertiesData.N_ActiveCells);
+                Temp = strsplit(obj.CornerPointGridRockPropertiesMatrix{index+2-1+i},{' , '});
+                Porosity(i) = str2double(Temp{2});
+            end
+            fprintf('\n');
+           
+            CornerPointGridRockPropertiesData.Porosity = Porosity;
+                        
         end
         function FluidProperties = ReadFluidProperties(obj)
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
