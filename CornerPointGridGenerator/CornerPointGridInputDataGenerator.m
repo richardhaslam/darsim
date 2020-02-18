@@ -52,22 +52,22 @@ B=reshape(B,8,[])';
 % Reshape the cell data based on the requirements of the input file for DARSim2: Z Coordinates
 T = size(z);
 Z = reshape(permute(reshape(z,T(1),2,[],T(3)),[1,3,2,4]),[],2,T(3));
-C=[]; c=1;
+C1=[]; c=1;
 for k=2:2:size(Z,3)
     Cc(:,:,c)=[Z(:,:,k-1),Z(:,:,k)];                             
     c=c+1;
 end
 for k=1:size(Z,3)/2
-    C=[C;Cc(:,:,k)];                                               
+    C1=[C1;Cc(:,:,k)];                                               
 end
-C=C';
-C=reshape(C,8,[])';
+C1=C1';
+C1=reshape(C1,8,[])';
 
 % SECTION 1: CELLS NODES (X, Y, Z) + CENTROIDS + VECTORS A, B, C (X, Y, Z COORDINATES)
 % Only Active Cells (Based on ACTNUM info)
-Cell_Nodes = [NumberCells, grdecl.ACTNUM, A(:,2), B(:,2), C(:,2), A(:,6), B(:,6), C(:,6), A(:,1), B(:,1), C(:,1),...
-    A(:,5), B(:,5), C(:,5),A(:,4), B(:,4), C(:,4), A(:,8), B(:,8), C(:,8), A(:,3), B(:,3), C(:,3),...
-    A(:,7), B(:,7), C(:,7)];
+Cell_Nodes = [NumberCells, grdecl.ACTNUM, A(:,2), B(:,2), C1(:,2), A(:,6), B(:,6), C1(:,6), A(:,1), B(:,1), C1(:,1),...
+    A(:,5), B(:,5), C1(:,5),A(:,4), B(:,4), C1(:,4), A(:,8), B(:,8), C1(:,8), A(:,3), B(:,3), C1(:,3),...
+    A(:,7), B(:,7), C1(:,7)];
 LI = Cell_Nodes(:,2) == 0;                            % Logical Index                 
 Cell_Nodes(LI,:) = [];                                % Delete Cells that are not active
 Cell_Nodes(:,2) = [];                                 % Delete Columns of Active Cells
@@ -90,6 +90,58 @@ EF(LI,:) = [];
 EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];
 c_vec_EF = G.faces.centroids(EF2(:,1),:) - G.cells.centroids(EF2(:,9));
 EF3 = [EF2 c_vec_EF ];
+
+% CALCULATE TRANSMISSIBILITIES
+% Load Inputs Files
+p = load('NPD5_Porosity.txt')';
+K = load('NPD5_Permeability.txt')';
+% Just Considered Active Cells
+p = p(G.cells.indexMap);
+poro = p;
+K = K(G.cells.indexMap);
+% Convert K values a diferent units
+K = K .* milli * darcy;
+perm = bsxfun(@times, [1 1 0.1], K);
+rock = makeRock(G, perm, poro);
+[K, i, j] = permTensor(rock, G.griddim);
+
+hT1 = zeros(size(IF(:,2)));
+hT2 = zeros(size(IF(:,3)));
+N = FC2(:,6:8);
+C1 = FC2(:,10:12);
+C2 = FC2(:,14:16);
+
+for k = 1 : size(i,2) 
+    hT1 = hT1 + C1(:, i(k)) .* K(IF(:,2), k) .* N(:, j(k));
+end
+hT1 = hT1 ./ sum(C1.*C1, 2);
+
+for k = 1 : size(i,2) 
+    hT2 = hT2 + C2(:, i(k)) .* K(IF(:,3), k) .* N(:, j(k));
+end
+hT2 = hT2 ./ sum(C2.*C2, 2);
+hT3 = abs(hT2);
+hTF = 1./(1./hT1 + 1./hT3);
+
+%Another Approach
+hT_1 = sum(C1(:,:).* N(:,:).* perm(IF(:,2),:), 2) ./ sum(C1(:,:).* C1(:,:),2) ;
+hT_2 = abs(sum(C2(:,:).* N(:,:).* perm(IF(:,3),:), 2) ./ sum(C2(:,:).* C2(:,:),2));
+hT_F = 1./(1./hT_1 + 1./hT_2);
+
+hT_11 = sum(C1.* N.* perm(IF(:,2),:), 2) ./ sum(C1.* C1,2) ;
+hT_22 = abs(sum(C2.* N.* perm(IF(:,3),:), 2) ./ sum(C2.* C2,2));
+hT_FF = 1./(1./hT_11 + 1./hT_22);
+
+% hf = IF(:,1);
+% hf2cn1 = IF(:,2);
+% sgn1 = 2*(hf2cn1 == G.faces.neighbors(hf, 1)) - 1;
+% hf2cn2 = IF(:,3);
+% sgn2 = 2*(hf2cn2 == G.faces.neighbors(hf, 1)) - 1;
+% 
+% N1 = IF(:,4:10);
+% N2 = bsxfun(@times, sgn2, IF(:,4:10));
+
+
 
 %% OUTPUT FILE: WRITING
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
@@ -125,7 +177,7 @@ fprintf(fid,'%s %31s %39s %39s %39s %40s %38s %39s %39s %35s %22s\n', ...
           'South-East Top Corner(x;y;z)','North-West Bttm Corner(x;y;z)','North-East Bttm Corner(x;y;z)',...
           'South-West Bttm Corner(x;y;z)','South-East Bttm Corner(x;y;z)','Cell Centroid(x;y;z)','Cell Volume');   
       
-for ii = 1:10%size(Nodes_XYZi,1)
+for ii = 1:10%size(Cell_Data,1)
     fprintf(fid,'%6.0d , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f\n', Cell_Data(ii,:)');
 end
 
@@ -137,8 +189,8 @@ fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s %10s %32s\n','Faces No.','Face Area',...
             'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)');      
 
-for ii = 1:10%size(FC2,1)
-    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %d , % 12.6f;% 12.6f;% 11.6f , %d , % 12.6f;% 12.6f;% 11.6f  \n', FC2(ii,:)');
+for ii = 1:size(FC2,1)
+    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f  \n', FC2(ii,:)');
 end
 
 fprintf(fid, '\n\n');
@@ -148,7 +200,7 @@ fprintf(fid, '\n');
 fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)');      
 
-for ii = 1:10%size(FD,1)
-    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %d , % 12.6f;% 12.6f; % 11.6f \n', EF3(ii,:)');
+for ii = 1:size(EF3,1)
+    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f; % 11.6f \n', EF3(ii,:)');
 end
 fclose(fid);
