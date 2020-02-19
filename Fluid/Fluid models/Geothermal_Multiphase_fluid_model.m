@@ -13,8 +13,8 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         Htable = (20:1:4800)'; % The range of enthalpy for all the tables
         Pindex % The index of pressure value for lookup in the tables
         Hindex % The index of enthalpy value for lookup in the tables
-        Pstepsize = 0.1;
-        Hstepsize = 1; % implement this
+        Pstepsize = 10000;
+        Hstepsize = 1000; % implement this
     end
     methods
         function obj = Geothermal_Multiphase_fluid_model(n_phases)
@@ -29,71 +29,52 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             SinglePhase (Status.Properties('S_2').Value == 1) = 2;            
         end
         function GetTableIndex(obj, Status)
-            if obj.Pstepsize <= 1
-                [~,obj.Pindex] = ismember(round(Status.Properties('P').Value,abs(log10(obj.Pstepsize))),round(obj.Ptable,abs(log10(obj.Pstepsize))));
-            else 
-                [~,obj.Pindex] = ismember(round(Status.Properties('P').Value,obj.Pstepsize),round(obj.Ptable,obj.Pstepsize));
-            end
-            if obj.Hstepsize <= 1
-                [~,obj.Hindex] = ismember(round(Status.Properties('H').Value,abs(log10(obj.Hstepsize))),round(obj.Htable,abs(log10(obj.Hstepsize))));
-            else
-                [~,obj.Hindex] = ismember(round(Status.Properties('H').Value,obj.Hstepsize),round(obj.Htable,obj.Hstepsize));
-            end               
-%             [~,obj.Pindex] = ismember(round(Status.Properties('P').Value,1),round(obj.Ptable,1));
-%             [~,obj.Hindex] = ismember(round(Status.Properties('H').Value,0),round(obj.Htable,0));
-        end
-        function InitializeInjectors(obj, Inj)
-            for i=1:length(Inj)
-                Inj(i).z = 1;
-                Inj(i).x = [1 0];
-                Inj(i).S = 1;
-                for ph=1:obj.NofPhases
-                    rhoTable = obj.TablePH.(['rho_', num2str(i)]);
-                    muTable = obj.TablePH.(['mu_1',num2str(i)]);
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p, Inj(i).h, rhoTable);
-%                     Inj(i).h(:, ph)= obj.Phases(ph).ComputeEnthalpy(Inj(i).p, Inj(i).T); % if we initialize with temperature, this one is still necessary
-                    mu = obj.Phases(ph).ComputeViscosity(Inj(i).p, Inj(i).h, muTable);
-                end
-                Inj(i).Mob = 1/mu;   
-            end
-        end
-        function AddPhaseConductivities(obj, Status) % !!!
-            cond = Status.Properties('cond_1');
-            cond.Value = obj.Phases(1).AddConductivity(Status.Properties('P_1').Value, Status.Properties('T').Value);
+            [~,obj.Pindex] = ismember( round(Status.Properties('P').Value,-log10(obj.Pstepsize)), round(obj.Ptable,-log10(obj.Pstepsize)) );
+            [~,obj.Hindex] = ismember( round(Status.Properties('H').Value,-log10(obj.Hstepsize)), round(obj.Htable,-log10(obj.Hstepsize)) );
+%             [~,obj.Pindex] = ismember(round(Status.Properties('P').Value,-4),round(obj.Ptable,-4));
+%             [~,obj.Hindex] = ismember(round(Status.Properties('H').Value,-3),round(obj.Htable,-3));
         end
 
-        function ComputePhaseDensities(obj, Status) 
+        function GetPhaseDensities(obj, Status) 
             for i=1:obj.NofPhases
                 rho = Status.Properties(['rho_', num2str(i)]);
                 rhoTable = obj.TablePH.(['rho_', num2str(i)]);
-                rho.Value = obj.Phases(i).ComputeDensity(obj.Pindex, obj.Hindex, rhoTable);
+                rho.Value = obj.Phases(i).GetDensity(obj.Pindex, obj.Hindex, rhoTable);
             end
         end
-        function ComputePhaseSaturations(obj, Status)
+        function GetPhaseSaturations(obj, Status)
             for i=1:obj.NofPhases
                 S = Status.Properties(['S_',num2str(i)]); % S is just a pointer to a memory location here, so it has no value
                 STable = obj.TablePH.(['S_',num2str(i)]); % |-> This is why you need num2str() again here
-                S.Value = obj.Phases(i).ComputeSaturation(obj.Pindex, obj.Hindex, STable); 
+                S.Value = obj.Phases(i).GetSaturation(obj.Pindex, obj.Hindex, STable); 
             end
         end
-        function ComputePhaseViscosities(obj, Status)
+        function GetPhaseViscosities(obj, Status)
             for i=1:NofPhases
                 mu = Status.Properties(['mu_',num2str(i)]);
                 muTable = obj.TablePH.(['mu_',num2str(i)]);
-                mu.Value = obj.Phases(i).ComputeViscosity(obj.Pindex, obj.Hindex, muTable);
+                mu.Value = obj.Phases(i).GetViscosity(obj.Pindex, obj.Hindex, muTable);
             end
         end
-        function ComputePhaseInternalEnergies(obj, Status)
+        function GetPhaseInternalEnergies(obj, Status)
             for i=1:NofPhases
                 U = Status.Properties(['U_',num2str(i)]);
                 UTable = obj.TablePH.(['U_',num2str(i)]);
-                U.Value = obj.Phases(i).ComputeInternalEnergy(obj.Pindex, obj.Hindex, UTable);
+                U.Value = obj.Phases(i).GetInternalEnergy(obj.Pindex, obj.Hindex, UTable);
             end
         end
-        function ComputeTemperature(obj, Status)
+        function GetTemperature(obj, Status)
             T = Status.Properties('T');
             T.Value = obj.TablePH.Temperature(sub2ind(size(obj.TablePH.Temperature), obj.Pindex, obj.Hindex));
         end
+        function GetPhaseThermalConductivities(obj, Status) 
+            for i=1:NofPhases
+                ThermCond = Status.Properties(['cond_',num2str(i)]);
+                ThermCondTable = obj.TablePH.(['cond_',num2str(i)]);
+                ThermCond.Value = obj.Phases(i).GetConductivity(obj.Pindex, obj.Hindex, ThermCondTable);
+            end
+        end
+        
         function ComputeTotalDensity(obj, Status)   % In the accumulation term?
             % Compute the total density
             rhoT = Status.Properties('rhoT');
@@ -102,7 +83,14 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             % This can also be done with a table for the mixture density;
             % make sure both approaches are equal
         end
-
+        
+        
+        function [dconddp, d2condd2p] = ComputeDcondDp(obj)
+        
+        end
+        function [dconddh, d2condd2h] = ComputeDcondDh(obj)
+        
+        end
         function [drhodp, d2rhod2p] = ComputeDrhoDp(obj)
             drhodp = zeros(length(obj.Pindex),obj.NofPhases);
             d2rhod2p = zeros(length(obj.Pindex,obj.NofPhases));
@@ -187,6 +175,21 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         
         function dMobdp = ComputeDMobDp(obj,status)
             % For now, mobility has no dependency on pressure.
+        end
+        function InitializeInjectors(obj, Inj)
+            for i=1:length(Inj)
+                Inj(i).z = 1;
+                Inj(i).x = [1 0];
+                Inj(i).S = 1;
+                for ph=1:obj.NofPhases
+                    rhoTable = obj.TablePH.(['rho_', num2str(i)]);
+                    muTable = obj.TablePH.(['mu_1',num2str(i)]);
+                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p, Inj(i).h, rhoTable);
+%                     Inj(i).h(:, ph)= obj.Phases(ph).ComputeEnthalpy(Inj(i).p, Inj(i).T); % if we initialize with temperature, this one is still necessary
+                    mu = obj.Phases(ph).ComputeViscosity(Inj(i).p, Inj(i).h, muTable);
+                end
+                Inj(i).Mob = 1/mu;   
+            end
         end
         function v = ComputeVelocity(obj, Reservoir, mu)
 %             virtual call

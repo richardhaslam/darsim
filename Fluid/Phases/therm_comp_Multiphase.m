@@ -8,25 +8,23 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef therm_comp_Multiphase < phase
     properties
-        Kf % Conductivity
     end
     % the first derivative is an AVERAGE derivative
     methods
-        function rho = ComputeDensity(obj, Pindex, Hindex, rhoTable)
+        function rho = GetDensity(obj, Pindex, Hindex, rhoTable)
             rho = rhoTable( sub2ind(size(rhoTable), Pindex, Hindex) );
         end
-        function S = ComputeSaturation(obj, Pindex, Hindex, STable)
+        function S = GetSaturation(obj, Pindex, Hindex, STable)
             S = STable( sub2ind(size(STable), Pindex, Hindex) );
         end 
-        function mu = ComputeViscosity(obj, Pindex, Hindex, muTable)
+        function mu = GetViscosity(obj, Pindex, Hindex, muTable)
             mu = muTable( sub2ind(size(muTable), Pindex, Hindex) );
         end
-        function U = ComputeInternalEnergy(obj, Pindex, Hindex, UTable)
+        function U = GetInternalEnergy(obj, Pindex, Hindex, UTable)
             U = UTable( sub2ind(size(UTable), Pindex, Hindex) );
         end   
-
-        function cond = AddConductivity(obj, p, T)
-            cond = obj.Kf * ones(size(p));
+        function ThermCond = GetConductivity(obj, Pindex, Hindex, ThermCondTable)
+            ThermCond = ThermCondTable( sub2ind(size(ThermCondTable), Pindex, Hindex));
         end
         
         function [drhodp, d2rhod2p] = ComputeDrhoDp(obj, Pindex, Hindex, rhoTable)
