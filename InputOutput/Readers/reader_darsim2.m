@@ -117,8 +117,9 @@ classdef reader_darsim2 < reader
                 ReservoirProperties.Discretization = 'Cartesian';
             end
             
+            % Check the discretization approach
             if strcmp(ReservoirProperties.Discretization,'CornerPointGrid')
-                % Read the cornerpointgrid file
+                % Read the cornerpointgrid data input file
                 FileName = obj.InputMatrix{index+2};
                 if isempty(FileName)
                     FileName = 'CornerPointGrid_DARSim_InputData.txt';
@@ -129,6 +130,17 @@ classdef reader_darsim2 < reader
                 obj.CornerPointGridMatrix = matrix{1};
                 fclose(fileID);
                 
+                % Read the cornerpointgrid rock properties data input file
+                FileName = obj.InputMatrix{index+3};
+                CornerPointGridRockPropertiesFile = strcat(obj.Directory, '/', FileName);
+                if isfile(CornerPointGridRockPropertiesFile)
+                    fileID = fopen(CornerPointGridRockPropertiesFile, 'r');
+                    matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                    obj.CornerPointGridRockPropertiesMatrix = matrix{1};
+                    fclose(fileID);
+                end
+                
+                % Check if the data has already beand loaded and saved
                 if isfile(strcat(obj.Directory, '/','CornerPointGridData.mat'))
                     fprintf('"CornerPointGridData.mat" file already exists. No need to load the CornerPointGrid data input file.\n');
                     load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
@@ -154,6 +166,8 @@ classdef reader_darsim2 < reader
                                             str2double(obj.InputMatrix{index+2});
                                             str2double(obj.InputMatrix{index+3})];
                 
+                                        
+                                        
             elseif strcmp(ReservoirProperties.Discretization,'Cartesian')
                 % Assume it is Cartesian
                 % 1. size of the reservoir
@@ -523,37 +537,59 @@ classdef reader_darsim2 < reader
             end
             fprintf('\n');
             CornerPointGridData.Cell = Cell;
-        end
-        function CornerPointGridRockPropertiesData = ReadCornerPointGridRockPropertiesData(obj)
-            fprintf('Reading the CornerPointGridRockProperties input file:\n');
+            
+            
+            % Reading the 
+            if isempty(obj.CornerPointGridRockPropertiesMatrix)
+                return;
+            end
+            fprintf('Reading the CornerPointGrid rock properties data input file:\n');
             
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NX');
-            index = find(~cellfun('isempty', temp));
             if isempty(index)
-                error('The keyword "RESERVOIR_GRID_NX" is missing. Please check the CornerPointGrid input file!\n');
+                error('The keyword "RESERVOIR_GRID_NX" is missing. Please check the CornerPointGrid rock properties input file!\n');
             end
-            CornerPointGridRockPropertiesData.Nx = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+            index = find(~cellfun('isempty', temp));
+            if CornerPointGridData.Nx ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
+            	error('The number of grids in x (Nx) of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
+            end
             
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NY');
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NY" is missing. Please check the CornerPointGrid input file!\n');
             end
             index = find(~cellfun('isempty', temp));
-            CornerPointGridRockPropertiesData.Ny = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+            if CornerPointGridData.Ny ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
+            	error('The number of grids in y (Ny) of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
+            end
                 
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NZ');
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NZ" is missing. Please check the CornerPointGrid input file!\n');
             end
             index = find(~cellfun('isempty', temp));
-            CornerPointGridRockPropertiesData.Nz = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+            if CornerPointGridData.Nz ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
+            	error('The number of grids in z (Nz) of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
+            end
                 
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'ACTIVE_CELLS');
-            index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
             end
-            CornerPointGridRockPropertiesData.N_ActiveCells = str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} );
+            index = find(~cellfun('isempty', temp));
+            %if CornerPointGridData.N_ActiveCells ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
+            %	error('The number of ative cells of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
+            %end
+            
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'POROSITY_DATA');
+            index = find(~cellfun('isempty', temp));
+            splitStr = regexp(obj.CornerPointGridRockPropertiesMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1),{'\s'},'split');
+            splitStr = vertcat(splitStr{:});
+            porosity = str2double(splitStr(:,end));
+            
+        end
+        function CornerPointGridRockPropertiesData = ReadCornerPointGridRockPropertiesData(obj)
+            
                 
             % Reading Permeability values information line by line(Kx,Ky,Kz)
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_XYZ');
