@@ -815,17 +815,19 @@ classdef simulation_builder < handle
                     FluidModel = Geothermal_Multiphase_fluid_model(n_phases);
                     
                     % Read thermodynamic property tables; 1 = Water, 2 = Steam
-                    FluidModel.TablePH.rho_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamDensity_P1to220in0.1_H20to4800in1.txt'));
-                    FluidModel.TablePH.U_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamInternalEnergy_P1to220in0.1_H20to4800in1.txt'));
-                    FluidModel.TablePH.S_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamSaturation_P1to220in0.1_H20to4800in1.txt'));
-                    FluidModel.TablePH.mu_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamViscosity_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.rho_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamDensity.txt'));
+                    FluidModel.TablePH.U_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamInternalEnergy.txt'));
+                    FluidModel.TablePH.S_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamSaturation.txt'));
+                    FluidModel.TablePH.mu_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamViscosity.txt'));
+                    FluidModel.TablePH.cond_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamConductivity.txt'));
                     
-                    FluidModel.TablePH.rho_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterDensity_P1to220in0.1_H20to4800in1.txt'));
-                    FluidModel.TablePH.U_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterInternalEnergy_P1to220in0.1_H20to4800in1.txt'));
-                    FluidModel.TablePH.S_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterSaturation_P1to220in0.1_H20to4800in1.txt'));
-                    FluidModel.TablePH.mu_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterViscosity_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.rho_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterDensity.txt'));
+                    FluidModel.TablePH.U_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterInternalEnergy.txt'));
+                    FluidModel.TablePH.S_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterSaturation.txt'));
+                    FluidModel.TablePH.mu_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterViscosity.txt'));
+                    FluidModel.TablePH.cond_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterConductivity.txt'));
 
-                    FluidModel.TablePH.Temperature = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_Temperature_P1to220in0.1_H20to4800in1.txt'));
+                    FluidModel.TablePH.Temperature = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_Temperature.txt'));
                     
                     % Add phases
                     for i = 1:FluidModel.NofPhases
