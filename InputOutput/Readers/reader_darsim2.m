@@ -165,9 +165,7 @@ classdef reader_darsim2 < reader
                 ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
                                             str2double(obj.InputMatrix{index+2});
                                             str2double(obj.InputMatrix{index+3})];
-                
-                                        
-                                        
+        
             elseif strcmp(ReservoirProperties.Discretization,'Cartesian')
                 % Assume it is Cartesian
                 % 1. size of the reservoir
@@ -188,80 +186,70 @@ classdef reader_darsim2 < reader
                 ReservoirProperties.Grid.N = [str2double(obj.InputMatrix{index+1});...
                                               str2double(obj.InputMatrix{index+2});
                                               str2double(obj.InputMatrix{index+3})];
+                ReservoirProperties.Grid.N_ActiveCells = prod(ReservoirProperties.Grid.N);
             else
                 error('The discretization method should either be "Cartesian" or "CornerPointGrid". Check the input file!\n');
             end
             
             
             % 3. Permeability
-            if strcmp(ReservoirProperties.Discretization,'CornerPointGrid')
-                temp = strfind(obj.InputMatrix, 'ROCKPROPERTIES_FILE');
-                index = find(~cellfun('isempty', temp));
-                FileName = obj.InputMatrix{index+1};
-                if isempty(FileName)
-                    FileName = 'CornerPointGrid_DARSim_RockPropertiesData.txt';
-                end
-                CornerPointGridRockPropertiesFile = strcat(obj.Directory, '/', FileName);
-                fileID = fopen(CornerPointGridRockPropertiesFile, 'r');
-                matrix = textscan(fileID, '%s', 'Delimiter', '\n');
-                obj.CornerPointGridRockPropertiesMatrix = matrix{1};
-                fclose(fileID);
-                
-                if isfile(strcat(obj.Directory, '/','CornerPointGridRockPropertiesData.mat'))
-                    fprintf('"CornerPointGridRockPropertiesData.mat" file already exists. No need to load the CornerPointGridRockProperties data input file.\n');
-                    load(strcat(obj.Directory, '/','CornerPointGridRockPropertiesData.mat'),'ReservoirProperties');
-                else
-                    ReservoirProperties.CornerPointGridRockPropertiesData = obj.ReadCornerPointGridRockPropertiesData();
-                    save(strcat(obj.Directory, '/','CornerPointGridRockPropertiesData.mat'),'ReservoirProperties');
-                end
-                
+            temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                ReservoirProperties.PermUnit = obj.InputMatrix{index+1};
             else
-                
-                strcmp(ReservoirProperties.Discretization,'Cartesian')
-                temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
-                index = find(~cellfun('isempty', temp));
-                if ~isempty(index)
-                    ReservoirProperties.PermUnit = obj.InputMatrix{index+1};
+                warning('The keyword "PERMEABILITY_UNIT" is missing. SI unit "m2" is set by default.\n');
+                ReservoirProperties.PermUnit = 'm2';
+            end
+            
+            temp = strfind(obj.InputMatrix, 'PERMEABILITY_SCALE');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                ReservoirProperties.PermScale = obj.InputMatrix{index+1};
+            else
+                warning('The keyword "PERMEABILITY_SCALE" is missing. Linear scale is set by default.\n');
+                ReservoirProperties.PermScale = 'Linear';
+            end
+            
+            if ~strcmp(ReservoirProperties.PermScale, 'Linear') && ~strcmp(ReservoirProperties.PermScale, 'Logarithmic')
+                error('The permeability scale is either Linear or Logarithmic. Please check the input file.\n');
+            end
+            
+            temp = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_REDUCTION');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                ReservoirProperties.PermContrastReduction = 1;
+                temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_MEAN');
+                index1 = find(~cellfun('isempty', temp1));
+                if ~isempty(index1)
+                    ReservoirProperties.PermContrastMean = obj.InputMatrix{index1+1};
                 else
-                    warning('The keyword "PERMEABILITY_UNIT" is missing. SI unit "m2" is set by default.\n');
-                    ReservoirProperties.PermUnit = 'm2';
+                    ReservoirProperties.PermContrastMean = 'Default';
                 end
-                 
-                temp = strfind(obj.InputMatrix, 'PERMEABILITY_SCALE');
-                index = find(~cellfun('isempty', temp));
-                if ~isempty(index)
-                    ReservoirProperties.PermScale = obj.InputMatrix{index+1};
+                temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_ORDER');
+                index1 = find(~cellfun('isempty', temp1));
+                if ~isempty(index1)
+                    ReservoirProperties.PermContrastOrder = str2double(obj.InputMatrix{index1+1});
                 else
-                    warning('The keyword "PERMEABILITY_SCALE" is missing. Linear scale is set by default.\n');
-                    ReservoirProperties.PermScale = 'Linear';
+                    ReservoirProperties.PermContrastOrder = 3;
                 end
-                 
-                if ~strcmp(ReservoirProperties.PermScale, 'Linear') && ~strcmp(ReservoirProperties.PermScale, 'Logarithmic')
-                    error('The permeability scale is either Linear or Logarithmic. Please check the input file.\n');
+            else
+                ReservoirProperties.PermContrastReduction = 0;
+            end
+            
+            % Read the permeability
+            if strcmp(ReservoirProperties.Discretization,'CornerPointGrid') && sum(strcmp(fieldnames(ReservoirProperties.CornerPointGridData), 'Permeability'))
+                % Do nothing, beacuse the permeability data already exist in CornerPointGridData.
+                ReservoirProperties.Perm = ReservoirProperties.CornerPointGridData.Permeability;
+                if ~strcmp(ReservoirProperties.PermUnit, ReservoirProperties.CornerPointGridData.PermUnit)
+                    warning('The permeability unit reported in the main input file and the CornerPointGrid rock properties input file do not match.\nThe one from CornerPointGrid rock properties input file (%s) is considered.\n', ReservoirProperties.CornerPointGridData.PermUnit);
                 end
-                 
-                temp = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_REDUCTION');
-                index = find(~cellfun('isempty', temp));
-                if ~isempty(index)
-                    ReservoirProperties.PermContrastReduction = 1;
-                    temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_MEAN');
-                    index1 = find(~cellfun('isempty', temp1));
-                    if ~isempty(index1)
-                        ReservoirProperties.PermContrastMean = obj.InputMatrix{index1+1};
-                    else
-                        ReservoirProperties.PermContrastMean = 'Default';
-                    end
-                    temp1 = strfind(obj.InputMatrix, 'PERMEABILITY_CONTRAST_ORDER');
-                    index1 = find(~cellfun('isempty', temp1));
-                    if ~isempty(index1)
-                        ReservoirProperties.PermContrastOrder = str2double(obj.InputMatrix{index1+1});
-                    else
-                        ReservoirProperties.PermContrastOrder = 3;
-                    end
-                else
-                    ReservoirProperties.PermContrastReduction = 0;
+                if ~strcmp(ReservoirProperties.PermScale, ReservoirProperties.CornerPointGridData.PermScale)
+                    warning('The permeability scale reported in the main input file and the CornerPointGrid rock properties input file do not match.\nThe one from CornerPointGrid rock properties input file (%s) is considered.\n', ReservoirProperties.CornerPointGridData.PermScale);
                 end
-			
+            else
+                % The permeability is read from the main input file.
+                ReservoirProperties.Perm = [];
                 perm = zeros(3, 1);
                 temp = strfind(obj.InputMatrix, 'PERMX');
                 perm(1) = find(~cellfun('isempty', temp));
@@ -291,7 +279,7 @@ classdef reader_darsim2 < reader
                         end
                     end
                 end
-			
+                
                 %%%% Homogenized/upscaled permeabilities for each coarsening level %%%%%%%
                 temp = strfind(obj.SettingsMatrix, 'DLGR');
                 x = find(~cellfun('isempty', temp));
@@ -326,14 +314,20 @@ classdef reader_darsim2 < reader
                         end
                     end
                 end
-                
-                % 4. Porosity
-                temp = strfind(obj.InputMatrix, 'POR');
-                index = find(~cellfun('isempty', temp));
-                ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
-                
             end
             
+            % 4. Porosity
+            if strcmp(ReservoirProperties.Discretization,'CornerPointGrid') && sum(strcmp(fieldnames(ReservoirProperties.CornerPointGridData), 'Porosity'))
+                % Do nothing, beacuse the porosity data already exist in CornerPointGridData.
+                ReservoirProperties.phi = ReservoirProperties.CornerPointGridData.Porosity;
+            else
+                temp = strfind(obj.InputMatrix, 'POR');
+                index = find(~cellfun('isempty', temp));
+                if isempty(index)
+                    error('The keyword "Por" for porosity is missing. Please check the input file!\n');
+                end
+                ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
+            end
             
             % 5. Temperature
             temp = strfind(obj.InputMatrix, 'TEMPERATURE (K)');
@@ -362,23 +356,28 @@ classdef reader_darsim2 < reader
             end
             
             % 8. Rock Conductivity
-            temp = strfind(obj.InputMatrix, 'CONDUCTIVITY');
+            temp = strfind(obj.InputMatrix, 'HEAT_CONDUCTIVITY');
             index_conduc = find(~cellfun('isempty', temp));
             if isempty(index_conduc)
                 ReservoirProperties.RockConductivity = 4; % Default value if not defined [W/m/K]
             else
-                ReservoirProperties.RockConductivity = str2double(obj.InputMatrix{index_conduc+((NofPhases+1)*2)});
+                ReservoirProperties.RockHeatConductivity = str2double(obj.InputMatrix{index_conduc+((NofPhases+1)*2)});
+                if isnan(ReservoirProperties.RockHeatConductivity)
+                    error('The rock heat conductivity is not being read properly. Please checkthe input file!\n');
+                end
             end
             
             % 9. Rock Specific Heat
-            temp = strfind(obj.InputMatrix, 'SPECIFIC HEAT');
+            temp = strfind(obj.InputMatrix, 'SPECIFIC_HEAT');
             index_spec_heat = find(~cellfun('isempty', temp));
             if isempty(index_spec_heat)
                 ReservoirProperties.SpecificHeat = 790; % Default value if not defined [J/Kg/K]
             else
-                ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+(Permeability(NofPhases+1)*2)});
+                ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+((NofPhases+1)*2)});
+                if isnan(ReservoirProperties.SpecificHeat)
+                    error('The rock specific heat is not being read properly. Please checkthe input file!\n');
+                end
             end
-            
         end
         function FracturesProperties = ReadFracturesProperties(obj)
             %%%%%%%%%%%%%PROPERTIES OF THE FRACTURES%%%%%%%%%%%%%%%%
@@ -436,98 +435,71 @@ classdef reader_darsim2 < reader
             end
             CornerPointGridData.N_ExternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
             
-            % Reading internal face information line by line
+            % Reading internal faces
             temp = strfind(obj.CornerPointGridMatrix, 'INTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "INTERNAL_FACE_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
             end
             
-            Internal_Face.Area = zeros(CornerPointGridData.N_InternalFaces , 1);
-            Internal_Face.Centroid = zeros(CornerPointGridData.N_InternalFaces , 3);
-            Internal_Face.Nvec = zeros(CornerPointGridData.N_InternalFaces , 3);
-            Internal_Face.CellNeighbor1Index = zeros(CornerPointGridData.N_InternalFaces , 1);
-            Internal_Face.CellNeighbor1Vec = zeros(CornerPointGridData.N_InternalFaces , 3);
-            Internal_Face.CellNeighbor2Index = zeros(CornerPointGridData.N_InternalFaces , 1);
-            Internal_Face.CellNeighbor2Vec = zeros(CornerPointGridData.N_InternalFaces , 3);
-            
-            fprintf('---> Internal Face ');
-            for i = 1 : CornerPointGridData.N_InternalFaces
-                if (i>1),  fprintf(repmat('\b', 1, 13));  end
-                fprintf('%06d/%06d',i,CornerPointGridData.N_InternalFaces);
-                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
-                Internal_Face.Area(i) =  str2double( Temp{2} );
-                Internal_Face.Centroid(i,:) = str2double( strsplit( Temp{3} , ';' ) );
-                Internal_Face.Nvec(i,:) = str2double( strsplit( Temp{4} , ';' ) );
-                Internal_Face.CellNeighbor1Index(i) = str2double( Temp{5} );
-                Internal_Face.CellNeighbor1Vec(i,:) = str2double( strsplit( Temp{6} , ';' ) );
-                Internal_Face.CellNeighbor2Index(i) = str2double( Temp{7} );
-                Internal_Face.CellNeighbor2Vec(i,:) = str2double( strsplit( Temp{8} , ';' ) );
-            end
-            fprintf('\n');
+            fprintf('---> Reading Internal Faces ... ');
+            TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_InternalFaces-1);
+            splitStr = regexp(TEMP, ',', 'split');
+            splitStr = str2double( vertcat( splitStr{:} ) );
+            Internal_Face.Area = splitStr(:,2);
+            Internal_Face.Centroid = splitStr(:,3:5);
+            Internal_Face.Nvec = splitStr(:,6:8);
+            Internal_Face.CellNeighbor1Index = splitStr(:,9);
+            Internal_Face.CellNeighbor1Vec = splitStr(:,10:12);
+            Internal_Face.CellNeighbor2Index = splitStr(:,13);
+            Internal_Face.CellNeighbor2Vec = splitStr(:,14:16);
+            fprintf('Done!\n');
             CornerPointGridData.Internal_Face = Internal_Face;
             
-            % Reading external face information line by line
+            % Reading external faces
             temp = strfind(obj.CornerPointGridMatrix, 'EXTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "EXTERNAL_FACE_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
             end
-            External_Face.Area = zeros(CornerPointGridData.N_ExternalFaces , 1);
-            External_Face.Centroid = zeros(CornerPointGridData.N_ExternalFaces , 3);
-            External_Face.Nvec = zeros(CornerPointGridData.N_ExternalFaces , 3);
-            External_Face.CellNeighborIndex = zeros(CornerPointGridData.N_ExternalFaces , 1);
-            External_Face.CellNeighborVec = zeros(CornerPointGridData.N_ExternalFaces , 3);
             
-            fprintf('---> External Face ');
-            for i = 1 : CornerPointGridData.N_ExternalFaces
-                if (i>1),  fprintf(repmat('\b', 1, 13));  end
-                fprintf('%06d/%06d',i,CornerPointGridData.N_ExternalFaces);
-                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
-                External_Face.Area(i) =  str2double( Temp{2} );
-                External_Face.Centroid(i,:) = str2double( strsplit( Temp{3} , ';' ) );
-                External_Face.Nvec(i,:) = str2double( strsplit( Temp{4} , ';' ) );
-                External_Face.CellNeighborIndex(i) = str2double( Temp{5} ); % An external face has only one connection (to only one cell).
-                External_Face.CellNeighborVec(i,:) = str2double( strsplit( Temp{6} , ';' ) );
-            end
-            fprintf('\n');
+            fprintf('---> Reading External Faces ... ');
+            TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_ExternalFaces-1);
+            splitStr = regexp(TEMP, ',', 'split');
+            splitStr = str2double( vertcat( splitStr{:} ) );
+            External_Face.Area = splitStr(:,2);
+            External_Face.Centroid = splitStr(:,3:5);
+            External_Face.Nvec = splitStr(:,6:8);
+            External_Face.CellNeighborIndex = splitStr(:,9); % An external face has only one connection (to only one cell).
+            External_Face.CellNeighborVec = splitStr(:,10:12);
+            fprintf('Done!\n');
             CornerPointGridData.External_Face = External_Face;
             
-            % Reading cell information line by line
+            % Reading cells
             temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "CELL_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
             end
-            Cell.NW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.NE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SW_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SE_Top_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.NW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.NE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SW_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.SE_Bot_Corner = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.Centroid = zeros(CornerPointGridData.N_ActiveCells , 3);
-            Cell.Volume   = zeros(CornerPointGridData.N_ActiveCells , 1);
+            
+            fprintf('---> Reading Cells ... ');
+            TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1);
+            splitStr = regexp(TEMP, ',', 'split');
+            splitStr = str2double( vertcat( splitStr{:} ) );
+            Cell.NW_Top_Corner = splitStr(:,2:4);
+            Cell.NE_Top_Corner = splitStr(:,5:7);
+            Cell.SW_Top_Corner = splitStr(:,8:10);
+            Cell.SE_Top_Corner = splitStr(:,11:13);
+            Cell.NW_Bot_Corner = splitStr(:,14:16);
+            Cell.NE_Bot_Corner = splitStr(:,17:19);
+            Cell.SW_Bot_Corner = splitStr(:,20:22);
+            Cell.SE_Bot_Corner = splitStr(:,23:25);
+            Cell.Centroid = splitStr(:,26:28);
+            Cell.Volume = splitStr(:,29);
             Cell.N_Neighbors = zeros(CornerPointGridData.N_ActiveCells , 1);
             Cell.Index_Neighbors = cell(CornerPointGridData.N_ActiveCells , 1);
-            
-            fprintf('---> Cell ');
+            % Obtaining the cell neighbors
             for i = 1 : CornerPointGridData.N_ActiveCells
-                if (i>1),  fprintf(repmat('\b', 1, 13));  end
-                fprintf('%06d/%06d',i,CornerPointGridData.N_ActiveCells);
-                Temp = strsplit(obj.CornerPointGridMatrix{index+2-1+i},{' , '});
-                Cell.NW_Top_Corner(i,:) = str2double( strsplit( Temp{2} , ';' ) );
-                Cell.NE_Top_Corner(i,:) = str2double( strsplit( Temp{3} , ';' ) );
-                Cell.SW_Top_Corner(i,:) = str2double( strsplit( Temp{4} , ';' ) );
-                Cell.SE_Top_Corner(i,:) = str2double( strsplit( Temp{5} , ';' ) );
-                Cell.NW_Bot_Corner(i,:) = str2double( strsplit( Temp{6} , ';' ) );
-                Cell.NE_Bot_Corner(i,:) = str2double( strsplit( Temp{7} , ';' ) );
-                Cell.SW_Bot_Corner(i,:) = str2double( strsplit( Temp{8} , ';' ) );
-                Cell.SE_Bot_Corner(i,:) = str2double( strsplit( Temp{9} , ';' ) );
-                Cell.Centroid(i,:) = str2double( strsplit( Temp{10} , ';' ) );
-                Cell.Volume(i) = str2double( Temp{11} );
-                % Obtaining the cell neighbors
                 faceIndex = find(Internal_Face.CellNeighbor1Index==i);
                 neighborIndex = Internal_Face.CellNeighbor2Index(faceIndex);
                 faceIndex = find(Internal_Face.CellNeighbor2Index==i);
@@ -535,124 +507,94 @@ classdef reader_darsim2 < reader
                 Cell.N_Neighbors(i) = length(neighborIndex);
                 Cell.Index_Neighbors{i} = sort(neighborIndex);
             end
-            fprintf('\n');
+            fprintf('Done!\n');
             CornerPointGridData.Cell = Cell;
             
-            
-            % Reading the 
+            % Reading the rock properties (porosity and permeability)
             if isempty(obj.CornerPointGridRockPropertiesMatrix)
                 return;
             end
             fprintf('Reading the CornerPointGrid rock properties data input file:\n');
             
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NX');
+            index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NX" is missing. Please check the CornerPointGrid rock properties input file!\n');
             end
-            index = find(~cellfun('isempty', temp));
             if CornerPointGridData.Nx ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
             	error('The number of grids in x (Nx) of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
             end
             
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NY');
+            index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NY" is missing. Please check the CornerPointGrid input file!\n');
             end
-            index = find(~cellfun('isempty', temp));
             if CornerPointGridData.Ny ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
             	error('The number of grids in y (Ny) of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
             end
                 
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'RESERVOIR_GRID_NZ');
+            index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NZ" is missing. Please check the CornerPointGrid input file!\n');
             end
-            index = find(~cellfun('isempty', temp));
             if CornerPointGridData.Nz ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
             	error('The number of grids in z (Nz) of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
             end
                 
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'ACTIVE_CELLS');
+            index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
             end
-            index = find(~cellfun('isempty', temp));
-            %if CornerPointGridData.N_ActiveCells ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
-            %	error('The number of ative cells of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
-            %end
+            if CornerPointGridData.N_ActiveCells ~= str2double( obj.CornerPointGridRockPropertiesMatrix{index+1} )
+            	error('The number of ative cells of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
+            end
             
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'POROSITY_DATA');
             index = find(~cellfun('isempty', temp));
-            splitStr = regexp(obj.CornerPointGridRockPropertiesMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1),{'\s'},'split');
-            splitStr = vertcat(splitStr{:});
-            porosity = str2double(splitStr(:,end));
+            if ~isempty(index)
+                fprintf('---> Reading Porosity ... ');
+                TEMP = obj.CornerPointGridRockPropertiesMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1);
+                splitStr = regexp(TEMP,',','split');
+                splitStr = vertcat(splitStr{:});
+                CornerPointGridData.Porosity = str2double(splitStr(:,end));
+                fprintf('Done!\n');
+            end
             
-        end
-        function CornerPointGridRockPropertiesData = ReadCornerPointGridRockPropertiesData(obj)
-            
-                
-            % Reading Permeability values information line by line(Kx,Ky,Kz)
-            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_XYZ');
+            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_DATA');
             index = find(~cellfun('isempty', temp));
-            if isempty(index)
-                error('The keyword "PERMEABILITY_XYZ" is missing. Please check the CornerPointGridRockProperties input file!\n');
-            end
-            
-            Permeability.X_Y_Z = zeros(CornerPointGridRockPropertiesData.N_ActiveCells, 3);
+            if ~isempty(index)
+                fprintf('---> Reading Permeability ... ');
+                TEMP = obj.CornerPointGridRockPropertiesMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1);
+                splitStr = regexp(TEMP,',','split');
+                splitStr = vertcat(splitStr{:});
+                CornerPointGridData.Permeability = str2double(splitStr(:,2:end));
+                fprintf('Done!\n');
                 
-            fprintf('---> Permeability X Y Z ');
-            for i = 1 : CornerPointGridRockPropertiesData.N_ActiveCells
-%                 if (i>1),  fprintf(repmat('\b', 1, 13));
-%                 end
-%                 fprintf('%06d/%06d',i,ReservoirProperties.CornerPointGridRockPropertiesData.N_ActiveCells);
-                Temp = strsplit(obj.CornerPointGridRockPropertiesMatrix{index+2-1+i},{' , '});
-                Permeability.X_Y_Z(i,:) = str2double( strsplit( Temp{2} , ';' ) );
+                temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_UNIT');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    CornerPointGridData.PermUnit = obj.CornerPointGridRockPropertiesMatrix{index+1};
+                else
+                    warning('The keyword "PERMEABILITY_UNIT" is missing. SI unit "m2" is set by default.\n');
+                    CornerPointGridData.PermUnit = 'm2';
+                end
+                 
+                temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_SCALE');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    CornerPointGridData.PermScale = obj.CornerPointGridRockPropertiesMatrix{index+1};
+                else
+                    warning('The keyword "PERMEABILITY_SCALE" is missing. Linear scale is set by default.\n');
+                    CornerPointGridData.PermScale = 'Linear';
+                end
+                 
+                if ~strcmp(CornerPointGridData.PermScale, 'Linear') && ~strcmp(CornerPointGridData.PermScale, 'Logarithmic')
+                    error('The permeability scale is either Linear or Logarithmic. Please check the input file.\n');
+                end
             end
-            fprintf('\n');
-                       
-            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_TENSOR');
-            index = find(~cellfun('isempty', temp));
-            if isempty(index)
-                error('The keyword "PERMEABILITY_TENSOR" is missing. Please check the CornerPointGridRockProperties input file!\n');
-            end
-                
-            Permeability.Tensor = zeros(CornerPointGridRockPropertiesData.N_ActiveCells, 9);
-                
-            fprintf('---> Permeability Tensor ');
-            for i = 1 : CornerPointGridRockPropertiesData.N_ActiveCells
-%                 if (i>1),  fprintf(repmat('\b', 1, 13));
-%                 end
-%                 fprintf('%06d/%06d',i,ReservoirProperties.CornerPointGridRockPropertiesData.N_ActiveCells);
-                Temp = strsplit(obj.CornerPointGridRockPropertiesMatrix{index+2-1+i},{' , '});
-                Permeability.Tensor(i,1:3) = str2double( strsplit( Temp{2} , ';' ) );
-                Permeability.Tensor(i,4:6) = str2double( strsplit( Temp{3} , ';' ) );
-                Permeability.Tensor(i,7:9) = str2double( strsplit( Temp{4} , ';' ) );
-            end
-            fprintf('\n');
-            
-            CornerPointGridRockPropertiesData.Permeability = Permeability;
-            
-            % Reading Porosity values data line by line
-            temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'POROSITY');
-            index = find(~cellfun('isempty', temp));
-            if isempty(index)
-                error('The keyword "POROSITY" is missing. Please check the CornerPointGridRockProperties input file!\n');
-            end
-                                   
-            fprintf('---> Porosity ');
-            Porosity = zeros(CornerPointGridRockPropertiesData.N_ActiveCells, 1);
-
-            for i = 1 : CornerPointGridRockPropertiesData.N_ActiveCells
-%                 if (i>1),  fprintf(repmat('\b', 1, 13));
-%                 end
-%                 fprintf('%06d/%06d',i,ReservoirProperties.CornerPointGridRockPropertiesData.N_ActiveCells);
-                Temp = strsplit(obj.CornerPointGridRockPropertiesMatrix{index+2-1+i},{' , '});
-                Porosity(i) = str2double(Temp{2});
-            end
-            fprintf('\n');
-           
-            CornerPointGridRockPropertiesData.Porosity = Porosity;
-                        
         end
         function FluidProperties = ReadFluidProperties(obj)
             %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
