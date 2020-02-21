@@ -1,4 +1,4 @@
-  %% CornerPointGrid Converter for DARSim2
+%% CornerPointGrid Converter for DARSim2
 % Based on MRST (Matlab Reservoir Simulation Toolbox), it reads the input file(in an Eclipse file format)
 % and generates the input file with the cell geometry that can be read by DARSim2.
 % 
@@ -163,7 +163,7 @@ K_text = [ActiveCells K];
 
 %% OUTOUT FILE: GRID GEOMETRY DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_InputData.txt';
+OutputFileName = 'CornerPointGrid_DARSim_InputData_10.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -195,9 +195,15 @@ fprintf(fid,'%s %31s %39s %39s %39s %40s %38s %39s %39s %35s %22s\n', ...
           'South-East Top Corner(x;y;z)','North-West Bttm Corner(x;y;z)','North-East Bttm Corner(x;y;z)',...
           'South-West Bttm Corner(x;y;z)','South-East Bttm Corner(x;y;z)','Cell Centroid(x;y;z)','Cell Volume');   
       
-for ii = 1:size(Cell_Data,1)
-    fprintf(fid,'%6.0d , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f\n', Cell_Data(ii,:)');
+% for ii = 1:10%size(Cell_Data,1)
+%     fprintf(fid,'%6.0d , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f\n', Cell_Data(ii,:)');
+% end
+
+%%%%%%%%%%%%%%%% with , instead of ;
+for ii = 1:10%size(Cell_Data,1)
+    fprintf(fid,'%6.0d , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f\n', Cell_Data(ii,:)');
 end
+%%%%%%%%%%%%%%%%
 
 fprintf(fid, '\n\n');
 fprintf(fid, '%% Section 2: Faces Connected to Cells\n');
@@ -207,9 +213,15 @@ fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s %10s %32s\n','Faces No.','Face Area',...
             'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)');      
 
-for ii = 1:size(IF2,1)
-    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f  \n', IF2(ii,:)');
+% for ii = 1:size(IF2,1)
+%     fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f  \n', IF2(ii,:)');
+% end
+
+%%%%%%%%%%%%%%%% with , instead of ;
+for ii = 1:10%size(IF2,1)
+    fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f\n', IF2(ii,:)');
 end
+%%%%%%%%%%%%%%%%
 
 fprintf(fid, '\n\n');
 fprintf(fid, '%% Section 3: External Faces (At Boundaries | No Shared with Cells)\n');
@@ -218,14 +230,21 @@ fprintf(fid, '\n');
 fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)');      
 
-for ii = 1:size(EF3,1)
-    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f; % 11.6f \n', EF3(ii,:)');
+% for ii = 1:size(EF3,1)
+%     fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f; % 11.6f \n', EF3(ii,:)');
+% end
+% fclose(fid);
+
+%%%%%%%%%%%%%%%% with , instead of ;
+for ii = 1:10%size(EF3,1)
+    fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f, % 11.6f\n', EF3(ii,:)');
 end
 fclose(fid);
+%%%%%%%%%%%%%%%%
 
 %% OUTPUT FILE: ROCK PROPERTIES DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData.txt';
+OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData_10.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -253,7 +272,7 @@ fprintf(fid, '%% Units: Fraction\n');
 fprintf(fid, 'POROSITY_DATA\n');
 fprintf(fid,'%s %s\n', 'Cell No.  ','Porosity');   
       
-for ii = 1:size(poro_text,1)
+for ii = 1:10%size(poro_text,1)
     fprintf(fid,'%6.0d   ,  %.4f\n', poro_text(ii,:)');
 end
 
@@ -269,17 +288,28 @@ fprintf(fid, 'Linear\n\n');
 fprintf(fid, 'PERMEABILITY_DATA\n');
 fprintf(fid,'%s %7s %10s %10s\n', 'Cell No.  ','Kx','Ky','Kz');   
    
-for ii = 1:size(perm_txt,1)
-    fprintf(fid,'%6.0d   ,  %.4e;%.4e;%.4e\n', perm_txt(ii,:)');
-end
+% for ii = 1:size(perm_txt,1)
+%     fprintf(fid,'%6.0d   ,  %.4e;%.4e;%.4e\n', perm_txt(ii,:)');
+% end
 
+%%%%%%%%%%%%%%%% with , instead of ;
+for ii = 1:10%size(perm_txt,1)
+    fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e\n', perm_txt(ii,:)');
+end
+%%%%%%%%%%%%%%%%
 fprintf(fid, '\n');
 fprintf(fid, 'PERMEABILITY_TENSOR\n');
  
 fprintf(fid,'%s %8s %10s %10s %14s %10s %10s %14s %10s %10s\n', 'Cell No.  ','Kxx','Kxy','Kxz','Kyx','Kyy','Kyz','Kzx','Kzy','Kzz');   
    
-for ii = 1:size(K_text,1)
-    fprintf(fid,'%6.0d   ,  %.4e;%.4e;%.4e  ,  %.4e;%.4e;%.4e  ,  %.4e;%.4e;%.4e\n', K_text(ii,:)');
+% for ii = 1:size(K_text,1)
+%     fprintf(fid,'%6.0d   ,  %.4e;%.4e;%.4e  ,  %.4e;%.4e;%.4e  ,  %.4e;%.4e;%.4e\n', K_text(ii,:)');
+% end
+
+%%%%%%%%%%%%%%%% with , instead of ;
+for ii = 1:10%size(K_text,1)
+    fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e\n', K_text(ii,:)');
 end
+%%%%%%%%%%%%%%%%
 
 fclose(fid);
