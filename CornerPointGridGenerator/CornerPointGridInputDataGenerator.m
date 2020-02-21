@@ -190,7 +190,7 @@ fprintf(fid,'%s %12s %34s %39s %13s %32s %10s %32s\n','Faces No.','Face Area',..
             'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)');      
 
 for ii = 1:size(FC2,1)
-    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f  \n', FC2(ii,:)');
+    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f\n', FC2(ii,:)');
 end
 
 fprintf(fid, '\n\n');
@@ -201,6 +201,6 @@ fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)');      
 
 for ii = 1:size(EF3,1)
-    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f; % 11.6f \n', EF3(ii,:)');
+    fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f; % 11.6f\n', EF3(ii,:)');
 end
 fclose(fid);
