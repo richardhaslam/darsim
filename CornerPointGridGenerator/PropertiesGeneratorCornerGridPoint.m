@@ -18,6 +18,7 @@ K = load('NPD5_Permeability.txt')';
 p = p(G.cells.indexMap);
 poro = p;
 poro_text = [ActiveCells poro];
+%poro_text2 = [G.cells.indexMap poro];
 K = K(G.cells.indexMap);
 % Convert K values a diferent units
 K = K .* milli * darcy;
