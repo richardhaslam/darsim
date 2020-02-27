@@ -123,6 +123,16 @@ classdef simulation_builder < handle
                 temp = strfind(FractureMatrix, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
                 
+                temp = strfind(FractureMatrix, 'GRID_COORDS_X');
+                frac_grid_coords_x = find(~cellfun('isempty', temp));
+                temp = strfind(FractureMatrix, 'GRID_COORDS_Y');
+                frac_grid_coords_y = find(~cellfun('isempty', temp));
+                temp = strfind(FractureMatrix, 'GRID_COORDS_Z');
+                frac_grid_coords_z = find(~cellfun('isempty', temp));
+                
+                temp = strfind(FractureMatrix, 'COARSE_NODE_INDEX');
+                frac_CoarseNodeIndex = find(~cellfun('isempty', temp));
+                
                 Nf = zeros(NrOfFrac,1);
                 for f = 1 : NrOfFrac
                     % Creat cartesian grid in each fracture
@@ -133,13 +143,13 @@ classdef simulation_builder < handle
                     nz = 1;
                     FractureGrid = cartesian_grid([nx;ny;nz]);
                     
+                    % Reading the coarse node indeces of fractures (for now
+                    % only one level of multiscale)
+                    if ~isempty(frac_CoarseNodeIndex)
+                        FractureGrid.CoarseNodeIndex = str2double(strsplit(FractureMatrix{frac_CoarseNodeIndex(f)+1}))';
+                    end
+
                     % Add fracture grid coordinates (it's for plotting purposes)
-                    temp = strfind(FractureMatrix, 'GRID_COORDS_X');
-                    frac_grid_coords_x = find(~cellfun('isempty', temp));
-                    temp = strfind(FractureMatrix, 'GRID_COORDS_Y');
-                    frac_grid_coords_y = find(~cellfun('isempty', temp));
-                    temp = strfind(FractureMatrix, 'GRID_COORDS_Z');
-                    frac_grid_coords_z = find(~cellfun('isempty', temp));
                     frac_grid_coords_x_split = strsplit(FractureMatrix{frac_grid_coords_x(f)},' ');
                     frac_grid_coords_y_split = strsplit(FractureMatrix{frac_grid_coords_y(f)},' ');
                     frac_grid_coords_z_split = strsplit(FractureMatrix{frac_grid_coords_z(f)},' ');
