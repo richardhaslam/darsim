@@ -18,7 +18,6 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         CoarseFactor
         GridCoords
         ActiveTime
-        
     end
     methods
         function Initialise(obj, maxLevel)
