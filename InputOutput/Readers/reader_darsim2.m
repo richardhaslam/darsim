@@ -125,6 +125,9 @@ classdef reader_darsim2 < reader
                     FileName = 'CornerPointGrid_DARSim_InputData.txt';
                 end
                 CornerPointGridFile = strcat(obj.Directory, '/', FileName);
+                if ~isfile(CornerPointGridFile)
+                    error('The Corner point grid input file "%s" does not exist!\n',FileName);
+                end
                 fileID = fopen(CornerPointGridFile, 'r');
                 matrix = textscan(fileID, '%s', 'Delimiter', '\n');
                 obj.CornerPointGridMatrix = matrix{1};
@@ -738,8 +741,8 @@ classdef reader_darsim2 < reader
                 Well.Constraint.value = str2double(WellInputMatrix(constraint+2));
                 
                 % Reading the formula type of well
-                Well.PI.type = char(WellInputMatrix(formula+1));
-                Well.PI.value = str2double(WellInputMatrix(formula+2));
+                Well.Formula.type = char(WellInputMatrix(formula+1));
+                Well.Formula.value = str2double(WellInputMatrix(formula+2));
                 
                 % Reading the temperature of well (only for injection)
                 switch SimulationInput.FluidProperties.FluidModel
