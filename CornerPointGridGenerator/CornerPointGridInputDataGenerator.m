@@ -111,55 +111,74 @@ rock = makeRock(G, perm, poro);
 [K, i, j] = permTensor(rock, G.griddim);
 K_text = [ActiveCells K];
 
-% %% CALCULATE TRANSMISSIBILITIES
-% % Load Inputs Files
-% p = load('NPD5_Porosity.txt')';
-% K = load('NPD5_Permeability.txt')';
-% % Just Considered Active Cells
-% p = p(G.cells.indexMap);
-% poro = p;
-% K = K(G.cells.indexMap);
-% % Convert K values a diferent units
-% K = K .* milli * darcy;
-% perm = bsxfun(@times, [1 1 0.1], K);
-% rock = makeRock(G, perm, poro);
-% [K, i, j] = permTensor(rock, G.griddim);
+%% CALCULATE TRANSMISSIBILITIES
+% Load Inputs Files
+p = load('NPD5_Porosity.txt')';
+K = load('NPD5_Permeability.txt')';
+% Just Considered Active Cells
+p = p(G.cells.indexMap);
+poro = p;
+K = K(G.cells.indexMap);
+% Convert K values a diferent units
+K = K .* milli * darcy;
+perm = bsxfun(@times, [1 1 0.1], K);
+rock = makeRock(G, perm, poro);
+[K, i, j] = permTensor(rock, G.griddim);
+
+
+% Internal Faces
+hT1 = zeros(size(IF(:,2)));
+hT2 = zeros(size(IF(:,3)));
+N_IF = IF2(:,6:8);
+C1 = IF2(:,10:12);
+C2 = IF2(:,14:16);
+
+%%% MSRT Method %%%
+for k = 1 : size(i,2) 
+    hT1 = hT1 + C1(:, i(k)) .* K(IF(:,2), k) .* N_IF(:, j(k));
+end
+hT1 = hT1 ./ sum(C1.*C1, 2);
+
+for k = 1 : size(i,2) 
+    hT2 = hT2 + C2(:, i(k)) .* K(IF(:,3), k) .* N_IF(:, j(k));
+end
+hT2 = hT2 ./ sum(C2.*C2, 2);
+ht2 = abs(hT2);
+hTF = 1./(1./hT1 + 1./ht2);
+
+%%%% Our Approach
+hT_1 = sum(C1(:,:).* N_IF(:,:).* perm(IF(:,2),:), 2) ./ sum(C1(:,:).* C1(:,:),2) ;
+hT_2 = abs(sum(C2(:,:).* N_IF(:,:).* perm(IF(:,3),:), 2) ./ sum(C2(:,:).* C2(:,:),2));
+hT_F = 1./(1./hT_1 + 1./hT_2);
+
+%%% Another Our Approach
+hT_11 = sum(C1.* N_IF.* perm(IF(:,2),:), 2) ./ sum(C1.* C1,2) ;
+hT_22 = abs(sum(C2.* N_IF.* perm(IF(:,3),:), 2) ./ sum(C2.* C2,2));
+hT_FF = 1./(1./hT_11 + 1./hT_22);
+
+T1 = [IF2(:,1) hT_F ];
+
+% hf = IF(:,1);
+% hf2cn1 = IF(:,2);
+% sgn1 = 2*(hf2cn1 == G.faces.neighbors(hf, 1)) - 1;
+% hf2cn2 = IF(:,3);
+% sgn2 = 2*(hf2cn2 == G.faces.neighbors(hf, 1)) - 1;
 % 
-% hT1 = zeros(size(IF(:,2)));
-% hT2 = zeros(size(IF(:,3)));
-% N = IF2(:,6:8);
-% C1 = IF2(:,10:12);
-% C2 = IF2(:,14:16);
-% 
-% for k = 1 : size(i,2) 
-%     hT1 = hT1 + C1(:, i(k)) .* K(IF(:,2), k) .* N(:, j(k));
-% end
-% hT1 = hT1 ./ sum(C1.*C1, 2);
-% 
-% for k = 1 : size(i,2) 
-%     hT2 = hT2 + C2(:, i(k)) .* K(IF(:,3), k) .* N(:, j(k));
-% end
-% hT2 = hT2 ./ sum(C2.*C2, 2);
-% hT3 = abs(hT2);
-% hTF = 1./(1./hT1 + 1./hT3);
-% 
-% %Another Approach
-% hT_1 = sum(C1(:,:).* N(:,:).* perm(IF(:,2),:), 2) ./ sum(C1(:,:).* C1(:,:),2) ;
-% hT_2 = abs(sum(C2(:,:).* N(:,:).* perm(IF(:,3),:), 2) ./ sum(C2(:,:).* C2(:,:),2));
-% hT_F = 1./(1./hT_1 + 1./hT_2);
-% 
-% hT_11 = sum(C1.* N.* perm(IF(:,2),:), 2) ./ sum(C1.* C1,2) ;
-% hT_22 = abs(sum(C2.* N.* perm(IF(:,3),:), 2) ./ sum(C2.* C2,2));
-% hT_FF = 1./(1./hT_11 + 1./hT_22);
-% 
-% % hf = IF(:,1);
-% % hf2cn1 = IF(:,2);
-% % sgn1 = 2*(hf2cn1 == G.faces.neighbors(hf, 1)) - 1;
-% % hf2cn2 = IF(:,3);
-% % sgn2 = 2*(hf2cn2 == G.faces.neighbors(hf, 1)) - 1;
-% % 
-% % N1 = IF(:,4:10);
-% % N2 = bsxfun(@times, sgn2, IF(:,4:10));
+% N1 = IF(:,4:10);
+% N2 = bsxfun(@times, sgn2, IF(:,4:10));
+
+% External Faces
+hT3 = zeros(size(EF(:,2)));
+N_EF = EF2(:,6:8);
+C3 = EF3(:,10:12);
+hT_3 = sum(C3(:,:).* N_EF(:,:).* perm(EF2(:,9),:), 2) ./ sum(C3(:,:).* C3(:,:),2) ;
+T2 = [EF2(:,1) hT_3 ];
+
+T3 =[T1;T2];
+T4 = sortrows(T3);
+T4(:,1) = [];
+% In the paranthesis, I have the location of the value that I want in T4
+T5 = [T4(G.cells.faces(:,1)) G.cells.faces(:,2)];
 
 %% OUTOUT FILE: GRID GEOMETRY DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
@@ -194,16 +213,10 @@ fprintf(fid,'%s %31s %39s %39s %39s %40s %38s %39s %39s %35s %22s\n', ...
           'Cell No.  ','North-West Top Corner(x;y;z)','North-East Top Corner(x;y;z)','South-West Top Corner(x;y;z)',...
           'South-East Top Corner(x;y;z)','North-West Bttm Corner(x;y;z)','North-East Bttm Corner(x;y;z)',...
           'South-West Bttm Corner(x;y;z)','South-East Bttm Corner(x;y;z)','Cell Centroid(x;y;z)','Cell Volume');   
-      
-for ii = 1:size(Cell_Data,1)
-    fprintf(fid,'%6.0d , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f;%6.5f;%6.5f , %6.5f\n', Cell_Data(ii,:)');
-end
-
-%%%%%%%%%%%%%%%% with , instead of ;
+     
 for ii = 1:10%size(Cell_Data,1)
     fprintf(fid,'%6.0d , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f\n', Cell_Data(ii,:)');
 end
-%%%%%%%%%%%%%%%%
 
 fprintf(fid, '\n\n');
 fprintf(fid, '%% Section 2: Faces Connected to Cells\n');
@@ -213,34 +226,21 @@ fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s %10s %32s\n','Faces No.','Face Area',...
             'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)');      
 
-% for ii = 1:size(IF2,1)
-%     fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f , %6.0d , % 12.6f;% 12.6f;% 11.6f  \n', IF2(ii,:)');
-% end
-
-%%%%%%%%%%%%%%%% with , instead of ;
 for ii = 1:10%size(IF2,1)
     fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f\n', IF2(ii,:)');
 end
-%%%%%%%%%%%%%%%%
 
 fprintf(fid, '\n\n');
 fprintf(fid, '%% Section 3: External Faces (At Boundaries | No Shared with Cells)\n');
 fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell] + [Centroid Vector (x,y,z)]:\n');
 fprintf(fid, '\n');
 fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
-fprintf(fid,'%s %12s %34s %39s %13s %32s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)');      
+fprintf(fid,'%s %12s %34s %39s %13s %32s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)');
 
-% for ii = 1:size(EF3,1)
-%     fprintf(fid,'%8.0d , %13.6f , %11.6f;%11.6f;%11.6f , % 13.6f;%12.6f;% 8.6f , %6.0d , % 12.6f;% 12.6f; % 11.6f \n', EF3(ii,:)');
-% end
-% fclose(fid);
-
-%%%%%%%%%%%%%%%% with , instead of ;
 for ii = 1:10%size(EF3,1)
     fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f, % 11.6f\n', EF3(ii,:)');
 end
 fclose(fid);
-%%%%%%%%%%%%%%%%
 
 %% OUTPUT FILE: ROCK PROPERTIES DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
@@ -272,7 +272,7 @@ fprintf(fid, '%% Units: Fraction\n');
 fprintf(fid, 'POROSITY_DATA\n');
 fprintf(fid,'%s %s\n', 'Cell No.  ','Porosity');   
       
-for ii = 1:10%size(poro_text,1)
+for ii = 1:size(poro_text,1)
     fprintf(fid,'%6.0d   ,  %.4f\n', poro_text(ii,:)');
 end
 
@@ -288,28 +288,17 @@ fprintf(fid, 'Linear\n\n');
 fprintf(fid, 'PERMEABILITY_DATA\n');
 fprintf(fid,'%s %7s %10s %10s\n', 'Cell No.  ','Kx','Ky','Kz');   
    
-% for ii = 1:size(perm_txt,1)
-%     fprintf(fid,'%6.0d   ,  %.4e;%.4e;%.4e\n', perm_txt(ii,:)');
-% end
-
-%%%%%%%%%%%%%%%% with , instead of ;
 for ii = 1:10%size(perm_txt,1)
     fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e\n', perm_txt(ii,:)');
 end
-%%%%%%%%%%%%%%%%
+
 fprintf(fid, '\n');
 fprintf(fid, 'PERMEABILITY_TENSOR\n');
  
 fprintf(fid,'%s %8s %10s %10s %14s %10s %10s %14s %10s %10s\n', 'Cell No.  ','Kxx','Kxy','Kxz','Kyx','Kyy','Kyz','Kzx','Kzy','Kzz');   
-   
-% for ii = 1:size(K_text,1)
-%     fprintf(fid,'%6.0d   ,  %.4e;%.4e;%.4e  ,  %.4e;%.4e;%.4e  ,  %.4e;%.4e;%.4e\n', K_text(ii,:)');
-% end
 
-%%%%%%%%%%%%%%%% with , instead of ;
 for ii = 1:10%size(K_text,1)
     fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e\n', K_text(ii,:)');
 end
-%%%%%%%%%%%%%%%%
 
 fclose(fid);
