@@ -38,7 +38,6 @@ classdef Discretization_model < handle
             
             % . Assign Depth
             obj.ReservoirGrid.ComputeDepth(Formulation.GravityModel.alpha, ProductionSystem.Reservoir.Thickness);
-            obj.N = obj.ReservoirGrid.N;
             
             % initialize fractures
             if ProductionSystem.FracturesNetwork.Active
