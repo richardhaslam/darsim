@@ -23,7 +23,13 @@ classdef simulation_builder < handle
             simulation.Summary = obj.BuildSummary(simulation);
             
             % Add gravity model
-            simulation.Formulation.GravityModel = gravity_model(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
+            if strcmp(obj.SimulationInput.ReservoirProperties.Discretization,'CornerPointGrid')
+                simulation.Formulation.GravityModel = gravity_model_CornerPointGrid(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
+            elseif strcmp(obj.SimulationInput.ReservoirProperties.Discretization,'Cartesian')
+                simulation.Formulation.GravityModel = gravity_model(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
+            else
+                error('The discretization method should either be "Cartesian" or "CornerPointGrid". Check the input file!\n');
+            end
             switch (obj.SimulationInput.FluidProperties.Gravity)
                 case('ON')
                     simulation.Formulation.GravityModel.g = 9.806;
@@ -268,7 +274,7 @@ classdef simulation_builder < handle
                 case('mD')
                     PermMultiplier = 1e-15;
             end
-            if ~isempty(obj.SimulationInput.ReservoirProperties.Perm)
+            if ~isempty(obj.SimulationInput.ReservoirProperties.Perm) && length(obj.SimulationInput.ReservoirProperties.Perm) == N_ActiveCells
                 K = obj.SimulationInput.ReservoirProperties.Perm;
             else
                 for i=1:3
@@ -376,13 +382,13 @@ classdef simulation_builder < handle
             dz = h /nz;
             %Injectors
             for i=1:Wells.NofInj
-                switch(obj.SimulationInput.WellsInfo.Inj(i).PI.type)
+                switch(obj.SimulationInput.WellsInfo.Inj(i).Formula.type)
                     case ('DIRICHLET')
                         PI = dy*dz/(dx/2);
                     case ('PI')
-                        PI = obj.SimulationInput.WellsInfo.Inj(i).PI.value;
+                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value;
                     case ('RADIUS')
-                        radius = obj.SimulationInput.WellsInfo.Inj(i).PI.value;
+                        radius = obj.SimulationInput.WellsInfo.Inj(i).Formula.value;
                         error('DARSim error: Radius calculation of PI is not implemented for now')
                 end
                 coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
@@ -408,13 +414,13 @@ classdef simulation_builder < handle
             
             %Producers
             for i=1:Wells.NofProd
-                switch(obj.SimulationInput.WellsInfo.Prod(i).PI.type)
+                switch(obj.SimulationInput.WellsInfo.Prod(i).Formula.type)
                     case ('DIRICHLET')
                         PI = dy*dz/(dx/2);
                     case ('PI')
-                        PI = obj.SimulationInput.WellsInfo.Prod(i).PI.value;
+                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
                     case ('RADIUS')
-                        radius = obj.SimulationInput.WellsInfo.Prod(i).PI.value;
+                        radius = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
                 coord = obj.SimulationInput.WellsInfo.Prod(i).Coord;
