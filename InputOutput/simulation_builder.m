@@ -143,7 +143,7 @@ classdef simulation_builder < handle
                     nz = 1;
                     FractureGrid = cartesian_grid([nx;ny;nz]);
                     
-                    % Reading the coarse node indeces of fractures (for now
+                    % Reading the coarse node indices of fractures (for now
                     % only one level of multiscale)
                     if ~isempty(frac_CoarseNodeIndex)
                         FractureGrid.CoarseNodeIndex = str2double(strsplit(FractureMatrix{frac_CoarseNodeIndex(f)+1}))';
