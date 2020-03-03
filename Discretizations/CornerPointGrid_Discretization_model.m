@@ -13,15 +13,18 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
             % Injectors
             for w = 1:Wells.NofInj
                 PerfList = [];
-                for p = 1:size(Wells.Inj(w).Coord)-1
+                for p = 1:size(Wells.Inj(w).Coord,1)-1
                     PointA = Wells.Inj(w).Coord(p  ,:);
                     PointB = Wells.Inj(w).Coord(p+1,:);
                     PointM = (PointA+PointB)/2;
                     [ ~ , indList ] = min( vecnorm(PointM - obj.CornerPointGridData.Cell.Centroid,2,2 ) );
                     Count = 1;
                     while Count <= length(indList)
+                        IM = indList(Count);
+                        PointC = obj.CornerPointGridData.Cell.Centroid(IM);
+                        % PointN = 
                         AB = PointB - PointA;
-                        PointC = obj.CornerPointGridData.Cell.Centroid;
+                        
                         AC = PointC - PointA;
                         Cos_Theta = dot( AB , L2B-L1A ) / ( norm(L1B-L1A) * norm(L2B-L1A) );
                     end
