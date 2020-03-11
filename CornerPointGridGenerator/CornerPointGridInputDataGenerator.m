@@ -18,54 +18,17 @@ NumberCells = linspace(1, grdecl.cartDims(1)*grdecl.cartDims(2)*grdecl.cartDims(
 G = processGRDECL(grdecl, 'Verbose', true);
 % Compute geometry information (centroids, volumes, areas) of the cells
 G = computeGeometry(G);
-% Reshape the cell data based on the requirements of the input file for DARSim2: X Coordinates
-R = size(x);
-X = reshape(permute(reshape(x,R(1),2,[],R(3)),[1,3,2,4]),[],2,R(3));
-
-A=[]; a=1;
-for k=2:2:size(X,3)
-    Aa(:,:,a)=[X(:,:,k-1),X(:,:,k)];                              
-    a=a+1;
-end
-for k=1:size(X,3)/2
-    A=[A;Aa(:,:,k)];                                                 
-end
-A=A';
-A=reshape(A,8,[])';
-
-% Reshape the cell data based on the requirements of the input file for DARSim2: Y Coordinates
-S = size(y);
-Y = reshape(permute(reshape(y,S(1),2,[],S(3)),[1,3,2,4]),[],2,S(3));
-B=[]; b=1;
-for k=2:2:size(Y,3)
-    Bb(:,:,b)=[Y(:,:,k-1),Y(:,:,k)];                            
-    b=b+1;
-end
-for k=1:size(Y,3)/2
-    B=[B;Bb(:,:,k)];                                                
-end
-B=B';
-B=reshape(B,8,[])';
-
-% Reshape the cell data based on the requirements of the input file for DARSim2: Z Coordinates
-T = size(z);
-Z = reshape(permute(reshape(z,T(1),2,[],T(3)),[1,3,2,4]),[],2,T(3));
-C1=[]; c=1;
-for k=2:2:size(Z,3)
-    Cc(:,:,c)=[Z(:,:,k-1),Z(:,:,k)];                             
-    c=c+1;
-end
-for k=1:size(Z,3)/2
-    C1=[C1;Cc(:,:,k)];                                               
-end
-C1=C1';
-C1=reshape(C1,8,[])';
+% Reshape the cell data based on the requirements of the input file for DARSim2: X Y Z Coordinates
+A = inputdataDARSim(x);
+B = inputdataDARSim(y);
+C = inputdataDARSim(z);
 
 % SECTION 1: CELLS NODES (X, Y, Z) + CENTROIDS + VECTORS A, B, C (X, Y, Z COORDINATES)
 % Only Active Cells (Based on ACTNUM info)
-Cell_Nodes = [NumberCells, grdecl.ACTNUM, A(:,2), B(:,2), C1(:,2), A(:,6), B(:,6), C1(:,6), A(:,1), B(:,1), C1(:,1),...
-              A(:,5), B(:,5), C1(:,5),A(:,4), B(:,4), C1(:,4), A(:,8), B(:,8), C1(:,8), A(:,3), B(:,3), C1(:,3),...
-              A(:,7), B(:,7), C1(:,7)];
+Cell_Nodes = [NumberCells, double(grdecl.ACTNUM), A(:,2), B(:,2), C(:,2), A(:,6), B(:,6), C(:,6), A(:,1), B(:,1), C(:,1),...
+              A(:,5), B(:,5), C(:,5),A(:,4), B(:,4), C(:,4), A(:,8), B(:,8), C(:,8), A(:,3), B(:,3), C(:,3),...
+              A(:,7), B(:,7), C(:,7)];
+% Cell_Nodes = double(Cell_Nodes);
 LI = Cell_Nodes(:,2) == 0;                            % Logical Index                 
 Cell_Nodes(LI,:) = [];                                % Delete Cells that are not active
 Cell_Nodes(:,2) = [];                                 % Delete Columns of Active Cells
@@ -86,9 +49,34 @@ EF = [NumberFaces, G.faces.areas, G.faces.centroids, G.faces.normals, G.faces.ne
 LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);
 EF(LI,:) = [];
 EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];
-c_vec_EF = G.faces.centroids(EF2(:,1),:) - G.cells.centroids(EF2(:,9));
-EF3 = [EF2 c_vec_EF ];
+EF3 = [EF2 G.faces.centroids(EF2(:,1),:) - G.cells.centroids(EF2(:,9))];
 
+%% Corner Grid Point Data for Plotting - VTK file
+% SECTION 1: Point Data for each Active Cell
+A_VTK = [double(grdecl.ACTNUM) A];
+LI = A_VTK(:,1) == 0;                            % Logical Index                 
+A_VTK(LI,:) = [];                                % Delete Cells that are not active
+A_VTK(:,1) = [];                                 % Delete Columns of Active Cells
+A_VTK = reshape(transpose(A_VTK),1,[])';
+
+B_VTK = [double(grdecl.ACTNUM) B];
+LI = B_VTK(:,1) == 0;                            % Logical Index                 
+B_VTK(LI,:) = [];                                % Delete Cells that are not active
+B_VTK(:,1) = [];                                 % Delete Columns of Active Cells
+B_VTK = reshape(transpose(B_VTK),1,[])';
+
+C_VTK = [double(grdecl.ACTNUM) C];
+LI = C_VTK(:,1) == 0;                            % Logical Index                 
+C_VTK(LI,:) = [];                                % Delete Cells that are not active
+C_VTK(:,1) = [];                                 % Delete Columns of Active Cells
+C_VTK = reshape(transpose(C_VTK),1,[])';
+
+Cell_VTK1 = [A_VTK B_VTK C_VTK];
+% SECTION 2: Number of Points for each Active Cell
+Cell_VTK2 = [8 * ones(G.cells.num,1) vec2mat([0 1:(size(Cell_VTK1,1)-1)],8)];
+
+% SECTION 3: Types of Cells: Unstructured = 12
+Cell_VTK3 = 11 * ones(G.cells.num,1);
 %% CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
 ActiveCells = double([NumberCells grdecl.ACTNUM]);
 LI = ActiveCells(:,2) == 0;                            % Logical Index                 
@@ -111,78 +99,9 @@ rock = makeRock(G, perm, poro);
 [K, i, j] = permTensor(rock, G.griddim);
 K_text = [ActiveCells K];
 
-%% CALCULATE TRANSMISSIBILITIES
-% Load Inputs Files
-p = load('NPD5_Porosity.txt')';
-K = load('NPD5_Permeability.txt')';
-% Just Considered Active Cells
-p = p(G.cells.indexMap);
-poro = p;
-K = K(G.cells.indexMap);
-% Convert K values a diferent units
-K = K .* milli * darcy;
-perm = bsxfun(@times, [1 1 0.1], K);
-rock = makeRock(G, perm, poro);
-[K, i, j] = permTensor(rock, G.griddim);
-
-
-% Internal Faces
-hT1 = zeros(size(IF(:,2)));
-hT2 = zeros(size(IF(:,3)));
-N_IF = IF2(:,6:8);
-C1 = IF2(:,10:12);
-C2 = IF2(:,14:16);
-
-%%% MSRT Method %%%
-for k = 1 : size(i,2) 
-    hT1 = hT1 + C1(:, i(k)) .* K(IF(:,2), k) .* N_IF(:, j(k));
-end
-hT1 = hT1 ./ sum(C1.*C1, 2);
-
-for k = 1 : size(i,2) 
-    hT2 = hT2 + C2(:, i(k)) .* K(IF(:,3), k) .* N_IF(:, j(k));
-end
-hT2 = hT2 ./ sum(C2.*C2, 2);
-ht2 = abs(hT2);
-hTF = 1./(1./hT1 + 1./ht2);
-
-%%%% Our Approach
-hT_1 = sum(C1(:,:).* N_IF(:,:).* perm(IF(:,2),:), 2) ./ sum(C1(:,:).* C1(:,:),2) ;
-hT_2 = abs(sum(C2(:,:).* N_IF(:,:).* perm(IF(:,3),:), 2) ./ sum(C2(:,:).* C2(:,:),2));
-hT_F = 1./(1./hT_1 + 1./hT_2);
-
-%%% Another Our Approach
-hT_11 = sum(C1.* N_IF.* perm(IF(:,2),:), 2) ./ sum(C1.* C1,2) ;
-hT_22 = abs(sum(C2.* N_IF.* perm(IF(:,3),:), 2) ./ sum(C2.* C2,2));
-hT_FF = 1./(1./hT_11 + 1./hT_22);
-
-T1 = [IF2(:,1) hT_F ];
-
-% hf = IF(:,1);
-% hf2cn1 = IF(:,2);
-% sgn1 = 2*(hf2cn1 == G.faces.neighbors(hf, 1)) - 1;
-% hf2cn2 = IF(:,3);
-% sgn2 = 2*(hf2cn2 == G.faces.neighbors(hf, 1)) - 1;
-% 
-% N1 = IF(:,4:10);
-% N2 = bsxfun(@times, sgn2, IF(:,4:10));
-
-% External Faces
-hT3 = zeros(size(EF(:,2)));
-N_EF = EF2(:,6:8);
-C3 = EF3(:,10:12);
-hT_3 = sum(C3(:,:).* N_EF(:,:).* perm(EF2(:,9),:), 2) ./ sum(C3(:,:).* C3(:,:),2) ;
-T2 = [EF2(:,1) hT_3 ];
-
-T3 =[T1;T2];
-T4 = sortrows(T3);
-T4(:,1) = [];
-% In the paranthesis, I have the location of the value that I want in T4
-T5 = [T4(G.cells.faces(:,1)) G.cells.faces(:,2)];
-
-%% OUTOUT FILE: GRID GEOMETRY DATA
+%% OUTOUT FILE 1: GRID GEOMETRY DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_InputData_10.txt';
+OutputFileName = 'CornerPointGrid_DARSim_InputData.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -214,7 +133,7 @@ fprintf(fid,'%s %31s %39s %39s %39s %40s %38s %39s %39s %35s %22s\n', ...
           'South-East Top Corner(x;y;z)','North-West Bttm Corner(x;y;z)','North-East Bttm Corner(x;y;z)',...
           'South-West Bttm Corner(x;y;z)','South-East Bttm Corner(x;y;z)','Cell Centroid(x;y;z)','Cell Volume');   
      
-for ii = 1:10%size(Cell_Data,1)
+for ii = 1:size(Cell_Data,1)
     fprintf(fid,'%6.0d , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f,%6.5f,%6.5f , %6.5f\n', Cell_Data(ii,:)');
 end
 
@@ -226,7 +145,7 @@ fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s %10s %32s\n','Faces No.','Face Area',...
             'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)');      
 
-for ii = 1:10%size(IF2,1)
+for ii = 1:size(IF2,1)
     fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f\n', IF2(ii,:)');
 end
 
@@ -237,14 +156,43 @@ fprintf(fid, '\n');
 fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
 fprintf(fid,'%s %12s %34s %39s %13s %32s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)');
 
-for ii = 1:10%size(EF3,1)
+for ii = 1:size(EF3,1)
     fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f, % 11.6f\n', EF3(ii,:)');
 end
 fclose(fid);
 
+%% OUTOUT FILE 2: CORNER GRID POINT DATA - VTK
+Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\';
+OutputFileName = 'CornerPointGrid_DARSim_VTKData.vtk';
+disp( '******************* Writing the data into output text file *********************' );
+disp(['Writing into file ', OutputFileName]);
+fileID = fopen(strcat(Directory,OutputFileName) , 'w+' );
+fprintf(fileID, '# vtk DataFile Version 2.0\n');
+fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+fprintf(fileID, 'ASCII\n');
+fprintf(fileID, '\n');
+fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
+
+fprintf(fileID, ['POINTS ' num2str(size(Cell_VTK1,1)) ' double\n']);
+for ii = 1:size(Cell_VTK1,1)
+    fprintf(fileID,'%f %f %f\n', Cell_VTK1(ii,:)');
+end
+
+fprintf(fileID, '\n');
+fprintf(fileID, ['CELLS ' num2str(G.cells.num) ' ' num2str(size(Cell_VTK1,1) + G.cells.num) '\n']);
+for ii = 1:size(Cell_VTK2,1)
+    fprintf(fileID,'%d %d %d %d %d %d %d %d %d\n', Cell_VTK2(ii,:)');
+end
+
+fprintf(fileID, '\n');
+fprintf(fileID, ['CELL_TYPES ' num2str(G.cells.num) '\n']);
+for ii = 1:size(Cell_VTK3,1)
+    fprintf(fileID,'%d\n', Cell_VTK3(ii,:)');
+end
+fclose(fileID);
 %% OUTPUT FILE: ROCK PROPERTIES DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData_10.txt';
+OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -288,7 +236,7 @@ fprintf(fid, 'Linear\n\n');
 fprintf(fid, 'PERMEABILITY_DATA\n');
 fprintf(fid,'%s %7s %10s %10s\n', 'Cell No.  ','Kx','Ky','Kz');   
    
-for ii = 1:10%size(perm_txt,1)
+for ii = 1:size(perm_txt,1)
     fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e\n', perm_txt(ii,:)');
 end
 
@@ -297,8 +245,7 @@ fprintf(fid, 'PERMEABILITY_TENSOR\n');
  
 fprintf(fid,'%s %8s %10s %10s %14s %10s %10s %14s %10s %10s\n', 'Cell No.  ','Kxx','Kxy','Kxz','Kyx','Kyy','Kyz','Kzx','Kzy','Kzz');   
 
-for ii = 1:10%size(K_text,1)
+for ii = 1:size(K_text,1)
     fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e\n', K_text(ii,:)');
 end
-
 fclose(fid);
