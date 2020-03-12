@@ -79,13 +79,19 @@ classdef hexahedron_DARSim < polyhedron_DARSim
                 if dot( obj.Centroid - obj.Face(i).PointM , obj.Face(i).n_vec) < 0
                     obj.Face(i).n_vec = - obj.Face(i).n_vec;
                 end
+                
                 N = - dot( lineSegment.PointA - obj.Face(i).PointA , obj.Face(i).n_vec);
                 D = dot( LineSegment.AB_vec , obj.Face(i).n_vec );
                 
                 if abs(D) < Epsilon
-                    % Then the lineSegment is parallel this face
+                    % Then, the lineSegment is parallel to this face
                     if N < 0
-                        % Then PointA of the lineSegment is outside of this face
+                        % Then, PointA of the lineSegment is outside of this face
+                        % Leaving the entire function for this hexahedron as
+                        % this lineSegment will not intersect this hexahedron.
+                        Geostatus.haveIntersect = 0;
+                        return;
+                    else
                         
                     end
                 end

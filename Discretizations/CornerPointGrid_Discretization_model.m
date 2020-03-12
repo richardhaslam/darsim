@@ -55,6 +55,7 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                      Wells.Prod(w).ResizeObjects(length(Wells.Prod(w).Cells));
                 end
             end
+            we
         end
     end
 end

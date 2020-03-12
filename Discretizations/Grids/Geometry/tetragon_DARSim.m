@@ -53,8 +53,21 @@ classdef tetragon_DARSim < polygon_DARSim
             obj.BC_vec = obj.PointC - obj.PointB;
             obj.CD_vec = obj.PointD - obj.PointC;
             obj.DA_vec = obj.PointA - obj.PointD;
+            obj.Check_If_All_Corners_Coplanar();
             if nargin==6
                 obj.AddPosition(pos);
+            end
+        end
+        function Check_If_All_Corners_Coplanar(obj)
+            % From pointA, we draw vectors to each of the points B,C and D.
+            % Assume the vectors are v1, v2 and v3. The four points are
+            % coplanar if the volume created by these three vectors is zero.
+            % Namely: v1 . (v2 x v3) = 0;
+            dx = norm(obj.PointA - obj.PointC);
+            dy = norm(obj.PointB - obj.PointD);
+            Epsilon = 1e-10 * mean(dx,dy);
+            if abs( dot( obj.AB_vec, cross(obj.AC_vec, obj.AD_vec) ) ) > Epsilon
+                error('This is not a tetragon, because the four corners are not coplanar!\n');
             end
         end
         function isInside = Is_Point_Inside_Tetrahedron(obj, point , Epsilon)
