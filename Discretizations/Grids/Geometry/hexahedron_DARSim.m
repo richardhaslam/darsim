@@ -63,16 +63,33 @@ classdef hexahedron_DARSim < polyhedron_DARSim
             Geostatus.areCoplanar   = NaN;
             Geostatus.haveIntersect = NaN;
             IntersectPoints         = [];
-
+            
+            dx = norm(obj.Face(1).PointM - obj.Face(2).PointM);
+            dy = norm(obj.Face(3).PointM - obj.Face(4).PointM);
+            dz = norm(obj.Face(5).PointM - obj.Face(6).PointM);
+            Epsilon = 1e-10 * mean(dx,dy,dz);
+            
             tE = 0; % for the maximum entering segment parameter
             tL = 1; % for the minimum leaving segment parameter
             for i= 1 : obj.N_Faces
+                if doNotContinue
+                    return;
+                end
                 % Checking if the normal vector is pointing outward, and if not, fixing it:
-                if dot( obj.Centroid - obj.Face(i).PointM , obj.Face(i).n_vec)
+                if dot( obj.Centroid - obj.Face(i).PointM , obj.Face(i).n_vec) < 0
                     obj.Face(i).n_vec = - obj.Face(i).n_vec;
                 end
                 N = - dot( lineSegment.PointA - obj.Face(i).PointA , obj.Face(i).n_vec);
                 D = dot( LineSegment.AB_vec , obj.Face(i).n_vec );
+                
+                if abs(D) < Epsilon
+                    % Then the lineSegment is parallel this face
+                    if N < 0
+                        % Then PointA of the lineSegment is outside of this face
+                        
+                    end
+                end
+                
             end
             
         end
