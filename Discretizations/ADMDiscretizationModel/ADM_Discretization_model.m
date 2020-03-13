@@ -140,6 +140,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             for m=1:n_media
                 % Global Fine Grid
                 obj.GlobalGrids(1).CopyGridEntries(obj.FineGrid(m), Nc_global(m, :), 1);
+                
                 % Global Coarse Grid
                 for i=1:n_levels
                     obj.GlobalGrids(i+1).CopyGridEntries(obj.CoarseGrid(m, i), Nc_global(m, :), i+1);

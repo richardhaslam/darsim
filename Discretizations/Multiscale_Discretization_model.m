@@ -102,6 +102,10 @@ classdef Multiscale_Discretization_model < Discretization_model
                     obj.CoarseGrid(1+f,1) = coarse_grid();
                     obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
                 end
+                if obj.CoarseGrid(1+f,1).CoarseFactor(1,1) == 0
+                    obj.CoarseGrid(1+f,1).N = 0;
+                    continue;
+                end
                 obj.CoarseGrid(1+f,1).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1+f,1).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
                 obj.GridMapper.BuildFamily(obj.CoarseGrid(1+f,1), obj.FracturesGrid.Grids(f), obj.Coarsening(1+f,:,1), 1);
