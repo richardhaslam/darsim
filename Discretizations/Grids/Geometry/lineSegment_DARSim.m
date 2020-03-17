@@ -6,7 +6,7 @@
 %Created: 2020-03-09
 %Last modified: 2020-03-09
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef lineSegment_DARSim < lineInfinite
+classdef lineSegment_DARSim < line_DARSim
     properties
         PointA
         PointB
