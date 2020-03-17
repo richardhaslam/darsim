@@ -12,50 +12,101 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
         function DefinePerforatedCells(obj, Wells)
             % Injectors
             for w = 1:Wells.NofInj
-                PerfList = [];
-                for p = 1:size(Wells.Inj(w).Coord)-1
-                    PointA = Wells.Inj(w).Coord(p  ,:);
-                    PointB = Wells.Inj(w).Coord(p+1,:);
-                    PointM = (PointA+PointB)/2;
-                    [ ~ , indList ] = min( vecnorm(PointM - obj.CornerPointGridData.Cell.Centroid,2,2 ) );
+                for p = 1:size(Wells.Inj(w).Coord,1) - 1
+                    PointA = Wells.Inj(w).Coord(p  ,:)';
+                    PointB = Wells.Inj(w).Coord(p+1,:)';
+                    LineSegment = lineSegment_DARSim(PointA,PointB);
+                    
+                    [ ~ , indList ] = min( vecnorm(LineSegment.PointM' - obj.CornerPointGridData.Cell.Centroid, 2,2) );
                     Count = 1;
                     while Count <= length(indList)
                         I = indList(Count);
-                        Hexahedron.NW_Top_Corner = obj.CornerPointGridData.Cell(I).NW_Top_Corner;
-                        Hexahedron.NE_Top_Corner = obj.CornerPointGridData.Cell(I).NE_Top_Corner;
-                        Hexahedron.SW_Top_Corner = obj.CornerPointGridData.Cell(I).SW_Top_Corner;
-                        Hexahedron.SE_Top_Corner = obj.CornerPointGridData.Cell(I).SE_Top_Corner;
-                        Hexahedron.NW_Bot_Corner = obj.CornerPointGridData.Cell(I).NW_Bot_Corner;
-                        Hexahedron.NE_Bot_Corner = obj.CornerPointGridData.Cell(I).NE_Bot_Corner;
-                        Hexahedron.SW_Bot_Corner = obj.CornerPointGridData.Cell(I).SW_Bot_Corner;
-                        Hexahedron.SE_Bot_Corner = obj.CornerPointGridData.Cell(I).SE_Bot_Corner;
-                        Hexahedron.N_Faces = 6;
-                        Hexahedron.Face(1).Pos = 'North';
-                        Hexahedron.Face(1).PointA = Hexahedron.NW_Top_Corner;
-                        Hexahedron.Face(1).PointB = Hexahedron.NW_Bot_Corner;
-                        Hexahedron.Face(1).PointC = Hexahedron.NE_Bot_Corner;
-                        Hexahedron.Face(1).PointD = Hexahedron.NE_Top_Corner;
-                        AB = PointB - PointA;
-                        PointC = obj.CornerPointGridData.Cell.Centroid;
-                        AC = PointC - PointA;
-                        Cos_Theta = dot( AB , L2B-L1A ) / ( norm(L1B-L1A) * norm(L2B-L1A) );
+                        Count = Count+1;
+                        NW_Top = obj.CornerPointGridData.Cell.NW_Top_Corner(I,:)';
+                        SW_Top = obj.CornerPointGridData.Cell.SW_Top_Corner(I,:)';
+                        SE_Top = obj.CornerPointGridData.Cell.SE_Top_Corner(I,:)';
+                        NE_Top = obj.CornerPointGridData.Cell.NE_Top_Corner(I,:)';
+                        NW_Bot = obj.CornerPointGridData.Cell.NW_Bot_Corner(I,:)';
+                        SW_Bot = obj.CornerPointGridData.Cell.SW_Bot_Corner(I,:)';
+                        SE_Bot = obj.CornerPointGridData.Cell.SE_Bot_Corner(I,:)';
+                        NE_Bot = obj.CornerPointGridData.Cell.NE_Bot_Corner(I,:)';
+
+                        Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                        Hexahedron.Centroid = obj.CornerPointGridData.Cell.Centroid(I,:)';
+                        
+                        [Geostatus, IntersectPoints] = Hexahedron.Obtain_Hexahedron_LineSegment_Intersection(LineSegment);
+                        
+                        % Add the neighboring cells to the list for intersection check if it is the first try
+                        % but no intersection occurs, so another one must be checked
+                        if isempty(IntersectPoints) && Count == 2
+                            indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
+                            indList = union(indList, indNeighbors, 'stable');
+                            continue;
+                        end
+                        
+                        % Assigning the index of cell to the array
+                        if isempty(IntersectPoints) && Count > 2
+                            continue;
+                        end
+                        indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
+                        indList = union(indList, indNeighbors, 'stable');
+                        
+                        if Geostatus.haveIntersect
+                            Wells.Inj(w).Cells = [ Wells.Inj(w).Cells ; I ];
+                        end
                     end
                 end
+                Wells.Inj(w).ResizeObjects(length(Wells.Inj(w).Cells));
             end
             
             % Producers
             for w = 1:Wells.NofProd
-                I = Wells.Prod(w).Coord(1,1):1:Wells.Prod(w).Coord(2,1);
-                J = Wells.Prod(w).Coord(1,2):1:Wells.Prod(w).Coord(2,2);
-                K = Wells.Prod(w).Coord(1,3):1:Wells.Prod(w).Coord(2,3);
-                if (sum(I > obj.ReservoirGrid.Nx) == 1 || sum(J > obj.ReservoirGrid.Ny) == 1 || sum(K > obj.ReservoirGrid.Nz) == 1)
-                    error(['ERROR: coordinates of producer num ', num2str(w),' fall outside of the domain']);
-                else
-                     Wells.Prod(w).Cells = I + (J-1)*obj.ReservoirGrid.Nx + (K-1)*obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny;
-                     Wells.Prod(w).ResizeObjects(length(Wells.Prod(w).Cells));
+                for p = 1:size(Wells.Prod(w).Coord,1) - 1
+                    PointA = Wells.Prod(w).Coord(p  ,:)';
+                    PointB = Wells.Prod(w).Coord(p+1,:)';
+                    LineSegment = lineSegment_DARSim(PointA,PointB);
+                    
+                    [ ~ , indList ] = min( vecnorm(LineSegment.PointM' - obj.CornerPointGridData.Cell.Centroid, 2,2) );
+                    Count = 1;
+                    while Count <= length(indList)
+                        I = indList(Count);
+                        Count = Count+1;
+                        NW_Top = obj.CornerPointGridData.Cell.NW_Top_Corner(I,:)';
+                        SW_Top = obj.CornerPointGridData.Cell.SW_Top_Corner(I,:)';
+                        SE_Top = obj.CornerPointGridData.Cell.SE_Top_Corner(I,:)';
+                        NE_Top = obj.CornerPointGridData.Cell.NE_Top_Corner(I,:)';
+                        NW_Bot = obj.CornerPointGridData.Cell.NW_Bot_Corner(I,:)';
+                        SW_Bot = obj.CornerPointGridData.Cell.SW_Bot_Corner(I,:)';
+                        SE_Bot = obj.CornerPointGridData.Cell.SE_Bot_Corner(I,:)';
+                        NE_Bot = obj.CornerPointGridData.Cell.NE_Bot_Corner(I,:)';
+
+                        Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                        Hexahedron.Centroid = obj.CornerPointGridData.Cell.Centroid(I,:)';
+                        
+                        [Geostatus, IntersectPoints] = Hexahedron.Obtain_Hexahedron_LineSegment_Intersection(LineSegment);
+                        
+                        % Add the neighboring cells to the list for intersection check if it is the first try
+                        % but no intersection occurs, so another one must be checked
+                        if isempty(IntersectPoints) && Count == 2
+                            indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
+                            indList = union(indList, indNeighbors, 'stable');
+                            continue;
+                        end
+                        
+                        % Assigning the index of cell to the array
+                        if isempty(IntersectPoints) && Count > 2
+                            continue;
+                        end
+                        indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
+                        indList = union(indList, indNeighbors, 'stable');
+                        
+                        if Geostatus.haveIntersect
+                            Wells.Prod(w).Cells = [ Wells.Prod(w).Cells ; I ];
+                        end
+                    end
                 end
+                Wells.Prod(w).ResizeObjects(length(Wells.Prod(w).Cells));
             end
-            we
         end
     end
 end
