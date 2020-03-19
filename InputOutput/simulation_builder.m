@@ -998,7 +998,12 @@ classdef simulation_builder < handle
                         plotter = Matlab_Plotter_2D();
                     end
                 case('VTK')
-                    plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
+                    switch obj.SimulationInput.ReservoirProperties.Discretization
+                        case('CornerPointGrid')
+                            plotter = CornerPointGrid_VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
+                        otherwise
+                            plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
+                    end
                 otherwise
                     warning('WARNING: NO valid Plotter was selected. Results will not be plotted.');
                     plotter = no_Plotter();

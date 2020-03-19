@@ -20,7 +20,7 @@ classdef VTK_Plotter < Plotter
             obj.VTKindex = 1;
         end
         function PlotWells(obj, Inj, Prod, Grid)
-            %InJectors
+            %Injectors
             for i=1:length(Inj)
                 name = strcat(obj.FileName,num2str(i),'Inj','.vtk');
                 obj.WriteAWell(Inj(i), name, Grid);
