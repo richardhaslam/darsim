@@ -32,16 +32,12 @@ classdef bf_updater < handle
                     Mvv = speye(Nv,Nv);
                     % 1D
                     Edges = -slvblk(Mee, Mev);
-                    
+                    % Prolongation Operator
                     MsP = [Edges;...
                            Mvv];
+                    % Correction functions operator
                     MsC = [];
                     
-                    
-                    
-%                     Mee_inv = Mee^-1;
-%                     MsP = [-Mee_inv*Men;...
-%                         speye(Nn,Nn)];                    
                 case (2)
                     % 3. Define face-x (ff,fe,fv) blocks
                     Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf); 
@@ -55,27 +51,13 @@ classdef bf_updater < handle
                     % 6. Compute inverse of (ii), (ff) and (ee) blocks
                     Edges = -slvblk(Mee, Mev);
                     Faces = -slvblk(Mff, Mfe * Edges + Mfv);
-                    
-                    % Prolongation Operator
+                    % 7. Obtaining Prolongation
                     MsP = [Faces;...
                            Edges;...
                            Mvv];
-                    
-                    % Correction functions operator
+                    % 8. Correction functions operator
                     MsC = [];
-%                     Mff_inv = slvblk(Mff, speye(Nf));
-%                     Mee_inv = slvblk(Mee, speye(Ne));
-%                     MsC = [Mff_inv        -Mff_inv*Mfe*Mee_inv      sparse(Nf,Nv);        ...
-%                           sparse(Ne,Nf)               Mee_inv       sparse(Ne,Nv);        ...
-%                           sparse(Nv,Nf)         sparse(Nv,Ne)       sparse(Nv,Nv)];
                     
-%                     Mff_inv = Mff^-1;
-%                     Mee_inv = Mee^-1;
-%                     
-%                     MsP = [Mff_inv*(Mfe*Mee_inv*Men);...
-%                         -Mee_inv*Men;...
-%                         speye(Nn,Nn)];
-
                 case(3)
                     % 2. Define interior-x (ii,if,ie,iv) blocks
                     Mii = tildeA(1:Ni, 1:Ni);
@@ -102,19 +84,8 @@ classdef bf_updater < handle
                            Mvv     ];
                     % 8. Correction functions
                     MsC = [];
-% Old version was slower
-%                     start2 = tic;
-%                     Mii_inv = Mii^-1;
-%                     Mff_inv = Mff^-1;                   
-%                     Mee_inv = Mee^-1;                    
-%                     MsP = [-Mii_inv*(Mif*Mff_inv*Mfe*Mee_inv*Men);...                    
-%                         Mff_inv*(Mfe*Mee_inv*Men);...                    
-%                         -Mee_inv*Men;...                    
-%                         speye(Nn,Nn)];
-%                     time2 =toc(start2)
             end
         end
-        %% Permutation Matrix
         function [P, nii, nff, nee, nvv] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)
             % The ordering is done based on the dual coarse scale internal data
             %
@@ -175,14 +146,22 @@ classdef bf_updater < handle
 
             for m=1:length(FineGrid)
                 % faces
-                nff = nff + (nxcf(m)-1)*(nycf(m)-1)*nxc_hybrid(m)*nyc_hybrid(m)*nzc(m) + ...
-                            (nycf(m)-1)*(nzcf(m)-1)*nyc_hybrid(m)*nzc_hybrid(m)*nxc(m) + ...
-                            (nxcf(m)-1)*(nzcf(m)-1)*nxc_hybrid(m)*nzc_hybrid(m)*nyc(m);
+                if CoarseGrid(m).N == 0 && FineGrid(m).Ny > 1
+                    nff = nff + FineGrid(m).N;
+                else
+                    nff = nff + (nxcf(m)-1)*(nycf(m)-1)*nxc_hybrid(m)*nyc_hybrid(m)*nzc(m) + ...
+                              (nycf(m)-1)*(nzcf(m)-1)*nyc_hybrid(m)*nzc_hybrid(m)*nxc(m) + ...
+                              (nxcf(m)-1)*(nzcf(m)-1)*nxc_hybrid(m)*nzc_hybrid(m)*nyc(m);
+                end
                         
                 % edges
-                nee = nee + (nxcf(m)-1)*nxc_hybrid(m)*nyc(m)*nzc(m) + ...
-                            (nycf(m)-1)*nyc_hybrid(m)*nxc(m)*nzc(m) + ...
-                            (nzcf(m)-1)*nzc_hybrid(m)*nxc(m)*nyc(m);
+                if CoarseGrid(m).N == 0 && FineGrid(m).Ny == 1
+                    nee = nee + FineGrid(m).N;
+                else
+                    nee = nee + (nxcf(m)-1)*nxc_hybrid(m)*nyc(m)*nzc(m) + ...
+                                (nycf(m)-1)*nyc_hybrid(m)*nxc(m)*nzc(m) + ...
+                                (nzcf(m)-1)*nzc_hybrid(m)*nxc(m)*nyc(m);
+                end
                         
                 % verteces
                 nvv = nvv + nxc(m)*nyc(m)*nzc(m);
@@ -197,7 +176,7 @@ classdef bf_updater < handle
             ivv0 = nii + nff + nee;
             
             if ~CoarseGrid(1).Vertex_On_Corner
-                % If the coarse grids are constructed normally (no coarse
+                %% If the coarse grids are constructed normally (no coarse
                 % nodes on the corners)
                 nxd = nxc + 1;
                 nyd = nyc + 1;
@@ -253,9 +232,27 @@ classdef bf_updater < handle
                             end
                         end
                     end
+                    % In case there are no coarse node in this media, all
+                    % the cells are faces (if 2D) or edges (if 1D)
+                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny > 1
+                        for j = 1 : FineGrid(m).Ny
+                            for i = 1 : FineGrid(m).Nx
+                                ijk = sum(nf(1:m-1)) + (j-1) * FineGrid(m).Ny + i;
+                                iff0 = iff0 + 1;
+                                P(iff0, ijk) = 1;
+                            end
+                        end
+                    end
+                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny == 1
+                        for i = 1 : FineGrid(m).Nx
+                            ijk = sum(nf(1:m-1)) + i;
+                            iee0 = iee0 + 1;
+                            P(iee0, ijk) = 1;
+                        end
+                    end
                 end
             else
-                % If the coarse nodes are on the corners
+                %% If the coarse nodes are on the corners
                 icen = ceil(nxcf/2);
                 jcen = ceil(nycf/2);
                 kcen = ceil(nzcf/2);
@@ -305,6 +302,24 @@ classdef bf_updater < handle
                                     end
                                 end
                             end
+                        end
+                    end
+                    % In case there are no coarse node in this media, all
+                    % the cells are faces (if 2D) or edges (if 1D)
+                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny > 1
+                        for j = 1 : FineGrid(m).Ny
+                            for i = 1 : FineGrid(m).Nx
+                                ijk = sum(nf(1:m-1)) + (j-1) * FineGrid(m).Ny + i;
+                                iff0 = iff0 + 1;
+                                P(iff0, ijk) = 1;
+                            end
+                        end
+                    end
+                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny == 1
+                        for i = 1 : FineGrid(m).Nx
+                            ijk = sum(nf(1:m-1)) + i;
+                            iee0 = iee0 + 1;
+                            P(iee0, ijk) = 1;
                         end
                     end
                 end

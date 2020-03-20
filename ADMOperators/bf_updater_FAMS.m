@@ -52,6 +52,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                     Dimensions(2:end) = Dimensions(2:end) - 1;
                     for i=1:length(FineGrid)
                         cf = CoarseGrid(i).CoarseFactor ./ FineGrid(i).CoarseFactor;
+                        cf(isnan(cf))=0;
                         % Permutation Matrix
                         [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid(i), CoarseGrid(i), cf);
                         % Reorder A based on dual coarse grid partition
@@ -67,6 +68,7 @@ classdef bf_updater_FAMS < bf_updater_ms
                     MsP = []; % Prolongation operator
                     MsC = []; % Correction functions operator
                     cf = vertcat(CoarseGrid(1:end).CoarseFactor) ./ vertcat(FineGrid(1:end).CoarseFactor);
+                    cf(isnan(cf))=0;
                     [G, Ni, Nf, Ne, Nv] = obj.PermutationMatrix(FineGrid, CoarseGrid, cf);
                     tildeA = G * obj.A * G';
                     [MsP, MsC] = obj.ComputeMsP(tildeA, Ni, Nf, Ne, Nv, Dimensions(1));
@@ -83,8 +85,12 @@ classdef bf_updater_FAMS < bf_updater_ms
                 [Nf, ~] = size(obj.Amedia{m});
                 End_f = Start_f + Nf - 1;
                 End_c = Start_c + Grid(m).N - 1 ;
-                obj.Amedia{m} = P(Start_f:End_f, Start_c:End_c)' * obj.Amedia{m} * P(Start_f:End_f, Start_c:End_c);
-                obj.Amedia{m} = obj.TransformIntoTPFA(obj.Amedia{m}, Grid(m));
+                if Grid(m).N ~= 0
+                    obj.Amedia{m} = P(Start_f:End_f, Start_c:End_c)' * obj.Amedia{m} * P(Start_f:End_f, Start_c:End_c);
+                    obj.Amedia{m} = obj.TransformIntoTPFA(obj.Amedia{m}, Grid(m));
+                else
+                    obj.Amedia{m}=[];
+                end
                 Start_f = End_f + 1;
                 Start_c = End_c + 1;
             end

@@ -12,8 +12,8 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         Depth
         Active
         Fathers
-        Children
-        GrandChildren
+        Children = {};
+        GrandChildren = {};
         Verteces
         CoarseFactor
         GridCoords

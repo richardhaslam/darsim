@@ -95,15 +95,22 @@ classdef Multiscale_Discretization_model < Discretization_model
             for f = 1 : size(obj.Coarsening,1) - 1
                 min_maxLevel = min( obj.maxLevel(1) , obj.maxLevel(1+f) );
                 % level 1
-                if isprop(obj.FracturesGrid.Grids(f),'CoarseNodeIndex') && ~isempty(obj.FracturesGrid.Grids(f).CoarseNodeIndex)
+%                 if isprop(obj.FracturesGrid.Grids(f),'CoarseNodeIndex') && ~isempty(obj.FracturesGrid.Grids(f).CoarseNodeIndex)
                     % For now this will work only for one level of ADM
-                    obj.CoarseGrid(1+f,1) = coarse_grid_unstructured();
-                else
+%                     obj.CoarseGrid(1+f,1) = coarse_grid_unstructured();
+%                 else
                     obj.CoarseGrid(1+f,1) = coarse_grid();
-                    obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
-                end
-                if obj.CoarseGrid(1+f,1).CoarseFactor(1,1) == 0
-                    obj.CoarseGrid(1+f,1).N = 0;
+%                 end
+                obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
+                if obj.Coarsening(1+f,1,1) == 0
+                    for i=1:obj.maxLevel(1)
+                        obj.CoarseGrid(1+f,i) = coarse_grid();
+                        obj.CoarseGrid(1+f,i).CoarseFactor = obj.Coarsening(1+f,:,i);
+                        obj.CoarseGrid(1+f,i).Nx = 0;
+                        obj.CoarseGrid(1+f,i).Ny = 0;
+                        obj.CoarseGrid(1+f,i).Nz = 0;
+                        obj.CoarseGrid(1+f,i).N = 0;
+                    end
                     continue;
                 end
                 obj.CoarseGrid(1+f,1).Vertex_On_Corner = obj.Vertex_On_Corner;
