@@ -243,9 +243,12 @@ classdef Geothermal_1T_formulation < formulation
             J_PP = obj.Tph{ph,1+f};
             
             % 1.b: compressibility part
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
+            %dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) ) .* P;
+            %dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) ) .* P;
+            %dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) ) .* P;
+            dMupx = zeros(N,1);
+            dMupy = zeros(N,1);
+            dMupz = zeros(N,1);
             
             vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
             vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
@@ -260,9 +263,13 @@ classdef Geothermal_1T_formulation < formulation
             J_PP = J_PP + spdiags(DiagVecs, DiagIndx, N, N);
             
             % 2. J_PT
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
+            %dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) ) .* P;
+            %dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) ) .* P;
+            %dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) ) .* P;
+            dMupx = zeros(N,1);
+            dMupy = zeros(N,1);
+            dMupz = zeros(N,1);
+            
             % Construct JPT block
             vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
             vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
@@ -303,9 +310,12 @@ classdef Geothermal_1T_formulation < formulation
             J_TP = obj.Th{ph, 1+f};
             
             % 1.b: compressibility part
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
+            %dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) ) .* P;
+            %dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) ) .* P;
+            %dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) ) .* P;
+            dMupx = zeros(N,1);
+            dMupy = zeros(N,1);
+            dMupz = zeros(N,1);
             
             vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
             vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
@@ -323,9 +333,13 @@ classdef Geothermal_1T_formulation < formulation
             J_TT = obj.Tk{1, 1+f};
             Mob  = obj.Mob(Index.Start:Index.End, ph);
             
-            dMupx = obj.UpWind{ph,1+f}.x * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            dMupy = obj.UpWind{ph,1+f}.y * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            dMupz = obj.UpWind{ph,1+f}.z * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
+            %dMupx = obj.UpWind{ph,1+f}.x * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob) .* P;
+            %dMupy = obj.UpWind{ph,1+f}.y * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob) .* P;
+            %dMupz = obj.UpWind{ph,1+f}.z * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob) .* P;
+            dMupx = zeros(N,1);
+            dMupy = zeros(N,1);
+            dMupz = zeros(N,1);
+            
             % Construct JTT block
             vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
             vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
