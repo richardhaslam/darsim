@@ -23,17 +23,9 @@ classdef matrix_assembler < handle
                     MobUp(Ind) = Mob(Neighbor2Index(Ind)) .* rho(Neighbor2Index(Ind));
                     
                     % Final Transmisibility and Gravity Matrices
-                    Trans = Grid.Trans .* MobUp;
-                    Tph = sparse(Grid.N,Grid.N);
-                    Gph = sparse(Grid.N,Grid.N);
-                    for i = 1 : Grid.N
-                        Ind = find(Neighbor1Index == i);
-                        IndNeighbor = (Neighbor2Index(Ind));
-                        Tph(i,i) = sum(Trans(Ind));
-                        Tph(i,IndNeighbor) = - Trans(Ind);
-                        Gph(i,i) = sum( Trans(Ind).*RhoInt(Ind) );
-                        Gph(i,IndNeighbor) = - Trans(Ind).*RhoInt(Ind);
-                    end
+                    Tph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*MobUp ,0,length(Grid.Trans),length(Grid.Trans)) * Grid.ConnectivityMatrix';
+                    Gph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*RhoInt,0,length(Grid.Trans),length(Grid.Trans)) * Grid.ConnectivityMatrix';
+                    
                     
                 case('cartesian_grid')
                     Nx = Grid.Nx;
