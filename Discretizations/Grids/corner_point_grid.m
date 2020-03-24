@@ -14,6 +14,8 @@ classdef corner_point_grid < grid_darsim
         Nx
         Ny
         Nz
+        Volume
+        ConnectivityMatrix
     end
     methods
         function obj = corner_point_grid(ReservoirProperties)
@@ -28,7 +30,9 @@ classdef corner_point_grid < grid_darsim
             obj.HeatTrans = zeros(ReservoirProperties.CornerPointGridData.N_InternalFaces,1);
         end
         function Initialize(obj, Reservoir)
+            obj.Volume = obj.CornerPointGridData.Cell.Volume;
             obj.ComputeRockTransmissibilities();
+            obj.ConstructConnectivityMatrix();
         end
         function ComputeRockTransmissibilities(obj)
             Perm = obj.CornerPointGridData.Permeability;
@@ -52,6 +56,15 @@ classdef corner_point_grid < grid_darsim
         end
         function ComputeDepth(obj, alpha, Thickness)
             obj.Depth = obj.CornerPointGridData.Cell.Centroid(:,3);
+        end
+        function ConstructConnectivityMatrix(obj)
+            % Creating a sparse matrix with number of rows being number of
+            % the grid cells and number of columns being the number of
+            % interfaces
+            nc = obj.N;
+            nf = length(obj.Trans);
+            C = [ obj.CornerPointGridData.Internal_Face.CellNeighbor1Index , obj.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+            obj.ConnectivityMatrix = sparse([(1:nf)'; (1:nf)'], C, ones(nf,1)*[-1 1], nf, nc)';
         end
     end
 end
