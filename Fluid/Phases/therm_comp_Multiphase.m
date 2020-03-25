@@ -8,6 +8,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef therm_comp_Multiphase < phase
     properties
+        Pstepsize = 1e4;
+        Hstepsize = 1e3; % implement this
     end
     % the first derivative is an AVERAGE derivative
     methods
@@ -26,73 +28,73 @@ classdef therm_comp_Multiphase < phase
         function ThermCond = GetConductivity(obj, Pindex, Hindex, ThermCondTable)
             ThermCond = ThermCondTable( sub2ind(size(ThermCondTable), Pindex, Hindex));
         end
+        function PhaseEnthalpy = GetPhaseEnthalpy(obj, Pindex, Hindex, PhaseEnthalpyTable)
+            PhaseEnthalpy = PhaseEnthalpyTable( sub2ind(size(PhaseEnthalpyTable), Pindex, Hindex));
+        end
         
-        function [drhodp, d2rhod2p] = ComputeDrhoDp(obj, Pindex, Hindex, rhoTable)
-            % derivative using matlab gradient() -> you must specify the step size!!
-            [~,table_drhodp] = gradient(rhoTable,1,0.1); %gradient('matrix','stepsize hor(j)','stepsize vert(i)') and you have P,H as i,j
+        % Derivatives
+        function drhodp = ComputeDrhoDp(obj, Pindex, Hindex, rhoTable)
+            [~,table_drhodp] = gradient(rhoTable,obj.Pstepsize); 
             drhodp = table_drhodp(sub2ind(size(table_drhodp), Pindex, Hindex));      
-            % 2nd derivative
-            [~,table_d2rhod2p] = gradient(table_drhodp,0.1); % specify stepsize for pressure (make this generic)
-            d2rhod2p = table_d2rhod2p(sub2ind(size(table_d2rhod2p), Pindex, Hindex));
         end
-        function [drhodh, d2rhod2h] = ComputeDrhoDh(obj, Pindex, Hindex, rhoTable)
-            % 1st derivative
-            [table_drhodh,~] = gradient(rhoTable,1,0.1); 
+        function drhodh = ComputeDrhoDh(obj, Pindex, Hindex, rhoTable)
+            [table_drhodh,~] = gradient(rhoTable,obj.Hstepsize); 
             drhodh = table_drhodh(sub2ind(size(table_drhodh), Pindex, Hindex));
-            
-            % 2nd derivative
-            [table_d2rhod2h,~] = gradient(table_drhodh,1); % specify stepsize for enthalpy (make this generic)
-            d2rhod2h = table_d2rhod2h(sub2ind(size(table_d2rhod2h), Pindex, Hindex));
         end
-        function [dSdp, d2Sd2p] = ComputeDSDp(obj, Pindex, Hindex, STable)
-            [~,table_dSdp] = gradient(STable,1,0.1); 
-            dSdp = table_dSdp(sub2ind(size(table_dSdp), Pindex, Hindex));
-            [~,table_d2Sd2p] = gradient(table_dSdp,0.1); 
-            d2Sd2p = table_d2Sd2p(sub2ind(size(table_d2Sd2p), Pindex, Hindex));
+        function drhoTdp = ComputeDrhoTDp(obj, Pindex, Hindex, rhoTTable)
+            [~,table_drhoTdp] = gradient(rhoTTable,obj.Pstepsize); 
+            drhoTdp = table_drhoTdp(sub2ind(size(table_drhoTdp), Pindex, Hindex));      
         end
-        function [dSdh, d2Sd2h] = ComputeDSDh(obj, Pindex, Hindex, STable)
-            [~,table_dSdh] = gradient(STable,1,0.1); 
-            dSdh = table_dSdh(sub2ind(size(table_dSdh), Pindex, Hindex));
-            [~,table_d2Sd2h] = gradient(table_dSdh,1); 
-            d2Sd2h = table_d2Sd2h(sub2ind(size(table_d2Sd2h), Pindex, Hindex));
+        function drhoTdh = ComputeDrhoTDh(obj, Pindex, Hindex, rhoTTable)
+            [table_drhoTdh,~] = gradient(rhoTTable,obj.Hstepsize); 
+            drhoTdh = table_drhodh(sub2ind(size(table_drhoTdh), Pindex, Hindex));
         end
-        function [dmudp, d2mud2p] = ComputeDmuDp(obj, Pindex, Hindex, muTable)
-            [~,table_dmudp] = gradient(muTable,1,0.1);             
-            dmudp = table_dmudp(sub2ind(size(table_dmudp), Pindex, Hindex));
-            [~,table_d2mud2p] = gradient(table_dmudp,0.1); 
-            d2mud2p = table_d2mud2p(sub2ind(size(table_d2mud2p), Pindex, Hindex));
-        end            
-        function [dmudh, d2mud2h] = ComputeDmuDh(obj, Pindex, Hindex, muTable)
-            [table_dmudh,~] = gradient(muTable,1,0.1); 
-            dmudh = table_dmudh(sub2ind(size(table_dmudh), Pindex, Hindex));
-            [table_d2mud2h,~] = gradient(table_dmudh,1); 
-            d2mud2h = table_d2mud2h(sub2ind(size(table_d2mud2h), Pindex, Hindex));
+        function drho_over_mudp = ComputeDrho_over_muDp(obj, Pindex, Hindex, rho_over_muTable)
+            [~,table_drho_over_mudp] = gradient(rho_over_muTable,obj.Pstepsize);
+            drho_over_mudp = table_drho_over_mudp(sub2ind(size(table_drho_over_mudp), Pindex, Hindex));
+        end        
+        function drho_times_hdp = ComputeDrho_times_hDp(obj, Pindex, Hindex, rho_times_hTable)
+            [~,table_drho_times_hdp] = gradient(rho_times_hTable,obj.Pstepsize);
+            drho_times_hdp = table_drho_times_hdp(sub2ind(size(table_drho_times_hdp), Pindex, Hindex));
         end
-        function [dUdp, d2Ud2p] = ComputeDUDp(obj, Pindex, Hindex, UTable)
-            [~,table_dUdp] = gradient(UTable,1,0.1); 
-            dUdp = table_dUdp(sub2ind(size(table_dUdp), Pindex, Hindex));
-            [~,table_d2Ud2p] = gradient(table_dUdp,0.1); 
-            d2Ud2p = table_d2Ud2p(sub2ind(size(table_d2Ud2p), Pindex, Hindex));
+        function drho_times_hdh = ComputeDrho_times_hDh(obj, Pindex, Hindex, rho_times_hTable)
+            [~,table_drho_times_hdh] = gradient(rho_times_hTable,obj.Pstepsize);
+            drho_times_hdh = table_drho_times_hdh(sub2ind(size(table_drho_times_hdh), Pindex, Hindex));
         end
-        function [dUdh, d2Ud2h] = ComputeDUDh(obj, Pindex, Hindex, UTable)
-            [table_dUdh,~] = gradient(UTable,1,0.1); 
-            dUdh = table_dUdh(sub2ind(size(table_dUdh), Pindex, Hindex));
-            [table_d2Ud2h,~] = gradient(table_dUdh,1); 
-            d2Ud2h = table_d2Ud2h(sub2ind(size(table_d2Ud2h), Pindex, Hindex));
-        end 
-        % Compute Temperature derivatives
+        function dhdp = ComputeDhDp(obj, Pindex, Hindex, hTable)
+            [~,table_dhdp] = gradient(hTable,obj.Pstepsize);
+            dhdp = table_dhdp(sub2ind(size(table_dhdp), Pindex, Hindex));
+        end        
+        function dUfdp = ComputeDUfDp(obj, Pindex, Hindex, UfTable)
+            [table_dUfdp,~] = gradient(UfTable,obj.Hstepsize); 
+            dUfdp = table_dUfdp(sub2ind(size(table_dUfdp), Pindex, Hindex));
+        end
+        function dUfdh = ComputeDUfDh(obj, Pindex, Hindex, UfTable)
+            [table_dUfdh,~] = gradient(UfTable,obj.Hstepsize); 
+            dUfdh = table_dUfdh(sub2ind(size(table_dUfdh), Pindex, Hindex));
+        end        
         function [dTdp, d2Td2p] = ComputeDTDp(obj, Pindex, Hindex, TTable) 
-            [~,table_dTdp] = gradient(TTable,1,0.1); 
+            [~,table_dTdp] = gradient(TTable,obj.Pstepsize); 
             dTdp = table_dTdp(sub2ind(size(table_dTdp), Pindex, Hindex));
-            [~,table_d2Td2p] = gradient(table_dTdp,0.1); 
+            [~,table_d2Td2p] = gradient(table_dTdp,obj.Pstepsize); 
             d2Td2p = table_d2Td2p(sub2ind(size(table_d2Td2p), Pindex, Hindex));   
         end
         function [dTdh, d2Td2h] = ComputeDTDh(obj, Pindex, Hindex, TTable)
-            [table_dTdh,~] = gradient(TTable,1,0.1); 
+            [table_dTdh,~] = gradient(TTable,obj.Hstepsize); 
             dTdh = table_dTdh(sub2ind(size(table_dTdh), Pindex, Hindex));
-            [table_d2Td2h,~] = gradient(table_dTdh,1); 
+            [table_d2Td2h,~] = gradient(table_dTdh,obj.Hstepsize); 
             d2Td2h = table_d2Td2h(sub2ind(size(table_d2Td2h), Pindex, Hindex)); 
         end
+        % For the thermal conductivity tensor:
+        function ds_times_conddp = ComputeDs_times_condDp(obj, Pindex, Hindex, s_times_condTable)
+            [~,table_ds_times_conddp] = gradient(s_times_condTable,obj.Pstepsize);
+            ds_times_conddp = table_ds_times_conddp(sub2ind(size(table_ds_times_conddp), Pindex, Hindex));
+        end
+        function ds_times_conddh = ComputeDs_times_condDh(obj, Pindex, Hindex, s_times_condTable)
+            [~,table_ds_times_conddh] = gradient(s_times_condTable,obj.Pstepsize);
+            ds_times_conddh = table_ds_times_conddh(sub2ind(size(table_ds_times_conddh), Pindex, Hindex));
+        end
+
         
         function v = ComputeVelocity(obj, p, mu)
             % virtual call

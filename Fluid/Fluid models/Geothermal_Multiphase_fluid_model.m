@@ -9,12 +9,12 @@
 classdef Geothermal_Multiphase_fluid_model < fluid_model
     properties
         TablePH
-        Ptable = (1:0.1:220)'; % The range of pressure for all the tables
-        Htable = (20:1:4800)'; % The range of enthalpy for all the tables
+        Ptable = (1:0.1:220)'.*1e5; % The range of pressure for all the tables
+        Htable = (20:1:4800)'*1e3; % The range of enthalpy for all the tables
         Pindex % The index of pressure value for lookup in the tables
         Hindex % The index of enthalpy value for lookup in the tables
-        Pstepsize = 10000;
-        Hstepsize = 1000; % implement this
+        Pstepsize = 1e4;
+        Hstepsize = 1e3; % implement this
     end
     methods
         function obj = Geothermal_Multiphase_fluid_model(n_phases)
@@ -63,10 +63,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 U.Value = obj.Phases(i).GetInternalEnergy(obj.Pindex, obj.Hindex, UTable);
             end
         end
-        function GetTemperature(obj, Status)
-            T = Status.Properties('T');
-            T.Value = obj.TablePH.Temperature(sub2ind(size(obj.TablePH.Temperature), obj.Pindex, obj.Hindex));
-        end
         function GetPhaseThermalConductivities(obj, Status) 
             for i=1:NofPhases
                 ThermCond = Status.Properties(['cond_',num2str(i)]);
@@ -74,89 +70,97 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 ThermCond.Value = obj.Phases(i).GetConductivity(obj.Pindex, obj.Hindex, ThermCondTable);
             end
         end
+        function GetPhaseEnthalpies(obj, Status)
+            for i=1:NofPhases
+                PhaseEnthalpy = Status.Properties(['H_',num2str(i)]);
+                PhaseEnthalpyTable = obj.TablePH.(['H_',num2str(i)]);
+                PhaseEnthalpy.Value = obj.Phases(i).GetPhaseEnthalpy(obj.Pindex, obj.Hindex, PhaseEnthalpyTable);    
+            end
+        end
         
-        function ComputeTotalDensity(obj, Status)   % In the accumulation term?
-            % Compute the total density
+        function GetTemperature(obj, Status)
+            T = Status.Properties('T');
+            T.Value = obj.TablePH.Temperature(sub2ind(size(obj.TablePH.Temperature), obj.Pindex, obj.Hindex));
+        end
+        function GetTotalDensity(obj, Status)   
             rhoT = Status.Properties('rhoT');
-            rhoT.Value = Status.Properties('rho_1').Value .* Status.Properties('S_1').Value + ...
-                Status.Properties('rho_2').Value .* Status.Properties('S_2').Value;
-            % This can also be done with a table for the mixture density;
-            % make sure both approaches are equal
+            rhoT.Value = obj.TablePH.rhoT( sub2ind(size(obj.TablePH.rhoT), obj.Pindex, obj.Hindex) ); 
+        end
+        function GetTotalFluidInternalEnergy(obj, Status)
+            Uf = Status.Properties('Uf'); %%%%%%%%%%%%%%%%%%%%%%%%%
+            Uf.Value = obj.TablePH.Uf( sub2ind(size(obj.TablePH.Uf), obj.Pindex, obj.Hindex) );
         end
         
+%         function ComputeThermalConductivityTensor(obj, Status)
+%             D = Status.Properties('D');
+%             D.Value = (1 - Status.Properties('Phi')) .* D_rock + Status.Properties('Phi') .* ...
+%                 ( Status.Properties('cond_1') .* Status.Properties('S_1') + Status.Properties('cond_2') .* Status.Properties('S_2') );
+%         end
         
-        function [dconddp, d2condd2p] = ComputeDcondDp(obj)
         
-        end
-        function [dconddh, d2condd2h] = ComputeDcondDh(obj)
-        
-        end
-        function [drhodp, d2rhod2p] = ComputeDrhoDp(obj)
+        % Derivatives mass balance
+        function drhodp = ComputeDrhoDp(obj)
             drhodp = zeros(length(obj.Pindex),obj.NofPhases);
-            d2rhod2p = zeros(length(obj.Pindex,obj.NofPhases));
             for i=1:obj.NofPhases
                 rhoTable = obj.TablePH.(['rho_', num2str(i)]);
-                [drhodp(:,i), d2rhod2p(:,i)] = obj.Phases(i).ComputeDrhoDp(obj.Pindex, obj.Hindex, rhoTable);
+                drhodp(:,i) = obj.Phases(i).ComputeDrhoDp(obj.Pindex, obj.Hindex, rhoTable);
             end
-        end   
-        function [drhodh, d2rhod2h] = ComputeDrhoDh(obj)
+        end
+        function drhodh = ComputeDrhoDh(obj)
             drhodh = zeros(length(obj.Hindex),obj.NofPhases);
-            d2rhod2h = zeros(length(obj.Hindex,obj.NofPhases));
             for i=1:obj.NofPhases
                 rhoTable = obj.TablePH.(['rho_', num2str(i)]);
-                [drhodh(:,i), d2rhod2h(:,i)] = obj.Phases(i).ComputeDrhoDh(obj.Pindex, obj.Hindex, rhoTable);
+                drhodh(:,i) = obj.Phases(i).ComputeDrhoDh(obj.Pindex, obj.Hindex, rhoTable);
             end
         end
-        function [dSdp, d2Sd2p] = ComputeDSDp(obj)
-            dSdp = zeros(length(obj.Pindex),obj.NofPhases);
-            d2Sd2p = zeros(length(obj.Pindex,obj.NofPhases));
-            for i=1:obj.NofPhases
-                STable = obj.TablePH.(['S_', num2str(i)]);
-                [dSdp(:,i), d2Sd2p(:,i)] = obj.Phases(i).ComputeDSDp(obj.Pindex, obj.Hindex, STable);
+        function drhoTdp = ComputeDrhoTDp(obj)
+%             drhoTdp = zeros(length(obj.Pindex),1);
+            rhoTTable = obj.TablePH.rhoT;
+            drhoTdp = obj.Phases(1).ComputeDrhoTDp(obj.Pindex, obj.Hindex, rhoTTable);
+        end
+        function drhoTdh = ComputeDrhoTDh(obj)
+%             drhoTdh = zeros(length(obj.Hindex),1);
+            rhoTTable = obj.TablePH.rhoT;
+            drhoTdh = obj.Phases(1).ComputeDrhoTDh(obj.Pindex, obj.Hindex, rhoTTable);
+        end
+        function drho_over_mudp = ComputeDrho_over_muDp(obj)
+            drho_over_mudp = zeros(length(obj.Pindex),obj.NofPhases);
+            for i=1:NofPhases
+                rho_over_muTable = obj.TablePH.(['rho_over_mu_',num2str(i)]);
+                drho_over_mudp(:,i) = obj.Phases(i).ComputeDrho_over_muDp(obj.Pindex, obj.Hindex, rho_over_muTable);
             end
+        end
 
+        % Derivatives energy balance
+        function dUfdp = ComputeDUfDp(obj)
+            UfTable = obj.TablePH.Uf;
+            dUfdp = obj.Phases(1).ComputeDUfDp(obj.Pindex, obj.Hindex, UfTable);
         end
-        function [dSdh, d2Sd2h] = ComputeDSDh(obj)
-            dSdh = zeros(length(obj.Hindex),obj.NofPhases);
-            d2Sd2h = zeros(length(obj.Hindex,obj.NofPhases));
-            for i=1:obj.NofPhases
-                STable = obj.TablePH.(['S_', num2str(i)]);
-                [dSdh(:,i), d2Sd2h(:,i)] = obj.Phases(i).ComputeDSDh(obj.Pindex, obj.Hindex, STable);
+        function dUfdh = ComputeDUfDh(obj)
+            UfTable = obj.TablePH.Uf;
+            dUfdh = obj.Phases(1).ComputeDUfDh(obj.Pindex, obj.Hindex, UfTable);
+        end        
+        function dhdp = ComputeDhDp(obj)
+            dhdp = zeros(length(obj.Pindex),obj.NofPhases);
+            for i=1:NofPhases
+                hTable = obj.TablePH.(['H_',num2str(i)]);
+                dhdp(:,i) = obj.Phases(i).ComputeDhDp(obj.Pindex, obj.Hindex, hTable);
             end
         end
-        function [dmudp, d2mud2p] = ComputeDmuDp(obj)
-            dmudp = zeros(length(obj.Pindex),obj.NofPhases);
-            d2mud2p = zeros(length(obj.Pindex,obj.NofPhases));
+        function drho_times_hdp = ComputeDrho_times_hDp(obj)
+            drho_times_hdp = zeros(length(obj.Pindex),obj.NofPhases);
             for i=1:NofPhases
-                muTable = obj.TablePH.(['mu_',num2str(i)]);
-                [dmudp(:,i),d2mud2p(:,i)] = obj.Phases(i).ComputeDmuDp(obj.Pindex, obj.Hindex, muTable);
+                rho_times_hTable = obj.TablePH.(['rho_times_H_',num2str(i)]);
+                drho_times_hdp(:,i) = obj.Phases(i).ComputeDrho_times_hDp(obj.Pindex, obj.Hindex, rho_times_hTable);
             end
-        end            
-        function [dmudh, d2mud2h] = ComputeDmuDh(obj)
-            dmudh = zeros(length(obj.Hindex),obj.NofPhases);
-            d2mud2h = zeros(length(obj.Hindex,obj.NofPhases));
+        end        
+        function drho_times_hdh = ComputeDrho_times_hDh(obj)
+            drho_times_hdh = zeros(length(obj.Hindex),obj.NofPhases);
             for i=1:NofPhases
-                muTable = obj.TablePH.(['mu_',num2str(i)]);
-                [dmudh(:,i),d2mud2h(:,i)] = obj.Phases(i).ComputeDmuDh(obj.Pindex, obj.Hindex, muTable);
+                rho_times_hTable = obj.TablePH.(['rho_times_H_',num2str(i)]);
+                drho_times_hdh(:,i) = obj.Phases(i).ComputeDrho_times_hDh(obj.Pindex, obj.Hindex, rho_times_hTable);
             end
-        end
-        function [dUdp, d2Ud2p] = ComputeDUDp(obj)
-            dUdp = zeros(length(obj.Pindex),obj.NofPhases);
-            d2Ud2p = zeros(length(obj.Pindex,obj.NofPhases));
-            for i=1:NofPhases
-                UTable = obj.TablePH.(['U_',num2str(i)]);
-                [dUdp(:,i),d2Ud2p(:,i)] = obj.Phases(i).ComputeDUDp(obj.Pindex, obj.Hindex, UTable);
-            end            
-        end
-        function [dUdh, d2Ud2h] = ComputeDUDh(obj)
-            dUdh = zeros(length(obj.Hindex),obj.NofPhases);
-            d2Ud2h = zeros(length(obj.Hindex,obj.NofPhases));
-            for i=1:NofPhases
-                UTable = obj.TablePH.(['U_',num2str(i)]);
-                [dUdh(:,i),d2Ud2h(:,i)] = obj.Phases(i).ComputeDUDh(obj.Pindex, obj.Hindex, UTable);
-            end
-        end 
-        
+        end        
         function [dTdp, d2Td2p] = ComputeDTDp(obj)
             TTable = obj.TablePH.Temperature; % What if we just pass obj.TablePH.Temperature to the function ??
             [dTdp, d2Td2p] = obj.Phases(1).ComputeDTDp(obj.Pindex, obj.Hindex, TTable);
@@ -165,17 +169,44 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             TTable = obj.TablePH.Temperature;
             [dTdh, d2Td2h] = obj.Phases(1).ComputeDTDh(obj.Pindex, obj.Hindex, TTable);
         end
-               
+
+        % Derivatives for Thermal Conductivity tensor
+        function ds_times_conddp = ComputeDs_times_condDp(obj)
+            ds_times_conddp = zeros(length(obj.Pindex),obj.NofPhases);
+            for i=1:NofPhases
+                s_times_condTable = obj.TablePH.(['s_times_cond_',num2str(i)]);
+                ds_times_conddp(:,i) = obj.Phases(i).ComputeDs_times_condDp(obj.Pindex, obj.Hindex, s_times_condTable);
+            end            
+        end
+        function ds_times_conddh = ComputeDs_times_condDh(obj)
+            ds_times_conddh = zeros(length(obj.Hindex),obj.NofPhases);
+            for i=1:NofPhases
+                s_times_condTable = obj.TablePH.(['s_times_cond_',num2str(i)]);
+                ds_times_conddh(:,i) = obj.Phases(i).ComputeDs_times_condDh(obj.Pindex, obj.Hindex, s_times_condTable);
+            end
+        end
+
+        function dDdp = ComputeDDDp(obj, Status, ds_times_conddp)
+            dDdp = -dphidp + dphidp .* ( Status.Properties.S_1.*Status.Properties.cond_1 + ...
+                Status.Properties.S_2.*Status.Properties.cond_2 ) + Status.Properties('Phi') .* ...
+                ( ds_times_conddp(:,1) + ds_times_conddp(:,2) );
+        end
+        function dDdh = ComputeDDDh(obj, Status, ds_times_conddh)
+            dDdh = Status.Properties('Phi') .* ( ds_times_conddh(:,1) + ds_times_conddh(:,2) );
+        end
+        
+        
+
         function Mob = ComputePhaseMobilities(obj, mu)
             Mob = zeros(length(obj.NofPhases),1);
             for i=1:NofPhases
                 Mob(i,1) = 1./mu.Value;
             end
-        end
-        
+        end       
         function dMobdp = ComputeDMobDp(obj,status)
             % For now, mobility has no dependency on pressure.
         end
+        
         function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)
                 Inj(i).z = 1;
@@ -191,8 +222,9 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 Inj(i).Mob = 1/mu;   
             end
         end
+        
         function v = ComputeVelocity(obj, Reservoir, mu)
 %             virtual call
-        end
+        end          
     end
 end

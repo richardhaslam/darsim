@@ -820,15 +820,35 @@ classdef simulation_builder < handle
                     FluidModel.TablePH.S_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamSaturation.txt'));
                     FluidModel.TablePH.mu_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamViscosity.txt'));
                     FluidModel.TablePH.cond_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamConductivity.txt'));
+                    FluidModel.TablePH.H_2 = dlmread(strcat(InputDirectory,'\Tables\HEOS_Table_SteamDewpoint.txt')); % row vector
                     
                     FluidModel.TablePH.rho_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterDensity.txt'));
                     FluidModel.TablePH.U_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterInternalEnergy.txt'));
                     FluidModel.TablePH.S_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterSaturation.txt'));
                     FluidModel.TablePH.mu_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterViscosity.txt'));
                     FluidModel.TablePH.cond_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterConductivity.txt'));
+                    FluidModel.TablePH.H_1 = dlmread(strcat(InputDirectory,'\Tables\HEOS_Table_WaterBubblepoint.txt')); % row vector
 
                     FluidModel.TablePH.Temperature = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_Temperature.txt'));
                     
+                    % Compute thermodynamic table for grouped/total properties
+                    % Total density
+                    FluidModel.TablePH.rhoT = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 + ...
+                        FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
+                    % Total fluid internal energy
+                    FluidModel.TablePH.Uf = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.U_1 .* FluidModel.TablePH.S_1 + ...
+                        FluidModel.TablePH.rho_2 .* FluidModel.TablePH.U_2 .* FluidModel.TablePH.S_2;
+                    % Saturation times Thermal Conductivity
+                    FluidModel.TablePH.s_times_cond_1 = FluidModel.TablePH.S_1 .* FluidModel.TablePH.cond_1;
+                    FluidModel.TablePH.s_times_cond_2 = FluidModel.TablePH.S_2 .* FluidModel.TablePH.cond_2;
+                    % Density over Viscosity
+                    FluidModel.TablePH.rho_over_mu_1 = FluidModel.TablePH.rho_1 ./ FluidModel.TablePH.mu_1;
+                    FluidModel.TablePH.rho_over_mu_2 = FluidModel.TablePH.rho_2 ./ FluidModel.TablePH.mu_2;
+                    % Density times Phase Enthalpy
+                    % Note below that H_ is transposed to create column vector
+                    FluidModel.TablePH.rho_times_H_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.H_1'; 
+                    FluidModel.TablePH.rho_times_H_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.H_2';
+                                       
                     % Add phases
                     for i = 1:FluidModel.NofPhases
                         Phase = therm_comp_Multiphase();
