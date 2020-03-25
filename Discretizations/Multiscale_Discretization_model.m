@@ -77,7 +77,8 @@ classdef Multiscale_Discretization_model < Discretization_model
             obj.CoarseGrid(1,1).CoarseFactor = obj.Coarsening(1,:,1);
             obj.CoarseGrid(1,1).Vertex_On_Corner = obj.Vertex_On_Corner;
             obj.CoarseGrid(1,1).BuildCoarseGrid(obj.ReservoirGrid, obj.Coarsening(1,:,1));
-            obj.GridMapper.BuildFamily(obj.CoarseGrid(1,1), obj.ReservoirGrid, obj.Coarsening(1,:,1), 1);
+            obj.ReservoirGrid.Children = num2cell(1:obj.ReservoirGrid.N)';
+            obj.GridMapper.BuildFamily(obj.CoarseGrid(1,1), obj.ReservoirGrid, obj.Coarsening(1,:,1), 1, obj.maxLevel(1));
             obj.CoarseGrid(1,1).AddWells(Inj, Prod);
             obj.Nc(1, 1) = obj.CoarseGrid(1,1).N;
             for L=2:obj.maxLevel(1)
@@ -86,7 +87,7 @@ classdef Multiscale_Discretization_model < Discretization_model
                 obj.CoarseGrid(1,L).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1,L).BuildCoarseGrid(obj.CoarseGrid(1,L-1),obj.Coarsening(1,:,L)./obj.Coarsening(1,:,L-1));
                 %obj.CoarseGrid(1,L).BuildCoarseGrid(obj.ReservoirGrid);
-                obj.GridMapper.BuildFamily(obj.CoarseGrid(1,L), obj.CoarseGrid(1,L-1), obj.Coarsening(1,:,L)./obj.Coarsening(1,:,L-1), L);
+                obj.GridMapper.BuildFamily(obj.CoarseGrid(1,L), obj.CoarseGrid(1,L-1), obj.Coarsening(1,:,L)./obj.Coarsening(1,:,L-1), L, obj.maxLevel(1));
                 obj.CoarseGrid(1,L).AddWells(Inj, Prod);
                 obj.Nc(1, L) = obj.CoarseGrid(1,L).N;
             end

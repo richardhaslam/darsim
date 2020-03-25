@@ -395,14 +395,12 @@ classdef coarse_grid < grid_darsim
             for c = 1:obj.N
                 Well_Index = [];
                 for w = 1:length(Inj)
-                    if ~isempty(intersect( Inj(w).Cells , obj.Children{c,:}      )) || ... 
-                       ~isempty(intersect( Inj(w).Cells , obj.GrandChildren{c,:} ))
+                    if ~isempty(intersect( Inj(w).Cells , [obj.Children{c,:}] ))
                         Well_Index = [Well_Index; w];
                     end
                 end
                 for w = length(Inj)+1 : length(Inj)+length(Prod)
-                    if ~isempty(intersect( Prod(w-length(Inj)).Cells , obj.Children{c,:}      )) || ...
-                       ~isempty(intersect( Prod(w-length(Inj)).Cells , obj.GrandChildren{c,:} ))
+                    if ~isempty(intersect( Prod(w-length(Inj)).Cells , [obj.Children{c,:}] ))
                         Well_Index = [Well_Index; w];
                     end
                 end
