@@ -40,7 +40,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             % Assigning obj.FineGrid and obj.Nf
             if ProductionSystem.FracturesNetwork.Active
                 obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
-                obj.FineGrid = [obj.ReservoirGrid, obj.FracturesGrid.Grids];
+                obj.FineGrid = [obj.ReservoirGrid; obj.FracturesGrid.Grids];
 
                 % Adding the harmonic permeabilities to CrossConnections
                 obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);

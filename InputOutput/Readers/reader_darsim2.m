@@ -554,6 +554,8 @@ classdef reader_darsim2 < reader
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.ADMSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
                 SimulatorSettings.ADMSettings.maxLevel(1) = str2double(obj.SettingsMatrix(x+1));
+                SimulatorSettings.ADMSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.ADMSettings.CoarseningSwitch(1) = 1;
                 SimulatorSettings.ADMSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NrOfFrac, 3, SimulatorSettings.ADMSettings.maxLevel(1) );
                 temp = strfind(obj.SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
@@ -630,11 +632,8 @@ classdef reader_darsim2 < reader
                         ADM_temp = regexprep(frac_info_split{9},' ' ,'');
                         ADM_temp = strsplit(ADM_temp, { '[' , ',' , ']' });
                         ADM_temp = [ str2double(ADM_temp(2)) , str2double(ADM_temp(3)) , str2double(ADM_temp(4)) , str2double(ADM_temp(5)) ];
-                        if ADM_temp(1)
-                            SimulatorSettings.ADMSettings.maxLevel(1+f) = ADM_temp(2);
-                        else
-                            SimulatorSettings.ADMSettings.maxLevel(1+f) = 0;
-                        end
+                        SimulatorSettings.ADMSettings.CoarseningSwitch(1+f) = ADM_temp(1);
+                        SimulatorSettings.ADMSettings.maxLevel(1+f) = ADM_temp(2);
                         for L = 1:SimulatorSettings.ADMSettings.maxLevel(1)
                             if L <= SimulatorSettings.ADMSettings.maxLevel(1+f)
                                 SimulatorSettings.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
@@ -655,6 +654,8 @@ classdef reader_darsim2 < reader
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.MMsSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
                 SimulatorSettings.MMsSettings.maxLevel(1) = str2double(obj.SettingsMatrix(x+1));
+                SimulatorSettings.MMsSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.MMsSettings.CoarseningSwitch(1) = 1;
                 SimulatorSettings.MMsSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NrOfFrac, 3, SimulatorSettings.MMsSettings.maxLevel(1) );
                 temp = strfind(obj.SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
@@ -717,11 +718,8 @@ classdef reader_darsim2 < reader
                         MMs_temp = regexprep(frac_info_split{9},' ' ,'');
                         MMs_temp = strsplit(MMs_temp, { '[' , ',' , ']' });
                         MMs_temp = [ str2double(MMs_temp(2)) , str2double(MMs_temp(3)) , str2double(MMs_temp(4)) , str2double(MMs_temp(5)) ];
-                        if MMs_temp(1)
-                            SimulatorSettings.MMsSettings.maxLevel(1+f) = MMs_temp(2);
-                        else
-                            SimulatorSettings.MMsSettings.maxLevel(1+f) = 0;
-                        end
+                        SimulatorSettings.MMsSettings.CoarseningSwitch(1+f) = MMs_temp(1);
+                        SimulatorSettings.MMsSettings.maxLevel(1+f) = MMs_temp(2);
                         for L = 1:SimulatorSettings.MMsSettings.maxLevel(1)
                             if L <= SimulatorSettings.MMsSettings.maxLevel(1+f)
                                 SimulatorSettings.MMsSettings.Coarsening(1+f,:,L) = [MMs_temp(3), MMs_temp(4), 1].^L;

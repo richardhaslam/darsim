@@ -25,15 +25,14 @@ classdef grid_mapper < handle
                     Kmin = (K - 1) * CF(3) + 1;
                     Kmax = Kmin + CF(3) - 1;
                 else
-                    Imin = ((CoarseGrid.I(c, 2)-1)/CF(1)^(level-1))+1 - floor(CF(1)/2); Imin = max(Imin,1);
-                    Imax = ((CoarseGrid.I(c, 2)-1)/CF(1)^(level-1))+1 + floor(CF(1)/2); Imax = min(Imax,FineGrid.Nx);
-                    Jmin = ((CoarseGrid.J(c, 2)-1)/CF(2)^(level-1))+1 - floor(CF(2)/2); Jmin = max(Jmin,1);
-                    Jmax = ((CoarseGrid.J(c, 2)-1)/CF(2)^(level-1))+1 + floor(CF(2)/2); Jmax = min(Jmax,FineGrid.Ny);
-                    Kmin = ((CoarseGrid.K(c, 2)-1)/CF(3)^(level-1))+1 - floor(CF(3)/2); Kmin = max(Kmin,1);
-                    Kmax = ((CoarseGrid.K(c, 2)-1)/CF(3)^(level-1))+1 + floor(CF(3)/2); Kmax = min(Kmax,FineGrid.Nz);
+                    Imin = ((CoarseGrid.I(c,2)-1)/CF(1)^(level-1))+1 - floor(CF(1)/2); Imin = max(Imin,1);
+                    Imax = ((CoarseGrid.I(c,2)-1)/CF(1)^(level-1))+1 + floor(CF(1)/2); Imax = min(Imax,FineGrid.Nx);
+                    Jmin = ((CoarseGrid.J(c,2)-1)/CF(2)^(level-1))+1 - floor(CF(2)/2); Jmin = max(Jmin,1);
+                    Jmax = ((CoarseGrid.J(c,2)-1)/CF(2)^(level-1))+1 + floor(CF(2)/2); Jmax = min(Jmax,FineGrid.Ny);
+                    Kmin = ((CoarseGrid.K(c,2)-1)/CF(3)^(level-1))+1 - floor(CF(3)/2); Kmin = max(Kmin,1);
+                    Kmax = ((CoarseGrid.K(c,2)-1)/CF(3)^(level-1))+1 + floor(CF(3)/2); Kmax = min(Kmax,FineGrid.Nz);
                 end
                 
-
                 % indeces of the fine cells
                 i = Imin:Imax;
                 j = Jmin:Jmax;
@@ -41,39 +40,43 @@ classdef grid_mapper < handle
                 [p,q, v] = meshgrid(i, j, k);
                 pairs = [p(:), q(:), v(:)];
                 indexes = pairs(:,1) + (pairs(:,2)-1)*FineGrid.Nx + (pairs(:,3) - 1)*FineGrid.Nx*FineGrid.Ny;
-                CoarseGrid.Children{c,1}(1:length(indexes)) = indexes';
+                CoarseGrid.Children{c,1}(1:length(indexes)) = sort(indexes);
                 
                 %% Coordinates of fine cells contained in the coarse block for grandchildren
-                if ~CoarseGrid.Vertex_On_Corner
-                    FineFineGrid_Nx = CoarseGrid.Nx * CF(1)^level;
-                    FineFineGrid_Ny = CoarseGrid.Ny * CF(2)^level;
-                    FineFineGrid_Nz = CoarseGrid.Nz * CF(3)^level;
-                    Imin = CoarseGrid.I(c, 2) - floor((CF(1)^level - 1)/2);
-                    Imax = CoarseGrid.I(c, 2) + ceil((CF(1)^level - 1)/2);
-                    Jmin = CoarseGrid.J(c, 2) - floor((CF(2)^level - 1)/2);
-                    Jmax = CoarseGrid.J(c, 2) + ceil((CF(2)^level - 1)/2);
-                    Kmin = CoarseGrid.K(c, 2) - floor((CF(3)^level - 1)/2);
-                    Kmax = CoarseGrid.K(c, 2) + ceil((CF(3)^level - 1)/2);
-                else
-                    FineFineGrid_Nx = (CoarseGrid.Nx-1) * CF(1)^level + 1;
-                    FineFineGrid_Ny = (CoarseGrid.Ny-1) * CF(2)^level + 1;
-                    FineFineGrid_Nz = (CoarseGrid.Nz-1) * CF(3)^level + 1;
-                    Imin = ((CoarseGrid.I(c, 2)-1)/CF(1)^(max(0,level-2)))+1 - floor(CF(1)^level/2); Imin = max(Imin,1);
-                    Imax = ((CoarseGrid.I(c, 2)-1)/CF(1)^(max(0,level-2)))+1 + floor(CF(1)^level/2); Imax = min(Imax,FineFineGrid_Nx);
-                    Jmin = ((CoarseGrid.J(c, 2)-1)/CF(2)^(max(0,level-2)))+1 - floor(CF(2)^level/2); Jmin = max(Jmin,1);
-                    Jmax = ((CoarseGrid.J(c, 2)-1)/CF(2)^(max(0,level-2)))+1 + floor(CF(2)^level/2); Jmax = min(Jmax,FineFineGrid_Ny);
-                    Kmin = ((CoarseGrid.K(c, 2)-1)/CF(3)^(max(0,level-2)))+1 - floor(CF(3)^level/2); Kmin = max(Kmin,1);
-                    Kmax = ((CoarseGrid.K(c, 2)-1)/CF(3)^(max(0,level-2)))+1 + floor(CF(3)^level/2); Kmax = min(Kmax,FineFineGrid_Nz);
+                if level > 1
+                    if ~CoarseGrid.Vertex_On_Corner
+                        FineFineGrid_Nx = CoarseGrid.Nx * CF(1)^level;
+                        FineFineGrid_Ny = CoarseGrid.Ny * CF(2)^level;
+                        FineFineGrid_Nz = CoarseGrid.Nz * CF(3)^level;
+                        Imin = CoarseGrid.I(c,2) - floor((CF(1)^level - 1)/2);
+                        Imax = CoarseGrid.I(c,2) + ceil ((CF(1)^level - 1)/2);
+                        Jmin = CoarseGrid.J(c,2) - floor((CF(2)^level - 1)/2);
+                        Jmax = CoarseGrid.J(c,2) + ceil ((CF(2)^level - 1)/2);
+                        Kmin = CoarseGrid.K(c,2) - floor((CF(3)^level - 1)/2);
+                        Kmax = CoarseGrid.K(c,2) + ceil ((CF(3)^level - 1)/2);
+                    else
+                        FineFineGrid_Nx = (CoarseGrid.Nx-1) * CF(1)^level + 1;
+                        FineFineGrid_Ny = (CoarseGrid.Ny-1) * CF(2)^level + 1;
+                        FineFineGrid_Nz = (CoarseGrid.Nz-1) * CF(3)^level + 1;
+                        Imin = ((CoarseGrid.I(c, 2)-1)/CF(1)^(max(0,level-2)))+1 - floor(CF(1)^2/2); Imin = max(Imin,1);
+                        Imax = ((CoarseGrid.I(c, 2)-1)/CF(1)^(max(0,level-2)))+1 + floor(CF(1)^2/2); Imax = min(Imax,FineFineGrid_Nx);
+                        Jmin = ((CoarseGrid.J(c, 2)-1)/CF(2)^(max(0,level-2)))+1 - floor(CF(2)^2/2); Jmin = max(Jmin,1);
+                        Jmax = ((CoarseGrid.J(c, 2)-1)/CF(2)^(max(0,level-2)))+1 + floor(CF(2)^2/2); Jmax = min(Jmax,FineFineGrid_Ny);
+                        Kmin = ((CoarseGrid.K(c, 2)-1)/CF(3)^(max(0,level-2)))+1 - floor(CF(3)^2/2); Kmin = max(Kmin,1);
+                        Kmax = ((CoarseGrid.K(c, 2)-1)/CF(3)^(max(0,level-2)))+1 + floor(CF(3)^2/2); Kmax = min(Kmax,FineFineGrid_Nz);
+                    end
+                    
+                    % indeces of the fine cells
+                    i = Imin:Imax;
+                    j = Jmin:Jmax;
+                    k = Kmin:Kmax;
+                    [p, q, v] = meshgrid(i, j, k);
+                    pairs = [p(:), q(:), v(:)];
+                    indexes = pairs(:,1) + (pairs(:,2)-1) * FineFineGrid_Nx + (pairs(:,3)-1) * FineFineGrid_Nx * FineFineGrid_Ny;
+                    CoarseGrid.GrandChildren{c,1}(1:length(indexes)) = sort(indexes);
+                else % if level == 1
+                    CoarseGrid.GrandChildren{c,1} = CoarseGrid.Children{c,1};
                 end
-
-                % indeces of the fine cells
-                i = Imin:Imax;
-                j = Jmin:Jmax;
-                k = Kmin:Kmax;
-                [p, q, v] = meshgrid(i, j, k);
-                pairs = [p(:), q(:), v(:)];
-                indexes = pairs(:,1) + (pairs(:,2)-1) * FineFineGrid_Nx + (pairs(:,3)-1) * FineFineGrid_Nx * FineFineGrid_Ny;
-                CoarseGrid.GrandChildren{c,1}(1:length(indexes)) = indexes;
             end
         end
         function AssignFathersandVerteces(obj, FineGrid, CoarseGrid, maxLevel)

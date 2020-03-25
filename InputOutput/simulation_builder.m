@@ -163,6 +163,7 @@ classdef simulation_builder < handle
                     FracturesGrid.AddGrid(FractureGrid, f);
                     Nf(f) = nx*ny*nz;
                 end
+                FracturesGrid.Grids = FracturesGrid.Grids';
                 
                 % Reading the non-neighboring connectivities of frac-frac and frac-matrix
                 CrossConnections = cross_connections();
@@ -472,6 +473,7 @@ classdef simulation_builder < handle
                             gridselector = adm_grid_selector_residual(ADMSettings.tol);
                     end
                     Discretization = ADM_Discretization_model(ADMSettings.maxLevel, ADMSettings.Coarsening);
+                    Discretization.CoarseningSwitch = ADMSettings.CoarseningSwitch;
                     Discretization.AddADMGridSelector(gridselector);
                     Discretization.AddOperatorsHandler(operatorshandler);
                 case ('MMs')
@@ -502,6 +504,7 @@ classdef simulation_builder < handle
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                     % Static Multiscale for flow solver
                     Discretization = Multiscale_Discretization_model(MMsSettings.maxLevel, MMsSettings.Coarsening);
+                    Discretization.CoarseningSwitch = MMsSettings.CoarseningSwitch;
                     Discretization.AddOperatorsHandler(operatorshandler);
                 case('FS')
                     % Fine-scale discretization model
