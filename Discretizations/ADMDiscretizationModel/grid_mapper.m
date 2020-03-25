@@ -25,12 +25,12 @@ classdef grid_mapper < handle
                     Kmin = (K - 1) * CF(3) + 1;
                     Kmax = Kmin + CF(3) - 1;
                 else
-                    Imin = ((CoarseGrid.I(c,2)-1)/CF(1)^(level-1))+1 - floor(CF(1)/2); Imin = max(Imin,1);
-                    Imax = ((CoarseGrid.I(c,2)-1)/CF(1)^(level-1))+1 + floor(CF(1)/2); Imax = min(Imax,FineGrid.Nx);
-                    Jmin = ((CoarseGrid.J(c,2)-1)/CF(2)^(level-1))+1 - floor(CF(2)/2); Jmin = max(Jmin,1);
-                    Jmax = ((CoarseGrid.J(c,2)-1)/CF(2)^(level-1))+1 + floor(CF(2)/2); Jmax = min(Jmax,FineGrid.Ny);
-                    Kmin = ((CoarseGrid.K(c,2)-1)/CF(3)^(level-1))+1 - floor(CF(3)/2); Kmin = max(Kmin,1);
-                    Kmax = ((CoarseGrid.K(c,2)-1)/CF(3)^(level-1))+1 + floor(CF(3)/2); Kmax = min(Kmax,FineGrid.Nz);
+                    Imin = CoarseGrid.I(c,2) - floor(CF(1)/2); Imin = max(Imin,1);
+                    Imax = CoarseGrid.I(c,2) + floor(CF(1)/2); Imax = min(Imax,FineGrid.Nx);
+                    Jmin = CoarseGrid.J(c,2) - floor(CF(2)/2); Jmin = max(Jmin,1);
+                    Jmax = CoarseGrid.J(c,2) + floor(CF(2)/2); Jmax = min(Jmax,FineGrid.Ny);
+                    Kmin = CoarseGrid.K(c,2) - floor(CF(3)/2); Kmin = max(Kmin,1);
+                    Kmax = CoarseGrid.K(c,2) + floor(CF(3)/2); Kmax = min(Kmax,FineGrid.Nz);
                 end
                 
                 % indeces of the fine cells
@@ -58,12 +58,12 @@ classdef grid_mapper < handle
                         FineFineGrid_Nx = (CoarseGrid.Nx-1) * CF(1)^level + 1;
                         FineFineGrid_Ny = (CoarseGrid.Ny-1) * CF(2)^level + 1;
                         FineFineGrid_Nz = (CoarseGrid.Nz-1) * CF(3)^level + 1;
-                        Imin = ((CoarseGrid.I(c, 2)-1)/CF(1)^(max(0,level-2)))+1 - floor(CF(1)^2/2); Imin = max(Imin,1);
-                        Imax = ((CoarseGrid.I(c, 2)-1)/CF(1)^(max(0,level-2)))+1 + floor(CF(1)^2/2); Imax = min(Imax,FineFineGrid_Nx);
-                        Jmin = ((CoarseGrid.J(c, 2)-1)/CF(2)^(max(0,level-2)))+1 - floor(CF(2)^2/2); Jmin = max(Jmin,1);
-                        Jmax = ((CoarseGrid.J(c, 2)-1)/CF(2)^(max(0,level-2)))+1 + floor(CF(2)^2/2); Jmax = min(Jmax,FineFineGrid_Ny);
-                        Kmin = ((CoarseGrid.K(c, 2)-1)/CF(3)^(max(0,level-2)))+1 - floor(CF(3)^2/2); Kmin = max(Kmin,1);
-                        Kmax = ((CoarseGrid.K(c, 2)-1)/CF(3)^(max(0,level-2)))+1 + floor(CF(3)^2/2); Kmax = min(Kmax,FineFineGrid_Nz);
+                        Imin = ((CoarseGrid.I(c, 2)-1)/CF(1))+1 - floor(CF(1)^2/2); Imin = max(Imin,1);
+                        Imax = ((CoarseGrid.I(c, 2)-1)/CF(1))+1 + floor(CF(1)^2/2); Imax = min(Imax,FineFineGrid_Nx);
+                        Jmin = ((CoarseGrid.J(c, 2)-1)/CF(2))+1 - floor(CF(2)^2/2); Jmin = max(Jmin,1);
+                        Jmax = ((CoarseGrid.J(c, 2)-1)/CF(2))+1 + floor(CF(2)^2/2); Jmax = min(Jmax,FineFineGrid_Ny);
+                        Kmin = ((CoarseGrid.K(c, 2)-1)/CF(3))+1 - floor(CF(3)^2/2); Kmin = max(Kmin,1);
+                        Kmax = ((CoarseGrid.K(c, 2)-1)/CF(3))+1 + floor(CF(3)^2/2); Kmax = min(Kmax,FineFineGrid_Nz);
                     end
                     
                     % indeces of the fine cells

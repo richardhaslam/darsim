@@ -76,7 +76,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             obj.CoarseGrid(1,1) = coarse_grid();
             obj.CoarseGrid(1,1).CoarseFactor = obj.Coarsening(1,:,1);
             obj.CoarseGrid(1,1).Vertex_On_Corner = obj.Vertex_On_Corner;
-            obj.CoarseGrid(1,1).BuildCoarseGrid(obj.ReservoirGrid);
+            obj.CoarseGrid(1,1).BuildCoarseGrid(obj.ReservoirGrid, obj.Coarsening(1,:,1));
             obj.GridMapper.BuildFamily(obj.CoarseGrid(1,1), obj.ReservoirGrid, obj.Coarsening(1,:,1), 1);
             obj.CoarseGrid(1,1).AddWells(Inj, Prod);
             obj.Nc(1, 1) = obj.CoarseGrid(1,1).N;
@@ -84,8 +84,8 @@ classdef Multiscale_Discretization_model < Discretization_model
                 obj.CoarseGrid(1,L) = coarse_grid();
                 obj.CoarseGrid(1,L).CoarseFactor = obj.Coarsening(1,:,L);
                 obj.CoarseGrid(1,L).Vertex_On_Corner = obj.Vertex_On_Corner;
-                %obj.CoarseGrid(1,L).BuildCoarseGrid(obj.CoarseGrid(1,L-1));
-                obj.CoarseGrid(1,L).BuildCoarseGrid(obj.ReservoirGrid);
+                obj.CoarseGrid(1,L).BuildCoarseGrid(obj.CoarseGrid(1,L-1),obj.Coarsening(1,:,L)./obj.Coarsening(1,:,L-1));
+                %obj.CoarseGrid(1,L).BuildCoarseGrid(obj.ReservoirGrid);
                 obj.GridMapper.BuildFamily(obj.CoarseGrid(1,L), obj.CoarseGrid(1,L-1), obj.Coarsening(1,:,L)./obj.Coarsening(1,:,L-1), L);
                 obj.CoarseGrid(1,L).AddWells(Inj, Prod);
                 obj.Nc(1, L) = obj.CoarseGrid(1,L).N;
@@ -101,15 +101,15 @@ classdef Multiscale_Discretization_model < Discretization_model
                 obj.CoarseGrid(1+f,1) = coarse_grid();
                 obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
                 obj.CoarseGrid(1+f,1).Vertex_On_Corner = obj.Vertex_On_Corner;
-                obj.CoarseGrid(1+f,1).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
+                obj.CoarseGrid(1+f,1).BuildCoarseGrid(obj.FracturesGrid.Grids(f),obj.Coarsening(1+f,:,1));
                 obj.GridMapper.BuildFamily(obj.CoarseGrid(1+f,1), obj.FracturesGrid.Grids(f), obj.Coarsening(1+f,:,1), 1);
                 obj.Nc(f+1,1) = obj.CoarseGrid(1+f,1).N;
                 for L = 2 : obj.maxLevel(1)
                     obj.CoarseGrid(1+f,L) = coarse_grid();
                     obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
                     obj.CoarseGrid(1+f,L).Vertex_On_Corner = obj.Vertex_On_Corner;
-                    %obj.CoarseGrid(1+f,L).BuildCoarseGrid(obj.CoarseGrid(1+f,L-1));
-                    obj.CoarseGrid(1+f,L).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
+                    obj.CoarseGrid(1+f,L).BuildCoarseGrid(obj.CoarseGrid(1+f,L-1),obj.Coarsening(1+f,:,L)./obj.Coarsening(1+f,:,L-1));
+                    %obj.CoarseGrid(1+f,L).BuildCoarseGrid(obj.FracturesGrid.Grids(f));
                     obj.GridMapper.BuildFamily(obj.CoarseGrid(1+f,L), obj.CoarseGrid(1+f,L-1), obj.Coarsening(1+f,:,L)./obj.Coarsening(1+f,:,L-1), L);
                     obj.Nc(f+1,L) = obj.CoarseGrid(1+f,L).N;
                 end
@@ -126,8 +126,6 @@ classdef Multiscale_Discretization_model < Discretization_model
                         obj.CoarseGrid(1+f,L).Nz = 0;
                         obj.CoarseGrid(1+f,L).N = 0;
                     end
-%                 else
-%                     error('The CoarseningSwitch must either be set to 0 or 1. Check the input file!');
                 end
             end
             

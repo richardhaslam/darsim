@@ -22,16 +22,16 @@ classdef coarse_grid < grid_darsim
     methods
         function obj = coarse_grid() 
         end
-        function BuildCoarseGrid(obj, FineGrid)            
+        function BuildCoarseGrid(obj, FineGrid, CF)            
             %% Construct a coarse Grid given coarsening ratio and FineGrid
             if ~obj.Vertex_On_Corner
-                obj.Nx = FineGrid.Nx/obj.CoarseFactor(1);
-                obj.Ny = FineGrid.Ny/obj.CoarseFactor(2);
-                obj.Nz = FineGrid.Nz/obj.CoarseFactor(3);
+                obj.Nx = FineGrid.Nx/CF(1);
+                obj.Ny = FineGrid.Ny/CF(2);
+                obj.Nz = FineGrid.Nz/CF(3);
             else
-                obj.Nx = max( (FineGrid.Nx-1)/obj.CoarseFactor(1)+1 , 1);
-                obj.Ny = max( (FineGrid.Ny-1)/obj.CoarseFactor(2)+1 , 1);
-                obj.Nz = max( (FineGrid.Nz-1)/obj.CoarseFactor(3)+1 , 1);
+                obj.Nx = max( (FineGrid.Nx-1)/CF(1)+1 , 1);
+                obj.Ny = max( (FineGrid.Ny-1)/CF(2)+1 , 1);
+                obj.Nz = max( (FineGrid.Nz-1)/CF(3)+1 , 1);
             end
             obj.N = obj.Nx*obj.Ny*obj.Nz;
             obj.DeltaS = zeros(obj.N, 1);
@@ -42,18 +42,18 @@ classdef coarse_grid < grid_darsim
             obj.K = ones(obj.N, 2);
             
             if ~obj.Vertex_On_Corner
-                JindecesF = ceil(obj.CoarseFactor(2)/2):obj.CoarseFactor(2):FineGrid.Ny;
+                JindecesF = ceil(CF(2)/2):CF(2):FineGrid.Ny;
             else
-                JindecesF = 1:obj.CoarseFactor(2):FineGrid.Ny;
+                JindecesF = 1:CF(2):FineGrid.Ny;
             end
             JindecesC = 1:1:obj.Ny;
             for k = 1:obj.Nz
                 for i=1:obj.Ny
                     a = obj.Nx*(i-1) + (k-1)*obj.Nx*obj.Ny + 1;
                     if ~obj.Vertex_On_Corner
-                        obj.I(a:a+obj.Nx-1, 2) = ceil(obj.CoarseFactor(1)/2):obj.CoarseFactor(1):FineGrid.Nx;
+                        obj.I(a:a+obj.Nx-1, 2) = ceil(CF(1)/2):CF(1):FineGrid.Nx;
                     else
-                        obj.I(a:a+obj.Nx-1, 2) = 1:obj.CoarseFactor(1):FineGrid.Nx;
+                        obj.I(a:a+obj.Nx-1, 2) = 1:CF(1):FineGrid.Nx;
                     end
                     obj.J(a:a+obj.Nx-1, 2) = JindecesF(i)*ones(obj.Nx,1);
                     obj.I(a:a+obj.Nx-1, 1) = 1:1:obj.Nx;
@@ -61,9 +61,9 @@ classdef coarse_grid < grid_darsim
                 end
             end
             if ~obj.Vertex_On_Corner
-                KindecesC = ceil(obj.CoarseFactor(3)/2):obj.CoarseFactor(3):FineGrid.Nz;
+                KindecesC = ceil(CF(3)/2):CF(3):FineGrid.Nz;
             else
-                KindecesC = 1:obj.CoarseFactor(3):FineGrid.Nz;
+                KindecesC = 1:CF(3):FineGrid.Nz;
             end
             for i=1:obj.Nz
                 obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny, 2) = KindecesC(i) * ones(obj.Nx*obj.Ny, 1);
@@ -81,17 +81,17 @@ classdef coarse_grid < grid_darsim
             else
                 obj.AssignNeighbours();
             end
-            obj.AddGridCoordinates(FineGrid); 
+            obj.AddGridCoordinates(FineGrid,CF); 
         end
-        function AddGridCoordinates(obj, FineGrid)
+        function AddGridCoordinates(obj, FineGrid, CF)
             % Computes coordinates of corners of the coarse grid
             if ~isempty(FineGrid.GridCoords)
                 if ~obj.Vertex_On_Corner
                     kList = 1 : obj.Nz+1;
                     jList = 1 : obj.Ny+1;
                 else
-                    kList = [0, ceil(obj.CoarseFactor(3)/2) + obj.CoarseFactor(3)*(0:obj.Nz-2), FineGrid.Nz] + 1;
-                    jList = [0, ceil(obj.CoarseFactor(2)/2) + obj.CoarseFactor(2)*(0:obj.Ny-2), FineGrid.Ny] + 1;
+                    kList = [0, ceil(CF(3)/2) + CF(3)*(0:obj.Nz-2), FineGrid.Nz] + 1;
+                    jList = [0, ceil(CF(2)/2) + CF(2)*(0:obj.Ny-2), FineGrid.Ny] + 1;
                 end
                 
                 
@@ -108,12 +108,12 @@ classdef coarse_grid < grid_darsim
                     for n = 1 : length(jList)
                         j = jList(n);
                         if ~obj.Vertex_On_Corner
-                            fs_index = obj.CoarseFactor(3)*(FineGrid.Ny+1)*(FineGrid.Nx+1)*(k-1) + ...
-                                       obj.CoarseFactor(2)*(FineGrid.Nx+1)*(j-1) + ...
-                                      (obj.CoarseFactor(1)*(0:obj.Nx) ) + 1;
+                            fs_index = CF(3)*(FineGrid.Ny+1)*(FineGrid.Nx+1)*(k-1) + ...
+                                       CF(2)*(FineGrid.Nx+1)*(j-1) + ...
+                                      (CF(1)*(0:obj.Nx) ) + 1;
                         else
                             fs_index = (k-1)*(FineGrid.Nx+1)*(FineGrid.Ny+1) + (j-1)*(FineGrid.Nx+1) + ...
-                                       [0, ceil(obj.CoarseFactor(1)/2) + obj.CoarseFactor(1)*(0:obj.Nx-2), FineGrid.Nx] + 1;
+                                       [0, ceil(CF(1)/2) + CF(1)*(0:obj.Nx-2), FineGrid.Nx] + 1;
                         end
                         
                         Start = (m-1)*(obj.Nx+1)*(obj.Ny+1) + (n-1)*(obj.Nx+1) + 1 ;
