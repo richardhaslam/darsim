@@ -53,6 +53,7 @@ classdef grid_mapper < handle
                         % Assigning Fathers
                         Grid(L).Fathers(Grid(LL+L).Children{c,LL}, LL) = c;
                         % Assigning Verteces
+                        CF = zeros(3,1);
                         if Grid(LL+L).Vertex_On_Corner
                             CF(1) = (Grid(L).Nx-1)/(Grid(LL+L-1).Nx-1);
                             CF(2) = (Grid(L).Ny-1)/(Grid(LL+L-1).Ny-1);

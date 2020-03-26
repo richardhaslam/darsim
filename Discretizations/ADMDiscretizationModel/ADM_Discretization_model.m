@@ -33,9 +33,6 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             disp('Constructing coarse grids');
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             obj.FlagPerforatedCoarseCells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
-
-            % Modifying permeabilities to limit contrast for computation of coupled basis functions
-%             [Km_Original, Kf_Original] = obj.ModifyPermeabilityContrasts(ProductionSystem);  I do not need this anymore
             
             % Assigning obj.FineGrid and obj.Nf
             if ProductionSystem.FracturesNetwork.Active
@@ -61,10 +58,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 obj.OperatorsHandler.ProlongationBuilders(i).BuildStaticOperators(ProductionSystem, FluidModel, obj.FineGrid, obj.CrossConnections, ...
                     obj.maxLevel, obj.CoarseGrid);
             end
-            
-            % Resetting the permeabilities of matrix and fractures
-%             obj.ResetPermeabilityContrasts(ProductionSystem, Km_Original, Kf_Original); I do not need this anymore
-            
+
             disp('Static operators - end')
             timer = toc(start);
             disp(['Static operators construction took ', num2str(timer)])
