@@ -71,7 +71,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             Nc1 = obj.CoarseGrid(1,1).N;
             if obj.maxLevel(1) > 1
                for i = 1:Nc1
-                   if obj.CoarseGrid(1,2).Wells{obj.CoarseGrid(1,1).Fathers(i, 2)} == 1
+                   if obj.CoarseGrid(1,2).Wells{obj.CoarseGrid(1,1).Fathers(i, 1)} == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
@@ -90,7 +90,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 for x = 1:obj.maxLevel(1)
                     for j =1:length(I)
                         for c = 1 : obj.CoarseGrid(1,x).N
-                            if any(obj.CoarseGrid(1,x).GrandChildren{c,:} == I(j))
+                            if any(obj.CoarseGrid(1,x).Children{c,end} == I(j))
                                 obj.CoarseGrid(1,x).Wells{c} = 1;
                             end
                         end
@@ -102,7 +102,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 for x = 1:obj.maxLevel(1)
                     for j=1:length(P)
                         for c = 1 : obj.CoarseGrid(1,x).N
-                            if any(obj.CoarseGrid(1,x).GrandChildren{c,:} == P(j))
+                            if any(obj.CoarseGrid(1,x).Children{c,end} == P(j))
                                 obj.CoarseGrid(1,x).Wells{c} = 1;
                             end
                         end
@@ -113,29 +113,60 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         function ConstructGlobalGrids(obj)
             %% Create grids based on global ordering
             [n_media, n_levels] = size(obj.CoarseGrid);
-           
-            % 1. Initialise global grids
-            Nc_global = zeros(n_media, n_levels);
-            obj.GlobalGrids(1).N = sum([obj.FineGrid.N]);
-            obj.GlobalGrids(1).Initialise(n_levels);
+            
+            %% 1. Matrix of cumulative grid numbers per each media for finesclae and all coarse levels
+            Nc_global = zeros(n_media, n_levels+1);
             for m=1:n_media
-                Nc_global(m, 1) = sum([obj.FineGrid(1:m-1).N]);
-            end
-            for x = 1:n_levels
-                obj.GlobalGrids(x+1).N = sum([obj.CoarseGrid(:, x).N]);
-                obj.GlobalGrids(x+1).Initialise(n_levels);
-                for m=1:n_media
-                    Nc_global(m, x+1) = sum([obj.CoarseGrid(1:m-1, x).N]);    
+                Nc_global(m,1) = sum([obj.FineGrid(1:m).N]);
+                for L = 1:n_levels
+                    Nc_global(m,L+1) = sum([obj.CoarseGrid(1:m,L).N]); 
                 end
             end
             
-            for m=1:n_media
-                % Global Fine Grid
-                obj.GlobalGrids(1).CopyGridEntries(obj.FineGrid(m), Nc_global(m, :), 1);
-                
-                % Global Coarse Grid
-                for i=1:n_levels
-                    obj.GlobalGrids(i+1).CopyGridEntries(obj.CoarseGrid(m, i), Nc_global(m, :), i+1);
+            %% 2. GlobalGrids at fine scale
+            obj.GlobalGrids(1).N = sum([obj.FineGrid.N]);
+            obj.GlobalGrids(1).Children = cell(obj.GlobalGrids(1).N,1); % at finescale there is no children!
+            obj.GlobalGrids(1).Verteces = vertcat(obj.FineGrid(:).Verteces); % This only contains information (zero and one) to check which finescale cell is vertex for higher coarsening levels
+            obj.GlobalGrids(1).CoarseFactor = vertcat(obj.FineGrid(:).CoarseFactor);
+            % 2.1 Fathers
+            for x = 1:n_levels - 0
+                % 2.1.1 Fathers for the first medium (reservoir)
+                Father_Temp = obj.FineGrid(1).Fathers(:,x);
+                % 2.1.2 Fathers for the rest of the media (fractures)
+                for m = 2:n_media
+                    Father_Temp = vertcat(Father_Temp, obj.FineGrid(m).Fathers(:,x) + Nc_global(m-1,x+1));
+                end
+                obj.GlobalGrids(1).Fathers(:,x) = Father_Temp;
+            end
+            
+            %% 3. GlobalGrids at coarse scales
+            for L = 1:n_levels
+                obj.GlobalGrids(L+1).N = sum([obj.CoarseGrid(:,L).N]);
+                obj.GlobalGrids(L+1).Verteces = vertcat(obj.CoarseGrid(:,L).Verteces); % This only contains information (zero and one) to check which coarsescale cell is vertex for higher coarsening levels
+                obj.GlobalGrids(L+1).CoarseFactor = vertcat(obj.CoarseGrid(:,L).CoarseFactor);
+                % 3.1 Fathers
+                for x = 1:n_levels - L
+                    % 3.1.1 Fathers for the first medium (reservoir)
+                    Father_Temp = obj.CoarseGrid(1,L).Fathers(:,x);
+                    % 3.1.2 Fathers for the rest of the media (fractures)
+                    for m = 2:n_media
+                        if ~isempty(obj.CoarseGrid(m,L).Fathers)
+                            Father_Temp = vertcat(Father_Temp, obj.CoarseGrid(m,L).Fathers(:,x) + Nc_global(m-1,x+2));
+                        end
+                    end
+                    obj.GlobalGrids(L+1).Fathers(:,x) = Father_Temp;
+                end
+                % 3.2 Children
+                for x = 1:L
+                    % 3.2.1 Children for the first medium (reservoir)
+                    Children_Temp = obj.CoarseGrid(1,L).Children(:,x);
+                    % 3.2.2 Children for the rest of the media (fractures)
+                    for m = 2:n_media
+                        if ~isempty(obj.CoarseGrid(m,L).Children)
+                            Children_Temp = vertcat(Children_Temp, cellfun(@(a) a+Nc_global(m-1,x) , obj.CoarseGrid(m,L).Children(:,x),'un',0) );
+                        end
+                    end
+                    obj.GlobalGrids(L+1).Children(:,x) = Children_Temp;
                 end
             end
         end

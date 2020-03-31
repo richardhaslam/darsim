@@ -12,6 +12,7 @@ classdef adm_grid < grid_darsim & matlab.mixin.Copyable
         level
         CellIndex
         MaxLevel
+        GrandChildren
     end
     methods
         function Initialize(obj, n_total, numofactive, maxlevel)
@@ -22,7 +23,7 @@ classdef adm_grid < grid_darsim & matlab.mixin.Copyable
             obj.CoarseFactor = zeros(n_total, 3);
             obj.CellIndex = zeros(n_total, 1);
             obj.Fathers = zeros(n_total, maxlevel);
-            obj.Children = cell(n_total, 1);
+            obj.Children = cell(n_total, maxlevel);
             obj.GrandChildren = cell(n_total, 1);
             obj.Verteces = zeros(n_total, maxlevel);
         end

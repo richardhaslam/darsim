@@ -35,13 +35,6 @@ classdef grid_mapper < handle
                     end
                 end
             end
-            for c = 1:CoarseGrid.N
-                if size(CoarseGrid.Children,2)==1
-                    CoarseGrid.GrandChildren{c,1} = CoarseGrid.Children{c,1};
-                else
-                    CoarseGrid.GrandChildren{c,1} = CoarseGrid.Children{c,2};
-                end
-            end
         end
         function AssignFathersandVerteces(obj, Grid, maxLevel)
             for L=1:maxLevel

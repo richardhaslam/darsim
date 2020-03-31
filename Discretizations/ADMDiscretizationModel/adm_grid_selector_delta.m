@@ -92,7 +92,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % Saturation of fine_cells belonging to coarse block c
-                Var_children = Var(CoarseGrid.Children{c, :});
+                Var_children = Var(CoarseGrid.Children{c, 1});
                 % Max e Min saturation inside c
                 VarMax = max(Var_children);
                 VarMin = min(Var_children);
@@ -102,7 +102,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
                     i = 1;
                     while i <= Nn
                         % Man mix saturation of neighbour n(i)
-                        Var_children = Var(CoarseGrid.GrandChildren{n(i), :});
+                        Var_children = Var(CoarseGrid.Children{n(i), end});
                         VarN_max = max(Var_children);
                         VarN_min = min(Var_children);
                         if flag == false

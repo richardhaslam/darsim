@@ -61,7 +61,6 @@ classdef cartesian_grid < grid_darsim
 %             obj.ComputeRockHeatConductivities(Reservoir.K_Cond_eff);
             obj.CoarseFactor = [1, 1, 1];
             obj.Children = cell(obj.N, 1);
-            obj.GrandChildren = cell(obj.N, 1);
             obj.AddCoordinates();
             obj.Depth = zeros(obj.N, 1);
         end
