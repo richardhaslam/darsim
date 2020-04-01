@@ -78,6 +78,8 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             end
         end
         
+        % (1-phi)*C_r + phi*Sw*C_w + phi*Ss*C_s : vector
+        
         function GetTemperature(obj, Status)
             T = Status.Properties('T');
             T.Value = obj.TablePH.Temperature(sub2ind(size(obj.TablePH.Temperature), obj.Pindex, obj.Hindex));
@@ -86,16 +88,16 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             rhoT = Status.Properties('rhoT');
             rhoT.Value = obj.TablePH.rhoT( sub2ind(size(obj.TablePH.rhoT), obj.Pindex, obj.Hindex) ); 
         end
-        function GetTotalFluidInternalEnergy(obj, Status)
-            Uf = Status.Properties('Uf'); %%%%%%%%%%%%%%%%%%%%%%%%%
-            Uf.Value = obj.TablePH.Uf( sub2ind(size(obj.TablePH.Uf), obj.Pindex, obj.Hindex) );
-        end
-        
-%         function ComputeThermalConductivityTensor(obj, Status)
-%             D = Status.Properties('D');
-%             D.Value = (1 - Status.Properties('Phi')) .* D_rock + Status.Properties('Phi') .* ...
-%                 ( Status.Properties('cond_1') .* Status.Properties('S_1') + Status.Properties('cond_2') .* Status.Properties('S_2') );
+%         function GetTotalFluidInternalEnergy(obj, Status)
+%             Uf = Status.Properties('Uf'); %%%%%%%%%%%%%%%%%%%%%%%%%
+%             Uf.Value = obj.TablePH.Uf( sub2ind(size(obj.TablePH.Uf), obj.Pindex, obj.Hindex) );
 %         end
+        
+        function ComputeThermalConductivityTensor(obj, Status, Porosity)
+            D = Status.Properties('D');
+            D.Value = (1 - Porosity .* D_rock + Porosity .* ...
+                ( Status.Properties('cond_1') .* Status.Properties('S_1') + Status.Properties('cond_2') .* Status.Properties('S_2') );
+        end
         
         
         % Derivatives mass balance
@@ -197,15 +199,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         
         
 
-        function Mob = ComputePhaseMobilities(obj, mu)
-            Mob = zeros(length(obj.NofPhases),1);
-            for i=1:NofPhases
-                Mob(i,1) = 1./mu.Value;
-            end
-        end       
-        function dMobdp = ComputeDMobDp(obj,status)
-            % For now, mobility has no dependency on pressure.
-        end
         
         function InitializeInjectors(obj, Inj)
             for i=1:length(Inj)

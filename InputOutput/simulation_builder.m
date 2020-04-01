@@ -931,7 +931,8 @@ classdef simulation_builder < handle
                 case('Geothermal_MultiPhase')
                     Formulation = Geothermal_MultiPhase_formulation();
                     obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 2;
-                    % How many equations in total for Geothermal_MultiPhase?
+                    Formulation.MatrixAssembler = matrix_assembler_geothermal();
+                    % How many equations in total for Geothermal_MultiPhase? --> 2 
             end
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end

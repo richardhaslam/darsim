@@ -50,16 +50,24 @@ classdef Geothermal_MultiPhase_formulation < formulation
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             %% 1. Geothermal Properties
+
+            %% 2. Reservoir Properties and Derivatives
             FluidModel.GetTableIndex(ProductionSystem.Reservoir.State);
-            
+            FluidModel.GetTemperature(ProductionSystem.Reservoir.State);
+
             FluidModel.GetPhaseDensities(ProductionSystem.Reservoir.State);
             FluidModel.GetPhaseSaturations(ProductionSystem.Reservoir.State);
             FluidModel.GetPhaseViscosities(ProductionSystem.Reservoir.State);
             FluidModel.GetPhaseInternalEnergies(ProductionSystem.Reservoir.State);
-            FluidModel.GetTemperature(ProductionSystem.Reservoir.State);
             FluidModel.GetPhaseThermalConductivities(ProductionSystem.Reservoir.State);
+            FluidModel.GetPhaseEnthalpies(ProductionSystem.Reservoir.State);
+            
+            FluidModel.ComputeThermalConductivityTensor(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.Por);
 
-            %% 2. Reservoir Properties and Derivatives
+            % for phase mobilities; including rel.perm model (linear). Computed based on single saturation value as S = Sa+Sb
+            obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
+            
+            
             obj.dconddp = FluidModel.ComputeDcondDp(ProductionSystem.Reservoir.State);
 % you need to put obj. in front of the derivatives as they are stored as
 % properties which are called when building the Jacobian matrix (similar as
@@ -90,61 +98,100 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 obj.d2MobdT2 = [obj.d2MobdT2; d2MobdT2_f];
             end
         end
-        %% Methods for FIM Coupling
-        function Residual_P   = BuildMediumFlowResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
-            % Create local variables
-            rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
-            P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End); % P at previous time step
-            P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
-            rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
+        function Residual_MB = BuildMediumFlowResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
             depth = Grid.Depth;
-            Medium.ComputePorosity(P_old);
-            pv_old = Medium.Por*Grid.Volume;
-            Medium.ComputePorosity(P_new);
-            pv_new = Medium.Por*Grid.Volume;
             
-            % Accumulation Term
-            Accumulation = (pv_new.*rho_new - pv_old.*rho_old)/dt;
+            % Initialization with zeros
+            Residual_MB = zeros(Grid.N,1);
+            
+            for ph=1:obj.NofPhases
+                % Create local variables
+                rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
+                S_old = State0.Properties(['S_', num2str(ph)]).Value(Index.Start:Index.End);
 
-            % RESIDUAL
-            Residual_P  = Accumulation ...
-                + obj.Tph{ph, 1+f} * P_new...
-                - obj.Gph{ph, 1+f} * depth...
-                - qw(Index.Start:Index.End, ph)...
-                - qf(Index.Start:Index.End, ph);
+                P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
+                rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
+                S_new = Medium.State.Properties(['S_', num2str(ph)]).Value;
+
+                Medium.ComputePorosity(P_old);
+                Medium.ComputePorosity(P_new);
+                pv_old = Medium.Por*Grid.Volume;
+                pv_new = Medium.Por*Grid.Volume;
+
+                % Accumulation Term
+                Accumulation = (pv_new.*rho_new.*S_new - pv_old.*rho_old.*S_old)/dt;
+
+                % RESIDUAL
+                Residual_MB  = Residual_MB + Accumulation ...
+                    + obj.Tph{ph, 1+f} * P_new...
+                    - obj.Gph{ph, 1+f} * depth...
+                    - qw(Index.Start:Index.End, ph)...
+                    - qf(Index.Start:Index.End, ph);
+            end
         end
-        function Residual_T   = BuildMediumHeatResidual(obj, Medium, Grid, dt, State0, Index, qhw, qhf, RTf, f, ph)
-            % Create local variables
-            rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
-            P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End); % P at previous time step
-            P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
+        function Residual_EB = BuildMediumHeatResidual(obj, Medium, Grid, dt, State0, Index, qhw, qhf, RTf, f, ph)
             T_old = State0.Properties('T').Value(Index.Start:Index.End); % T at previous time step
             T_new = Medium.State.Properties('T').Value;
-            rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
             Rho_rock = Medium.Rho;
             depth = Grid.Depth;
             
+            P_old = Medium.State.Properties(['P_', num2str(1)]).Value;
+            P_new = Medium.State.Properties(['P_', num2str(1)]).Value;
+            % Above; a small trick is applied to overcome the issue with
+            % phase pressure implementation, i.e. mv_(old,new), in the rock accumulation.
+            % --> This will be resolved when residuals for each phase are
+            % added together. Right now, it means capillary pressure is not
+            % an option.
+
             % Pore Volume & Rock Volume
             Medium.ComputePorosity(P_old);
-            pv_old = Medium.Por*Grid.Volume;         % Old pore Volume
             mv_old = (1 - Medium.Por) * Grid.Volume; % Old rock volume
             Medium.ComputePorosity(P_new);           % Updating porosity
-            pv_new = Medium.Por*Grid.Volume;         % New pore volume
             mv_new = (1 - Medium.Por) * Grid.Volume; % New rock volume
             
-            % Accumulation Term
-            U_eff_old = ( rho_old .* obj.Cp .* pv_old + Rho_rock .* Medium.Cpr .* mv_old ) .* T_old;
-            U_eff_new = ( rho_new .* obj.Cp .* pv_new + Rho_rock .* Medium.Cpr .* mv_new ) .* T_new;
-            Accumulation = (U_eff_new - U_eff_old)/dt;
+            % Accumulation rock
+            h_rock_old = mv_old .* Rho_rock .* Medium.Cpr .* T_old;
+            h_rock_new = mv_new .* Rho_rock .* Medium.Cpr .* T_new;
+            Accumulation_rock = (h_rock_new - h_rock_old)/dt;
+
+            % Initialization with rock accumulation
+            Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * T_new;
+            % Above; we add terms to the residual that are independent of
+            % phase, i.e. rock-enthalpy and thermal conductivity (this value is the total conductivity, i.e. rock+water+steam)
+            % --> : I LOOP OVER THE PHASES IN THE FUNCTION THAT COMPUTES THERM.COND TENSOR D !! i.e. effective thermal conductivity
+            % (1-phi)*D_rock + phi*S_water*D_water + phi*S_steam*D_steam
             
-            % RESIDUAL
-            Residual_T  = Accumulation ...
-                + obj.Th{ph, 1+f} * P_new ...
-                - obj.Gph{ph, 1+f} * depth ...
-                + obj.Tk{ph, 1+f} * T_new ...
-                - qhw(Index.Start:Index.End, ph)...
-                - qhf(Index.Start:Index.End, ph)...
-                - RTf(Index.Start:Index.End, ph);
+            
+            for ph=1:obj.NofPhases
+                % Create local variables
+                rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
+                P_old = Medium.State.Properties(['P_', num2str(ph)]).Value;
+                S_old = State0.Properties(['S_', num2str(ph)]).Value(Index.Start:Index.End);
+                h_old = State0.Properties(['h_', num2str(ph)]).Value(Index.Start:Index.End);
+
+                rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
+                P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
+                S_new = Medium.State.Properties(['S_', num2str(ph)]).Value;
+                h_new = Medium.State.Properties(['h_', num2str(ph)]).Value;
+
+                Medium.ComputePorosity(P_old);
+                pv_old = Medium.Por*Grid.Volume;         % Old pore Volume
+                Medium.ComputePorosity(P_new);           % Updating porosity
+                pv_new = Medium.Por*Grid.Volume;         % New pore volume
+                
+                % Accumulation fluid
+                h_fluid_old = pv_old .* rho_old .* h_old .* S_old;
+                h_fluid_new = pv_new .* rho_new .* h_new .* S_new;
+                Accumulation_fluid = (h_fluid_new - h_fluid_old)/dt;
+
+                % RESIDUAL
+                Residual_EB  = Residual_EB + Accumulation_fluid ...
+                    + obj.Thph{ph, 1+f} * P_new ...
+                    - obj.Ghph{ph, 1+f} * depth ...
+                    - qhw(Index.Start:Index.End, ph)...
+                    - qhf(Index.Start:Index.End, ph)...
+                    - RTf(Index.Start:Index.End, ph);
+            end
         end
         function ResidualFull = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute source terms
@@ -152,57 +199,40 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Qf = zeros(DiscretizationModel.N, obj.NofPhases);              % Mass Flow flux between each two media 
             Qhf= zeros(DiscretizationModel.N, obj.NofPhases);              % Heat Convection flux betweem each two media
             RTf= zeros(DiscretizationModel.N, 1);                          % Heat Conduction flux betweem each two media
-            if ProductionSystem.FracturesNetwork.Active
-                [Qf, Qhf, RTf] = obj.ComputeSourceTerms_frac_mat(ProductionSystem, DiscretizationModel);
-            end
-            RTf= zeros(DiscretizationModel.N, 1);
-            
-            % Initialise residual vector (Nph * N, 1)
+
+            % Initialise residual vector (2 * N, 1)
             Nm = DiscretizationModel.ReservoirGrid.N;
-            if ProductionSystem.FracturesNetwork.Active
-                Nf = DiscretizationModel.FracturesGrid.N;
-            else
-                Nf = 0;
-            end
             Nt = DiscretizationModel.N;
-            ResidualFull = zeros( 2*Nt , 1 );
-                        
+            ResidualFull = zeros( 2*Nt , 1 ); % We have only 2 equations now
+            
+            % Compute conductive tranmissibility
+            obj.Tk = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid );
+                           
             for ph=1:obj.NofPhases
                 %% Transmissibilities of flow and heat
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                [obj.Tph{ph, 1}, obj.Gph{ph, 1}, obj.Th{ph, 1}, obj.Tk{1, 1}] = obj.TransmissibilityMatrix( ...
+                % Compute flow transmissibility and gravity
+                [obj.Tph{ph, 1}, obj.Gph{ph, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                    DiscretizationModel.ReservoirGrid, ...
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
+                % Compute (convective) heat transmissibility and gravity
+                [obj.Thph{ph, 1}, obj.Ghph{ph, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
                     obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
                     ProductionSystem.Reservoir.State.Properties(['h_',num2str(ph)]).Value, ...
                     obj.GravityModel.RhoInt{ph, 1} );
-                % Fractures
-                for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                    Index.Start = Index.End+1;
-                    Index.End = Index.Start + Nf(f) - 1;
-                    [obj.Tph{ph, 1+f}, obj.Gph{ph, 1+f}, obj.Th{ph, 1+f}, obj.Tk{1, 1+f}] = obj.TransmissibilityMatrix( ...
-                        DiscretizationModel.FracturesGrid.Grids(f), ...
-                        obj.UpWind{ph, 1+f}, obj.Mob(Index.Start:Index.End, ph), ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(ph)]).Value, ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['h_',num2str(ph)]).Value, ...
-                        obj.GravityModel.RhoInt{ph, 1+f});
-                end
-                
+
                 %% Flow Residual
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
                 Residualm = BuildMediumFlowResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, Qw, Qf, 0, ph);
                 ResidualFull((ph-1)*Nt + Index.Start: (ph-1)*Nt + Index.End) = Residualm;
-                % Fractures
-                for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                    Index.Start = Index.End+1;
-                    Index.End = Index.Start + Nf(f) - 1;
-                    Residualf = BuildMediumFlowResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index, Qw, Qf, f, ph);
-                    ResidualFull(Index.Start:Index.End) = Residualf;
-                end
                 
                 %% Heat Residual
                 % Reservoir
@@ -212,18 +242,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 Index_r.End = Nm;
                 Residualm = BuildMediumHeatResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index_r, Qhw, Qhf, RTf, 0, ph);
                 ResidualFull(Index.Start: Index.End) = Residualm;
-                % Fractures
-                for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                    Index.Start = Index.End + 1;
-                    Index.End = Index.Start + Nf(f) - 1;
-                    Index_r.Start = Index_r.End + 1;
-                    Index_r.End = Index_r.Start + Nf(f) - 1;
-                    Residualf = BuildMediumHeatResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index_r, Qhw, Qhf, RTf, f, ph);
-                    ResidualFull(Index.Start:Index.End) = Residualf; 
-                end
             end
         end
-        function [J_PP , J_PT] = BuildMediumFlowJacobian(obj, Medium, Wells, Grid, dt, Index, f, ph)
+        function [J_PP , J_PH] = BuildMediumFlowJacobian(obj, Medium, Wells, Grid, dt, Index, f, ph)
             % Create local variables
             Nx = Grid.Nx;
             Ny = Grid.Ny;
@@ -241,45 +262,23 @@ classdef Geothermal_MultiPhase_formulation < formulation
             J_PP = obj.Tph{ph,1+f};
             
             % 1.b: compressibility part
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
             acc = Grid.Volume/dt .* (por .* obj.drhodp(Index.Start:Index.End) + rho .*dpor);
             
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_PP = J_PP + spdiags(DiagVecs, DiagIndx, N, N);
+            DiagIndx = 0;
+            J_PP = J_PP + spdiags(acc, DiagIndx, N, N);
             
-            % 2. J_PT
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            % Construct JPT block
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
+            % 2. J_PH
             acc =  Grid.Volume/dt .* por .* obj.drhodT(Index.Start:Index.End) ;
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_PT = spdiags(DiagVecs,DiagIndx,N,N);
+            DiagIndx = 0;
+            J_PH = spdiags(acc,DiagIndx,N,N);
             
             % Add Wells
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian
             if f == 0 % only for reservoir
-                [J_PP, J_PT, ~, ~] = obj.AddWellsToJacobian(J_PP, J_PT, Medium.State, Wells, Medium.K(:,1), ph);
+                [J_PP, J_PH, ~, ~] = obj.AddWellsToJacobian(J_PP, J_PH, Medium.State, Wells, Medium.K(:,1), ph);
             end
         end
-        function [J_TP , J_TT] = BuildMediumHeatJacobian(obj, Medium, Wells, Grid, dt, Index, f, ph)
+        function [J_HP , J_HH] = BuildMediumHeatJacobian(obj, Medium, Wells, Grid, dt, Index, f, ph)
             % Create local variables
             Nx = Grid.Nx;
             Ny = Grid.Ny;
@@ -296,51 +295,28 @@ classdef Geothermal_MultiPhase_formulation < formulation
             por = Medium.Por;
             dpor = Medium.DPor;
             
-            % 1.J_TP
+            % 1.J_HP
             % 1.a Pressure Block
-            J_TP = obj.Th{ph, 1+f};
+            J_HP = obj.Th{ph, 1+f};
             
             % 1.b: compressibility part
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
             acc = (Grid.Volume/dt) .* ( obj.Cp.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
             
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_TP = J_TP + spdiags(DiagVecs, DiagIndx, N, N);
+            DiagIndx = 0;
+            J_HP = J_HP + spdiags(acc, DiagIndx, N, N);
             
-            % 2. J_TT
-            J_TT = obj.Tk{1, 1+f};
-            Mob  = obj.Mob(Index.Start:Index.End, ph);
+            % 2. J_HH
+            J_HH = obj.Tk{1, 1+f};
             
-            dMupx = obj.UpWind{ph,1+f}.x * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            dMupy = obj.UpWind{ph,1+f}.y * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            dMupz = obj.UpWind{ph,1+f}.z * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            % Construct JTT block
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
             acc = (Grid.Volume/dt) .* ( obj.Cp .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
             
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_TT = J_TT + spdiags(DiagVecs, DiagIndx, N, N);
+            DiagIndx = 0;
+            J_HH = J_HH + spdiags(acc, DiagIndx, N, N);
             
             % Add Wells
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian
             if f == 0 % only for reservoir
-                [~, ~, J_TP, J_TT] = obj.AddWellsToJacobian(J_TP, J_TT, Medium.State, Wells, Medium.K(:,1), ph);
+                [~, ~, J_HP, J_HH] = obj.AddWellsToJacobian(J_HP, J_HH, Medium.State, Wells, Medium.K(:,1), ph);
             end
         end
         function JacobianFull = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
@@ -964,82 +940,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
                         FluidModel.ComputePhaseEnthalpies(ProductionSystem.FracturesNetwork.Fractures(f).State);
                     end
                 end
-            end
-        end
-        function [Tph, Gph, Th, Tk] = TransmissibilityMatrix(obj, Grid, UpWind, Mob, rho, h, RhoInt)
-            % Tph: Mass flow transmissibility
-            % Gph: Gravity component of mass flow transmissibility
-            % Th : Heat convection transmissibility (Tph*rho)
-            % Tk : Heat conduction transmissibility
-            
-            Nx = Grid.Nx;
-            Ny = Grid.Ny;
-            Nz = Grid.Nz;
-            N = Grid.N;
-            
-            %% Tph matrix
-            Tx = zeros(Nx+1, Ny, Nz);
-            Ty = zeros(Nx, Ny+1, Nz);
-            Tz = zeros(Nx, Ny, Nz+1);
-            
-            % Apply upwind operator
-            Mupx = UpWind.x*(Mob .* rho);
-            Mupy = UpWind.y*(Mob .* rho);
-            Mupz = UpWind.z*(Mob .* rho);
-            Mupx = reshape(Mupx, Nx, Ny, Nz);
-            Mupy = reshape(Mupy, Nx, Ny, Nz);
-            Mupz = reshape(Mupz, Nx, Ny, Nz);
-
-            Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-            Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-            Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
-            Tph = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz); 
-            
-            %% Gph matrix
-            Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt.x(2:Grid.Nx,:,:);
-            Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt.y(:,2:Grid.Ny,:);
-            Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt.z(:,:,2:Grid.Nz);   
-            Gph = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz);
-            
-            %% Th Matrix
-            Tx = zeros(Nx+1, Ny, Nz);
-            Ty = zeros(Nx, Ny+1, Nz);
-            Tz = zeros(Nx, Ny, Nz+1);
-
-            % Apply upwind operator
-            Mupx = UpWind.x*(Mob .* rho .* h);
-            Mupy = UpWind.y*(Mob .* rho .* h);
-            Mupz = UpWind.z*(Mob .* rho .* h);
-            Mupx = reshape(Mupx, Nx, Ny, Nz);
-            Mupy = reshape(Mupy, Nx, Ny, Nz);
-            Mupz = reshape(Mupz, Nx, Ny, Nz);
-
-            Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-            Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-            Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
-            Th = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz); 
-            
-            %% Tk Matrix
-            THx = zeros(Nx+1, Ny, Nz);
-            THy = zeros(Nx, Ny+1, Nz);
-            THz = zeros(Nx, Ny, Nz+1);
-            
-            THx(2:Nx,:,:)= Grid.THx(2:Nx,:,:); 
-            THy(:,2:Ny,:)= Grid.THy(:,2:Ny,:);
-            THz(:,:,2:Nz)= Grid.THz(:,:,2:Nz);
-            Tk = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, THx, THy, THz); % Transmisibility of rock conductivity
-
-            % Construct matrix
-            function Tph = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz) % remove function - end
-                x1 = reshape(Tx(1:Nx,:,:), N, 1);
-                x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
-                y1 = reshape(Ty(:,1:Ny,:), N, 1);
-                y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
-                z1 = reshape(Tz(:,:,1:Nz), N, 1);
-                z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
-                DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
-                DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-                Tph = spdiags(DiagVecs,DiagIndx,N,N);
             end
         end
         function [Qw, Qhw]= ComputeSourceTerms(obj, N, Wells)
