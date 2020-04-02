@@ -143,7 +143,7 @@ classdef reader_darsim2 < reader
                     fclose(fileID);
                 end
                 
-                % Check if the data has already beand loaded and saved
+                % Check if the data has already been loaded and saved
                 if isfile(strcat(obj.Directory, '/','CornerPointGridData.mat'))
                     fprintf('"CornerPointGridData.mat" file already exists. No need to load the CornerPointGrid data input file.\n');
                     load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
