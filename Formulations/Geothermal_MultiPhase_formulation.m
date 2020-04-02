@@ -174,6 +174,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 S_new = Medium.State.Properties(['S_', num2str(ph)]).Value;
                 h_new = Medium.State.Properties(['h_', num2str(ph)]).Value;
 
+                % This part incorporates phase pressures, so theoretically
+                % this does apply to capillary pressure
                 Medium.ComputePorosity(P_old);
                 pv_old = Medium.Por*Grid.Volume;         % Old pore Volume
                 Medium.ComputePorosity(P_new);           % Updating porosity
@@ -948,8 +950,10 @@ classdef Geothermal_MultiPhase_formulation < formulation
             %Injectors
             for i=1:Wells.NofInj
                 c = Wells.Inj(i).Cells;
-                Qw(c, :) = Wells.Inj(i).QPhases(:,:);
-                Qhw(c, :) = Wells.Inj(i).Qh(:,:);
+                Qw(c, :) = Wells.Inj(i).QPhases(:,:); % MB source term
+                Qhw(c, :) = Wells.Inj(i).Qh(:,:);     % EB source term 
+                % function is UpdateState in
+                % ProductionSystem>Wells>injector_pressure.m [class]
             end
             %Producers
             for i=1:Wells.NofProd

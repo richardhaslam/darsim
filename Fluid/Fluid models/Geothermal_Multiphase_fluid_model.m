@@ -208,11 +208,11 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 for ph=1:obj.NofPhases
                     rhoTable = obj.TablePH.(['rho_', num2str(i)]);
                     muTable = obj.TablePH.(['mu_1',num2str(i)]);
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p, Inj(i).h, rhoTable);
-%                     Inj(i).h(:, ph)= obj.Phases(ph).ComputeEnthalpy(Inj(i).p, Inj(i).T); % if we initialize with temperature, this one is still necessary
+                    Inj(i).h(:, ph)= obj.Phases(ph).ComputeEnthalpy(Inj(i).p, Inj(i).T); % if we initialize with temperature, this one is still necessary
+                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p, Inj(i).h, rhoTable); % uses table
                     mu = obj.Phases(ph).ComputeViscosity(Inj(i).p, Inj(i).h, muTable);
+                    Inj(i).Mob(:,ph) = 1/mu; % this one needs to be modified still  
                 end
-                Inj(i).Mob = 1/mu;   
             end
         end
         
