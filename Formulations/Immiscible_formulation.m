@@ -170,19 +170,19 @@ classdef Immiscible_formulation < formulation
             switch class(Grid)
                 case('corner_point_grid')
                     % 1.b: compressibility part
-                    Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
-                    dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
+                    %Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
+                    %dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
                     acc = pv/dt .* obj.drhodp(Index.Start:Index.End,ph) .* s;
-                    Jp = Jp + spdiags(acc,0,N,N) + Grid.ConnectivityMatrix * spdiags(dMobUpwind ,0,N_Face,N_Face) * Grid.ConnectivityMatrix';
+                    Jp = Jp + spdiags(acc,0,N,N);% + Grid.ConnectivityMatrix * spdiags(dMobUpwind ,0,N_Face,N_Face) * Grid.ConnectivityMatrix';
                     
                     % 2. Saturation Block
-                    dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
-                    dMobUpwind = obj.UpWind{ph,1+f} * dMob_rho;
+                    %dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
+                    %dMobUpwind = obj.UpWind{ph,1+f} * dMob_rho;
                     v = (-1)^(ph+1) .* pv/dt .* rho;
-                    JS = spdiags(v,0,N,N) + Grid.ConnectivityMatrix * spdiags(dMobUpwind ,0,N_Face,N_Face) * Grid.ConnectivityMatrix';
+                    JS = spdiags(v,0,N,N);% + Grid.ConnectivityMatrix * spdiags(dMobUpwind ,0,N_Face,N_Face) * Grid.ConnectivityMatrix';
                     
                 case('cartesian_grid')
-                     % 1.b: compressibility part
+                    % 1.b: compressibility part
                     dMupx = obj.UpWind{ph,1+f}.x*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
                     dMupy = obj.UpWind{ph,1+f}.y*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
                     dMupz = obj.UpWind{ph,1+f}.z*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
@@ -468,7 +468,7 @@ classdef Immiscible_formulation < formulation
         end
         function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)
             N = DiscretizationModel.ReservoirGrid.N;      
-            pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
+            pv = ProductionSystem.Reservoir.Por.*DiscretizationModel.ReservoirGrid.Volume;
             P = zeros(N, obj.NofPhases);
             S = zeros(N, obj.NofPhases);
             rho = zeros(N, obj.NofPhases);
@@ -516,7 +516,7 @@ classdef Immiscible_formulation < formulation
                            - min(GD * depth, 0)...    % Gravity term (take only incoming fluxes (negative))                
                            - min(GU * depth, 0)...    % Gravity term (take only incoming fluxes (negative))
                            + max(q(:,i), 0);          % Wells (injectors)
-                Mass(:,i) = rho(:,i) .* S(:,i) * pv;
+                Mass(:,i) = rho(:,i) .* S(:,i) .* pv;
             end
             Mass = max(Mass, 1e-4);
             %ThroughPut(ThroughPut < 1e-4) = 0;
@@ -827,36 +827,48 @@ classdef Immiscible_formulation < formulation
             Nx = DiscretizationModel.ReservoirGrid.Nx;
             Ny = DiscretizationModel.ReservoirGrid.Ny;
             Nz = DiscretizationModel.ReservoirGrid.Nz;
-            
-            obj.Utot.x = zeros(Nx+1, Ny, Nz); 
-            obj.Utot.y = zeros(Nx, Ny+1, Nz); 
-            obj.Utot.z = zeros(Nx, Ny, Nz+1);
-            
-            N = Nx*Ny*Nz;
+            N  = DiscretizationModel.ReservoirGrid.N;
+
             rho = zeros(N, obj.NofPhases);
             for i=1:obj.NofPhases
                 rho(:, i) = ProductionSystem.Reservoir.State.Properties(['rho_', num2str(i)]).Value;
             end 
-            for ph = 1:obj.NofPhases
-                obj.Utot.x(2:Nx+1,:,:) = obj.Utot.x(2:Nx+1,:,:) + obj.U{ph, 1}.x(2:Nx+1,:,:) .* reshape(obj.UpWind{ph,1}.x *  (obj.Mob(1:N, ph)), Nx, Ny, Nz);  %- Ucap.x(2:Nx,:);
-                obj.Utot.y(:,2:Ny+1,:) = obj.Utot.y(:,2:Ny+1,:) + obj.U{ph, 1}.y(:,2:Ny+1,:) .* reshape(obj.UpWind{ph,1}.y *  (obj.Mob(1:N, ph)), Nx, Ny, Nz);  %- Ucap.y(:,2:Ny);
-                obj.Utot.z(:,:,2:Nz+1) = obj.Utot.z(:,:,2:Nz+1) + obj.U{ph, 1}.z(:,:,2:Nz+1) .* reshape(obj.UpWind{ph,1}.z *  (obj.Mob(1:N, ph)), Nx, Ny, Nz);  %- Ucap.y(:,2:Ny);
-            end
             
             % Wells total fluxes
             q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
             obj.Qwells = sum(q./rho, 2);
             
-            if ProductionSystem.Reservoir.State.Properties('V_tot').Plot      
-               % Compute average between the 2 interfaces
-               ux = (obj.Utot.x(1:Nx,:,:) + obj.Utot.x(2:Nx+1,:,:))/2;
-               uy = (obj.Utot.y(:,1:Ny,:) + obj.Utot.y(:,2:Ny+1,:))/2;
-               uz = (obj.Utot.z(:,:,1:Nz) + obj.Utot.z(:,:,2:Nz+1))/2;
-               % Copy the values in the right objects
-               Ucentres = ProductionSystem.Reservoir.State.Properties('V_tot');
-               Ucentres.Value(:,1) = reshape(ux, N, 1);
-               Ucentres.Value(:,2) = reshape(uy, N, 1);
-               Ucentres.Value(:,3) = reshape(uz, N, 1);
+            switch class(DiscretizationModel.ReservoirGrid)
+                case('corner_point_grid')
+                    N_Faces = length(obj.U{1,1});
+                    obj.Utot = zeros(N_Faces,1);
+                    for ph = 1:obj.NofPhases
+                        MobUpwind = obj.UpWind{ph,1} * obj.Mob(1:N, ph);
+                        obj.Utot = obj.Utot + obj.U{ph,1} .* MobUpwind;
+                    end
+                    if ProductionSystem.Reservoir.State.Properties('V_tot').Plot
+                       % Not yet implemented
+                    end
+                case('cartesian_grid')
+                    obj.Utot.x = zeros(Nx+1, Ny, Nz);
+                    obj.Utot.y = zeros(Nx, Ny+1, Nz);
+                    obj.Utot.z = zeros(Nx, Ny, Nz+1);
+                    for ph = 1:obj.NofPhases
+                        obj.Utot.x(2:Nx+1,:,:) = obj.Utot.x(2:Nx+1,:,:) + obj.U{ph, 1}.x(2:Nx+1,:,:) .* reshape(obj.UpWind{ph,1}.x *  (obj.Mob(1:N, ph)), Nx, Ny, Nz);  %- Ucap.x(2:Nx,:);
+                        obj.Utot.y(:,2:Ny+1,:) = obj.Utot.y(:,2:Ny+1,:) + obj.U{ph, 1}.y(:,2:Ny+1,:) .* reshape(obj.UpWind{ph,1}.y *  (obj.Mob(1:N, ph)), Nx, Ny, Nz);  %- Ucap.y(:,2:Ny);
+                        obj.Utot.z(:,:,2:Nz+1) = obj.Utot.z(:,:,2:Nz+1) + obj.U{ph, 1}.z(:,:,2:Nz+1) .* reshape(obj.UpWind{ph,1}.z *  (obj.Mob(1:N, ph)), Nx, Ny, Nz);  %- Ucap.y(:,2:Ny);
+                    end
+                    if ProductionSystem.Reservoir.State.Properties('V_tot').Plot
+                        % Compute average between the 2 interfaces
+                        ux = (obj.Utot.x(1:Nx,:,:) + obj.Utot.x(2:Nx+1,:,:))/2;
+                        uy = (obj.Utot.y(:,1:Ny,:) + obj.Utot.y(:,2:Ny+1,:))/2;
+                        uz = (obj.Utot.z(:,:,1:Nz) + obj.Utot.z(:,:,2:Nz+1))/2;
+                        % Copy the values in the right objects
+                        Ucentres = ProductionSystem.Reservoir.State.Properties('V_tot');
+                        Ucentres.Value(:,1) = reshape(ux, N, 1);
+                        Ucentres.Value(:,2) = reshape(uy, N, 1);
+                        Ucentres.Value(:,3) = reshape(uz, N, 1);
+                    end
             end
         end
         function conservative = CheckMassConservation(obj, Grid)
