@@ -27,7 +27,11 @@ classdef phase < matlab.mixin.Heterogeneous & handle
                     U = - Grid.Trans .* ( P(Neighbor2Index)-P(Neighbor1Index) - Ug );
                     
                     % Use velocity to build upwind operator
-                    Upwind = U >= 0;
+                    nc = Grid.N;
+                    nf = length(Grid.Trans);
+                    C = (U>=0) .* Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index + ...
+                        (U< 0) .* Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index;
+                    Upwind = sparse( (1:nf)', C , ones(nf,1) , nf , nc );
                     
                 case('cartesian_grid')
                     Nx = Grid.Nx;
