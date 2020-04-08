@@ -9,21 +9,18 @@ classdef matrix_assembler < handle
         
     end
     methods
-        function [Tph, Gph] = TransmissibilityMatrix(obj, Grid, UpWind, Mob, rho, RhoInt)
+        function [Tph, Gph] = TransmissibilityMatrix(obj, Grid, Upwind, Mob, rho, RhoInt)
             switch class(Grid)
                 case('corner_point_grid')
                     Neighbor1Index = Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index;
                     Neighbor2Index = Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index;
                     
                     % Apply upwind
-                    MobUp = zeros(size(Grid.Trans));
-                    Ind = find(UpWind==1);
-                    MobUp(Ind) = Mob(Neighbor1Index(Ind)) .* rho(Neighbor1Index(Ind));
-                    Ind = find(UpWind==0);
-                    MobUp(Ind) = Mob(Neighbor2Index(Ind)) .* rho(Neighbor2Index(Ind));
+                    Mob_rho = Mob.*rho;
+                    Mob_rho_Upwind = Upwind * Mob_rho;
                     
                     % Final Transmisibility and Gravity Matrices
-                    Tph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*MobUp ,0,length(Grid.Trans),length(Grid.Trans)) * Grid.ConnectivityMatrix';
+                    Tph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*Mob_rho_Upwind ,0,length(Grid.Trans),length(Grid.Trans)) * Grid.ConnectivityMatrix';
                     Gph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*RhoInt,0,length(Grid.Trans),length(Grid.Trans)) * Grid.ConnectivityMatrix';
                     
                     
@@ -38,9 +35,9 @@ classdef matrix_assembler < handle
                     Tz = zeros(Nx, Ny, Nz+1);
                     
                     % Apply upwind operator
-                    Mupx = UpWind.x*(Mob .* rho);
-                    Mupy = UpWind.y*(Mob .* rho);
-                    Mupz = UpWind.z*(Mob .* rho);
+                    Mupx = Upwind.x*(Mob .* rho);
+                    Mupy = Upwind.y*(Mob .* rho);
+                    Mupz = Upwind.z*(Mob .* rho);
                     Mupx = reshape(Mupx, Nx, Ny, Nz);
                     Mupy = reshape(Mupy, Nx, Ny, Nz);
                     Mupz = reshape(Mupz, Nx, Ny, Nz);
