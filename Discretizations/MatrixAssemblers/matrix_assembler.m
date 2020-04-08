@@ -12,18 +12,15 @@ classdef matrix_assembler < handle
         function [Tph, Gph] = TransmissibilityMatrix(obj, Grid, Upwind, Mob, rho, RhoInt)
             switch class(Grid)
                 case('corner_point_grid')
-                    Neighbor1Index = Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index;
-                    Neighbor2Index = Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index;
-                    
                     % Apply upwind
                     Mob_rho = Mob.*rho;
                     Mob_rho_Upwind = Upwind * Mob_rho;
                     
                     % Final Transmisibility and Gravity Matrices
-                    Tph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*Mob_rho_Upwind ,0,length(Grid.Trans),length(Grid.Trans)) * Grid.ConnectivityMatrix';
-                    Gph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*RhoInt,0,length(Grid.Trans),length(Grid.Trans)) * Grid.ConnectivityMatrix';
-                    
-                    
+                    N_Faces = length(Grid.Trans);
+                    Tph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*Mob_rho_Upwind,0,N_Faces,N_Faces) * Grid.ConnectivityMatrix';
+                    Gph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*RhoInt        ,0,N_Faces,N_Faces) * Grid.ConnectivityMatrix';
+
                 case('cartesian_grid')
                     Nx = Grid.Nx;
                     Ny = Grid.Ny;
