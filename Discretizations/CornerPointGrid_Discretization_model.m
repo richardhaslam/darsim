@@ -54,7 +54,6 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                         if Geostatus.haveIntersect
                             Wells.Inj(w).Cells = [ Wells.Inj(w).Cells ; I ];
                         end
->>>>>>> ee71a6b9ad3950abcf7ce630eebf8898126a1d01
                     end
                 end
                 Wells.Inj(w).Cells  = sort(Wells.Inj(w).Cells);
