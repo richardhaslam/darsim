@@ -990,20 +990,30 @@ classdef simulation_builder < handle
         end
         function Writer = BuildWriter(obj, InputDirectory, simulation)
             % Build Plotter
-            switch(obj.SimulatorSettings.plotting)
+            switch(obj.SimulatorSettings.plotting.Software)
                 case('Matlab')
                     if simulation.DiscretizationModel.ReservoirGrid.Nx == 1 || simulation.DiscretizationModel.ReservoirGrid.Ny == 1
                         plotter = Matlab_Plotter_1D();
                     else
                         plotter = Matlab_Plotter_2D();
                     end
-                case('VTK')
+                case({'ParaView','VTK'})
                     switch obj.SimulationInput.ReservoirProperties.Discretization
                         case('CornerPointGrid')
                             plotter = CornerPointGrid_VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
                         otherwise
                             plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
                     end
+                    switch obj.SimulatorSettings.plotting.Format
+                        case{'BINARY'}
+                            plotter.isBinary = 1;
+                        case{'ASCII'}    
+                            plotter.isBinary = 0;
+                        otherwise
+                            warning('WARNING: NO valid output file format ("BINARY" or "ASCII") for Plotting was selected. Binary format is set by default.\n');
+                            plotter.isBinary = 1;
+                    end
+
                 otherwise
                     warning('WARNING: NO valid Plotter was selected. Results will not be plotted.');
                     plotter = no_Plotter();

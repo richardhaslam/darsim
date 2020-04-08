@@ -21,7 +21,6 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             	fprintf(fileID, 'ASCII\n');
             end
             fprintf(fileID, '\n');
-            
             fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
             
             fprintf(fileID, ['POINTS ' num2str(Grid.N*8) ' double\n']);
@@ -48,7 +47,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             fprintf(fileID, '\n\n');
             
             % Print all existing variables
-            fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
+            fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
             N_var = double(Reservoir.State.Properties.Count);
             Names = Reservoir.State.Properties.keys;
             for i=1:N_var
