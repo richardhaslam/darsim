@@ -21,7 +21,7 @@ classdef producer_pressure < producer
             p = State.Properties(['P_',num2str(FluidModel.NofPhases)]);
             for i = 1:FluidModel.NofPhases
                 rho = State.Properties(['rho_', num2str(i)]);
-                obj.QPhases(:,i) = rho.Value(obj.Cells) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
+                obj.QPhases(:,i) = rho.Value(obj.Cells) .* Mob(obj.Cells, i) .* obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
             obj.QComponents = zeros(length(obj.Cells), FluidModel.NofComp);
             switch(FluidModel.name)
@@ -47,8 +47,8 @@ classdef producer_pressure < producer
             dQdS = zeros(length(obj.Cells), NofPhases * (NofPhases - 1));
             for i = 1:NofPhases
                 rho = State.Properties(['rho_', num2str(i)]);
-                dQdp(:, i) = - rho.Value(obj.Cells) .* Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) + drho(obj.Cells, i) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
-                dQdS(:, i) = rho.Value(obj.Cells) .* dMob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
+                dQdp(:, i) = - rho.Value(obj.Cells) .* Mob(obj.Cells,i) .* obj.PI .* K(obj.Cells) + drho(obj.Cells, i) .* Mob(obj.Cells, i) .* obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
+                dQdS(:, i) = rho.Value(obj.Cells) .* dMob(obj.Cells, i) .* obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
         end
         function [dQdp, dQdT] = dQdPdT(obj, State, K, Mob, dMobdT, drhodp, drhodT, NofPhases) % need perforated cell properties
@@ -68,7 +68,7 @@ classdef producer_pressure < producer
             for i = 1:NofPhases
                 rho = State.Properties(['rho_',num2str(i)]);
                 h = State.Properties(['h_',num2str(i)]);
-                dQhdp = Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) .* ...
+                dQhdp = Mob(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* ...
                     ( h.Value(obj.Cells) .* rho.Value(obj.Cells) .* (-1) + ...
                     (obj.p - p.Value(obj.Cells)) .* h.Value(obj.Cells) .* drhodp(obj.Cells,i) +...
                     rho.Value(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* dhdp(obj.Cells,i)); 

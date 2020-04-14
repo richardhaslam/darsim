@@ -25,10 +25,10 @@ classdef simulation_builder < handle
             % Add gravity model
             if strcmp(obj.SimulationInput.ReservoirProperties.Discretization,'CornerPointGrid')
                 simulation.Formulation.GravityModel = gravity_model_CornerPointGrid(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
-            elseif strcmp(obj.SimulationInput.ReservoirProperties.Discretization,'Cartesian')
+            elseif strcmp(obj.SimulationInput.ReservoirProperties.Discretization,'CartesianGrid')
                 simulation.Formulation.GravityModel = gravity_model(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
             else
-                error('The discretization method should either be "Cartesian" or "CornerPointGrid". Check the input file!\n');
+                error('The discretization method should either be "CartesianGrid" or "CornerPointGrid". Check the input file!\n');
             end
             switch (obj.SimulationInput.FluidProperties.Gravity)
                 case('ON')
@@ -95,12 +95,12 @@ classdef simulation_builder < handle
             %% 1. Create fine-scale grids
             % 1. Reservoir Grid
             switch obj.SimulationInput.ReservoirProperties.Discretization
-                case('Cartesian')
+                case('CartesianGrid')
                     ReservoirGrid = cartesian_grid(obj.SimulationInput.ReservoirProperties.Grid.N);
                 case('CornerPointGrid')
                     ReservoirGrid = corner_point_grid(obj.SimulationInput.ReservoirProperties);
                 otherwise
-                    error('At this moment, only "Cartesian" and "CornerPointGrid" discretization models are supported in DARSim!\n');
+                    error('At this moment, only "CartesianGrid" and "CornerPointGrid" discretization models are supported in DARSim!\n');
             end
             
     
@@ -231,13 +231,13 @@ classdef simulation_builder < handle
                 case('FS')
                     % Fine-scale discretization model
                     switch obj.SimulationInput.ReservoirProperties.Discretization
-                        case('Cartesian')
+                        case('CartesianGrid')
                             Discretization = Cartesian_Discretization_model();
                         case('CornerPointGrid')
                             Discretization = CornerPointGrid_Discretization_model();
                             Discretization.CornerPointGridData = obj.SimulationInput.ReservoirProperties.CornerPointGridData;
                         otherwise
-                            error('At this moment, only "Cartesian" and "CornerPointGrid" discretization models are supported in DARSim!\n');
+                            error('At this moment, only "CartesianGrid" and "CornerPointGrid" discretization models are supported in DARSim!\n');
                     end
             end
             
@@ -256,7 +256,6 @@ classdef simulation_builder < handle
             h  = obj.SimulationInput.ReservoirProperties.size(3);       %Reservoir thickness (z-direction) [m]
             Tres = obj.SimulationInput.ReservoirProperties.Temperature; %Res temperature [K]
             Reservoir = reservoir(Lx, Ly, h, Tres);
-            phi = obj.SimulationInput.ReservoirProperties.phi;
             cr = obj.SimulationInput.ReservoirProperties.Compressibility;
             nx = obj.SimulationInput.ReservoirProperties.Grid.N(1);
             ny = obj.SimulationInput.ReservoirProperties.Grid.N(2);
@@ -264,7 +263,7 @@ classdef simulation_builder < handle
             N_ActiveCells = obj.SimulationInput.ReservoirProperties.Grid.N_ActiveCells;
             Cpr = obj.SimulationInput.ReservoirProperties.SpecificHeat;
             RockDensity = obj.SimulationInput.ReservoirProperties.RockDensity;
-            
+            phi = obj.SimulationInput.ReservoirProperties.phi .* ones(N_ActiveCells, 1);
             K = ones(N_ActiveCells, 3);
             switch obj.SimulationInput.ReservoirProperties.PermUnit
                 case('m2')
@@ -339,13 +338,17 @@ classdef simulation_builder < handle
             
             % Adding permeability info to the reservoir
             Reservoir.AddPermeabilityPorosity(K, phi);
+            
+            % Adding heat conductivity info to the reservoir
             if contains(obj.SimulatorSettings.Formulation,'Geothermal')
                 Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
             end
+            
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
             Reservoir.Rho = RockDensity;
             Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
+            
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
                     % This is for DLGR type ADM: it reads coarse permeabilities
@@ -380,6 +383,14 @@ classdef simulation_builder < handle
             dx = Lx/nx;
             dy = Ly/ny;
             dz = h /nz;
+            switch obj.SimulationInput.ReservoirProperties.Discretization
+                case('CartesianGrid')
+                    GridVolume = dx*dy*dz;
+                case('CornerPointGrid')
+                    GridVolume = DiscretizationModel.CornerPointGridData.Cell.Volume;
+                otherwise
+            end
+            
             %Injectors
             for i=1:Wells.NofInj
                 switch(obj.SimulationInput.WellsInfo.Inj(i).Formula.type)
@@ -387,6 +398,8 @@ classdef simulation_builder < handle
                         PI = dy*dz/(dx/2);
                     case ('PI')
                         PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value;
+                    case('WI')
+                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value .* GridVolume;
                     case ('RADIUS')
                         radius = obj.SimulationInput.WellsInfo.Inj(i).Formula.value;
                         error('DARSim error: Radius calculation of PI is not implemented for now')
@@ -419,6 +432,8 @@ classdef simulation_builder < handle
                         PI = dy*dz/(dx/2);
                     case ('PI')
                         PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
+                    case('WI')
+                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value .* GridVolume;
                     case ('RADIUS')
                         radius = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')

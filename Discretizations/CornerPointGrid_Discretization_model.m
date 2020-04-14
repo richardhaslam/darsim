@@ -56,7 +56,8 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                         end
                     end
                 end
-                Wells.Inj(w).Cells  = sort(Wells.Inj(w).Cells);
+                Wells.Inj(w).Cells = sort(Wells.Inj(w).Cells);
+                Wells.Inj(w).PI = Wells.Inj(w).PI(Wells.Inj(w).Cells);
                 Wells.Inj(w).ResizeObjects(length(Wells.Inj(w).Cells));
             end
             
@@ -107,6 +108,7 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                     end
                 end
                 Wells.Prod(w).Cells  = sort(Wells.Prod(w).Cells);
+                Wells.Prod(w).PI = Wells.Prod(w).PI(Wells.Prod(w).Cells);
                 Wells.Prod(w).ResizeObjects(length(Wells.Prod(w).Cells));
             end
         end

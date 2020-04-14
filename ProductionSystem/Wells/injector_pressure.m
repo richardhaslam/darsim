@@ -21,7 +21,7 @@ classdef injector_pressure < injector
         function UpdateState(obj, State, K, FluidModel)
             p = State.Properties(['P_',num2str(FluidModel.NofPhases)]);
             for i = 1:FluidModel.NofPhases
-                obj.QPhases(:,i) = obj.rho(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
+                obj.QPhases(:,i) = obj.rho(:,i) .* obj.Mob(:,i) .* obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
             obj.QComponents = zeros(length(obj.Cells), FluidModel.NofComp);
             switch(FluidModel.name)
@@ -43,7 +43,7 @@ classdef injector_pressure < injector
             dQdp = zeros(length(obj.Cells), NofPhases);
             dQdS = zeros(length(obj.Cells), NofPhases * (NofPhases - 1));
             for i = 1:NofPhases
-                dQdp(:, i) = - obj.rho(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells);
+                dQdp(:, i) = - obj.rho(:,i) .* obj.Mob(:,i) .* obj.PI .* K(obj.Cells);
                 dQdS(:, i) = 0;
             end
         end
@@ -51,7 +51,7 @@ classdef injector_pressure < injector
             dQdp = zeros(length(obj.Cells), NofPhases);
             dQdT = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
-                dQdp = obj.Mob(:,i) * obj.PI .* K(obj.Cells) .* obj.rho(:,i) * (-1);
+                dQdp = obj.Mob(:,i) .* obj.PI .* K(obj.Cells) .* obj.rho(:,i) * (-1);
                 dQdT = 0;   
             end
         end
@@ -59,7 +59,7 @@ classdef injector_pressure < injector
             dQhdp = zeros(length(obj.Cells), NofPhases);
             dQhdT = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
-                dQhdp = obj.h(:,i) .* obj.Mob(:,i) * obj.PI .* K(obj.Cells) .* obj.rho(:,i) * (-1);
+                dQhdp = obj.h(:,i) .* obj.Mob(:,i) .* obj.PI .* K(obj.Cells) .* obj.rho(:,i) * (-1);
                 dQhdT = 0;
             end
         end

@@ -68,7 +68,6 @@ classdef Immiscible_formulation < formulation
                 x(1:Nm) = ProductionSystem.Reservoir.State.Properties('P_1').Value;
             end
         end
-        
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
             %% 1. Reservoir Properteis and Derivatives
             obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State);
@@ -83,7 +82,6 @@ classdef Immiscible_formulation < formulation
                 obj.dPc = [obj.dPc; FluidModel.ComputeDPcDS(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
             end
         end
-        
         %% Methods for FIM Coupling
         function Residual = BuildMediumResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
             % Create local variables
@@ -183,10 +181,10 @@ classdef Immiscible_formulation < formulation
                     
                 case('cartesian_grid')
                     % 1.b: compressibility part
-                    dMupx = obj.UpWind{ph,1+f}.x*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
-                    dMupy = obj.UpWind{ph,1+f}.y*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
-                    dMupz = obj.UpWind{ph,1+f}.z*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
-                    
+                    dMupx = 0;% obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
+                    dMupy = 0;% obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
+                    dMupz = 0;% obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
+                                        
                     vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
                     vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
                     vecY1 = min(reshape(obj.U{ph,1+f}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
@@ -200,9 +198,10 @@ classdef Immiscible_formulation < formulation
                     Jp = Jp + spdiags(DiagVecs, DiagIndx, N, N);
                     
                     % 2. Saturation Block
-                    dMupx = obj.UpWind{ph,1+f}.x * (obj.dMob(Index.Start:Index.End, ph) .* rho);
-                    dMupy = obj.UpWind{ph,1+f}.y * (obj.dMob(Index.Start:Index.End, ph) .* rho);
-                    dMupz = obj.UpWind{ph,1+f}.z * (obj.dMob(Index.Start:Index.End, ph) .* rho);
+                    dMupx = 0;% obj.UpWind{ph,1+f}.x * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
+                    dMupy = 0;% obj.UpWind{ph,1+f}.y * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
+                    dMupz = 0;% obj.UpWind{ph,1+f}.z * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
+                    
                     % Construct JS block
                     x1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
                     x2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
@@ -210,7 +209,7 @@ classdef Immiscible_formulation < formulation
                     y2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
                     z1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                     z2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-                    v = (-1)^(ph+1) * ones(N,1)*pv/dt .* rho;
+                    v = (-1)^(ph+1) * pv/dt .* rho;
                     DiagVecs = [-z2, -y2, -x2, z2+y2+x2-z1-y1-x1+v, x1, y1, z1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                     JS = spdiags(DiagVecs,DiagIndx,N,N);
@@ -523,7 +522,6 @@ classdef Immiscible_formulation < formulation
             Ratio = ThroughPut ./ Mass;
             CFL = dt * max(max(Ratio));
         end
-       
         %% Methods for Sequential Coupling
         function ComputeTotalMobility(obj, ProductionSystem, FluidModel)
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
@@ -545,7 +543,6 @@ classdef Immiscible_formulation < formulation
             dden = sum(obj.dMob, 2);
             obj.df = (dnum .* den - dden .* num) ./ den.^2;
         end
-
         function dfdSdS = ComputeDfDSDS(obj, s, rho, FluidModel)
            % f = (rho1 * Mob1) / (rho1 * Mob1 + rho2 * Mob2);
            % df = (rho1 * dMob1 * (rho1*Mob1 + rho2*Mob2) - (rho1*dMob1 + rho2*dMob2) * rho1*Mob1) / (rho1 * Mob1 + rho2 * Mob2)^2
@@ -571,7 +568,6 @@ classdef Immiscible_formulation < formulation
            dfdSdS = (dnum .* den - dden .* num) ./ den.^2;
            
         end
-        
         function Residual = BuildPressureResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             
             %%%% fix wells
@@ -1008,7 +1004,6 @@ classdef Immiscible_formulation < formulation
             maxUz = max(max(max(abs(obj.Utot.z))));
             CFL = dt * maxdf * (maxUx + maxUy + maxUz) / pv;
         end
-        
         %% Explicit transport solver 
         function delta = UpdateSaturationExplicitly(obj, ProductionSystem, DiscretizationModel, dt)
             % 0. Initialise

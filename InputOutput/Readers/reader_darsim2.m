@@ -114,84 +114,85 @@ classdef reader_darsim2 < reader
                 ReservoirProperties.Discretization = obj.InputMatrix{index+1};
             else
                 warning('The keyword "GRID_DISCRETIZATION" is missing. Cartesian discretization is set by default.\n');
-                ReservoirProperties.Discretization = 'Cartesian';
+                ReservoirProperties.Discretization = 'CartesianGrid';
             end
             
             % Check the discretization approach
-            if strcmp(ReservoirProperties.Discretization,'CornerPointGrid')
-                % Read the cornerpointgrid data input file
-                FileName = obj.InputMatrix{index+2};
-                if isempty(FileName)
-                    FileName = 'CornerPointGrid_DARSim_InputData.txt';
-                end
-                CornerPointGridFile = strcat(obj.Directory, '/', FileName);
-                if ~isfile(CornerPointGridFile)
-                    error('The Corner point grid input file "%s" does not exist!\n',FileName);
-                end
-                fileID = fopen(CornerPointGridFile, 'r');
-                matrix = textscan(fileID, '%s', 'Delimiter', '\n');
-                obj.CornerPointGridMatrix = matrix{1};
-                fclose(fileID);
-                
-                % Read the cornerpointgrid rock properties data input file
-                FileName = obj.InputMatrix{index+3};
-                CornerPointGridRockPropertiesFile = strcat(obj.Directory, '/', FileName);
-                if isfile(CornerPointGridRockPropertiesFile)
-                    fileID = fopen(CornerPointGridRockPropertiesFile, 'r');
+            switch ReservoirProperties.Discretization
+                case('CornerPointGrid')
+                    % Read the cornerpointgrid data input file
+                    FileName = obj.InputMatrix{index+2};
+                    if isempty(FileName)
+                        FileName = 'CornerPointGrid_DARSim_InputData.txt';
+                    end
+                    CornerPointGridFile = strcat(obj.Directory, '/', FileName);
+                    if ~isfile(CornerPointGridFile)
+                        error('The Corner point grid input file "%s" does not exist!\n',FileName);
+                    end
+                    fileID = fopen(CornerPointGridFile, 'r');
                     matrix = textscan(fileID, '%s', 'Delimiter', '\n');
-                    obj.CornerPointGridRockPropertiesMatrix = matrix{1};
+                    obj.CornerPointGridMatrix = matrix{1};
                     fclose(fileID);
-                end
-                
-                % Check if the data has already been loaded and saved
-                if isfile(strcat(obj.Directory, '/','CornerPointGridData.mat'))
-                    fprintf('"CornerPointGridData.mat" file already exists. No need to load the CornerPointGrid data input file.\n');
-                    load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
-                else
-                    ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
-                    save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
-                end
-                
-                ReservoirProperties.Grid.N(1) = ReservoirProperties.CornerPointGridData.Nx;
-                ReservoirProperties.Grid.N(2) = ReservoirProperties.CornerPointGridData.Ny;
-                ReservoirProperties.Grid.N(3) = ReservoirProperties.CornerPointGridData.Nz;
-                ReservoirProperties.Grid.N_ActiveCells = ReservoirProperties.CornerPointGridData.N_ActiveCells;
-                
-                % For now temporarily, we get Lx,Ly,LZ of the reservoir
-                % from the main input file. Soon, we will read this from
-                % the CornerPointGrid data.
-                temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
-                index = find(~cellfun('isempty', temp));
-                if isempty(index)
-                    error('The keyword "DIMENS" is missing. Please check the input file!\n');
-                end
-                ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
-                                            str2double(obj.InputMatrix{index+2});
-                                            str2double(obj.InputMatrix{index+3})];
-        
-            elseif strcmp(ReservoirProperties.Discretization,'Cartesian')
-                % Assume it is Cartesian
-                % 1. size of the reservoir
-                temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
-                index = find(~cellfun('isempty', temp));
-                if isempty(index)
-                    error('The keyword "DIMENS" is missing. Please check the input file!\n');
-                end
-                ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
-                                            str2double(obj.InputMatrix{index+2});
-                                            str2double(obj.InputMatrix{index+3})];
-                % 2. GridSize
-                temp = strfind(obj.InputMatrix, 'SPECGRID');
-                index = find(~cellfun('isempty', temp));
-                if isempty(index)
-                    error('The keyword "SPECGRID" is missing. Please check the input file!\n');
-                end
-                ReservoirProperties.Grid.N = [str2double(obj.InputMatrix{index+1});...
-                                              str2double(obj.InputMatrix{index+2});
-                                              str2double(obj.InputMatrix{index+3})];
-                ReservoirProperties.Grid.N_ActiveCells = prod(ReservoirProperties.Grid.N);
-            else
-                error('The discretization method should either be "Cartesian" or "CornerPointGrid". Check the input file!\n');
+                    
+                    % Read the cornerpointgrid rock properties data input file
+                    FileName = obj.InputMatrix{index+3};
+                    CornerPointGridRockPropertiesFile = strcat(obj.Directory, '/', FileName);
+                    if isfile(CornerPointGridRockPropertiesFile)
+                        fileID = fopen(CornerPointGridRockPropertiesFile, 'r');
+                        matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                        obj.CornerPointGridRockPropertiesMatrix = matrix{1};
+                        fclose(fileID);
+                    end
+                    
+                    % Check if the data has already been loaded and saved
+                    if isfile(strcat(obj.Directory, '/','CornerPointGridData.mat'))
+                        fprintf('"CornerPointGridData.mat" file already exists. No need to load the CornerPointGrid data input file.\n');
+                        load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
+                    else
+                        ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
+                        save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
+                    end
+                    
+                    ReservoirProperties.Grid.N(1) = ReservoirProperties.CornerPointGridData.Nx;
+                    ReservoirProperties.Grid.N(2) = ReservoirProperties.CornerPointGridData.Ny;
+                    ReservoirProperties.Grid.N(3) = ReservoirProperties.CornerPointGridData.Nz;
+                    ReservoirProperties.Grid.N_ActiveCells = ReservoirProperties.CornerPointGridData.N_ActiveCells;
+                    
+                    % For now temporarily, we get Lx,Ly,LZ of the reservoir
+                    % from the main input file. Soon, we will read this from
+                    % the CornerPointGrid data.
+                    temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
+                    index = find(~cellfun('isempty', temp));
+                    if isempty(index)
+                        error('The keyword "DIMENS" is missing. Please check the input file!\n');
+                    end
+                    ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
+                        str2double(obj.InputMatrix{index+2});
+                        str2double(obj.InputMatrix{index+3})];
+                    
+                case('CartesianGrid')
+                    % Assume it is Cartesian
+                    % 1. size of the reservoir
+                    temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
+                    index = find(~cellfun('isempty', temp));
+                    if isempty(index)
+                        error('The keyword "DIMENS" is missing. Please check the input file!\n');
+                    end
+                    ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
+                        str2double(obj.InputMatrix{index+2});
+                        str2double(obj.InputMatrix{index+3})];
+                    % 2. GridSize
+                    temp = strfind(obj.InputMatrix, 'SPECGRID');
+                    index = find(~cellfun('isempty', temp));
+                    if isempty(index)
+                        error('The keyword "SPECGRID" is missing. Please check the input file!\n');
+                    end
+                    ReservoirProperties.Grid.N = [str2double(obj.InputMatrix{index+1});...
+                        str2double(obj.InputMatrix{index+2});
+                        str2double(obj.InputMatrix{index+3})];
+                    ReservoirProperties.Grid.N_ActiveCells = prod(ReservoirProperties.Grid.N);
+                otherwise
+                    error('The discretization method should either be "CartesianGrid" or "CornerPointGrid". Check the input file!\n');
             end
             
             

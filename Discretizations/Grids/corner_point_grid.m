@@ -31,18 +31,17 @@ classdef corner_point_grid < grid_darsim
         end
         function Initialize(obj, Reservoir)
             obj.Volume = obj.CornerPointGridData.Cell.Volume;
-            obj.ComputeRockTransmissibilities();
+            obj.ComputeRockTransmissibilities(Reservoir.K);
             obj.ConstructConnectivityMatrix();
         end
-        function ComputeRockTransmissibilities(obj)
-            Perm = obj.CornerPointGridData.Permeability;
+        function ComputeRockTransmissibilities(obj, Permeability)
             CellNeighbor1Index = obj.CornerPointGridData.Internal_Face.CellNeighbor1Index;
             CellNeighbor2Index = obj.CornerPointGridData.Internal_Face.CellNeighbor2Index;
             CellNeighbor1Vec = obj.CornerPointGridData.Internal_Face.CellNeighbor1Vec;
             CellNeighbor2Vec = obj.CornerPointGridData.Internal_Face.CellNeighbor2Vec;
             Nvec = obj.CornerPointGridData.Internal_Face.Nvec;
-            Trans_Half_1 = sum( Perm(CellNeighbor1Index,1) .* CellNeighbor1Vec .* Nvec , 2 ) ./ sum( CellNeighbor1Vec .* CellNeighbor1Vec , 2 );
-            Trans_Half_2 = sum( Perm(CellNeighbor2Index,1) .* CellNeighbor2Vec .* Nvec , 2 ) ./ sum( CellNeighbor2Vec .* CellNeighbor2Vec , 2 );
+            Trans_Half_1 = sum( Permeability(CellNeighbor1Index,1) .* CellNeighbor1Vec .* Nvec , 2 ) ./ sum( CellNeighbor1Vec .* CellNeighbor1Vec , 2 );
+            Trans_Half_2 = sum( Permeability(CellNeighbor2Index,1) .* CellNeighbor2Vec .* Nvec , 2 ) ./ sum( CellNeighbor2Vec .* CellNeighbor2Vec , 2 );
             obj.Trans = Trans_Half_1 .* Trans_Half_2 ./ (Trans_Half_1 + Trans_Half_2);
         end
         function CorrectTransmissibilitiesForpEDFM(obj)
