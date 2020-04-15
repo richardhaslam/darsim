@@ -209,7 +209,7 @@ classdef Immiscible_formulation < formulation
                     y2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
                     z1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                     z2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-                    v = (-1)^(ph+1) * pv/dt .* rho;
+                    v = (-1)^(ph+1) .* pv/dt .* rho;
                     DiagVecs = [-z2, -y2, -x2, z2+y2+x2-z1-y1-x1+v, x1, y1, z1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                     JS = spdiags(DiagVecs,DiagIndx,N,N);
