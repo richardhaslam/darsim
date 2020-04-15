@@ -433,7 +433,7 @@ classdef simulation_builder < handle
                     case ('PI')
                         PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
                     case('WI')
-                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value .* GridVolume;
+                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value .* GridVolume;
                     case ('RADIUS')
                         radius = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')
