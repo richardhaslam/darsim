@@ -6,7 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef injector < handle
     properties
-        Coord
+        Coordinate
         Cells
         p % injection pressure
         qv % total volumetric rate
@@ -28,7 +28,7 @@ classdef injector < handle
     methods
         function obj = injector(PI, coord, n_phases)
             obj.PI = PI;
-            obj.Coord = coord;
+            obj.Coordinate = coord;
             obj.rho = ones(1, n_phases);
             obj.qv = 0;
         end

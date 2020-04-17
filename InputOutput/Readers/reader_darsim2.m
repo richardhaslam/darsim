@@ -706,35 +706,46 @@ classdef reader_darsim2 < reader
                 temperature = find(~cellfun('isempty', temp));
                 
                 % Reading the coordinates of well trajectory
-                if strcmp(WellInputMatrix(coordinate+1),'IJK')
-                    ijk_1 = strsplit(WellInputMatrix{coordinate+2}, {'	',' ',',','[',']'} );
-                    ijk_1 = ijk_1(2:end-1);
-                    ijk_1 = strrep(ijk_1,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
-                    ijk_1 = strrep(ijk_1,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
-                    ijk_1 = strrep(ijk_1,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
-                    ijk_1 = [str2num(ijk_1{1}), str2num(ijk_1{2}), str2num(ijk_1{3})];
-                    ijk_2 = strsplit(WellInputMatrix{coordinate+3}, {'	',' ',',','[',']'} );
-                    ijk_2 = ijk_2(2:end-1);
-                    ijk_2 = strrep(ijk_2,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
-                    ijk_2 = strrep(ijk_2,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
-                    ijk_2 = strrep(ijk_2,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
-                    ijk_2 = [str2num(ijk_2{1}), str2num(ijk_2{2}), str2num(ijk_2{3})];
-                    Well.Coord = [ijk_1;ijk_2];
-                    if any(mod(Well.Coord(:),1) ~= 0)
-                        error('In well #%d, the ijk coordinates result in non-integer cell indeces. Check the input file!\n', w);
-                    end
-                elseif strcmp(WellInputMatrix(coordinate+1),'XYZ')
-                    Well.Coord = zeros(constraint-coordinate-2,3);
-                    for p = 1 : size(Well.Coord,1)
-                        xyz = strsplit(WellInputMatrix{coordinate+2+p-1}, {'	',' ',',','[',']'} );
-                        xyz = xyz(2:end-1);
-                        xyz = strrep(xyz,'LX',num2str(SimulationInput.ReservoirProperties.size(1)));
-                        xyz = strrep(xyz,'LY',num2str(SimulationInput.ReservoirProperties.size(2)));
-                        xyz = strrep(xyz,'LZ',num2str(SimulationInput.ReservoirProperties.size(3)));
-                        Well.Coord(p,:) = [str2num(xyz{1}), str2num(xyz{2}), str2num(xyz{3})];
-                    end
-                else
-                    error('In well #%d, the coordination keyword "IJK" or "XYZ" is missing. Check the input file!\n', w);
+                Well.Coordinate.Type = WellInputMatrix{coordinate+1};
+                switch Well.Coordinate.Type
+                    case('IJK_LIST')
+                        Well.Coordinate.Value = zeros(constraint-coordinate-2,3);
+                        for p = 1 : size(Well.Coordinate.Value,1)
+                            ijk = strsplit(WellInputMatrix{coordinate+2+p-1}, {'	',' ',',','[',']'} );
+                            ijk = ijk(2:end-1);
+                            ijk = strrep(ijk,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
+                            ijk = strrep(ijk,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
+                            ijk = strrep(ijk,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
+                            ijk = [str2num(ijk{1}), str2num(ijk{2}), str2num(ijk{3})];
+                            Well.Coordinate.Value(p,:) = ijk;
+                        end
+                        if any(mod(Well.Coordinate(:),1) ~= 0)
+                            error('In well #%d, the ijk coordinates result in non-integer cell indeces. Check the input file!\n', w);
+                        end
+                    case('XYZ_LIST')
+                        Well.Coordinate.Value = zeros(constraint-coordinate-2,3);
+                        for p = 1 : size(Well.Coordinate.Value,1)
+                            xyz = strsplit(WellInputMatrix{coordinate+2+p-1}, {'	',' ',',','[',']'} );
+                            xyz = xyz(2:end-1);
+                            xyz = strrep(xyz,'LX',num2str(SimulationInput.ReservoirProperties.size(1)));
+                            xyz = strrep(xyz,'LY',num2str(SimulationInput.ReservoirProperties.size(2)));
+                            xyz = strrep(xyz,'LZ',num2str(SimulationInput.ReservoirProperties.size(3)));
+                            xyz = [str2num(xyz{1}), str2num(xyz{2}), str2num(xyz{3})];
+                            Well.Coordinate.Value(p,:) = xyz;
+                        end
+                    case('CELL_INDEX_LIST')
+                        Well.Coordinate.Value = [];
+                        for p = 1 : size(Well.Coordinate.Value,1)
+                            IndexList = strsplit(WellInputMatrix{coordinate+2+p-1}, {'	',' ',',',';','[',']'} );
+                            IndexList = IndexList(2:end-1);
+                            IndexList = strrep(IndexList,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
+                            IndexList = strrep(IndexList,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
+                            IndexList = strrep(IndexList,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
+                            IndexList = [str2num(IndexList{1}), str2num(IndexList{2}), str2num(IndexList{3})];
+                            Well.Coordinate.Value = [ Well.Coordinate.Value, IndexList ];
+                        end
+                    otherwise
+                        error('In well #%d, the coordination keyword "IJK_LIST" or "XYZ_LIST" or "CELL_INDEX_LIST" is missing. Check the input file!\n', w);
                 end
                 
                 % Reading the contraint of well

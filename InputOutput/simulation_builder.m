@@ -385,7 +385,7 @@ classdef simulation_builder < handle
             dz = h /nz;
             switch obj.SimulationInput.ReservoirProperties.Discretization
                 case('CartesianGrid')
-                    GridVolume = dx*dy*dz;
+                    GridVolume = dx*dy*dz * ones(N_ActiveCells,1);
                 case('CornerPointGrid')
                     GridVolume = DiscretizationModel.CornerPointGridData.Cell.Volume;
                 otherwise
@@ -395,16 +395,16 @@ classdef simulation_builder < handle
             for i=1:Wells.NofInj
                 switch(obj.SimulationInput.WellsInfo.Inj(i).Formula.type)
                     case ('DIRICHLET')
-                        PI = dy*dz/(dx/2);
+                        PI = dy*dz/(dx/2) .* ones(N_ActiveCells,1);
                     case ('PI')
-                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value;
+                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value .* ones(N_ActiveCells,1);
                     case('WI')
                         PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value .* GridVolume;
                     case ('RADIUS')
                         radius = obj.SimulationInput.WellsInfo.Inj(i).Formula.value;
-                        error('DARSim error: Radius calculation of PI is not implemented for now')
+                        error('DARSim Error: Radius calculation of PI is not implemented for now.')
                 end
-                coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
+                Coordinate = obj.SimulationInput.WellsInfo.Inj(i).Coordinate;
                 switch (obj.SimulationInput.FluidProperties.FluidModel)
                     case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                         temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
@@ -415,12 +415,12 @@ classdef simulation_builder < handle
                     case('PRESSURE')
                         pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         % temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
-                        Injector = injector_pressure(PI, coord, pressure, temperature, n_phases);
+                        Injector = injector_pressure(PI, Coordinate, pressure, temperature, n_phases);
                     case('RATE')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         p_init = obj.SimulationInput.Init(1);
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
-                        Injector = injector_rate(PI, coord, rate, p_init, temperature, n_phases);
+                        Injector = injector_rate(PI, Coordinate, rate, p_init, temperature, n_phases);
                 end
                 Wells.AddInjector(Injector);
             end
@@ -429,24 +429,24 @@ classdef simulation_builder < handle
             for i=1:Wells.NofProd
                 switch(obj.SimulationInput.WellsInfo.Prod(i).Formula.type)
                     case ('DIRICHLET')
-                        PI = dy*dz/(dx/2);
+                        PI = dy*dz/(dx/2) .* ones(N_ActiveCells,1);
                     case ('PI')
-                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
+                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value .* ones(N_ActiveCells,1);
                     case('WI')
                         PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value .* GridVolume;
                     case ('RADIUS')
                         radius = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
-                        error('DARSim2 error: Radius calculation of PI is not implemented for now')
+                        error('DARSim2 Error: Radius calculation of PI is not implemented for now.')
                 end
-                coord = obj.SimulationInput.WellsInfo.Prod(i).Coord;
+                Coordinate = obj.SimulationInput.WellsInfo.Prod(i).Coordinate;
                 switch (obj.SimulationInput.WellsInfo.Prod(i).Constraint.name)
                     case('PRESSURE')
                         pressure = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
-                        Producer = producer_pressure(PI, coord, pressure);
+                        Producer = producer_pressure(PI, Coordinate, pressure);
                     case('RATE')
                         rate = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
-                        Producer = producer_rate(PI, coord, rate);
+                        Producer = producer_rate(PI, Coordinate, rate);
                 end
                 Wells.AddProducer(Producer);
             end

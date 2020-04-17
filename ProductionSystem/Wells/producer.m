@@ -6,7 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef producer < handle
     properties
-        Coord
+        Coordinate
         Cells
         p
         qv % total volumetric rate
@@ -19,7 +19,7 @@ classdef producer < handle
     end
     methods
         function obj = producer(PI, coord)
-            obj.Coord = coord;
+            obj.Coordinate = coord;
             obj.PI = PI;
             obj.qv = 0;
         end
