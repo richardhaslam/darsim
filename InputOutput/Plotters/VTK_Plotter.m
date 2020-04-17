@@ -67,7 +67,7 @@ classdef VTK_Plotter < Plotter
             %Write a VTK file for Reservoir
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
-            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            fprintf(fileID, 'DARSim2 Reservoir Simulator\n');
             if obj.isBinary
                 fprintf(fileID, 'BINARY\n');
             else
@@ -99,7 +99,7 @@ classdef VTK_Plotter < Plotter
             end
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
-            fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
+            fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
             fprintf(fileID, '\n');
             obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
             fprintf(fileID, '\n');
@@ -117,11 +117,6 @@ classdef VTK_Plotter < Plotter
                 end
                 fprintf(fileID, '\n');
             end
-
-%             delta S
-%             delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
-%             obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
-%             fprintf(fileID, '\n');
             fclose(fileID);
         end
         function PlotFractureSolution(obj, Fracture, Grid, f)
@@ -464,23 +459,23 @@ classdef VTK_Plotter < Plotter
     methods (Access = private)
         function PrintScalar2VTK(obj, fileID, scalar, name)
             %Print a scalar in VTK format
-            fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('SCALARS  ', name,' float 1\n'));
+            fprintf(fileID, '\n');
+            fprintf(fileID, strcat('SCALARS  ', name,' double 1\n'));
             fprintf(fileID, 'LOOKUP_TABLE default\n');
             if obj.isBinary
-                fwrite(fileID, scalar','float', 'b');
+                fwrite(fileID, scalar', 'double', 'b');
             else
-            	fprintf(fileID,'%d ', scalar);
+            	fprintf(fileID,'%1.5e ', scalar);
             end
         end
         function PrintVector2VTK(obj, fileID, vector, name)
             %Print a vector in VTK format
-            fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('VECTORS  ', name,' float \n'));
+            fprintf(fileID, '\n');
+            fprintf(fileID, strcat('VECTORS  ', name,' double \n'));
             if obj.isBinary
-                fwrite(fileID, vector','float', 'b');
+                fwrite(fileID, vector','double', 'b');
             else
-            	fprintf(fileID,'%d ', vector);
+            	fprintf(fileID,'%1.5e ', vector);
             end
         end
     end

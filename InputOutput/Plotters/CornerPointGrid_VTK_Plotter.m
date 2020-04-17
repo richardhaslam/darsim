@@ -74,22 +74,22 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
         function PrintScalar2VTK(obj, fileID, scalar, name)
             %Print a scalar in VTK format
             fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('SCALARS  ', name,' float 1\n'));
+            fprintf(fileID, strcat('SCALARS  ', name,' double 1\n'));
             fprintf(fileID, 'LOOKUP_TABLE default\n');
             if obj.isBinary
-                fwrite(fileID, scalar','float', 'b');
+                fwrite(fileID, scalar','double', 'b');
             else
-            	fprintf(fileID,'%d ', scalar);
+            	fprintf(fileID,'%1.5e ', scalar);
             end
         end
         function PrintVector2VTK(obj, fileID, vector, name)
             %Print a vector in VTK format
             fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('VECTORS  ', name,' float \n'));
+            fprintf(fileID, strcat('VECTORS  ', name,' double \n'));
             if obj.isBinary
-                fwrite(fileID, vector','float', 'b');
+                fwrite(fileID, vector','double', 'b');
             else
-            	fprintf(fileID,'%d ', vector);
+            	fprintf(fileID,'%1.5e ', vector);
             end
         end
     end
