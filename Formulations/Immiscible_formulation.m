@@ -181,9 +181,9 @@ classdef Immiscible_formulation < formulation
                     
                 case('cartesian_grid')
                     % 1.b: compressibility part
-                    dMupx = 0;% obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
-                    dMupy = 0;% obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
-                    dMupz = 0;% obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
+                    dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
+                    dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
+                    dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
                                         
                     vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
                     vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
@@ -198,9 +198,9 @@ classdef Immiscible_formulation < formulation
                     Jp = Jp + spdiags(DiagVecs, DiagIndx, N, N);
                     
                     % 2. Saturation Block
-                    dMupx = 0;% obj.UpWind{ph,1+f}.x * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
-                    dMupy = 0;% obj.UpWind{ph,1+f}.y * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
-                    dMupz = 0;% obj.UpWind{ph,1+f}.z * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
+                    dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
+                    dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
+                    dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
                     
                     % Construct JS block
                     x1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
