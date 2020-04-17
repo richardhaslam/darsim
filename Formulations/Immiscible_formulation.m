@@ -163,12 +163,9 @@ classdef Immiscible_formulation < formulation
             Jp = obj.Tph{ph,1+f};
             
             % 1.b: compressibility part
-            %dMupx = obj.UpWind{ph,1+f}.x*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
-            %dMupy = obj.UpWind{ph,1+f}.y*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
-            %dMupz = obj.UpWind{ph,1+f}.z*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
-            dMupx = zeros(N,1);
-            dMupy = zeros(N,1);
-            dMupz = zeros(N,1);
+            dMupx = obj.UpWind{ph,1+f}.x*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
+            dMupy = obj.UpWind{ph,1+f}.y*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
+            dMupz = obj.UpWind{ph,1+f}.z*(obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph));
             
             vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
             vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
@@ -183,12 +180,9 @@ classdef Immiscible_formulation < formulation
             Jp = Jp + spdiags(DiagVecs, DiagIndx, N, N);
             
             % 2. Saturation Block
-            %dMupx = obj.UpWind{ph,1+f}.x * (obj.dMob(Index.Start:Index.End, ph) .* rho);
-            %dMupy = obj.UpWind{ph,1+f}.y * (obj.dMob(Index.Start:Index.End, ph) .* rho);
-            %dMupz = obj.UpWind{ph,1+f}.z * (obj.dMob(Index.Start:Index.End, ph) .* rho);
-            dMupx = zeros(N,1);
-            dMupy = zeros(N,1);
-            dMupz = zeros(N,1);
+            dMupx = obj.UpWind{ph,1+f}.x * (obj.dMob(Index.Start:Index.End, ph) .* rho);
+            dMupy = obj.UpWind{ph,1+f}.y * (obj.dMob(Index.Start:Index.End, ph) .* rho);
+            dMupz = obj.UpWind{ph,1+f}.z * (obj.dMob(Index.Start:Index.End, ph) .* rho);
             
             % Construct JS block
             x1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -231,7 +225,7 @@ classdef Immiscible_formulation < formulation
             Wells = ProductionSystem.Wells;
             % Global variables
             if ProductionSystem.FracturesNetwork.Active
-                FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+                FineGrid = [DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids];
             else
                 FineGrid = DiscretizationModel.ReservoirGrid;
             end
@@ -381,8 +375,8 @@ classdef Immiscible_formulation < formulation
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
             Nm = DiscretizationModel.ReservoirGrid.N;
             % Global variables
-            P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
-            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
+            P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
             for ph=1:obj.NofPhases
                 % fill in qf
                 for c=1:length(DiscretizationModel.CrossConnections)
