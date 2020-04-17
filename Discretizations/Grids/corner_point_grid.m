@@ -42,6 +42,8 @@ classdef corner_point_grid < grid_darsim
             Nvec = obj.CornerPointGridData.Internal_Face.Nvec;
             Trans_Half_1 = sum( Permeability(CellNeighbor1Index,1) .* CellNeighbor1Vec .* Nvec , 2 ) ./ sum( CellNeighbor1Vec .* CellNeighbor1Vec , 2 );
             Trans_Half_2 = sum( Permeability(CellNeighbor2Index,1) .* CellNeighbor2Vec .* Nvec , 2 ) ./ sum( CellNeighbor2Vec .* CellNeighbor2Vec , 2 );
+            Trans_Half_1 = abs(Trans_Half_1);
+            Trans_Half_2 = abs(Trans_Half_2);
             obj.Trans = Trans_Half_1 .* Trans_Half_2 ./ (Trans_Half_1 + Trans_Half_2);
         end
         function CorrectTransmissibilitiesForpEDFM(obj)

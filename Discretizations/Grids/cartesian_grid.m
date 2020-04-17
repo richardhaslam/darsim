@@ -30,6 +30,7 @@ classdef cartesian_grid < grid_darsim
         I
         J
         K
+        Centroids
     end
     methods
         function obj = cartesian_grid(n)
@@ -62,6 +63,13 @@ classdef cartesian_grid < grid_darsim
             obj.CoarseFactor = [1, 1, 1];
             obj.Children = cell(obj.N, 1);
             obj.GrandChildren = cell(obj.N, 1);
+            if obj.Nz == 1 && obj.Ny == 1
+                obj.AssignNeighbours1D();
+            elseif obj.Nz == 1 && obj.Ny > 1
+                obj.AssignNeighbours2D();
+            else
+                obj.AssignNeighbours();
+            end
             obj.AddCoordinates();
             obj.Depth = zeros(obj.N, 1);
         end
@@ -115,6 +123,274 @@ classdef cartesian_grid < grid_darsim
             obj.THy(:,2:obj.Ny,:) = obj.Ay./obj.dy.*KHy(:,2:obj.Ny,:);
             obj.THz(:,:,2:obj.Nz) = obj.Az./obj.dz.*KHz(:,:,2:obj.Nz);
         end
+        function AssignNeighbours(obj)
+            % Lets do the 8 corners separetely
+            % 1
+            i = 1;
+            j = 1;
+            for k=1:obj.Nz
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if k == 1
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
+                elseif k == obj.Nz
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 2.
+            i = obj.Nx;
+            j = 1;
+            for k=1:obj.Nz
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if k == 1
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
+                elseif k == obj.Nz
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 3.
+            i = 1;
+            j = obj.Ny;
+            for k=1:obj.Nz
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if k == 1
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
+                elseif k == obj.Nz
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 4.
+            i = obj.Nx;
+            j = obj.Ny;
+            for k=1:obj.Nz
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if k == 1
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
+                elseif k == obj.Nz
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 5
+            j = 1;
+            k = 1;
+            for i=1:obj.Nx
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if i==1
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
+                elseif i==obj.Nx
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 6
+            j = obj.Ny;
+            k = 1;
+            for i=1:obj.Nx
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if i==1
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
+                elseif i==obj.Nx
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 7
+            j = 1;
+            k = obj.Nz;
+            for i=1:obj.Nx
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if i==1
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
+                elseif i==obj.Nx
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
+                end
+            end
+            % 8
+            j = obj.Ny;
+            k = obj.Nz;
+            for i=1:obj.Nx
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if i==1
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
+                elseif i==obj.Nx
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
+                end
+            end
+            
+            % 9
+            i = 1;
+            k = 1;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if j==1
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
+                elseif j==obj.Ny
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 10
+            i = obj.Nx;
+            k = 1;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if j==1
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
+                elseif j==obj.Ny
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
+                end
+            end
+            % 11
+            i = 1;
+            k = obj.Nz;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if j==1
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
+                elseif j==obj.Ny
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
+                end
+            end
+            % 12
+            i = obj.Nx;
+            k = obj.Nz;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                if j==1
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
+                elseif j==obj.Ny
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
+                else
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
+                end
+            end
+
+            % Let's do the faces first
+            i = 1;
+            for k=2:obj.Nz-1
+                for j=2:obj.Ny-1
+                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                end
+            end
+            i = obj.Nx;
+            for k=2:obj.Nz-1
+                for j=2:obj.Ny-1
+                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g + obj.Nx*obj.Ny];
+                end
+            end
+            j = 1;
+            for k=2:obj.Nz-1
+                for i=2:obj.Nx-1
+                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                end
+            end
+            j = obj.Ny;
+            for k=2:obj.Nz-1
+                for i = 2:obj.Nx-1
+                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                end
+            end
+            k = 1;
+            for j=2:obj.Ny-1
+                for i=2:obj.Nx-1
+                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
+                end
+            end
+            k = obj.Nz;
+            for j=2:obj.Ny-1
+                for i = 2:obj.Nx-1
+                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
+                end
+            end
+            
+            
+            % All inner cells (easy ones)
+            for k = 2:obj.Nz-1
+                for i = 2:obj.Nx-1
+                    for j=2:obj.Ny-1
+                        g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
+                        obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
+                    end
+                end
+            end
+        end
+        function AssignNeighbours2D(obj)
+            i = 1;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx;
+                if j~=1 && j~= obj.Ny
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx];
+                elseif j == 1
+                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx];
+                elseif j == obj.Ny
+                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx];
+                end
+            end
+            i = obj.Nx;
+            for j=1:obj.Ny
+                g = i + (j-1)*obj.Nx;
+                if j~=1 && j~=obj.Ny
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx];
+                elseif j == 1
+                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx];
+                elseif j == obj.Ny
+                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx];
+                end
+            end
+            j = 1;
+            for i=2:obj.Nx-1
+                g = i + (j-1)*obj.Nx;
+                obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx];
+            end
+            j = obj.Ny;
+            for i = 2:obj.Nx-1
+                g = i + (j-1)*obj.Nx;
+                obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx];
+            end
+            
+            for i = 2:obj.Nx-1
+                for j=2:obj.Ny-1
+                    g = i + (j-1)*obj.Nx;
+                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx];
+                end
+            end
+        end
+        function AssignNeighbours1D(obj)
+            i = 1;
+            g = i;
+            obj.Neighbours(g).indexes = g+1;
+            i = obj.Nx;
+            g = i;
+            obj.Neighbours(g).indexes = g-1;
+            for i = 2:obj.Nx-1
+                g = i;
+                obj.Neighbours(g).indexes = [g-1, g+1];
+            end  
+        end
         function AddCoordinates(obj)
             % Add I, J coordinates to Grid
             obj.I = ones(obj.N, 1);
@@ -131,6 +407,14 @@ classdef cartesian_grid < grid_darsim
             for i=1:obj.Nz
                 obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny) = i*ones(obj.Nx*obj.Ny, 1);
             end
+            XCM = linspace(obj.dx/2 , obj.Nx*obj.dx - obj.dx/2 , obj.Nx);
+            YCM = linspace(obj.dy/2 , obj.Ny*obj.dy - obj.dy/2 , obj.Ny);
+            ZCM = linspace(obj.dz/2 , obj.Nz*obj.dz - obj.dz/2 , obj.Nz);
+            [x,y,z] = meshgrid(XCM,YCM,ZCM);
+            x = permute(x,[2 1 3]);
+            y = permute(y,[2 1 3]);
+            
+            obj.Centroids = [ x(:) , y(:) , z(:) ];
         end
         function AddGridCoordinates(obj)
             Xi = linspace(0,obj.dx*obj.Nx,obj.Nx+1)';

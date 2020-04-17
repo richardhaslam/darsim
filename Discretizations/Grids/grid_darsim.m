@@ -11,6 +11,7 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         N
         Depth
         Active
+        Neighbours
         Fathers
         Children
         GrandChildren

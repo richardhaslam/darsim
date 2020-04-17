@@ -14,7 +14,6 @@ classdef coarse_grid < grid_darsim
         I
         J
         K
-        Neighbours
         Wells
         DeltaS
         Vertex_On_Corner
@@ -81,7 +80,7 @@ classdef coarse_grid < grid_darsim
             else
                 obj.AssignNeighbours();
             end
-            obj.AddGridCoordinates(FineGrid); 
+            obj.AddGridCoordinates(FineGrid);
         end
         function AddGridCoordinates(obj, FineGrid)
             % Computes coordinates of corners of the coarse grid
@@ -124,7 +123,7 @@ classdef coarse_grid < grid_darsim
             end
         end
         function AssignNeighbours(obj)
-            % Let s do the 8 corners separetely
+            % Lets do the 8 corners separetely
             % 1
             i = 1;
             j = 1;
