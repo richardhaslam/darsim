@@ -719,7 +719,7 @@ classdef reader_darsim2 < reader
                             ijk = [str2num(ijk{1}), str2num(ijk{2}), str2num(ijk{3})];
                             Well.Coordinate.Value(p,:) = ijk;
                         end
-                        if any(mod(Well.Coordinate(:),1) ~= 0)
+                        if any(mod(Well.Coordinate.Value(:),1) ~= 0)
                             error('In well #%d, the ijk coordinates result in non-integer cell indeces. Check the input file!\n', w);
                         end
                     case('XYZ_LIST')

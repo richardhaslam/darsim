@@ -78,6 +78,7 @@ classdef Discretization_model < handle
                 otherwise
                     error('DARSim Error: In of the %s #%d, the coordination keyword "IJK_LIST" or "XYZ_LIST" or "CELL_INDEX_LIST" is missing. Check the input file!\n', Well_Type, w);
             end
+            Well.PI = Well.PI(Well.Cells);
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)
             % virtual call

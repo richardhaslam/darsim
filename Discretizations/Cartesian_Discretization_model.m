@@ -78,7 +78,6 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
                 end
             end
             Well.Cells = unique(Well.Cells);
-            Well.PI = Well.PI(Well.Cells);
             Well.ResizeObjects(length(Well.Cells));
         end
         function ObtainPerforatedCellsBasedOnCellIndexList(obj, Well, Well_Type, w)
