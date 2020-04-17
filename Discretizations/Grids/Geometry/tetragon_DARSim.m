@@ -118,8 +118,13 @@ classdef tetragon_DARSim < polygon_DARSim
                 Geostatus.areParallel = 1;
                 % If the equations of both planes are multiple of each
                 % other, then they are coplanar:
-                % d2 * (a1/a2) - d1 = 0
-                if abs( tetrahedron.Equation.d * (obj.Equation.a/tetrahedron.Equation.a) - obj.Equation.d ) < Epsilon
+                % To check this, we put a point from the 1st plane into
+                % 2nd plane's equation. If the equation holds, it
+                % means that the point lies within both planes resulting in
+                % coplanarity of these two planes.
+                % if a2*x1 + b2*y1 + c2*z1 = d2, then the planes are coplanar.
+                if abs( Plane.Equation.a * obj.PointM(1) + Plane.Equation.b * obj.PointM(2) + ...
+                        Plane.Equation.c * obj.PointM(3) - Plane.Equation.d ) < Epsilon
                     % The planes are coplanar
                     Geostatus.areCoplanar = 1;
                     

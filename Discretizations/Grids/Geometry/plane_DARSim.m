@@ -95,10 +95,12 @@ classdef plane_DARSim < handle
             if norm( cross( obj.n_vec , Plane.n_vec ) ) < Epsilon
                 % The planes are parallel
                 Geostatus.areParallel = 1;
-                % If the Eqs of both planes are multiple of each
+                % If the equations of both planes are multiple of each
                 % other, then they are coplanar:
-                % d2 * (a1/a2) - d1 = 0
-                if abs( Plane.Eq.d * (obj.Eq.a/Plane.Eq.a) - obj.Eq.d ) < Epsilon
+                % d2 * (a1/a2) - d1 = 0 or d2 * (b1/b2) - d1 = 0 or d2 * (c1/c2) - d1 = 0
+                if abs( Plane.Equation.d * (obj.equation.a/Plane.Equation.a) - obj.equation.d ) < Epsilon || ...
+                   abs( Plane.Equation.d * (obj.equation.b/Plane.Equation.b) - obj.equation.d ) < Epsilon || ...
+                   abs( Plane.Equation.d * (obj.equation.c/Plane.Equation.c) - obj.equation.d ) < Epsilon
                     % The planes are coplanar
                     Geostatus.areCoplanar = 1;
                 else
