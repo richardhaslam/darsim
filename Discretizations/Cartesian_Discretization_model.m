@@ -8,33 +8,84 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
     properties
     end
     methods
-        function DefinePerforatedCells(obj, Wells)
-            % Has to be improved for Diagonal wells (maybe using trajectories)
-            % Injectors
-            for i = 1:Wells.NofInj
-                I = Wells.Inj(i).Coord(1,1):1:Wells.Inj(i).Coord(2,1);
-                J = Wells.Inj(i).Coord(1,2):1:Wells.Inj(i).Coord(2,2);
-                K = Wells.Inj(i).Coord(1,3):1:Wells.Inj(i).Coord(2,3);
+        function ObtainPerforatedCellsBasedOnIJKList(obj, Well, Well_Type, w)
+            CellListIndex = [];
+            for p = 1:size(Well.Coordinate.Value,1) - 1
+                I = Well.Coordinate.Value(p,1) : 1 : Well.Coordinate.Value(p+1,1);
+                J = Well.Coordinate.Value(p,2) : 1 : Well.Coordinate.Value(p+1,2);
+                K = Well.Coordinate.Value(p,3) : 1 : Well.Coordinate.Value(p+1,3);
                 if (sum(I > obj.ReservoirGrid.Nx) == 1 || sum(J > obj.ReservoirGrid.Ny) == 1 || sum(K > obj.ReservoirGrid.Nz) == 1)
-                    error(['ERROR: coordinates of injector num ', num2str(i),' fall outside of the domain']);
+                    error('DARSim Error: The coordinates of the %s #%d fall outside of the domain. Check the input file!\n', Well_Type, w);
                 else
-                    Wells.Inj(i).Cells = I + (J-1)*obj.ReservoirGrid.Nx + (K-1)*obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny;
-                    Wells.Inj(i).ResizeObjects(length(Wells.Inj(i).Cells));
+                CellListIndex = [ CellListIndex, I + (J-1)*obj.ReservoirGrid.Nx + (K-1)*obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny ];
                 end
             end
+            Well.Cells = zeros(length(CellListIndex),1);
+            Well.Cells(:,1) = CellListIndex;
+            Well.Cells = unique(Well.Cells);
+            Well.ResizeObjects(length(Well.Cells));
+        end
+        function ObtainPerforatedCellsBasedOnXYZList(obj, Well, Well_Type, w)
+            Nx = obj.ReservoirGrid.Nx;
+            Ny = obj.ReservoirGrid.Ny;
+            Nz = obj.ReservoirGrid.Nz;
+            dx = obj.ReservoirGrid.dx;
+            dy = obj.ReservoirGrid.dy;
+            dz = obj.ReservoirGrid.dz;
+            Centroids = obj.ReservoirGrid.Centroids;
             
-            % Producers
-            for i = 1:Wells.NofProd
-                I = Wells.Prod(i).Coord(1,1):1:Wells.Prod(i).Coord(2,1);
-                J = Wells.Prod(i).Coord(1,2):1:Wells.Prod(i).Coord(2,2);
-                K = Wells.Prod(i).Coord(1,3):1:Wells.Prod(i).Coord(2,3);
-                if (sum(I > obj.ReservoirGrid.Nx) == 1 || sum(J > obj.ReservoirGrid.Ny) == 1 || sum(K > obj.ReservoirGrid.Nz) == 1)
-                    error(['ERROR: coordinates of producer num ', num2str(i),' fall outside of the domain']);
-                else
-                     Wells.Prod(i).Cells = I + (J-1)*obj.ReservoirGrid.Nx + (K-1)*obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny;
-                     Wells.Prod(i).ResizeObjects(length(Wells.Prod(i).Cells));
+            for p = 1:size(Well.Coordinate.Value,1) - 1
+                PointA = Well.Coordinate.Value(p  ,:)';
+                PointB = Well.Coordinate.Value(p+1,:)';
+                LineSegment = lineSegment_DARSim(PointA,PointB);
+                [ ~ , indList ] = min( vecnorm(LineSegment.PointM' - Centroids, 2,2) );
+                Count = 1;
+                while Count <= length(indList)
+                    I = indList(Count);
+                    Count = Count+1;
+                    NW_Top = [ Centroids(I,1) - dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) + dz/2 ]';
+                    SW_Top = [ Centroids(I,1) - dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) + dz/2 ]';
+                    SE_Top = [ Centroids(I,1) + dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) + dz/2 ]';
+                    NE_Top = [ Centroids(I,1) + dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) + dz/2 ]';
+                    NW_Bot = [ Centroids(I,1) - dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) - dz/2 ]';
+                    SW_Bot = [ Centroids(I,1) - dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) - dz/2 ]';
+                    SE_Bot = [ Centroids(I,1) + dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) - dz/2 ]';
+                    NE_Bot = [ Centroids(I,1) + dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) - dz/2 ]';
+                    
+                    Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                    Hexahedron.Centroid = Centroids(I,:)';
+                    
+                    [Geostatus, IntersectPoints] = Hexahedron.Obtain_Hexahedron_LineSegment_Intersection(LineSegment);
+                    
+                    % Add the neighboring cells to the list for intersection check if it is the first try
+                    % but no intersection occurs, so another one must be checked
+                    if isempty(IntersectPoints) && Count == 2
+                        indNeighbors = obj.ReservoirGrid.Neighbours(I).indexes;
+                        indList = union(indList, indNeighbors, 'stable');
+                        continue;
+                    end
+                    
+                    % Assigning the index of cell to the array
+                    if isempty(IntersectPoints) && Count > 2
+                        continue;
+                    end
+                    indNeighbors = obj.ReservoirGrid.Neighbours(I).indexes;
+                    indList = union(indList, indNeighbors, 'stable');
+                    
+                    if Geostatus.haveIntersect
+                        Well.Cells = [ Well.Cells ; I ];
+                    end
                 end
             end
+            Well.Cells = unique(Well.Cells);
+            Well.PI = Well.PI(Well.Cells);
+            Well.ResizeObjects(length(Well.Cells));
+        end
+        function ObtainPerforatedCellsBasedOnCellIndexList(obj, Well, Well_Type, w)
+            Well.Cells = zeros(length(Well.Coordinate.Value),1);
+            Well.Cells(:,1) = Well.Coordinate.Value;
+            Well.Cells = unique(Well.Cells);
+            Well.ResizeObjects(length(Well.Cells));
         end
         function I = Index_Local_to_Global(obj, i, j, k, f, g)
             if (i<1),  error('i should at least be 1 but is not!');  end
