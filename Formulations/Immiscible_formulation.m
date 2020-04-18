@@ -167,24 +167,24 @@ classdef Immiscible_formulation < formulation
             
             switch class(Grid)
                 case('corner_point_grid')
-                    nc = Grid.N;
-                    nf = length(Grid.Trans);
-                    C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
-                    D = [(obj.U{ph,1+f}>=0) .* ones(nf,1)*(1) , (obj.U{ph,1+f}<0) .* ones(nf,1)*(-1) ];
-                    UpwindPermutation = sparse([(1:nf)'; (1:nf)'], C, D, nf, nc)';
+%                     nc = Grid.N;
+%                     nf = length(Grid.Trans);
+%                     C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+%                     D = [(obj.U{ph,1+f}>=0) .* ones(nf,1)*(1) , (obj.U{ph,1+f}<0) .* ones(nf,1)*(-1) ];
+%                     UpwindPermutation = sparse([(1:nf)'; (1:nf)'], C, D, nf, nc)';
                     
                     
                     % 1.b: compressibility part
-                    Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
-                    dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
-                    FluxDerivative = dMobUpwind .* obj.U{ph,1+f};
+%                     Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
+%                     dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
+%                     FluxDerivative = dMobUpwind .* obj.U{ph,1+f};
                     acc = pv/dt .* obj.drhodp(Index.Start:Index.End,ph) .* s;
                     Jp = Jp + spdiags(acc,0,N,N);% + UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation';
                     
                     % 2. Saturation Block
-                    dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
-                    dMobUpwind = obj.UpWind{ph,1+f} * dMob_rho;
-                    FluxDerivative = dMobUpwind .* obj.U{ph,1+f};
+%                     dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
+%                     dMobUpwind = obj.UpWind{ph,1+f} * dMob_rho;
+%                     FluxDerivative = dMobUpwind .* obj.U{ph,1+f};
                     v = (-1)^(ph+1) .* pv/dt .* rho;
                     JS = spdiags(v,0,N,N);% + UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation';
                     
