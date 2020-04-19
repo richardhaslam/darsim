@@ -8,8 +8,9 @@
 %% CORNER POINT GRID GEOMETRY DATA: INPUT FILE GENERATION
 close all; clear; clc;
 % Read subset of ECLIPSE GRID file. Return: CartDims + ZCORN + COORD + ACTNUM
-grdecl = readGRDECL('NPD5.grdecl');
-% grdecl = simpleGrdecl([4, 2, 3], 0.12, 'flat', true);
+grdecl = readGRDECL('NPD5.grdecl');                                        % Johansen Formation
+% grdecl = readGRDECL('SAIGUP.GRDECL');                                      % SAIGUP: Shallow Marine Reservoirs
+% grdecl = readGRDECL('NorneField.grdecl');
 % Extract Corner Point Nodes of the cells (8 nodes * X,Y,Z(coordinates))
 [x,y,z] = buildCornerPtNodes(grdecl);
 % Dimensions of the Grid in the X, Y and Z coordinates: Vector with the total number of cells
@@ -17,7 +18,12 @@ NumberCells = linspace(1, grdecl.cartDims(1)*grdecl.cartDims(2)*grdecl.cartDims(
 % Compute grid topology and geometry from pillar grid description
 G = processGRDECL(grdecl, 'Verbose', true);
 % Compute geometry information (centroids, volumes, areas) of the cells
-G = computeGeometry(G);
+G = computeGeometry(G); 
+% grdecl.ACTNUM(G(2).cells.indexMap)= 0;                                     % Norne Field
+% G = computeGeometry(G(1));                                                 % Norne Field 
+
+% grdecl.ACTNUM = actnum;
+plotGrid(G)
 % Reshape the cell data based on the requirements of the input file for DARSim2: X Y Z Coordinates
 A = inputdataDARSim(x);
 B = inputdataDARSim(y);
@@ -65,7 +71,8 @@ B_VTK(LI,:) = [];                                % Delete Cells that are not act
 B_VTK(:,1) = [];                                 % Delete Columns of Active Cells
 B_VTK = reshape(transpose(B_VTK),1,[])';
 
-C_VTK = [double(grdecl.ACTNUM) C];
+D = round(max(max(C)))- C;
+C_VTK = [double(grdecl.ACTNUM) D];
 LI = C_VTK(:,1) == 0;                            % Logical Index                 
 C_VTK(LI,:) = [];                                % Delete Cells that are not active
 C_VTK(:,1) = [];                                 % Delete Columns of Active Cells
@@ -83,17 +90,20 @@ LI = ActiveCells(:,2) == 0;                            % Logical Index
 ActiveCells(LI,:) = [];                                % Delete Cells that are not active
 ActiveCells(:,2) = [];                                 % Delete Columns of Active Cells
 % Load Inputs Files
-p = load('NPD5_Porosity.txt')';
-K = load('NPD5_Permeability.txt')';
+p = load('NPD5_Porosity.txt')';                                            % Johansen Formation
+K = load('NPD5_Permeability.txt')';                                        % Johansen Formation
 % Just Considered Active Cells
-p = p(G.cells.indexMap);
-poro = p;
+poro = p(G.cells.indexMap);                                                % Johansen Formation
+% poro = grdecl.PORO(G.cells.indexMap);                                      % SAIGUP Model
 poro_text = [ActiveCells poro];
-%poro_text2 = [G.cells.indexMap poro];
-K = K(G.cells.indexMap);
+% poro_text2 = [G.cells.indexMap poro];
+K = K(G.cells.indexMap);                                                   % Johansen Formation
 % Convert K values a diferent units
-K = K .* milli * darcy;
-perm = bsxfun(@times, [1 1 0.1], K);
+perm = bsxfun(@times, [1 1 0.1], K);                                       % Johansen Formation
+% perm = [grdecl.PERMX grdecl.PERMY grdecl.PERMZ];                           % SAIGUP Model
+% perm = bsxfun(@times, [1 1 0.1], grdecl.PERMX);                            % Norne Field 
+perm = perm(G.cells.indexMap,:);
+perm = perm .* milli * darcy;
 perm_txt = [ActiveCells perm];
 rock = makeRock(G, perm, poro);
 [K, i, j] = permTensor(rock, G.griddim);
@@ -101,7 +111,7 @@ K_text = [ActiveCells K];
 
 %% OUTOUT FILE 1: GRID GEOMETRY DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_InputData.txt';
+OutputFileName = 'CornerPointGrid_DARSim_InputData_JohansenFormation.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -163,7 +173,7 @@ fclose(fid);
 
 %% OUTOUT FILE 2: CORNER GRID POINT DATA - VTK
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\';
-OutputFileName = 'CornerPointGrid_DARSim_VTKData.vtk';
+OutputFileName = 'CornerPointGrid_DARSim_VTKData_JohansenFormation.vtk';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 fileID = fopen(strcat(Directory,OutputFileName) , 'w+' );
@@ -192,12 +202,12 @@ end
 fclose(fileID);
 %% OUTPUT FILE: ROCK PROPERTIES DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData.txt';
+OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData_JohansenFormation.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
 fid = fopen(strcat(Directory, OutputFileName), 'w+');
-fprintf(fid, '%% Rock Properties of the Johansen Formation\n');
+fprintf(fid, '%% Rock Properties of the Norne Field\n');
 fprintf(fid, '%% Rock Properties Values of Active Cells of the Corner Point Grid Model\n');
 fprintf(fid, '%% Permeability tensor is assumed to be diagonal\n');
 fprintf(fid, '%% Vertical permeability (Kz) equaling one-tenth of the horizontal permeability (Kx, Ky)\n');
