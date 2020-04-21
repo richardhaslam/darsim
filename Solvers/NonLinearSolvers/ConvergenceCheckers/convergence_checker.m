@@ -13,6 +13,7 @@ classdef convergence_checker < handle
         FirstResidualNorm
         FirstResidual
         OldResidual
+        ResidualNorm
     end
     methods (Abstract)
         obj = Check(obj) 
@@ -27,6 +28,9 @@ classdef convergence_checker < handle
                 obj.FirstResidualNorm(eq) = norm(obj.FirstResidual((eq -1)*Nt+1:eq*Nt), inf); % The inf norm is better for LTS.
             end
             obj.NormCalculator.FirstResidualNorm = obj.FirstResidualNorm;
+            % Initializing the "ResidualNorm" as empty, to use it clean for
+            % the coming iteration loop.
+            obj.ResidualNorm = [];
         end
         function output = Stagnating(obj, residual, delta)
             output = 0;
