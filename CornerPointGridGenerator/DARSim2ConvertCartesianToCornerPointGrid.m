@@ -5,18 +5,40 @@
 % Author: Mousa HosseiniMehr
 % Modified on: 2020/04/15
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% CARTESIAN GRID GEOMETRY DATA: INPUT FILE GENERATION
-close all; clear; clc;
-% SECTION 1: CELL DATA: NODES + CENTROIDS + VOLUMES
-% Number of Grid in X, Y and Z directions
-Nx = 5;
-Ny = 5;
-Nz = 3;
-% Lenght of the Grid in X, Y and Z directions
-Lx = 100;
-Ly = 100;
-Lz = 60;
+function DARSim2ConvertCartesianToCornerPointGrid(InputDirectory, InputFileName)
+%% Reading the DARSim Main Input File
+InputFile = strcat(InputDirectory,'/',InputFileName);
+fileID = fopen(InputFile, 'r');
+% Read lines from input file
+InputMatrix = textscan(fileID, '%s', 'Delimiter', '\n');
+InputMatrix = InputMatrix{1};
+fclose(fileID);
+% Remove lines which are commented (contain --)
+Commented = startsWith(InputMatrix, '--');
+InputMatrix(Commented) = {'--'}; % removing the string if it is commented.
 
+% Reading the size of the reservoir
+temp = strfind(obj.InputMatrix, 'DIMENS');
+index = find(~cellfun('isempty', temp));
+if isempty(index)
+    error('The keyword "DIMENS" is missing. Please check the input file!\n');
+end
+Lx = str2double(obj.InputMatrix{index+1});
+Ly = str2double(obj.InputMatrix{index+2});
+Lz = str2double(obj.InputMatrix{index+3});
+
+% Reading number of grid cells
+temp = strfind(obj.InputMatrix, 'SPECGRID');
+index = find(~cellfun('isempty', temp));
+if isempty(index)
+    error('The keyword "SPECGRID" is missing. Please check the input file!\n');
+end
+Nx = str2double(obj.InputMatrix{index+1});
+Ny = str2double(obj.InputMatrix{index+2});
+Nz = str2double(obj.InputMatrix{index+3});
+
+%% CARTESIAN GRID GEOMETRY DATA: INPUT FILE GENERATION
+% SECTION 1: CELL DATA: NODES + CENTROIDS + VOLUMES
 G = cartGrid([Nx, Ny, Nz], [Lx, Ly, Lz]);                                  % Create Cartesian Grid
 G = computeGeometry(G);                                                    % Compute Geomtery of the Cartesian Grid
 NC = linspace(1, G.cells.num, G.cells.num)';                               % Create Cell Index Vector (Total Number of Cells)
@@ -115,3 +137,5 @@ for ii = 1:size(EF3,1)
     fprintf(fid,'%8.0d , %13.3f , %11.3f,%11.3f,%11.3f , % 13.3f,%12.3f,% 8.3f , %6.0d , % 12.3f,% 12.3f, % 11.3f\n', EF3(ii,:)');
 end
 fclose(fid);
+
+end
