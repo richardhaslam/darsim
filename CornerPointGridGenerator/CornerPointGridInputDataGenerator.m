@@ -8,110 +8,79 @@
 %% CORNER POINT GRID GEOMETRY DATA: INPUT FILE GENERATION
 close all; clear; clc;
 % Read subset of ECLIPSE GRID file. Return: CartDims + ZCORN + COORD + ACTNUM
-grdecl = readGRDECL('NPD5.grdecl');                                        % Johansen Formation
-% grdecl = readGRDECL('SAIGUP.GRDECL');                                      % SAIGUP: Shallow Marine Reservoirs
-% grdecl = readGRDECL('NorneField.grdecl');
-% Extract Corner Point Nodes of the cells (8 nodes * X,Y,Z(coordinates))
-[x,y,z] = buildCornerPtNodes(grdecl);
-% Dimensions of the Grid in the X, Y and Z coordinates: Vector with the total number of cells
-NumberCells = linspace(1, grdecl.cartDims(1)*grdecl.cartDims(2)*grdecl.cartDims(3), grdecl.cartDims(1)*grdecl.cartDims(2)*grdecl.cartDims(3))';
-% Compute grid topology and geometry from pillar grid description
-G = processGRDECL(grdecl, 'Verbose', true);
-% Compute geometry information (centroids, volumes, areas) of the cells
-G = computeGeometry(G); 
-% grdecl.ACTNUM(G(2).cells.indexMap)= 0;                                     % Norne Field
-% G = computeGeometry(G(1));                                                 % Norne Field 
+% grdecl = readGRDECL('NPD5.grdecl');                                        % Johansen Formation
+grdecl = readGRDECL('SAIGUP.GRDECL');                                      % SAIGUP: Shallow Marine Reservoirs
+% grdecl = readGRDECL('NorneField.grdecl');                                  % Norne Field    
+[x, y, z] = buildCornerPtNodes(grdecl);                                    % Extract Corner Point Nodes of cells (8 nodes * X,Y,Z(coordinates))
+G = processGRDECL(grdecl, 'Verbose', true);                                % Compute grid topology and geometry from pillar grid description
+G = computeGeometry(G);                                                    % Compute geometry of  cells: centroids, volumes, areas
+% grdecl.ACTNUM(G(2).cells.indexMap)= 0;                                     % Norne Field: Delete Small Section
+% G = computeGeometry(G(1));                                                 % Norne Field: Compute geometry of  cells: centroids, volumes, areas
 
-% grdecl.ACTNUM = actnum;
-plotGrid(G)
-% Reshape the cell data based on the requirements of the input file for DARSim2: X Y Z Coordinates
-A = inputdataDARSim(x);
-B = inputdataDARSim(y);
-C = inputdataDARSim(z);
+% Reshape the cell data based on the format requirements of DARSim2 input file:
+X = inputdataDARSim(x);
+Y = inputdataDARSim(y);
+Z = inputdataDARSim(z);
 
 % SECTION 1: CELLS NODES (X, Y, Z) + CENTROIDS + VECTORS A, B, C (X, Y, Z COORDINATES)
-% Only Active Cells (Based on ACTNUM info)
-Cell_Nodes = [NumberCells, double(grdecl.ACTNUM), A(:,2), B(:,2), C(:,2), A(:,6), B(:,6), C(:,6), A(:,1), B(:,1), C(:,1),...
-              A(:,5), B(:,5), C(:,5),A(:,4), B(:,4), C(:,4), A(:,8), B(:,8), C(:,8), A(:,3), B(:,3), C(:,3),...
-              A(:,7), B(:,7), C(:,7)];
-% Cell_Nodes = double(Cell_Nodes);
+% Create Cell Index Vector (Number of Cells)
+NC = linspace(1, G.cartDims(1)*G.cartDims(2)*G.cartDims(3), G.cartDims(1)*G.cartDims(2)*G.cartDims(3))';                      
+
+Cell_Nodes = [NC, double(grdecl.ACTNUM),...
+              X(:,2), Y(:,2), Z(:,2), X(:,6), Y(:,6), Z(:,6),...
+              X(:,1), Y(:,1), Z(:,1), X(:,5), Y(:,5), Z(:,5),...
+              X(:,4), Y(:,4), Z(:,4), X(:,8), Y(:,8), Z(:,8),...
+              X(:,3), Y(:,3), Z(:,3), X(:,7), Y(:,7), Z(:,7)];
+          
+% Only Active Cells (based on ACTNUM data)
 LI = Cell_Nodes(:,2) == 0;                            % Logical Index                 
 Cell_Nodes(LI,:) = [];                                % Delete Cells that are not active
 Cell_Nodes(:,2) = [];                                 % Delete Columns of Active Cells
 Cell_Data = [Cell_Nodes, G.cells.centroids, G.cells.volumes];
 
 % SECTION 2: INTERNAL FACES (FACES CONNECTED TO CELLS)
-% Create Face Index Vector (Total Number of Faces)
-NumberFaces = linspace(1, G.faces.num, G.faces.num)';
-% Assembly Matrix with all the Faces
-IF = [NumberFaces, G.faces.neighbors, G.faces.areas, G.faces.centroids, G.faces.normals];
-LI = (IF(:,2) == 0)|(IF(:,3) == 0);
-IF(LI,:) = [];
-c_vec_IF = [G.faces.centroids(IF(:,1),:) - G.cells.centroids(IF(:,2),:), G.faces.centroids(IF(:,1),:) - G.cells.centroids(IF(:,3),:)];
-IF2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec_IF(:,1:3) IF(:,3) c_vec_IF(:,4:6)];
+NF = linspace(1, G.faces.num, G.faces.num)';                               % Create Face Index Vector (Total Number of Faces)
+% Assembly Matrix with Face Geometry Data
+IF = [NF, G.faces.neighbors, G.faces.areas, G.faces.centroids, G.faces.normals];         
+LI = (IF(:,2) == 0)|(IF(:,3) == 0);                                        % Delete External Faces
+IF(LI,:) = [];                                                             % Delete External Faces
+% Create Centroid Vector: Face Centroid - Cell Centroid
+c_vec = [G.faces.centroids(IF(:,1),:) - G.cells.centroids(IF(:,2),:), G.faces.centroids(IF(:,1),:) - G.cells.centroids(IF(:,3),:)];
+% Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
+IF2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6)];
 
 % SECTION 3: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
-EF = [NumberFaces, G.faces.areas, G.faces.centroids, G.faces.normals, G.faces.neighbors];
-LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);
-EF(LI,:) = [];
-EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];
+% Assembly Matrix with Face Geometry Data
+EF = [NF, G.faces.areas, G.faces.centroids, G.faces.normals, G.faces.neighbors];
+LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                       % Delete Internal Faces
+EF(LI,:) = [];                                                             % Delete Internal Faces
+EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];                                      % Delete Cell Neighboors  == 0
+% External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
 EF3 = [EF2 G.faces.centroids(EF2(:,1),:) - G.cells.centroids(EF2(:,9))];
-
-%% Corner Grid Point Data for Plotting - VTK file
-% SECTION 1: Point Data for each Active Cell
-A_VTK = [double(grdecl.ACTNUM) A];
-LI = A_VTK(:,1) == 0;                            % Logical Index                 
-A_VTK(LI,:) = [];                                % Delete Cells that are not active
-A_VTK(:,1) = [];                                 % Delete Columns of Active Cells
-A_VTK = reshape(transpose(A_VTK),1,[])';
-
-B_VTK = [double(grdecl.ACTNUM) B];
-LI = B_VTK(:,1) == 0;                            % Logical Index                 
-B_VTK(LI,:) = [];                                % Delete Cells that are not active
-B_VTK(:,1) = [];                                 % Delete Columns of Active Cells
-B_VTK = reshape(transpose(B_VTK),1,[])';
-
-D = round(max(max(C)))- C;
-C_VTK = [double(grdecl.ACTNUM) D];
-LI = C_VTK(:,1) == 0;                            % Logical Index                 
-C_VTK(LI,:) = [];                                % Delete Cells that are not active
-C_VTK(:,1) = [];                                 % Delete Columns of Active Cells
-C_VTK = reshape(transpose(C_VTK),1,[])';
-
-Cell_VTK1 = [A_VTK B_VTK C_VTK];
-% SECTION 2: Number of Points for each Active Cell
-Cell_VTK2 = [8 * ones(G.cells.num,1) vec2mat([0 1:(size(Cell_VTK1,1)-1)],8)];
-
-% SECTION 3: Types of Cells: Unstructured = 12
-Cell_VTK3 = 11 * ones(G.cells.num,1);
 %% CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
-ActiveCells = double([NumberCells grdecl.ACTNUM]);
-LI = ActiveCells(:,2) == 0;                            % Logical Index                 
-ActiveCells(LI,:) = [];                                % Delete Cells that are not active
-ActiveCells(:,2) = [];                                 % Delete Columns of Active Cells
-% Load Inputs Files
+% POROSITY
 p = load('NPD5_Porosity.txt')';                                            % Johansen Formation
-K = load('NPD5_Permeability.txt')';                                        % Johansen Formation
-% Just Considered Active Cells
 poro = p(G.cells.indexMap);                                                % Johansen Formation
-% poro = grdecl.PORO(G.cells.indexMap);                                      % SAIGUP Model
-poro_text = [ActiveCells poro];
-% poro_text2 = [G.cells.indexMap poro];
+% poro = grdecl.PORO(G.cells.indexMap);                                      % SAIGUP Model | Norne Field
+poro_text = [G.cells.indexMap poro];
+
+% PERMEABILITY
+K = load('NPD5_Permeability.txt')';                                        % Johansen Formation
 K = K(G.cells.indexMap);                                                   % Johansen Formation
-% Convert K values a diferent units
 perm = bsxfun(@times, [1 1 0.1], K);                                       % Johansen Formation
 % perm = [grdecl.PERMX grdecl.PERMY grdecl.PERMZ];                           % SAIGUP Model
 % perm = bsxfun(@times, [1 1 0.1], grdecl.PERMX);                            % Norne Field 
-perm = perm(G.cells.indexMap,:);
-perm = perm .* milli * darcy;
-perm_txt = [ActiveCells perm];
-rock = makeRock(G, perm, poro);
-[K, i, j] = permTensor(rock, G.griddim);
-K_text = [ActiveCells K];
+% perm = perm(G.cells.indexMap,:);                                           % Norne Field | SAIGUP Model
+perm = perm .* milli * darcy;                                              % Convert K values from to Darcy to Metric
+perm_txt = [G.cells.indexMap perm];
+
+rock = makeRock(G, perm, poro);                                            % Create K Tensor
+[K, i, j] = permTensor(rock, G.griddim);                                   % Create K Tensor
+K_text = [G.cells.indexMap K];                                             % Create K Tensor
 
 %% OUTOUT FILE 1: GRID GEOMETRY DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_InputData_JohansenFormation.txt';
+OutputFileName = 'CornerPointGrid_DARSim_InputData_X.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -170,39 +139,9 @@ for ii = 1:size(EF3,1)
     fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f, % 11.6f\n', EF3(ii,:)');
 end
 fclose(fid);
-
-%% OUTOUT FILE 2: CORNER GRID POINT DATA - VTK
-Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\';
-OutputFileName = 'CornerPointGrid_DARSim_VTKData_JohansenFormation.vtk';
-disp( '******************* Writing the data into output text file *********************' );
-disp(['Writing into file ', OutputFileName]);
-fileID = fopen(strcat(Directory,OutputFileName) , 'w+' );
-fprintf(fileID, '# vtk DataFile Version 2.0\n');
-fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-fprintf(fileID, 'ASCII\n');
-fprintf(fileID, '\n');
-fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
-
-fprintf(fileID, ['POINTS ' num2str(size(Cell_VTK1,1)) ' double\n']);
-for ii = 1:size(Cell_VTK1,1)
-    fprintf(fileID,'%f %f %f\n', Cell_VTK1(ii,:)');
-end
-
-fprintf(fileID, '\n');
-fprintf(fileID, ['CELLS ' num2str(G.cells.num) ' ' num2str(size(Cell_VTK1,1) + G.cells.num) '\n']);
-for ii = 1:size(Cell_VTK2,1)
-    fprintf(fileID,'%d %d %d %d %d %d %d %d %d\n', Cell_VTK2(ii,:)');
-end
-
-fprintf(fileID, '\n');
-fprintf(fileID, ['CELL_TYPES ' num2str(G.cells.num) '\n']);
-for ii = 1:size(Cell_VTK3,1)
-    fprintf(fileID,'%d\n', Cell_VTK3(ii,:)');
-end
-fclose(fileID);
 %% OUTPUT FILE: ROCK PROPERTIES DATA
 Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData_JohansenFormation.txt';
+OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData_X.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
@@ -259,3 +198,21 @@ for ii = 1:size(K_text,1)
     fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e\n', K_text(ii,:)');
 end
 fclose(fid);
+
+%%--------------------------------------------------------------------------
+function A = inputdataDARSim(B)
+C = size(B);
+D = reshape(permute(reshape(B, C(1), 2, [], C(3)), [1,3,2,4]), [], 2, C(3));
+A = []; 
+E=1;
+for k=2:2:size(D,3)
+    F(:,:,E)=[D(:,:,k-1),D(:,:,k)];                             
+    E=E+1;
+end
+for k=1:size(D,3)/2
+    A=[A;F(:,:,k)];                                               
+end
+A=A';
+A=reshape(A,8,[])';
+end
+%--------------------------------------------------------------------------
