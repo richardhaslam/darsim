@@ -71,12 +71,11 @@ EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];                                      % Del
 EF3 = [EF2 G.faces.centroids(EF2(:,1),:) - G.cells.centroids(EF2(:,9))];
 
 %% OUTOUT FILE 1: GRID GEOMETRY DATA
-Directory = 'C:\Users\Janio Paul\DARSim2\MSRT\mrst-2019a_zip\'; 
-OutputFileName = 'CornerPointGrid_DARSim_InputData_CartesianGrid_553.txt';
+OutputFileName = 'CornerPointGrid_DARSim_InputData_CartesianGrid.txt';
 disp( '******************* Writing the data into output text file *********************' );
 disp(['Writing into file ', OutputFileName]);
 
-fid = fopen(strcat(Directory,OutputFileName) , 'w+' );
+fid = fopen(strcat(InputDirectory,'/',OutputFileName) , 'w+' );
 fprintf(fid, '%% Node Locations for each one of the cells, Nx * Ny *Nz\n');
 fprintf(fid, '%% Coordinates X,Y,Z of the eight nones for each one of the cells\n');
 fprintf(fid, '\n');
