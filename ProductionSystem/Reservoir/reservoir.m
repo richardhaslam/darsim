@@ -25,7 +25,7 @@ classdef reservoir < handle
         K_Cond_rock % rock conductivity
         K_Cond_eff % effective conductivity
         Cpr % rock specific heat
-        Rho % density of reservoir rock
+        rhoRock % density of reservoir rock
         Dp = 1e-3;% grain diameter
     end
     methods

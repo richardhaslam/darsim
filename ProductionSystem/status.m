@@ -16,7 +16,7 @@ methods
     function AddProperties(obj, FluidModel, N)
         % Add properties to property map
         % Total density
-        obj.Properties('rhoT') = property(N, 1, 'scalar', false, 0, 2000);
+        obj.Properties('rhoFluid') = property(N, 1, 'scalar', false, 0, 2000);
         switch (FluidModel.name)
             case ('SinglePhase')
                % No more properties to be added
@@ -33,6 +33,7 @@ methods
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 'scalar', false, 0, 2000);
                 end
                 obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);
+                obj.Properties('rhoTotal') = property(N, 1, 'scalar', false, 1e3, 1e6);
             case{'Geothermal_1T','Geothermal_2T'}
                 %%% Add properties of geothermal
                 for i=1:FluidModel.NofPhases % for now this will be only 1

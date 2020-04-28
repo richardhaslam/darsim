@@ -319,7 +319,8 @@ classdef Immiscible_formulation < formulation
                 % Update Phase Densities
                 FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
                 % Update total density
-                FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
+                FluidModel.ComputeFluidDensity(ProductionSystem.Reservoir.State);
+                FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State,ProductionSystem.Reservoir.Por,ProductionSystem.Reservoir.rhoRock);
                 % Update Pc
                 FluidModel.ComputePc(ProductionSystem.Reservoir.State);
 

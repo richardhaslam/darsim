@@ -595,7 +595,7 @@ classdef simulation_builder < handle
             end
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
-            Reservoir.Rho = RockDensity;
+            Reservoir.rhoRock = RockDensity;
             Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')

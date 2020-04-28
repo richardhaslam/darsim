@@ -38,18 +38,27 @@ classdef fluid_model < handle
                 Mob(:,i) = kr(:,i)/obj.Phases(i).mu;
             end
         end
-        function ComputeTotalDensity(obj, State)
+        function ComputeFluidDensity(obj, State)
             % Compute the total density
             s = State.Properties('S_1');
             rho = State.Properties('rho_1');
-            rhoT = rho.Value .* s.Value;
+            rhoFluid = rho.Value .* s.Value;
             for i=2:obj.NofPhases
                 s = State.Properties(['S_', num2str(i)]);
                 rho = State.Properties(['rho_', num2str(i)]);
-                rhoT = rhoT + rho.Value .* s.Value;
+                rhoFluid = rhoFluid + rho.Value .* s.Value;
             end
-            RhoT = State.Properties('rhoT');
-            RhoT.Value = rhoT;
+            RhoFluid = State.Properties('rhoFluid');
+            RhoFluid.Value = rhoFluid;
+        end
+        function ComputeTotalDensity(obj, State, phi, rhoRock)
+            % Compute the total density
+            obj.ComputeFluidDensity(State);
+            rhoFluid = State.Properties('rhoFluid');
+            rhoTotal = State.Properties('rhoTotal');
+            
+            rhoTotal.Value = phi.*rhoFluid.Value + (1-phi).*rhoRock;
+            
         end
         function dMobdS = ComputeDMobDS(obj, s)
             dMobdS = zeros(length(s), obj.NofPhases);

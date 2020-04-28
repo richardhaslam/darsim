@@ -50,8 +50,10 @@ classdef initializer < handle
             % 4. Update S based on components mass balance
             FluidModel.ComputePhaseSaturation(ProductionSystem.Reservoir.State, Formulation.SinglePhase(Index.Start:Index.End));
             
-            % 5. Total Density
-            FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State);
+            % 5. Fluid Density & Total density
+            FluidModel.ComputeFluidDensity(ProductionSystem.Reservoir.State);
+            
+            FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.Por, ProductionSystem.Reservoir.rhoRock);
             
             % 6. Compute initial Pc
             FluidModel.ComputePc(ProductionSystem.Reservoir.State);

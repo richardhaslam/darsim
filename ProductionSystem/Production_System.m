@@ -46,7 +46,7 @@ classdef Production_System < handle
             % Create a gradient also inside the producers
             for i=1:length(obj.Wells.Prod)
                 h = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Prod(i).Cells);
-                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.Properties('rhoT').Value, h);
+                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.Properties('rhoFluid').Value, h);
             end
             
             % 3. Injection fluid properties are defined
