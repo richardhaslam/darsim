@@ -14,8 +14,8 @@ classdef fim_system_builder < system_builder
             Formulation.ComputePropertiesAndDerivatives(ProductionSystem, FluidModel);
             Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
         end
-        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
-           Residual = Formulation.BuildResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
+        function [Residual, RHS] = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
+           [Residual, RHS] = Formulation.BuildResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
             Jacobian = Formulation.BuildJacobian(ProductionSystem, DiscretizationModel, dt);

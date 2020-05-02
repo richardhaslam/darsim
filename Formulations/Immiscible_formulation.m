@@ -83,7 +83,7 @@ classdef Immiscible_formulation < formulation
             end
         end
         %% Methods for FIM Coupling
-        function Residual = BuildMediumResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
+        function [Residual, RHS] = BuildMediumResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
             % Create local variables
             N = Grid.N;
             pv = Medium.Por .* Grid.Volume;
@@ -104,13 +104,14 @@ classdef Immiscible_formulation < formulation
             end
             
             % RESIDUAL
-            Residual  = AS*(rho .* s - rho_old .* s_old)... % accummulation
+            RHS = qw(Index.Start:Index.End, ph);
+            Residual = AS*(rho .* s - rho_old .* s_old)... % accummulation
                 + obj.Tph{ph, 1+f} * P... % pressure
                 - obj.Gph{ph, 1+f} * depth... % gravity
                 - qw(Index.Start:Index.End, ph)... % wells
                 - qf(Index.Start:Index.End, ph); % frac-matrix
         end
-        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
+        function [Residual, RHS] = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute vector of qs
             qw = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
@@ -127,14 +128,17 @@ classdef Immiscible_formulation < formulation
             % Initialise residual vector (Nph * N, 1)
             Nt = DiscretizationModel.N;
             Residual = zeros(Nt * obj.NofPhases, 1);
+            RHS = zeros(Nt * obj.NofPhases, 1);
             Nm = DiscretizationModel.ReservoirGrid.N;
             
             for ph=1:obj.NofPhases
                 % BuildResidual for Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                Residualm = BuildMediumResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, qw, qf, 0, ph);
+                [Residualm, RHSm] = BuildMediumResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, qw, qf, 0, ph);
                 Residual((ph-1)*Nt + Index.Start: (ph-1)*Nt + Index.End) = Residualm;
+                RHS(     (ph-1)*Nt + Index.Start: (ph-1)*Nt + Index.End) = RHSm;
+                
                 % Fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Index.Start = Index.End+1;
@@ -167,61 +171,79 @@ classdef Immiscible_formulation < formulation
             
             switch class(Grid)
                 case('corner_point_grid')
-%                     nc = Grid.N;
-%                     nf = length(Grid.Trans);
-%                     C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
-%                     D = [(obj.U{ph,1+f}>=0) .* ones(nf,1)*(1) , (obj.U{ph,1+f}<0) .* ones(nf,1)*(-1) ];
-%                     UpwindPermutation = sparse([(1:nf)'; (1:nf)'], C, D, nf, nc)';
-                    
+                    nc = Grid.N;
+                    nf = length(Grid.Trans);
+                    C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+                    D = ones(nf,1) * [-1 1];
+                    UpwindPermutation1 = sparse([(1:nf)'; (1:nf)'], C, D, nf, nc)';
+                    D = ones(nf,1) * [1 -1];
+                    UpwindPermutation2 = sparse([(1:nf)'; (1:nf)'], C, D, nf, nc)';
+                    UPW = full( UpwindPermutation1*spdiags(ones(170,1),0,nf,nf)*UpwindPermutation1');
                     
                     % 1.b: compressibility part
-%                     Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
-%                     dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
-%                     FluxDerivative = dMobUpwind .* obj.U{ph,1+f};
+                    Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
+                    dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
+                    FluxDerivative1 = dMobUpwind .* min(obj.U{ph,1+f},0);
+                    FluxDerivative2 = dMobUpwind .* max(obj.U{ph,1+f},0);
                     acc = pv/dt .* obj.drhodp(Index.Start:Index.End,ph) .* s;
-                    Jp = Jp + spdiags(acc,0,N,N);% + UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation';
+                    Jp = Jp + spdiags(acc,0,N,N) + full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1') + ...
+                                                   full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
+                    Test_P_CPG1 = full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1');
+                    Test_P_CPG2 = full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
                     
                     % 2. Saturation Block
-%                     dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
-%                     dMobUpwind = obj.UpWind{ph,1+f} * dMob_rho;
-%                     FluxDerivative = dMobUpwind .* obj.U{ph,1+f};
+                    dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
+                    dMobUpwind = obj.UpWind{ph,1+f} * dMob_rho;
+                    FluxDerivative1 = dMobUpwind .* min(obj.U{ph,1+f},0);
+                    FluxDerivative2 = dMobUpwind .* max(obj.U{ph,1+f},0);
                     v = (-1)^(ph+1) .* pv/dt .* rho;
-                    JS = spdiags(v,0,N,N);% + UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation';
+                    JS = spdiags(v,0,N,N) + full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1') + ...
+                                            full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
+                    Test_S_CPG1 = full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1');
+                    Test_S_CPG2 = full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
                     
                 case('cartesian_grid')
                     % 1.b: compressibility part
                     dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
                     dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
                     dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
-                                        
-                    vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-                    vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-                    vecY1 = min(reshape(obj.U{ph,1+f}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-                    vecY2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-                    vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-                    vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
+                    %dMupx = 0;
+                    %dMupy = 0;
+                    %dMupz = 0;
+                    
+                    X1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
+                    X2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
+                    Y1 = min(reshape(obj.U{ph,1+f}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
+                    Y2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
+                    Z1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
+                    Z2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
                     acc = pv/dt .* obj.drhodp(Index.Start:Index.End,ph) .* s;
                     
-                    DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
+                    DiagVecs = [-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1+acc, X1, Y1, Z1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                     Jp = Jp + spdiags(DiagVecs, DiagIndx, N, N);
+                    Test_P_CartG = full(spdiags([-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1, X1, Y1, Z1], DiagIndx, N, N));
                     
                     % 2. Saturation Block
                     dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
                     dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
                     dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
+                    %dMupx = 0;
+                    %dMupy = 0;
+                    %dMupz = 0;
                     
                     % Construct JS block
-                    x1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-                    x2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-                    y1 = min(reshape(obj.U{ph,1+f}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-                    y2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-                    z1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-                    z2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
+                    X1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
+                    X2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
+                    Y1 = min(reshape(obj.U{ph,1+f}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
+                    Y2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
+                    Z1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
+                    Z2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
                     v = (-1)^(ph+1) .* pv/dt .* rho;
-                    DiagVecs = [-z2, -y2, -x2, z2+y2+x2-z1-y1-x1+v, x1, y1, z1];
+                    DiagVecs = [-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1+v, X1, Y1, Z1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                     JS = spdiags(DiagVecs,DiagIndx,N,N);
+                    Test_S_CartG = full(spdiags([-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1, X1, Y1, Z1], DiagIndx, N, N));
             end
             
             %Add capillarity

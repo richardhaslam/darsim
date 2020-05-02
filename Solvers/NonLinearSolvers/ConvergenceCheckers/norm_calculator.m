@@ -9,6 +9,7 @@
 classdef norm_calculator < handle
     properties
         FirstResidualNorm
+        FirstRHSNorm
     end
     methods (Abstract)
         obj = CalculateResidualNorm(obj);

@@ -6,10 +6,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef norm_calculator_immiscible < norm_calculator
     methods
-        function [ResidualNorm, Equilibrium] = CalculateResidualNorm(obj, residual, N, Formulation)
+        function [ResidualNorm, RHSNorm, Equilibrium] = CalculateResidualNorm(obj, residual, RHS, N, Formulation)
             ResidualNorm = zeros(length(obj.FirstResidualNorm),1);
             ResidualNorm(1) = norm(residual(1 : N      ), inf);
             ResidualNorm(2) = norm(residual(N+1 : 2*N  ), inf);
+            RHSNorm = zeros(length(obj.FirstRHSNorm),1);
+            RHSNorm(1) = norm(RHS(1 : N      ), inf);
+            RHSNorm(2) = norm(RHS(N+1 : 2*N  ), inf);
             Equilibrium = 0;
         end
         function [dp, dS] = CalculateSolutionNorm(obj, delta, N, State)

@@ -20,6 +20,7 @@ properties
     InitialTime=true;
 end
 properties (Access = private)
+    RHS
     Residual
     Jacobian
 end
@@ -46,7 +47,7 @@ methods
         obj.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
                
         % Compute the first residual norm
-        obj.ConvergenceChecker.ComputeFirstResidualNorm(obj.Residual, DiscretizationModel, obj.LinearSolver);
+        obj.ConvergenceChecker.ComputeFirstResidualNorm(obj.Residual, obj.RHS, DiscretizationModel, obj.LinearSolver);
         
         % Print some info
         obj.ConvergenceChecker.PrintTitles();
@@ -88,7 +89,7 @@ methods
         end
     end
     function BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
-        obj.Residual = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
+        [obj.Residual, obj.RHS] = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);
     end
     function SolveLinearSystem(obj)
         obj.Delta = obj.LinearSolver.Solve(obj.Jacobian, -obj.Residual);
@@ -97,7 +98,7 @@ methods
         obj.Jacobian = obj.SystemBuilder.BuildJacobian(ProductionSystem, Formulation, DiscretizationModel, dt);
     end
     function CheckConvergence(obj, Formulation, DiscretizationModel, ProductionSystem)
-        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver);
+        obj.Converged = obj.ConvergenceChecker.Check(obj.itCount, obj.Residual, obj.RHS, obj.Delta, Formulation, DiscretizationModel, ProductionSystem.Reservoir.State, obj.LinearSolver);
     end
     function UpdateState(obj, ProductionSystem, Formulation, FluidModel, DiscretizationModel)
         obj.Delta = obj.SystemBuilder.UpdateState(obj.Delta, ProductionSystem, Formulation, FluidModel, DiscretizationModel);
