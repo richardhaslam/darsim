@@ -735,7 +735,7 @@ classdef reader_darsim2 < reader
                         end
                     case('CELL_INDEX_LIST')
                         Well.Coordinate.Value = [];
-                        for p = 1 : size(Well.Coordinate.Value,1)
+                        for p = 1 : constraint-coordinate-2
                             IndexList = strsplit(WellInputMatrix{coordinate+2+p-1}, {'	',' ',',',';','[',']'} );
                             IndexList = IndexList(2:end-1);
                             IndexList = strrep(IndexList,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
