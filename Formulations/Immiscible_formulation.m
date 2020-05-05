@@ -174,33 +174,25 @@ classdef Immiscible_formulation < formulation
                     nc = Grid.N;
                     nf = length(Grid.Trans);
                     C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
-                    D = ones(nf,1) * [-1 1];
-                    UpwindPermutation1 = sparse([(1:nf)'; (1:nf)'], C, D, nf, nc)';
-                    D = ones(nf,1) * [1 -1];
-                    UpwindPermutation2 = sparse([(1:nf)'; (1:nf)'], C, D, nf, nc)';
-                    UPW = full( UpwindPermutation1*spdiags(ones(170,1),0,nf,nf)*UpwindPermutation1');
+                    D = [obj.U{ph,1+f} >= 0 , obj.U{ph,1+f} < 0];
+                    UpwindPermutation = sparse([(1:nf)', (1:nf)'], C, D, nf, nc)';
+                    UPW = full( UpwindPermutation*spdiags(1e6.*abs(obj.U{ph,1+f}),0,nf,nf)*UpwindPermutation');
                     
                     % 1.b: compressibility part
                     Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
                     dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
-                    FluxDerivative1 = dMobUpwind .* min(obj.U{ph,1+f},0);
-                    FluxDerivative2 = dMobUpwind .* max(obj.U{ph,1+f},0);
+                    FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
                     acc = pv/dt .* obj.drhodp(Index.Start:Index.End,ph) .* s;
-                    Jp = Jp + spdiags(acc,0,N,N) + full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1') + ...
-                                                   full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
-                    Test_P_CPG1 = full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1');
-                    Test_P_CPG2 = full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
+                    Jp = Jp + spdiags(acc,0,N,N) + full(UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation');
+                    Test_P_CPG = full(UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation');
                     
                     % 2. Saturation Block
                     dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
                     dMobUpwind = obj.UpWind{ph,1+f} * dMob_rho;
-                    FluxDerivative1 = dMobUpwind .* min(obj.U{ph,1+f},0);
-                    FluxDerivative2 = dMobUpwind .* max(obj.U{ph,1+f},0);
+                    FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
                     v = (-1)^(ph+1) .* pv/dt .* rho;
-                    JS = spdiags(v,0,N,N) + full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1') + ...
-                                            full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
-                    Test_S_CPG1 = full(UpwindPermutation1 * spdiags(FluxDerivative1,0,N_Face,N_Face) * UpwindPermutation1');
-                    Test_S_CPG2 = full(UpwindPermutation2 * spdiags(FluxDerivative2,0,N_Face,N_Face) * UpwindPermutation2');
+                    JS = spdiags(v,0,N,N) + full(UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation');
+                    Test_S_CPG = full(UpwindPermutation * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation');
                     
                 case('cartesian_grid')
                     % 1.b: compressibility part
