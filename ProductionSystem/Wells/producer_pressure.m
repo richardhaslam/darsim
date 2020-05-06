@@ -27,7 +27,7 @@ classdef producer_pressure < producer
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
-                case{'Geothermal_SinglePhase'}
+                case{'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                     for i = 1:FluidModel.NofPhases
                         h = State.Properties(['h_', num2str(i)]);
                         obj.Qh(:,i) = h.Value(obj.Cells) .* obj.QPhases(:,i);
@@ -41,50 +41,79 @@ classdef producer_pressure < producer
                     end
             end
         end
-        function [dQdp, dQdS] = dQPhasesdPdS(obj, State, K, Mob, dMob, drho, NofPhases)
-            p = State.Properties(['P_',num2str(NofPhases)]);
+        % Mass Flux Derivatives
+        function dQdp = ComputeWellMassFluxDerivativeWithRespectToPressure(obj, State, K, Mob, drhodp, dMobdp, NofPhases) % need perforated cell properties
             dQdp = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                p = State.Properties(['P_',num2str(NofPhases)]).Value;
+                rho = State.Properties(['rho_',num2str(i)]).Value;
+                dQdp(:, i) = drhodp(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
+                             rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  ); % + ...
+%                              rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells));
+            end
+        end
+        function dQdS = ComputeWellMassFluxDerivativeWithRespectToSaturation(obj, State, K, dMob, NofPhases)
             dQdS = zeros(length(obj.Cells), NofPhases * (NofPhases - 1));
             for i = 1:NofPhases
-                rho = State.Properties(['rho_', num2str(i)]);
-                dQdp(:, i) = - rho.Value(obj.Cells) .* Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) + drho(obj.Cells, i) .* Mob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
-                dQdS(:, i) = rho.Value(obj.Cells) .* dMob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
+                p = State.Properties(['P_',num2str(NofPhases)]).Value;
+                rho = State.Properties(['rho_', num2str(i)]).Value;
+                dQdS(:, i) = rho(obj.Cells) .* dMob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p(obj.Cells));
             end
         end
-        function [dQdp, dQdT] = dQdPdT(obj, State, K, Mob, dMobdT, drhodp, drhodT, NofPhases) % need perforated cell properties
-            p = State.Properties(['P_',num2str(NofPhases)]);
-            dQdp = zeros(length(obj.Cells), NofPhases);
+        function dQdT = ComputeWellMassFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, dMobdT, drhodT, NofPhases) % need perforated cell properties
             dQdT = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
+                p = State.Properties(['P_',num2str(NofPhases)]).Value;
                 rho = State.Properties(['rho_',num2str(i)]);
-                dQdp = Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) .* ( rho.Value(obj.Cells) * (-1) + (obj.p - p.Value(obj.Cells)) .* drhodp(obj.Cells,i) ); 
-                dQdT = obj.PI .* K(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* ( rho.Value(obj.Cells) .* dMobdT(obj.Cells,i) + Mob(obj.Cells,i) .* drhodT(obj.Cells,i));
+                dQdT(:, i) = obj.PI .* K(obj.Cells) .* (obj.p - p(obj.Cells)) .* ( rho(obj.Cells) .* dMobdT(obj.Cells,i) + Mob(obj.Cells,i) .* drhodT(obj.Cells,i));
             end
         end
-        function [dQhdp, dQhdT] = dQhdPdT(obj, State, K, Mob, dMobdT, drhodp, drhodT, dhdp, dhdT, NofPhases) % need perforated cell properties
-            p = State.Properties(['P_',num2str(NofPhases)]);
+        function dQdh = ComputeWellMassFluxDerivativeWithRespectToEnthalpy(obj, State, K, Mob, drhodh, dMobdh, NofPhases)
+            % There is something going on with dQdh; dMobdh definitely does
+            % not help, drhodh also does not appear to do anything
+            dQdh = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                p = State.Properties(['P_',num2str(NofPhases)]).Value;
+                rho = State.Properties(['rho_',num2str(i)]).Value;
+                dQdh(:, i) = drhodh(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)); % + ...
+%                              rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+            end
+        end
+        % Heat Flux Derivatives
+        function dQhdp = ComputeWellHeatFluxDerivativeWithRespectToPressure(obj, State, K, Mob, drho_times_hdp, dMobdp, NofPhases) % need perforated cell properties
             dQhdp = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                p = State.Properties(['P_',num2str(NofPhases)]).Value;
+                rho = State.Properties(['rho_',num2str(i)]).Value;
+                h = State.Properties(['h_',num2str(i)]).Value;
+                dQhdp(:, i) = drho_times_hdp(obj.Cells,i)    .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
+                              rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  ) + ...
+                              rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells));
+            end
+        end
+        function dQhdT = ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, dMobdT, drhodT, dhdT, NofPhases) % need perforated cell properties
+            p = State.Properties(['P_',num2str(NofPhases)]).Value;
             dQhdT = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
-                rho = State.Properties(['rho_',num2str(i)]);
-                h = State.Properties(['h_',num2str(i)]);
-                dQhdp = Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) .* ...
-                    ( h.Value(obj.Cells) .* rho.Value(obj.Cells) .* (-1) + ...
-                    (obj.p - p.Value(obj.Cells)) .* h.Value(obj.Cells) .* drhodp(obj.Cells,i) +...
-                    rho.Value(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* dhdp(obj.Cells,i)); 
-                dQhdT = obj.PI .* K(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* ...
-                    ( h.Value(obj.Cells) .* rho.Value(obj.Cells) .* dMobdT(obj.Cells,i) + ...
-                    h.Value(obj.Cells) .* Mob(obj.Cells,i) .* drhodT(obj.Cells,i) + ...
-                    rho.Value(obj.Cells) .*  Mob(obj.Cells,i) .* dhdT(obj.Cells,i));
+                rho = State.Properties(['rho_',num2str(i)]).Value;
+                h = State.Properties(['h_',num2str(i)]).Value;
+                dQhdT(:, i) = obj.PI .* K(obj.Cells) .* (obj.p - p(obj.Cells)) .* ...
+                    ( h(obj.Cells) .* rho(obj.Cells) .* dMobdT(obj.Cells,i) + ...
+                    h(obj.Cells) .* Mob(obj.Cells,i) .* drhodT(obj.Cells,i) + ...
+                    rho(obj.Cells) .*  Mob(obj.Cells,i) .* dhdT(obj.Cells,i));
             end
         end
-%         function [A, rhs] = AddToPressureSystem(obj, Mob, K, A, rhs)
-%             a = obj.Cells;
-%             for ii=1:length(a)
-%                 A(a(ii),a(ii)) = A(a(ii),a(ii)) + obj.PI * K(a(ii)) .* Mob(a(ii));
-%                 rhs(a(ii)) = rhs(a(ii)) + obj.PI * K(a(ii)) .* Mob(a(ii)) .* obj.p;
-%             end
-%         end
+        function dQhdh = ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(obj, State, K, Mob, drhodh, dMobdh, NofPhases)
+            dQhdh = zeros(length(obj.Cells), NofPhases);
+            for i = 1:NofPhases
+                p = State.Properties(['P_',num2str(i)]).Value;
+                rho = State.Properties(['rho_',num2str(i)]).Value;
+                h = State.Properties(['h_',num2str(i)]).Value;
+                dQhdh(:, i) = drhodh(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
+                              rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+            end
+        end
+ 
         function q = TotalFlux(obj, q, p, K, Mob)
             q(obj.Cells) = q(obj.Cells) + obj.PI .* K(obj.Cells) .* Mob(obj.Cells,1) .* (obj.p - p(obj.Cells));
         end

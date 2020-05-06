@@ -19,6 +19,19 @@ methods
                 Formulation.ConstrainedPressureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
                 Formulation.ConstrainedTemperatureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
                 obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
+            case {'Geothermal_MultiPhase'}
+                Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
+                
+                for i = 1:1
+                    Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
+%                     CPR
+                    Formulation.ComputeDerivatives(ProductionSystem, FluidModel);
+                    Formulation.ConstrainedPressureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
+                end
+                
+                % CER
+                Formulation.ComputeDerivatives(ProductionSystem, FluidModel);
+                Formulation.ConstrainedEnthalpyResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
         end
     end
     function SetUpLinearSolver(obj, ProductionSystem, DiscretizationModel)

@@ -24,6 +24,8 @@ classdef injector < handle
         rho
         Mob
         h % enthalphy of injection
+        BC_Formulation
+        
     end
     methods
         function obj = injector(PI, coord, n_phases)

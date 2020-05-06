@@ -38,7 +38,7 @@ classdef matrix_assembler_geothermal < matrix_assembler
             Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
             Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
             Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
-            Th = obj.ReshapeTransmisibility(Grid, Tx, Ty, Tz); 
+            Th = obj.ReshapeTransmissibility(Grid, Tx, Ty, Tz); 
             
             % Gravity Matrix
             Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt.x(2:Grid.Nx,:,:);
@@ -62,7 +62,7 @@ classdef matrix_assembler_geothermal < matrix_assembler
             THx(2:Nx,:,:)= Grid.THx(2:Nx,:,:); 
             THy(:,2:Ny,:)= Grid.THy(:,2:Ny,:);
             THz(:,:,2:Nz)= Grid.THz(:,:,2:Nz);
-            Tk = obj.ReshapeTransmisibility(Grid, THx, THy, THz); % Transmisibility of rock conductivity
+            Tk = obj.ReshapeTransmissibility(Grid, THx, THy, THz); % Transmisibility of rock conductivity
         end
     end
 end

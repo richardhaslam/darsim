@@ -334,6 +334,36 @@ classdef reader_darsim2 < reader
                 FluidProperties.Gravity = char(obj.InputMatrix(index + 1));
             end
             
+            % 12. Tables (in case of Geothermal MultiPhase)
+            if strcmp(FluidProperties.FluidModel, 'Geothermal_MultiPhase')
+                if isfile(strcat(obj.Directory, '/', 'TablePH_Workspace.mat'))
+                    fprintf('A file containing table properties already exists; a .mat-file is loaded instead of original tables');
+                    load(strcat(obj.Directory, '/','TablePh_Workspace.mat'),'FluidProperties');
+                else
+                    FluidProperties.TablePH = obj.ReadTables();
+                    save(strcat(obj.Directory, '/','TablePH_Workspace.mat'),'FluidProperties');
+                end
+            end
+        end
+        function TablePH = ReadTables(obj)
+            % Read thermodynamic property tables; 1 = Water, 2 = Steam
+            TablePH.rho_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamDensity.txt'));
+%             TablePH.U_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamInternalEnergy.txt'));
+            TablePH.S_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamSaturation.txt'));
+            TablePH.mu_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamViscosity.txt'));
+            TablePH.cond_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamConductivity.txt'));
+            TablePH.H_2 = dlmread(strcat(obj.Directory,'\Tables\HEOS_Table_SteamDewpoint.txt')); % row vector
+            
+            TablePH.rho_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterDensity.txt'));
+%             TablePH.U_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterInternalEnergy.txt'));
+            TablePH.S_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterSaturation.txt'));
+            TablePH.mu_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterViscosity.txt'));
+            TablePH.cond_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterConductivity.txt'));
+            TablePH.H_1 = dlmread(strcat(obj.Directory,'\Tables\HEOS_Table_WaterBubblepoint.txt')); % row vector
+            
+            TablePH.Temperature = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_Temperature.txt'));
+
+            
         end
         function WellsInfo = ReadWellsInfo(obj, SimulationInput)
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
@@ -347,8 +377,9 @@ classdef reader_darsim2 < reader
                 WellsInfo.Inj(i).PI.type = char(obj.InputMatrix(inj(i) + 9));
                 WellsInfo.Inj(i).PI.value = str2double(obj.InputMatrix(inj(i) + 10));
                 switch (SimulationInput.FluidProperties.FluidModel)
-                    case {'Geothermal_SinglePhase'}
-                    WellsInfo.Inj(i).Temperature = str2double(obj.InputMatrix(inj(i) + 12)); % read injection temperature
+                    case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                        WellsInfo.Inj(i).BoundaryCondition.name = char(obj.InputMatrix(inj(i) + 11));
+                        WellsInfo.Inj(i).BoundaryCondition.Value = str2double(obj.InputMatrix(inj(i) + 12));
                 end
             end
             
@@ -515,6 +546,8 @@ classdef reader_darsim2 < reader
                         SimulatorSettings.Formulation = 'Immiscible';
                     case("Geothermal_SinglePhase")
                         SimulatorSettings.Formulation = "Geothermal_SinglePhase";
+                    case("Geothermal_MultiPhase")
+                        SimulatorSettings.Formulation = "Geothermal_MultiPhase";
                     otherwise
                         SimulatorSettings.Formulation = 'Molar';
                 end

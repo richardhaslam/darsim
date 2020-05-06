@@ -35,18 +35,19 @@ classdef Production_System < handle
             %% Initialize Wells: 
             % 1. Create objects
             obj.Wells.InitializeFluxes(FluidModel.NofPhases, FluidModel.NofComp);
+            
             % 2. Injectors pressures are adjusted to account for gravity
             % 2.a Estimate fluid properties inside injectors
             FluidModel.InitializeInjectors(obj.Wells.Inj);
             % Adjust pressures
             for i=1:obj.Wells.NofInj
-                h = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Inj(i).Cells);
-                obj.Wells.Inj(i).AdjustConstraint(GravityModel, h); 
+                depth = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Inj(i).Cells);
+                obj.Wells.Inj(i).AdjustConstraint(GravityModel, depth); 
             end
             % Create a gradient also inside the producers
             for i=1:length(obj.Wells.Prod)
-                h = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Prod(i).Cells);
-                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.Properties('rhoT').Value, h);
+                depth = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Prod(i).Cells);
+                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.Properties('rhoT').Value, depth);
             end
             
             % 3. Injection fluid properties are defined

@@ -39,7 +39,7 @@ classdef matrix_assembler < handle
             Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt.z(:,:,2:Grid.Nz);
             Gph = obj.ReshapeTransmissibility(Grid, Tx, Ty, Tz);
         end
-        function T = ReshapeTransmisibility(Grid, Tx, Ty, Tz) 
+        function T = ReshapeTransmissibility(obj, Grid, Tx, Ty, Tz) 
             Nx = Grid.Nx;
             Ny = Grid.Ny;
             Nz = Grid.Nz;

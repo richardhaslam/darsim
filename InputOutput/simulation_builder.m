@@ -35,22 +35,15 @@ classdef simulation_builder < handle
             obj.DefineProperties(simulation.ProductionSystem, simulation.FluidModel, simulation.DiscretizationModel);
             
             %% Define Initialization procedure
+            % Get total number of grid cells
             N = simulation.DiscretizationModel.ReservoirGrid.N;
+            % Pre-allocate vector that stores initial values in all grid cells
             VarValues = ones(N, length(obj.SimulationInput.Init));
+            % Fill pre-allocated vectors with actual initial values using for-loop
             for i=1:length(obj.SimulationInput.Init)
                 VarValues(:, i) = VarValues(:, i) * obj.SimulationInput.Init(i);
             end
-            
-%             S1=  reshape(VarValues(:, 2),99,99,1);
-%             S1(1:50,:) = ones(50,99);
-%             S1 = reshape(S1,N,1);
-%             VarValues(:, 2) = S1;
-% 
-%             S2 =  reshape(VarValues(:, 3),99,99,1);
-%             S2(51:end,:) = zeros(49,99);
-%             S2 = reshape(S2,N,1);
-%             VarValues(:, 3) = S2;            
-            
+            % Select FluidModel based on FluidModel keyword
             switch(simulation.FluidModel.name)
                 case('SinglePhase')
                     VarNames = {'P_1', 'S_1'};
@@ -58,28 +51,21 @@ classdef simulation_builder < handle
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    % % Perturb initial S
-                    % nx = simulation.DiscretizationModel.ReservoirGrid.Nx;
-                    % rng(0);
-                    % perturbations = rand(20, 1);
-                    % np = nx / 20;
-                    % for i=1:20
-                    %     newval((i-1)*np + 1:i*np) = perturbations(i);
-                    % end
-                    % index = 1:nx:N;
-                    % VarValues(index, 2) = newval;
-                    % VarValues(:, 3) = 1 - VarValues(:, 2);
                     simulation.Initializer = initializer(VarNames, VarValues);
                 case("Geothermal_SinglePhase")
                     VarNames = {'P_1', 'T', 'S_1'};
                     VarValues(:, 3) = 1;
                     VarValues(:, 2) = obj.SimulationInput.ReservoirProperties.Temperature;
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
+                case("Geothermal_MultiPhase")
+                    VarNames = {'P_2','hTfluid'}; 
+                    % VarValues are values from input file under INIT keyword
+                    simulation.Initializer = initializer_MultiPhase(VarNames, VarValues);
                 otherwise
                     VarNames = {'P_2', 'z_1', 'z_2'};
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
             end
-        end
+        end 
         function Discretization = BuildDiscretization(obj, FractureMatrix)
             %% 1. Create fine-scale grids
             % 1a. Reservoir Grid
@@ -567,8 +553,13 @@ classdef simulation_builder < handle
             
             % Adding permeability info to the reservoir
             Reservoir.AddPermeabilityPorosity(K, phi);
-            if contains(obj.SimulatorSettings.Formulation,'Geothermal')
-                Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
+            % Adding thermal conductivity to the reservoir (maybe find other place for this)
+            switch obj.SimulatorSettings.Formulation
+                case {'Geothermal_SinglePhase'}
+                    Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
+                case {'Geothermal_MultiPhase'}
+                    Reservoir.K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
+                    % The effective thermal conductivity will be calculated later
             end
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
@@ -620,22 +611,34 @@ classdef simulation_builder < handle
                         error('DARSim2 error: Radius calculation of PI is not implemented for now')
                 end
                 coord = obj.SimulationInput.WellsInfo.Inj(i).Coord;
+                Temperature = NaN;
+                Enthalpy = NaN;
                 switch (obj.SimulationInput.FluidProperties.FluidModel)
                     case {'Geothermal_SinlgePhase','Geothermal_MultiPhase'}
-                        temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
+                        switch obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.name
+                            case('BC_TEMPERATURE')
+                                Temperature = obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.Value;
+                                BC_Formulation = 'Temperature';
+                                Enthalpy = NaN;
+                            case('BC_ENTHALPY')
+                                Temperature = NaN;
+                                BC_Formulation = 'Enthalpy';
+                                Enthalpy = obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.Value;
+                        end
                     otherwise
-                        temperature = Tres;
+                        Temperature = Tres;
                 end
                 switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.name)
                     case('pressure')
                         pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
-                        % temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
-                        Injector = injector_pressure(PI, coord, pressure, temperature, n_phases);
+                        Injector = injector_pressure(PI, coord, pressure, Temperature, n_phases);
+                        Injector.h = Enthalpy;
+                        Injector.BC_Formulation = BC_Formulation;
                     case('rate')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
                         p_init = obj.SimulationInput.Init(1);
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
-                        Injector = injector_rate(PI, coord, rate, p_init, temperature, n_phases);
+                        Injector = injector_rate(PI, coord, rate, p_init, Temperature, n_phases);
                 end
                 Wells.AddInjector(Injector);
             end
@@ -810,61 +813,37 @@ classdef simulation_builder < handle
                     if Phase.cf0 == 0
                         obj.incompressible = 1;
                     end
-                case{'Geothermal_Multiphase'}
+                case{'Geothermal_MultiPhase'}
                     % build the geothermal multiphase fluid model
                     FluidModel = Geothermal_Multiphase_fluid_model(n_phases);
                     
-                    % Read thermodynamic property tables; 1 = Water, 2 = Steam
-                    FluidModel.TablePH.rho_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamDensity.txt'));
-                    FluidModel.TablePH.U_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamInternalEnergy.txt'));
-                    FluidModel.TablePH.S_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamSaturation.txt'));
-                    FluidModel.TablePH.mu_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamViscosity.txt'));
-                    FluidModel.TablePH.cond_2 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_SteamConductivity.txt'));
-                    FluidModel.TablePH.H_2 = dlmread(strcat(InputDirectory,'\Tables\HEOS_Table_SteamDewpoint.txt')); % row vector
-                    
-                    FluidModel.TablePH.rho_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterDensity.txt'));
-                    FluidModel.TablePH.U_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterInternalEnergy.txt'));
-                    FluidModel.TablePH.S_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterSaturation.txt'));
-                    FluidModel.TablePH.mu_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterViscosity.txt'));
-                    FluidModel.TablePH.cond_1 = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_WaterConductivity.txt'));
-                    FluidModel.TablePH.H_1 = dlmread(strcat(InputDirectory,'\Tables\HEOS_Table_WaterBubblepoint.txt')); % row vector
-
-                    FluidModel.TablePH.Temperature = readmatrix(strcat(InputDirectory,'\Tables\HEOS_Table_Temperature.txt'));
+                    FluidModel.TablePH = obj.SimulationInput.FluidProperties.TablePH;
                     
                     % Compute thermodynamic table for grouped/total properties
                     % Total density
                     FluidModel.TablePH.rhoT = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 + ...
                         FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
-                    % Total fluid internal energy
-                    FluidModel.TablePH.Uf = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.U_1 .* FluidModel.TablePH.S_1 + ...
-                        FluidModel.TablePH.rho_2 .* FluidModel.TablePH.U_2 .* FluidModel.TablePH.S_2;
-                    % Saturation times Thermal Conductivity
-                    FluidModel.TablePH.s_times_cond_1 = FluidModel.TablePH.S_1 .* FluidModel.TablePH.cond_1;
-                    FluidModel.TablePH.s_times_cond_2 = FluidModel.TablePH.S_2 .* FluidModel.TablePH.cond_2;
-                    % Density over Viscosity
-                    FluidModel.TablePH.rho_over_mu_1 = FluidModel.TablePH.rho_1 ./ FluidModel.TablePH.mu_1;
-                    FluidModel.TablePH.rho_over_mu_2 = FluidModel.TablePH.rho_2 ./ FluidModel.TablePH.mu_2;
+                    % product of Density and Saturation for derivatives in Jacobian
+                    FluidModel.TablePH.rho_times_S_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1;
+                    FluidModel.TablePH.rho_times_S_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
+
                     % Density times Phase Enthalpy
                     % Note below that H_ is transposed to create column vector
                     FluidModel.TablePH.rho_times_H_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.H_1'; 
                     FluidModel.TablePH.rho_times_H_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.H_2';
-                                       
+                     
+                    % Density times Phase Enthalpy times Saturation
+                    FluidModel.TablePH.rhoHS_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 .* ...
+                        FluidModel.TablePH.H_1';
+                    FluidModel.TablePH.rhoHS_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2 .* ...
+                        FluidModel.TablePH.H_2';
+                    
                     % Add phases
                     for i = 1:FluidModel.NofPhases
                         Phase = therm_comp_Multiphase();
+                        % we are only using cp_std in the injection wells
+                        Phase.Cp_std = obj.SimulationInput.FluidProperties.SpecificHeat(i); % Specific Heat
                         FluidModel.AddPhase(Phase, i);
-                        %%% These things should be initialized based on initial pressure and temperature distribution
-                        %Gets all densities [kg/m^3]
-                        Phase.rho0 = obj.SimulationInput.FluidProperties.Density(i);
-                        %Gets all viscosities [Pa sec]
-                        Phase.mu0 = obj.SimulationInput.FluidProperties.mu(i);
-                        % Compressibility
-                        Phase.cf0 = obj.SimulationInput.FluidProperties.Comp(i);
-                        % Conductivity
-                        Phase.Kf = obj.SimulationInput.FluidProperties.FluidConductivity(i);
-                        %                     % Specific Heat
-                        %                     Phase.Cp = obj.SimulationInput.FluidProperties.SpecificHeat;
-                        % What do we do with the rock internal energy in P,H formulation? write as  Cp?
                     end
                     obj.SimulatorSettings.CouplingType = 'FIM';
                     % obj.SimulatorSettings.Formulation = 'Immiscible';
@@ -927,12 +906,10 @@ classdef simulation_builder < handle
                     Formulation.CreateTables();
                 case('Geothermal_SinglePhase')
                     Formulation = Geothermal_SinglePhase_formulation();
-                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 1;
+                    obj.NofEq = 2;
                 case('Geothermal_MultiPhase')
-                    Formulation = Geothermal_MultiPhase_formulation();
-                    obj.NofEq = obj.SimulationInput.FluidProperties.NofPhases + 2;
-                    Formulation.MatrixAssembler = matrix_assembler_geothermal();
-                    % How many equations in total for Geothermal_MultiPhase? --> 2 
+                    Formulation = Geothermal_MultiPhase_formulation(obj.SimulationInput.FluidProperties.NofPhases);
+                    obj.NofEq = 2;
             end
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
         end
@@ -950,7 +927,7 @@ classdef simulation_builder < handle
                     % FIM coupling
                     %%%%FIM settings
                     switch obj.SimulatorSettings.Formulation
-                        case {'Geothermal_SinglePhase'}
+                        case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                             NLSolver = NL_Solver_geothermal();
                         otherwise
                             NLSolver = NL_Solver();
@@ -981,6 +958,8 @@ classdef simulation_builder < handle
                                     ConvergenceChecker = convergence_checker_FS_molar();
                                 case ('Geothermal_SinglePhase')
                                     ConvergenceChecker = convergence_checker_FS_geothermal();
+                                case ('Geothermal_MultiPhase')
+                                    ConvergenceChecker = convergence_checker_FS_geothermal_MultiPhase();
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
@@ -1002,6 +981,8 @@ classdef simulation_builder < handle
                             ConvergenceChecker.NormCalculator = norm_calculator_immiscible();
                         case('Geothermal_SinglePhase')
                             ConvergenceChecker.NormCalculator = norm_calculator_geothermal();
+                        case('Geothermal_MultiPhase')
+                            ConvergenceChecker.NormCalculator = norm_calculator_geothermal_MultiPhase();
                         otherwise
                             ConvergenceChecker.NormCalculator = norm_calculator_comp();
                     end
