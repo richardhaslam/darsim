@@ -174,8 +174,8 @@ classdef Immiscible_formulation < formulation
                     nc = Grid.N;
                     nf = length(Grid.Trans);
                     C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
-                    D = [obj.U{ph,1+f} >= 0 , obj.U{ph,1+f} < 0];
-                    UpwindPermutation = sparse([(1:nf)', (1:nf)'], C, D, nf, nc)';
+                    D = [ double(obj.U{ph,1+f} >= 0) , -double(obj.U{ph,1+f} < 0)];
+                    UpwindPermutation = double(full(sparse([(1:nf)', (1:nf)'], C, D, nf, nc)'));
                     UPW = full( UpwindPermutation*spdiags(1e6.*abs(obj.U{ph,1+f}),0,nf,nf)*UpwindPermutation');
                     
                     % 1.b: compressibility part
@@ -199,9 +199,6 @@ classdef Immiscible_formulation < formulation
                     dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
                     dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
                     dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) );
-                    %dMupx = 0;
-                    %dMupy = 0;
-                    %dMupz = 0;
                     
                     X1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
                     X2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
@@ -220,9 +217,6 @@ classdef Immiscible_formulation < formulation
                     dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
                     dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
                     dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
-                    %dMupx = 0;
-                    %dMupy = 0;
-                    %dMupz = 0;
                     
                     % Construct JS block
                     X1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
