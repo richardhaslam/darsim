@@ -24,6 +24,7 @@ classdef tetragon_DARSim < polygon_DARSim
         Length_BC
         Length_CD
         Length_DA
+        AllCornersAreCoplanar
     end
     methods
         function obj = tetragon_DARSim(pointA,pointB,pointC,pointD,pos)
@@ -67,7 +68,10 @@ classdef tetragon_DARSim < polygon_DARSim
             dy = norm(obj.PointB - obj.PointD);
             Epsilon = 1e-10 * mean([dx,dy]);
             if abs( dot( obj.AB_vec, cross(obj.AC_vec, obj.AD_vec) ) ) > Epsilon
-                warning('This is not a tetragon, because the four corners are not coplanar!');
+                % warning('This is not a tetragon, because the four corners are not coplanar!');
+                obj.AllCornersAreCoplanar = 0;
+            else
+                obj.AllCornersAreCoplanar = 1;
             end
         end
         function isInside = Is_Point_Inside_Tetrahedron(obj, point , Epsilon)
