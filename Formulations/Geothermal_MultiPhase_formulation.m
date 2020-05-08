@@ -424,6 +424,10 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index.Start:Index.End, ph) .* obj.drho_times_hdp(Index.Start:Index.End, ph) + ...
                     obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) .* h(Index.Start:Index.End) );
                 
+%                 dMupx = zeros(N,1);
+%                 dMupy = zeros(N,1);
+%                 dMupz = zeros(N,1);
+                
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
                 vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
@@ -431,14 +435,12 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 vecY2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
                 vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                 vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-                % zeros(N,1); %
 
                 % construction of J_MB_P
                 DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc_fluid, vecX1, vecY1, vecZ1];
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 J_EB_P = J_EB_P + spdiags(DiagVecs, DiagIndx, N, N);
             end
-
                         
             %% 2. J_EB_H Block
             % 2.a Accumulation fluid part 1
