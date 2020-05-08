@@ -11,14 +11,14 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         TablePH
 %         Ptable = (1:0.1:220)'.*1e5; % The range of pressure for all the tables
 %         Htable = (20:1:4800)'*1e3; % The range of enthalpy for all the tables
-        Ptable = (1:1:220)'.*1e5; % The range of pressure for all the tables
-        Htable = (20:10:4800)'*1e3; % The range of enthalpy for all the tables
+        Ptable = (1:0.1:220)'.*1e5; % The range of pressure for all the tables
+        Htable = (20:1:4800)'*1e3; % The range of enthalpy for all the tables
         Pindex % The index of pressure value for lookup in the tables
         Hindex % The index of enthalpy value for lookup in the tables
 %         Pstepsize = 1e4;
 %         Hstepsize = 1e3; % implement this
-        Pstepsize = 1e5;
-        Hstepsize = 1e4; % implement this
+        Pstepsize = 1e4;
+        Hstepsize = 1e3; % implement this
         
         Pgrid
         Hgrid
@@ -315,10 +315,17 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             end
         end
         function GetPhaseEnthalpies(obj, Status)
+            MixtureEnthalpy = Status.Properties('hTfluid');
             for i=1:obj.NofPhases
                 PhaseEnthalpy = Status.Properties(['h_',num2str(i)]);
                 PhaseEnthalpyTable = obj.TablePH.(['H_',num2str(i)]);
-                PhaseEnthalpy.Value = obj.Phases(i).GetPhaseEnthalpy(obj.Ptable, PhaseEnthalpyTable, obj.p);    
+                PhaseEnthalpy.Value = obj.Phases(i).GetPhaseEnthalpy(obj.Ptable, PhaseEnthalpyTable, obj.p);
+                
+                % Correcting the phase enthalpies in the single phase regions
+                Index1 = find( Status.Properties(['S_',num2str(i)]).Value == 1 );
+                Index2 = find( Status.Properties(['S_',num2str(i)]).Value == 0 );
+                PhaseEnthalpy.Value(Index1) = MixtureEnthalpy.Value(Index1);
+                PhaseEnthalpy.Value(Index2) = 0;
             end
         end
 

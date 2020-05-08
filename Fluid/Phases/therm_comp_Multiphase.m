@@ -11,8 +11,8 @@ classdef therm_comp_Multiphase < phase
     properties
 %         Pstepsize = 1e4;
 %         Hstepsize = 1e3; % implement this
-        Pstepsize = 1e5;
-        Hstepsize = 1e4; % implement this
+        Pstepsize = 1e4;
+        Hstepsize = 1e3; % implement this
         
         % for the injection well properties
         Cp_std              % Specific Heat of Phase in standard condition

@@ -348,31 +348,31 @@ classdef reader_darsim2 < reader
         function TablePH = ReadTables(obj)
             % Read thermodynamic property tables; 1 = Water, 2 = Steam
             TablePH.rho_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamDensity.txt'));
-            TablePH.rho_2 = TablePH.rho_2(1:10:end,1:10:end);
+            TablePH.rho_2 = TablePH.rho_2(1:1:end,1:1:end);
 %             TablePH.U_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamInternalEnergy.txt'));
             TablePH.S_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamSaturation.txt'));
-            TablePH.S_2 = TablePH.S_2(1:10:end,1:10:end);
+            TablePH.S_2 = TablePH.S_2(1:1:end,1:1:end);
             TablePH.mu_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamViscosity.txt'));
-            TablePH.mu_2 = TablePH.mu_2(1:10:end,1:10:end);
+            TablePH.mu_2 = TablePH.mu_2(1:1:end,1:1:end);
             TablePH.cond_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamConductivity.txt'));
-            TablePH.cond_2 = TablePH.cond_2(1:10:end,1:10:end);
+            TablePH.cond_2 = TablePH.cond_2(1:1:end,1:1:end);
             TablePH.H_2 = dlmread(strcat(obj.Directory,'\Tables\HEOS_Table_SteamDewpoint.txt')); % row vector
-            TablePH.H_2 = TablePH.H_2(1:10:end);
+            TablePH.H_2 = TablePH.H_2(1:1:end);
             
             TablePH.rho_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterDensity.txt'));
-            TablePH.rho_1 = TablePH.rho_1(1:10:end,1:10:end);
+            TablePH.rho_1 = TablePH.rho_1(1:1:end,1:1:end);
 %             TablePH.U_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterInternalEnergy.txt'));
             TablePH.S_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterSaturation.txt'));
-            TablePH.S_1 = TablePH.S_1(1:10:end,1:10:end);
+            TablePH.S_1 = TablePH.S_1(1:1:end,1:1:end);
             TablePH.mu_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterViscosity.txt'));
-            TablePH.mu_1 = TablePH.mu_1(1:10:end,1:10:end);
+            TablePH.mu_1 = TablePH.mu_1(1:1:end,1:1:end);
             TablePH.cond_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterConductivity.txt'));
-            TablePH.cond_1 = TablePH.cond_1(1:10:end,1:10:end);
+            TablePH.cond_1 = TablePH.cond_1(1:1:end,1:1:end);
             TablePH.H_1 = dlmread(strcat(obj.Directory,'\Tables\HEOS_Table_WaterBubblepoint.txt')); % row vector
-            TablePH.H_1 = TablePH.H_1(1:10:end);
+            TablePH.H_1 = TablePH.H_1(1:1:end);
             
             TablePH.Temperature = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_Temperature.txt'));
-            TablePH.Temperature = TablePH.Temperature(1:10:end,1:10:end);
+            TablePH.Temperature = TablePH.Temperature(1:1:end,1:1:end);
 
             
         end

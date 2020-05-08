@@ -75,8 +75,8 @@ classdef producer_pressure < producer
             for i = 1:NofPhases
                 p = State.Properties(['P_',num2str(NofPhases)]).Value;
                 rho = State.Properties(['rho_',num2str(i)]).Value;
-                dQdh(:, i) = drhodh(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)); % + ...
-%                              rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                dQdh(:, i) = drhodh(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
+                             rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
                 % This dMobdh does affect convergence...
             end
         end
@@ -111,8 +111,8 @@ classdef producer_pressure < producer
                 p = State.Properties(['P_',num2str(i)]).Value;
                 rho = State.Properties(['rho_',num2str(i)]).Value;
                 h = State.Properties(['h_',num2str(i)]).Value;
-                dQhdh(:, i) = drhodh(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)); % + ...
-%                               rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                dQhdh(:, i) = drhodh(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
+                              rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
                 % This dMobdh does affect convergence...
             end
         end

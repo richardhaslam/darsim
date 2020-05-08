@@ -466,13 +466,13 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 hT = Medium.State.Properties('hTfluid').Value;
                 
                 % 2.c: Accumulation fluid part 2 
-                acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drhoHSdh(:,ph) );
+%                 acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drhoHSdh(:,ph) );
                 % if you multiply tables with phase enthalpy, the phase enthalpy becomes a function of 
                 % enthalpy as well. That is what we did... However, it is
                 % not helping the convergence, at all !
                 
                 % it should be:
-%                 acc_fluid = zeros(N,1); 
+                acc_fluid = zeros(N,1); 
                 
                 % Secondary option: THIS ONE ALSO WORKS !!
 %                 acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drho_times_Sdh(:,ph) .* hT );
