@@ -24,9 +24,9 @@ classdef cartesian_grid < grid_darsim
         Tx_Alpha = 0; % Correction for pEDFM Connectivities
         Ty_Alpha = 0; % Correction for pEDFM Connectivities
         Tz_Alpha = 0; % Correction for pEDFM Connectivities
-        THx % transmisibility of heat conductivity
-        THy % transmisibility of heat conductivity
-        THz % transmisibility of heat conductivity
+        condTrans_x % transmisibility of heat conductivity
+        condTrans_y % transmisibility of heat conductivity
+        condTrans_z % transmisibility of heat conductivity
         I
         J
         K
@@ -42,9 +42,9 @@ classdef cartesian_grid < grid_darsim
             obj.Tx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
             obj.Ty = zeros(obj.Nx, obj.Ny+1, obj.Nz);
             obj.Tz = zeros(obj.Nx, obj.Ny, obj.Nz+1);
-            obj.THx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
-            obj.THy = zeros(obj.Nx, obj.Ny+1, obj.Nz);
-            obj.THz = zeros(obj.Nx, obj.Ny, obj.Nz+1);
+            obj.condTrans_x = zeros(obj.Nx+1, obj.Ny, obj.Nz);
+            obj.condTrans_y = zeros(obj.Nx, obj.Ny+1, obj.Nz);
+            obj.condTrans_z = zeros(obj.Nx, obj.Ny, obj.Nz+1);
             obj.Tx_Alpha = zeros(obj.Nx+1, obj.Ny, obj.Nz);
             obj.Ty_Alpha = zeros(obj.Nx, obj.Ny+1, obj.Nz);
             obj.Tz_Alpha = zeros(obj.Nx, obj.Ny, obj.Nz+1);
@@ -93,27 +93,29 @@ classdef cartesian_grid < grid_darsim
             obj.Ty(:,2:obj.Ny,:) = obj.Ty(:,2:obj.Ny,:) .* ( 1 - obj.Ty_Alpha(:,2:obj.Ny,:) );
             obj.Tz(:,:,2:obj.Nz) = obj.Tz(:,:,2:obj.Nz) .* ( 1 - obj.Tz_Alpha(:,:,2:obj.Nz) );
             
-            obj.THx(2:obj.Nx,:,:) = obj.THx(2:obj.Nx,:,:) .* ( 1 - obj.Tx_Alpha(2:obj.Nx,:,:) );
-            obj.THy(:,2:obj.Ny,:) = obj.THy(:,2:obj.Ny,:) .* ( 1 - obj.Ty_Alpha(:,2:obj.Ny,:) );
-            obj.THz(:,:,2:obj.Nz) = obj.THz(:,:,2:obj.Nz) .* ( 1 - obj.Tz_Alpha(:,:,2:obj.Nz) );
+            obj.condTrans_x(2:obj.Nx,:,:) = obj.condTrans_x(2:obj.Nx,:,:) .* ( 1 - obj.Tx_Alpha(2:obj.Nx,:,:) );
+            obj.condTrans_y(:,2:obj.Ny,:) = obj.condTrans_y(:,2:obj.Ny,:) .* ( 1 - obj.Ty_Alpha(:,2:obj.Ny,:) );
+            obj.condTrans_z(:,:,2:obj.Nz) = obj.condTrans_z(:,:,2:obj.Nz) .* ( 1 - obj.Tz_Alpha(:,:,2:obj.Nz) );
         end
-        function ComputeRockHeatConductivities(obj, K_Cond)
-            %Harmonic average of permeability.
-            Kx = reshape(K_Cond(:,1), obj.Nx, obj.Ny, obj.Nz);
-            Ky = reshape(K_Cond(:,2), obj.Nx, obj.Ny, obj.Nz);
-            Kz = reshape(K_Cond(:,3), obj.Nx, obj.Ny, obj.Nz);
+        function ComputeHeatConductivitiyTransmissibilities(obj, CondEff)
+            % Harmonic average of effective heat conductivity.
+            % For now, we assume that heat conductivity is isotropic.
+            % This means that CondEff is only one-column vector.
+            Cx = reshape(CondEff(:,1), obj.Nx, obj.Ny, obj.Nz);
+            Cy = reshape(CondEff(:,1), obj.Nx, obj.Ny, obj.Nz);
+            Cz = reshape(CondEff(:,1), obj.Nx, obj.Ny, obj.Nz);
             
-            KHx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
-            KHy = zeros(obj.Nx, obj.Ny+1, obj.Nz);
-            KHz = zeros(obj.Nx, obj.Ny, obj.Nz+1);
-            KHx(2:obj.Nx,:,:) = 2*Kx(1:obj.Nx-1,:,:).*Kx(2:obj.Nx,:,:)./(Kx(1:obj.Nx-1,:,:)+Kx(2:obj.Nx,:,:));
-            KHy(:,2:obj.Ny,:) = 2*Ky(:,1:obj.Ny-1,:).*Ky(:,2:obj.Ny,:)./(Ky(:,1:obj.Ny-1,:)+Ky(:,2:obj.Ny,:));
-            KHz(:,:,2:obj.Nz) = 2*Kz(:,:,1:obj.Nz-1).*Kz(:,:,2:obj.Nz)./(Ky(:,:,1:obj.Nz-1)+Kz(:,:,2:obj.Nz));
+            CHx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
+            CHy = zeros(obj.Nx, obj.Ny+1, obj.Nz);
+            CHz = zeros(obj.Nx, obj.Ny, obj.Nz+1);
+            CHx(2:obj.Nx,:,:) = 2*Cx(1:obj.Nx-1,:,:).*Cx(2:obj.Nx,:,:)./(Cx(1:obj.Nx-1,:,:)+Cx(2:obj.Nx,:,:));
+            CHy(:,2:obj.Ny,:) = 2*Cy(:,1:obj.Ny-1,:).*Cy(:,2:obj.Ny,:)./(Cy(:,1:obj.Ny-1,:)+Cy(:,2:obj.Ny,:));
+            CHz(:,:,2:obj.Nz) = 2*Cz(:,:,1:obj.Nz-1).*Cz(:,:,2:obj.Nz)./(Cy(:,:,1:obj.Nz-1)+Cz(:,:,2:obj.Nz));
             
             %Transmissibility
-            obj.THx(2:obj.Nx,:,:) = obj.Ax./obj.dx.*KHx(2:obj.Nx,:,:);
-            obj.THy(:,2:obj.Ny,:) = obj.Ay./obj.dy.*KHy(:,2:obj.Ny,:);
-            obj.THz(:,:,2:obj.Nz) = obj.Az./obj.dz.*KHz(:,:,2:obj.Nz);
+            obj.condTrans_x(2:obj.Nx,:,:) = obj.Ax./obj.dx.*CHx(2:obj.Nx,:,:);
+            obj.condTrans_y(:,2:obj.Ny,:) = obj.Ay./obj.dy.*CHy(:,2:obj.Ny,:);
+            obj.condTrans_z(:,:,2:obj.Nz) = obj.Az./obj.dz.*CHz(:,:,2:obj.Nz);
         end
         function AddCoordinates(obj)
             % Add I, J coordinates to Grid

@@ -47,22 +47,24 @@ classdef matrix_assembler_geothermal < matrix_assembler
             Gh = obj.ReshapeTransmissibility(Grid, Tx, Ty, Tz);
 
         end
-        function Tk = ConductiveHeatTransmissibilityMatrix(obj, Grid)
+        function Tk = ConductiveHeatTransmissibilityMatrix(obj, Grid, State)
             % Tk : Heat conduction transmissibility
             
             Nx = Grid.Nx;
             Ny = Grid.Ny;
             Nz = Grid.Nz;
-
-            %% Tk Matrix
-            THx = zeros(Nx+1, Ny, Nz);
-            THy = zeros(Nx, Ny+1, Nz);
-            THz = zeros(Nx, Ny, Nz+1);
             
-            THx(2:Nx,:,:)= Grid.THx(2:Nx,:,:); 
-            THy(:,2:Ny,:)= Grid.THy(:,2:Ny,:);
-            THz(:,:,2:Nz)= Grid.THz(:,:,2:Nz);
-            Tk = obj.ReshapeTransmissibility(Grid, THx, THy, THz); % Transmisibility of rock conductivity
+            CondEff = State.Properties('CondEff').Value;
+            Grid.ComputeHeatConductivitiyTransmissibilities(CondEff);
+            %% Tk Matrix
+            condTrans_x = zeros(Nx+1, Ny, Nz);
+            condTrans_y = zeros(Nx, Ny+1, Nz);
+            condTrans_z = zeros(Nx, Ny, Nz+1);
+            
+            condTrans_x(2:Nx,:,:)= Grid.condTrans_x(2:Nx,:,:); 
+            condTrans_y(:,2:Ny,:)= Grid.condTrans_y(:,2:Ny,:);
+            condTrans_z(:,:,2:Nz)= Grid.condTrans_z(:,:,2:Nz);
+            Tk = obj.ReshapeTransmissibility(Grid, condTrans_x, condTrans_y, condTrans_z); % Transmisibility of rock conductivity
         end
     end
 end

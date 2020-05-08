@@ -200,8 +200,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Accumulation_rock = (h_rock_new - h_rock_old)/dt;
 
             % Initialization with rock accumulation
+            Residual_EB = Accumulation_rock;
 %             Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * T_new - RTf(Index.Start:Index.End, 1);
-            Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * obj.dTdp(:,1) .* P_new + obj.Tk{1, 1+f} * obj.dTdh .* H_new;
+%             Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * obj.dTdp(:,1) .* P_new + obj.Tk{1, 1+f} * obj.dTdh .* H_new;
 
             % Above; we add terms to the residual that are independent of
             % phase, i.e. rock-enthalpy and thermal conductivity (this value is the total conductivity, i.e. rock+water+steam)
@@ -232,12 +233,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 h_fluid_old = pv_old .* rho_old .* h_old .* S_old;
                 h_fluid_new = pv_new .* rho_new .* h_new .* S_new;
                 Accumulation_fluid = (h_fluid_new - h_fluid_old)/dt;
-            % WHY DONT WE USE HTFLUID HERE ??? --> SHOULD NOT MAKE A
-            % DIFFERENCE, BUT WHO KNOWS, MAYBE IT DOES...?
-            
-            
-                % Conductivity between reservoir and fracture
-                
+                % WHY DONT WE USE HTFLUID HERE ??? --> SHOULD NOT MAKE A
+                % DIFFERENCE, BUT WHO KNOWS, MAYBE IT DOES...?
+
                 % RESIDUAL
                 Residual_EB  = Residual_EB + Accumulation_fluid ...
                     + obj.Thph{ph, 1+f} * P_new ...
@@ -259,7 +257,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             ResidualFull = zeros( 2*Nt , 1 ); % We have only 2 equations now
             
             % Compute conductive tranmissibility
-            obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid );
+            obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid , ProductionSystem.Reservoir.State );
             
             for ph=1:obj.NofPhases
                 %% Transmissibilities of flow and heat
@@ -323,12 +321,12 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 acc = (Grid.Volume/dt) .* (phi .* obj.drho_times_Sdp(Index.Start:Index.End,ph) + rho .* S .*dphidp);
                 
                 % 1.c: Additional derivative term (P^nu) in convective flux
-                dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) + ...
-                    obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) );
-                dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) + ...
-                    obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) );
-                dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph) + ...
-                    obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) );
+                dMupx = obj.UpWind{ph,1+f}.x *( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) + ...
+                                                obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
+                dMupy = obj.UpWind{ph,1+f}.y *( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) + ...
+                                                obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
+                dMupz = obj.UpWind{ph,1+f}.z *( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) + ...
+                                                obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
                 
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -353,12 +351,15 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 acc = (Grid.Volume/dt) .* phi .* obj.drho_times_Sdh(Index.Start:Index.End,ph);
                 
                 % 2.c: Additional derivative term (P^nu) in convective flux; we get d(rho*lambda)/dH * P^nu
-                dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodh(Index.Start:Index.End, ph) + ...
-                    obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) );
-                dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodh(Index.Start:Index.End, ph) + ...
-                    obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) );
-                dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodh(Index.Start:Index.End, ph) + ...
-                    obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) );
+                dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) + ...
+                                                 obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
+                dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) + ...
+                                                 obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
+                dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) + ...
+                                                 obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
+%                 dMupx = zeros(N,1);
+%                 dMupy = zeros(N,1);
+%                 dMupz = zeros(N,1);
                 
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -367,9 +368,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 vecY2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
                 vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                 vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-                % zeros(N,1); %
                 
-                % construction of J_MB_P
+                % construction of J_MB_H
                 DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                 J_MB_H = J_MB_H + spdiags(DiagVecs, DiagIndx, N, N);
@@ -393,7 +393,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             
             Rho_rock = Medium.Rho;
             phi = Medium.Por;
-            Medium.ComputeDerPorosity(Medium.State.Properties('P_1').Value);
+            Medium.ComputeDerPorosity(Medium.State.Properties('P_2').Value);
             dphidp = Medium.DPor;
                 
             %% 1. J_EB_P Block
@@ -402,11 +402,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             J_EB_P = J_EB_P + spdiags(acc_rock, 0, N, N);
 
             % Heat conduction flux
-            CondEff = Medium.State.Properties('CondEff').Value;
-            CondP = CondEff .* obj.dTdp;
-            J_EB_P = J_EB_P + spdiags(CondP, 0, N, N);
-% --> change residual equation accordingly !!!
-
+%             J_EB_P = J_EB_P + obj.Tk{1,1+f} * obj.dTdp;
 
             % 1.b: Heat convection flux
             for ph=1:obj.NofPhases
@@ -451,14 +447,12 @@ classdef Geothermal_MultiPhase_formulation < formulation
             J_EB_H = J_EB_H + spdiags(acc_fluid, 0, N, N);
             
             % Heat conduction flux
-            CondEff = Medium.State.Properties('CondEff').Value;
-            CondH = CondEff .* obj.dTdh;
-            J_EB_H = J_EB_H + spdiags(CondH, 0, N, N);
+%             J_EB_P = J_EB_P + obj.Tk{1,1+f} * obj.dTdh;
            
             % 2.b Heat convection and conduction fluxes
             for ph=1:obj.NofPhases
                 % Original transmissibility part                
-                J_EB_H = J_EB_H + 0; 
+                J_EB_H = J_EB_H + 0;
                 
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
                 h = Medium.State.Properties(['h_',num2str(ph)]).Value;
@@ -487,7 +481,10 @@ classdef Geothermal_MultiPhase_formulation < formulation
                     obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) ) .* h(Index.Start:Index.End);
                 dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodh(Index.Start:Index.End, ph) + ...
                     obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) ) .* h(Index.Start:Index.End);
-                
+%                 dMupx = zeros(N,1);
+%                 dMupy = zeros(N,1);
+%                 dMupz = zeros(N,1);
+
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
                 vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
