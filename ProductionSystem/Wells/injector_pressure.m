@@ -47,9 +47,6 @@ classdef injector_pressure < injector
             for i = 1:NofPhases
                 dQdp(:, i) = obj.rho(:,i) .* obj.Mob(:,i) .* obj.PI .* K(obj.Cells) .* (-1);
             end
-%             dQdp(:, i) = drhodp(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
-%                          rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  ); % + ...
-% %                             rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells));
         end
         function dQdS = ComputeWellMassFluxDerivativeWithRespectToSaturation(obj, NofPhases)
             dQdS = zeros(length(obj.Cells), NofPhases .* (NofPhases - 1));
@@ -68,8 +65,6 @@ classdef injector_pressure < injector
             for i = 1:NofPhases
                 dQdh(:, i) = 0;   
             end
-%             dQdh(:, i) = 0; %drhodh(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)); % + ...
-% %                              rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
         end
         
         % Heat Flux Derivatives
@@ -79,9 +74,6 @@ classdef injector_pressure < injector
             for i = 1:NofPhases
                 dQhdp(:, i) = obj.rho(:,i) .* obj.h(:,i) .* obj.PI .* K(obj.Cells) .* obj.Mob(:,i) .* (-1) ;  
             end
-%             dQhdp(:, i) = drho_times_hdp(obj.Cells,i)    .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
-%                           rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  ) + ...
-%                               rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells));
         end
         function dQhdT = ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj, NofPhases)
             dQhdT = zeros(length(obj.Cells), NofPhases);
@@ -94,8 +86,6 @@ classdef injector_pressure < injector
             for i = 1:NofPhases
                 dQhdh(:, i) = 0; 
             end
-%             dQhdh(:, i) = drhodh(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
-%                               rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
         end
         
         function q = TotalFlux(obj, q, p, K)

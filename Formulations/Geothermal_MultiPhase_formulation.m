@@ -445,7 +445,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                         
             %% 2. J_EB_H Block
-            % 2.a Accumulation part
+            % 2.a Accumulation fluid part 1
             rhoT = Medium.State.Properties('rhoT').Value;
             acc_fluid = phi .* rhoT .* (Grid.Volume/dt);
             J_EB_H = J_EB_H + spdiags(acc_fluid, 0, N, N);
@@ -465,7 +465,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 S = Medium.State.Properties(['S_',num2str(ph)]).Value;
                 hT = Medium.State.Properties('hTfluid').Value;
                 
-                % 2.c: Accumulation part (only for fluid)
+                % 2.c: Accumulation fluid part 2 
                 acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drhoHSdh(:,ph) );
                 % if you multiply tables with phase enthalpy, the phase enthalpy becomes a function of 
                 % enthalpy as well. That is what we did... However, it is
@@ -655,7 +655,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 % Update properties and derivatives
                 obj.ComputeProperties(ProductionSystem, FluidModel)            
                 % 7. Update wells
-%                 ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
+                ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
                 
 
                 %% Update fracture state

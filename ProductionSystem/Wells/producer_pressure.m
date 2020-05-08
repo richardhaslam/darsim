@@ -48,8 +48,8 @@ classdef producer_pressure < producer
                 p = State.Properties(['P_',num2str(NofPhases)]).Value;
                 rho = State.Properties(['rho_',num2str(i)]).Value;
                 dQdp(:, i) = drhodp(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
-                             rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  ); % + ...
-%                              rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                             rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  ) + ...
+                             rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells));
             end
         end
         function dQdS = ComputeWellMassFluxDerivativeWithRespectToSaturation(obj, State, K, dMob, NofPhases)
@@ -77,6 +77,7 @@ classdef producer_pressure < producer
                 rho = State.Properties(['rho_',num2str(i)]).Value;
                 dQdh(:, i) = drhodh(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)); % + ...
 %                              rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                % This dMobdh does affect convergence...
             end
         end
         % Heat Flux Derivatives
@@ -89,6 +90,7 @@ classdef producer_pressure < producer
                 dQhdp(:, i) = drho_times_hdp(obj.Cells,i)    .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
                               rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  ) + ...
                               rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                          % This dMobdp does not do much...
             end
         end
         function dQhdT = ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, dMobdT, drhodT, dhdT, NofPhases) % need perforated cell properties
@@ -109,8 +111,9 @@ classdef producer_pressure < producer
                 p = State.Properties(['P_',num2str(i)]).Value;
                 rho = State.Properties(['rho_',num2str(i)]).Value;
                 h = State.Properties(['h_',num2str(i)]).Value;
-                dQhdh(:, i) = drhodh(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
-                              rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                dQhdh(:, i) = drhodh(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)); % + ...
+%                               rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                % This dMobdh does affect convergence...
             end
         end
  
