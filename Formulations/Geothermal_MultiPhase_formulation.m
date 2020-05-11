@@ -200,9 +200,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Accumulation_rock = (h_rock_new - h_rock_old)/dt;
 
             % Initialization with rock accumulation
-            Residual_EB = Accumulation_rock;
-%             Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * T_new - RTf(Index.Start:Index.End, 1);
-%             Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * obj.dTdp(:,1) .* P_new + obj.Tk{1, 1+f} * obj.dTdh .* H_new;
+%             Residual_EB = Accumulation_rock;
+%             Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * T_new;
+            Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * obj.dTdp(:,1) .* P_new + obj.Tk{1, 1+f} * obj.dTdh .* H_new;
 
             % Above; we add terms to the residual that are independent of
             % phase, i.e. rock-enthalpy and thermal conductivity (this value is the total conductivity, i.e. rock+water+steam)
@@ -395,14 +395,18 @@ classdef Geothermal_MultiPhase_formulation < formulation
             phi = Medium.Por;
             Medium.ComputeDerPorosity(Medium.State.Properties('P_2').Value);
             dphidp = Medium.DPor;
-                
+            
+            rhoT = Medium.State.Properties('rhoT').Value;
+            hTfluid = Medium.State.Properties('hTfluid').Value;
+            hRock = Medium.State.Properties('hRock').Value; 
+            
             %% 1. J_EB_P Block
             % 1.a: Accumulation part (only for rock)
-            acc_rock = (Grid.Volume/dt) .* (-1) .* dphidp .* Rho_rock .* Medium.State.Properties('hRock').Value; 
+            acc_rock = (Grid.Volume/dt) .* (-1) .* dphidp .* Rho_rock .* hRock; 
             J_EB_P = J_EB_P + spdiags(acc_rock, 0, N, N);
 
             % Heat conduction flux
-%             J_EB_P = J_EB_P + obj.Tk{1,1+f} * obj.dTdp;
+            J_EB_P = J_EB_P + obj.Tk{1,1+f} * obj.dTdp;
 
             % 1.b: Heat convection flux
             for ph=1:obj.NofPhases
@@ -414,7 +418,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 S = Medium.State.Properties(['S_',num2str(ph)]).Value;
                 
                 % 1.c: Accumulation part (only for fluid)
-                acc_fluid = (Grid.Volume/dt) .* ( dphidp .* rho .* h .* S + phi .* obj.drhoHSdp(:,ph) );
+                acc_fluid = (Grid.Volume/dt) .* ( dphidp .* rho .* S .* hTfluid + phi .* obj.drho_times_Sdp(:,ph) .* hTfluid );
                 
                 % 1.d: Additional derivative term (P^nu) in convective flux
                 dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index.Start:Index.End, ph) .* obj.drho_times_hdp(Index.Start:Index.End, ph) + ...
@@ -423,7 +427,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
                     obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) .* h(Index.Start:Index.End) );
                 dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index.Start:Index.End, ph) .* obj.drho_times_hdp(Index.Start:Index.End, ph) + ...
                     obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End) .* h(Index.Start:Index.End) );
-                
 %                 dMupx = zeros(N,1);
 %                 dMupy = zeros(N,1);
 %                 dMupz = zeros(N,1);
@@ -444,12 +447,11 @@ classdef Geothermal_MultiPhase_formulation < formulation
                         
             %% 2. J_EB_H Block
             % 2.a Accumulation fluid part 1
-            rhoT = Medium.State.Properties('rhoT').Value;
             acc_fluid = phi .* rhoT .* (Grid.Volume/dt);
             J_EB_H = J_EB_H + spdiags(acc_fluid, 0, N, N);
             
             % Heat conduction flux
-%             J_EB_P = J_EB_P + obj.Tk{1,1+f} * obj.dTdh;
+            J_EB_P = J_EB_P + obj.Tk{1,1+f} * obj.dTdh;
            
             % 2.b Heat convection and conduction fluxes
             for ph=1:obj.NofPhases
@@ -459,22 +461,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
                 h = Medium.State.Properties(['h_',num2str(ph)]).Value;
                 S = Medium.State.Properties(['S_',num2str(ph)]).Value;
-                hT = Medium.State.Properties('hTfluid').Value;
                 
                 % 2.c: Accumulation fluid part 2 
-%                 acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drhoHSdh(:,ph) );
-                % if you multiply tables with phase enthalpy, the phase enthalpy becomes a function of 
-                % enthalpy as well. That is what we did... However, it is
-                % not helping the convergence, at all !
-                
-                % it should be:
-                acc_fluid = zeros(N,1); 
-                
-                % Secondary option: THIS ONE ALSO WORKS !!
-%                 acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drho_times_Sdh(:,ph) .* hT );
-                  % --> So that means, times  rho .* S .* h ./ rhoT; 
-                  % where you should sum over the derivative, but divide
-                  % by rhoT only once...
+                acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drho_times_Sdh(:,ph) .* hTfluid + phi .* rho .* S .* 1);
 
                 % 2.d: Additional derivative term (P^nu) in convective flux
                 dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodh(Index.Start:Index.End, ph) + ...
@@ -494,7 +483,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 vecY2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
                 vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                 vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-                % zeros(N,1); %
 
                 % construction of J_MB_P
                 DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc_fluid, vecX1, vecY1, vecZ1];
@@ -590,7 +578,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Nm = DiscretizationModel.ReservoirGrid.N;
             Nt = DiscretizationModel.N;
             % Compute conductive tranmissibility
-            obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid );
+%             obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid );
             
             for ph=1:obj.NofPhases
                 %% Transmissibilities of flow and heat

@@ -23,8 +23,9 @@ classdef initializer_MultiPhase < initializer
             
             
             %% 3 Compute Phase Properties
-            Pm = ProductionSystem.Reservoir.State.Properties('P_2');
-            Pm.Value(13) = Pm.Value(13)*1.05;
+            % Perturbing Pressure in the middle
+%             Pm = ProductionSystem.Reservoir.State.Properties('P_2');
+%             Pm.Value(13) = Pm.Value(13)*1.05;
             
             Formulation.ComputeProperties(ProductionSystem, FluidModel);
             % capillary pressure: Capillary pressure is already computed/initialized 
