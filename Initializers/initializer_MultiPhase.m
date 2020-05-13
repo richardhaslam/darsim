@@ -14,7 +14,7 @@ classdef initializer_MultiPhase < initializer
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started MultiPhase initialization');
 %             Hm = ProductionSystem.Reservoir.State.Properties('hTfluid');
-%             Hm.Value(1) = 0.3e6;
+%             Hm.Value(1) = 0.25e6;
             
             % DO WE NEED TO TAKE INTO ACCOUNT THE INITIAL BOUNDARY CONDITIONS, I.E. THE HEAT FLUX INTO THE RESERVOIR ??
             
@@ -25,7 +25,7 @@ classdef initializer_MultiPhase < initializer
             %% 3 Compute Phase Properties
             % Perturbing Pressure in the middle
 %             Pm = ProductionSystem.Reservoir.State.Properties('P_2');
-%             Pm.Value(13) = Pm.Value(13)*1.05;
+%             Pm.Value(13) = Pm.Value(321)*1.05;
             
             Formulation.ComputeProperties(ProductionSystem, FluidModel);
             % capillary pressure: Capillary pressure is already computed/initialized 

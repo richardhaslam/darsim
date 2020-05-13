@@ -138,16 +138,18 @@ classdef therm_comp_Multiphase < phase
 
 %         Get properties using LINEAR INTERPOLATION
         function rho = GetDensity(obj, Pgrid, Hgrid, rhoTable, h, p)
-            rho = interp2(Hgrid, Pgrid, rhoTable, h, p);
+            rho = interp2(Hgrid, Pgrid, rhoTable, h, p, 'linear');
+%             rho = interp2(Hgrid, Pgrid, rhoTable, h, p, 'linear');
+%             OTHER OPTIONS: 'makima' (gives NaN values...), 'cubic'
         end
         function S = GetSaturation(obj, Pgrid, Hgrid, STable, h, p)
-            S = interp2(Hgrid, Pgrid, STable, h, p);
+            S = interp2(Hgrid, Pgrid, STable, h, p, 'linear');
         end 
         function mu = GetViscosity(obj, Pgrid, Hgrid, muTable, h, p)
-            mu = interp2(Hgrid, Pgrid, muTable, h, p);
+            mu = interp2(Hgrid, Pgrid, muTable, h, p, 'linear');
         end
         function ThermCond = GetConductivity(obj, Pgrid, Hgrid, ThermCondTable, h, p)
-            ThermCond = interp2(Hgrid, Pgrid, ThermCondTable, h, p);
+            ThermCond = interp2(Hgrid, Pgrid, ThermCondTable, h, p, 'linear');
         end
         function PhaseEnthalpy = GetPhaseEnthalpy(obj, Ptable, PhaseEnthalpyTable, p)
             PhaseEnthalpy = interp1(Ptable, PhaseEnthalpyTable' ,p); %transpose to get column vector; is due to sub2ind thingy
@@ -156,43 +158,43 @@ classdef therm_comp_Multiphase < phase
         % Derivatives (directly from tables)
         function drhodp = ComputeDrhoDp(obj, Pgrid, Hgrid, rhoTable, h, p)
             [~,table_drhodp] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-            drhodp = interp2(Hgrid, Pgrid, table_drhodp, h, p);
+            drhodp = interp2(Hgrid, Pgrid, table_drhodp, h, p, 'linear');
         end
         function drhodh = ComputeDrhoDh(obj, Pgrid, Hgrid, rhoTable, h, p)
             [table_drhodh,~] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-            drhodh = interp2(Hgrid, Pgrid, table_drhodh, h, p);
+            drhodh = interp2(Hgrid, Pgrid, table_drhodh, h, p, 'linear');
         end
         function drho_times_Sdp = ComputeDrho_times_SDp(obj, Pgrid, Hgrid, rho_times_STable, h, p)
             [~,table_drho_times_Sdp] = gradient(rho_times_STable,obj.Hstepsize,obj.Pstepsize); 
-            drho_times_Sdp = interp2(Hgrid, Pgrid, table_drho_times_Sdp, h, p);     
+            drho_times_Sdp = interp2(Hgrid, Pgrid, table_drho_times_Sdp, h, p, 'linear');     
         end
         function drho_times_Sdh = ComputeDrho_times_SDh(obj, Pgrid, Hgrid, rho_times_STable, h, p) 
             [table_drho_times_Sdh,~] = gradient(rho_times_STable,obj.Hstepsize,obj.Pstepsize); 
-            drho_times_Sdh = interp2(Hgrid, Pgrid, table_drho_times_Sdh, h, p);
+            drho_times_Sdh = interp2(Hgrid, Pgrid, table_drho_times_Sdh, h, p, 'linear');
         end
         function drho_times_hdp = ComputeDrho_times_hDp(obj, Pgrid, Hgrid, rho_times_hTable, h, p)
             [~,table_drho_times_hdp] = gradient(rho_times_hTable,obj.Hstepsize,obj.Pstepsize);
-            drho_times_hdp = interp2(Hgrid, Pgrid, table_drho_times_hdp, h, p);
+            drho_times_hdp = interp2(Hgrid, Pgrid, table_drho_times_hdp, h, p, 'linear');
         end
         function drho_times_hdh = ComputeDrho_times_hDh(obj, Pgrid, Hgrid, rho_times_hTable, h, p)
             [table_drho_times_hdh,~] = gradient(rho_times_hTable,obj.Hstepsize,obj.Pstepsize);
-            drho_times_hdh = interp2(Hgrid, Pgrid, table_drho_times_hdh, h, p);
+            drho_times_hdh = interp2(Hgrid, Pgrid, table_drho_times_hdh, h, p, 'linear');
         end
         function drhoHSdp = ComputeDrhoHSDp(obj, Pgrid, Hgrid, rhoHSTable, h, p)
             [~,table_drhoHSdp] = gradient(rhoHSTable,obj.Hstepsize,obj.Pstepsize);
-            drhoHSdp = interp2(Hgrid, Pgrid, table_drhoHSdp, h, p);
+            drhoHSdp = interp2(Hgrid, Pgrid, table_drhoHSdp, h, p, 'linear');
         end
         function drhoHSdh = ComputeDrhoHSDh(obj, Pgrid, Hgrid, rhoHSTable, h, p)
             [table_drhoHSdh,~] = gradient(rhoHSTable,obj.Hstepsize,obj.Pstepsize);
-            drhoHSdh = interp2(Hgrid, Pgrid, table_drhoHSdh, h, p);
+            drhoHSdh = interp2(Hgrid, Pgrid, table_drhoHSdh, h, p, 'linear');
         end
         function dTdh = ComputeDTDh(obj, Pgrid, Hgrid, TTable, h, p)
             [table_dTdh,~] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
-            dTdh = interp2(Hgrid, Pgrid, table_dTdh, h, p);
+            dTdh = interp2(Hgrid, Pgrid, table_dTdh, h, p, 'linear');
         end
         function dTdp = ComputeDTDp(obj, Pgrid, Hgrid, TTable, h, p) 
             [~,table_dTdp] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
-            dTdp = interp2(Hgrid, Pgrid, table_dTdp, h, p);
+            dTdp = interp2(Hgrid, Pgrid, table_dTdp, h, p, 'linear');
         end
         
         % i have copy pasted the newest derivatives from pressure to
@@ -200,31 +202,31 @@ classdef therm_comp_Multiphase < phase
         % was in the wrong position....
         function dmudp = ComputeDmuDp(obj, Pgrid, Hgrid, muTable, h, p)
             [~,table_dmudp] = gradient(muTable,obj.Hstepsize,obj.Pstepsize);
-            dmudp = interp2(Hgrid, Pgrid, table_dmudp, h, p);
+            dmudp = interp2(Hgrid, Pgrid, table_dmudp, h, p, 'linear');
         end       
         function dmudh = ComputeDmuDh(obj, Pgrid, Hgrid, muTable, h, p)
             [table_dmudh,~] = gradient(muTable,obj.Hstepsize,obj.Pstepsize);
-            dmudh = interp2(Hgrid, Pgrid, table_dmudh, h, p);
+            dmudh = interp2(Hgrid, Pgrid, table_dmudh, h, p, 'linear');
         end
         function dSdp = ComputeDSDp(obj, Pgrid, Hgrid, STable, h, p)
             [~,table_dSdp] = gradient(STable,obj.Hstepsize,obj.Pstepsize);
-            dSdp = interp2(Hgrid, Pgrid, table_dSdp, h, p);
+            dSdp = interp2(Hgrid, Pgrid, table_dSdp, h, p, 'linear');
         end
         function dSdh = ComputeDSDh(obj, Pgrid, Hgrid, STable, h, p)
             [table_dSdh,~] = gradient(STable,obj.Hstepsize,obj.Pstepsize);
-            dSdh = interp2(Hgrid, Pgrid, table_dSdh, h, p);
+            dSdh = interp2(Hgrid, Pgrid, table_dSdh, h, p, 'linear');
         end
 
         % These depend on how we treat the conductive flux term
         function d2Td2p = ComputeD2TD2p(obj, Pgrid, Hgrid, TTable, h, p) 
             [~,table_dTdp] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
             [~,table_d2Td2p] = gradient(table_dTdp,obj.Hstepsize,obj.Pstepsize); 
-            d2Td2p = interp2(Hgrid, Pgrid, table_d2Td2p, h, p);   
+            d2Td2p = interp2(Hgrid, Pgrid, table_d2Td2p, h, p, 'linear');   
         end
         function d2Td2h = ComputeD2TD2h(obj, Pgrid, Hgrid, TTable, h, p)
             [table_dTdh,~] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
             [table_d2Td2h,~] = gradient(table_dTdh,obj.Hstepsize,obj.Pstepsize); 
-            d2Td2h = interp2(Hgrid, Pgrid, table_d2Td2h, h, p); 
+            d2Td2h = interp2(Hgrid, Pgrid, table_d2Td2h, h, p, 'linear'); 
         end
         
         % 2nd derivatives for inflexion point correction
@@ -233,19 +235,19 @@ classdef therm_comp_Multiphase < phase
             [~,table_drhodp] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
             % 2nd derivative
             [~,table_d2rhodp2] = gradient(table_drhodp,obj.Hstepsize,obj.Pstepsize); % specify stepsize for pressure (make this generic)
-            d2rhodp2 = interp2(Hgrid, Pgrid, table_d2rhodp2, h, p);
+            d2rhodp2 = interp2(Hgrid, Pgrid, table_d2rhodp2, h, p, 'linear');
         end
         function d2rhodh2 = ComputeD2rhoDh2(obj, Pgrid, Hgrid, rhoTable, h, p)
             % 1st derivative
             [table_drhodh,~] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
             % 2nd derivative
             [table_d2rhodh2,~] = gradient(table_drhodh,obj.Hstepsize,obj.Pstepsize); % specify stepsize for enthalpy (make this generic)
-            d2rhodh2 = interp2(Hgrid, Pgrid, table_d2rhodh2, h, p);
+            d2rhodh2 = interp2(Hgrid, Pgrid, table_d2rhodh2, h, p, 'linear');
         end
         function d2mudh2 = ComputeD2muDh2(obj, Pgrid, Hgrid, muTable, h, p)
             [table_dmudh,~] = gradient(muTable,obj.Hstepsize,obj.Pstepsize); 
             [table_d2mudh2,~] = gradient(table_dmudh,1); 
-            d2mudh2 = interp2(Hgrid, Pgrid, table_d2mudh2, h, p);
+            d2mudh2 = interp2(Hgrid, Pgrid, table_d2mudh2, h, p, 'linear');
         end
         
         % Injection properties; we are injecting only water, so it is

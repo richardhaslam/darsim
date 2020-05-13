@@ -332,11 +332,11 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         % Get Total/General properties
         function GetTemperature(obj, Status)
             T = Status.Properties('T');
-            T.Value = interp2(obj.Hgrid, obj.Pgrid, obj.TablePH.Temperature, obj.h, obj.p);
+            T.Value = interp2(obj.Hgrid, obj.Pgrid, obj.TablePH.Temperature, obj.h, obj.p, 'linear');
         end
         function GetTotalDensity(obj, Status)
             rhoT = Status.Properties('rhoT');
-            rhoT.Value = interp2(obj.Hgrid, obj.Pgrid, obj.TablePH.rhoT, obj.h, obj.p);
+            rhoT.Value = interp2(obj.Hgrid, obj.Pgrid, obj.TablePH.rhoT, obj.h, obj.p, 'linear');
         end
         
         % Compute variables
@@ -382,11 +382,11 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         end                     % MB, EB
         function drhoTdp = ComputeDrhoTDp(obj) 
             [~,table_drhoTdp] = gradient(obj.TablePH.rhoT,obj.Pstepsize); 
-            drhoTdp = interp2(obj.Hgrid, obj.Pgrid, table_drhoTdp, obj.h, obj.p);     
+            drhoTdp = interp2(obj.Hgrid, obj.Pgrid, table_drhoTdp, obj.h, obj.p, 'linear');     
         end                  % MB
         function drhoTdh = ComputeDrhoTDh(obj) 
             [table_drhoTdh,~] = gradient(obj.TablePH.rhoT,obj.Hstepsize); 
-            drhoTdh = interp2(obj.Hgrid, obj.Pgrid, table_drhoTdh, obj.h, obj.p);  
+            drhoTdh = interp2(obj.Hgrid, obj.Pgrid, table_drhoTdh, obj.h, obj.p, 'linear');  
         end                  % MB
         function drho_times_Sdp = ComputeDrho_times_SDp(obj) 
             drho_times_Sdp = zeros(length(obj.Pindex),obj.NofPhases);
@@ -478,7 +478,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             TTable = obj.TablePH.Temperature; % What if we just pass obj.TablePH.Temperature to the function ??
             dTdp = obj.Phases(1).ComputeDTDp(obj.Pgrid, obj.Hgrid, TTable, obj.h, obj.p);
         end
-
+        
         % These depend on how we treat the conductive flux
         function d2Td2p = ComputeD2TD2p(obj)
             TTable = obj.TablePH.Temperature; % What if we just pass obj.TablePH.Temperature to the function ??
@@ -519,8 +519,8 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             % Assuming saturation of injection phase is 1.0. We are assuming we are only injecting 1 phase, i.e. water
             for i=1:length(Inj)
                 Inj(i).z = 1;
-                Inj(i).x = [1 0];
-                Inj(i).S = 1;
+%                 Inj(i).x = [1 0];
+%                 Inj(i).S = 1;
                 Inj(i).Mob = zeros(length(Inj(i).p),obj.NofPhases);
                 
                 if strcmp(Inj(i).BC_Formulation, 'Temperature')
@@ -528,7 +528,8 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                     Inj(i).rho(:, 1)= obj.Phases(1).ComputeWaterDensity(Inj(i).p, Inj(i).T);
                     mu = obj.Phases(1).ComputeWaterViscosity(Inj(i).T);
                 elseif strcmp(Inj(i).BC_Formulation, 'Enthalpy')
-                    Inj(i).T = interp2(obj.Hgrid, obj.Pgrid, obj.TablePH.Temperature, Inj(i).h(:,1), Inj(i).p);
+%                     Inj(i).S = obj.Phases(1).GetSaturation(obj.Pgrid, obj.Hgrid, obj.TablePH.S_1, Inj(i).h(:,1), Inj(i).p);
+                    Inj(i).T = interp2(obj.Hgrid, obj.Pgrid, obj.TablePH.Temperature, Inj(i).h(:,1), Inj(i).p, 'linear');
                     Inj(i).rho(:, 1) = obj.Phases(1).GetDensity(obj.Pgrid, obj.Hgrid, obj.TablePH.rho_1, Inj(i).h(:,1), Inj(i).p);
                     mu = obj.Phases(1).GetViscosity(obj.Pgrid, obj.Hgrid, obj.TablePH.mu_1, Inj(i).h(:,1), Inj(i).p);
                 end
@@ -537,6 +538,11 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 Inj(i).rho(:, 2:obj.NofPhases) = 0; 
                 Inj(i).Mob(:, 1) = 1/mu; % injecting only water means rel.perm of water is 1.0 
                 Inj(i).Mob(:, 2:obj.NofPhases) = 0;            
+                
+%                 Inj(i).h(:, 2:obj.NofPhases) = Inj(i).h(:,1);
+%                 Inj(i).rho(:, 2:obj.NofPhases) = Inj(i).rho(: ,1); 
+%                 Inj(i).Mob(:, 1) = 1/mu; % injecting only water means rel.perm of water is 1.0 
+%                 Inj(i).Mob(:, 2:obj.NofPhases) = Inj(i).Mob(:, 1);            
             end
         end
         
