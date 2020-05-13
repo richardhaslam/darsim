@@ -140,118 +140,103 @@ classdef Geothermal_MultiPhase_formulation < formulation
             end
         end
         function Residual_MB = BuildMediumFlowResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f)
-            depth = Grid.Depth;
+            Index = Index.Start:Index.End;
             
-            % Initialization with zeros
+            % Initialize residual of Mass Balance
             Residual_MB = zeros(Grid.N,1);
             
-            for ph=1:obj.NofPhases
-                % Create local variables
-                % here, you are using state0 for the old pressure so makes
-                % sense
-                P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End);                
-                rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
-                S_old = State0.Properties(['S_', num2str(ph)]).Value(Index.Start:Index.End);
+            % Create local variables from time step n
+            rhoT_old = State0.Properties('rhoT').Value(Index);
+            P_old    = State0.Properties('P_2').Value(Index);
+            
+            % Create local variables from iteration step nu
+            rhoT_new = Medium.State.Properties('rhoT').Value;
+            P_new    = Medium.State.Properties('P_2').Value;
+            
+            % Pore Volume & Rock Volume
+            Medium.ComputePorosity(P_old);
+            pv_old = Medium.Por  .* Grid.Volume;   % Old pore Volume
+            
+            Medium.ComputePorosity(P_new);
+            pv_new = Medium.Por  .* Grid.Volume;   % New pore volume
+            
+            % Mass Accumulation Term for Fluid
+            Accumulation_fluid = ( pv_new .* rhoT_new - pv_old .* rhoT_old ) / dt;
+            
+            % Phase dependent fluxes
+            Convection_Flux = zeros(Grid.N,1);   % Initialize convection flux
+            SourceTerm_Flux = zeros(Grid.N,1);   % Initialize source term flux
 
-                % here, you get the actual(updated) properties at the
-                % current time step
-                P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
-                rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
-                S_new = Medium.State.Properties(['S_', num2str(ph)]).Value;
-
-                Medium.ComputePorosity(P_old);
-                pv_old = Medium.Por*Grid.Volume;
-                Medium.ComputePorosity(P_new);
-                pv_new = Medium.Por*Grid.Volume;
-
-                % Accumulation Term
-                Accumulation = (pv_new.*rho_new.*S_new - pv_old.*rho_old.*S_old)/dt;
-                % this could also be written using rhoT
+            for ph=1:obj.NofPhases % Loop over the phases
+                P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;   % Phase pressure from iteration step nu
                 
+                % Thermal Convection flux (summation of all phases)
+                Convection_Flux = Convection_Flux + obj.Tph{ph, 1+f} * P_new - obj.Gph{ph, 1+f} * Grid.Depth;
                 
-                % RESIDUAL ( = LHS - RHS )               
-                Residual_MB  = Residual_MB + Accumulation ...
-                    + obj.Tph{ph, 1+f} * P_new...
-                    - obj.Gph{ph, 1+f} * depth...
-                    - qw(Index.Start:Index.End, ph)...
-                    - qf(Index.Start:Index.End, ph);
+                % SourceTerm flux
+                SourceTerm_Flux = SourceTerm_Flux + qw(Index, ph) + qf(Index, ph);
             end
+            
+            % Fill residual with all flux terms: LHS - RHS
+            Residual_MB = Residual_MB + Accumulation_fluid + Convection_Flux - SourceTerm_Flux;
+        
+            % end of function
         end
         function Residual_EB = BuildMediumHeatResidual(obj, Medium, Grid, dt, State0, Index, qhw, qhf, RTf, f)
+            Index = Index.Start:Index.End;
             
-%             Residual_EB = zeros(Grid.N,1);
-
-            T_old = State0.Properties('T').Value(Index.Start:Index.End); % T at previous time step
-            T_new = Medium.State.Properties('T').Value;
-            Rho_rock = Medium.Rho;
-            depth = Grid.Depth;
+            % Initialize residual of Energy Balance
+            Residual_EB = zeros(Grid.N,1);
             
-            P_old = State0.Properties(['P_', num2str(1)]).Value(Index.Start:Index.End); 
-            P_new = Medium.State.Properties(['P_', num2str(1)]).Value;
-            H_new = Medium.State.Properties('hTfluid').Value(Index.Start:Index.End);
-            % Above; a small trick is applied to overcome the issue with
-            % phase pressure implementation, i.e. mv_(old,new), in the rock accumulation.
-            % --> This will be resolved when residuals for each phase are
-            % added together. Right now, it means capillary pressure is not
-            % an option.
+            % Create local variables from time step n
+            hRock_old   = State0.Properties('hRock').Value(Index);
+            hTfluid_old = State0.Properties('hTfluid').Value(Index);
+            rhoT_old    = State0.Properties('rhoT').Value(Index);
+            P_old       = State0.Properties('P_2').Value(Index);
+            
+            % Create local variables from iteration step nu
+            hRock_new   = Medium.State.Properties('hRock').Value;
+            hTfluid_new = Medium.State.Properties('hTfluid').Value;
+            rhoT_new    = Medium.State.Properties('rhoT').Value;
+            P_new       = Medium.State.Properties('P_2').Value;
 
             % Pore Volume & Rock Volume
             Medium.ComputePorosity(P_old);
-            mv_old = (1 - Medium.Por) * Grid.Volume; % Old rock volume
-            Medium.ComputePorosity(P_new);           % Updating porosity
-            mv_new = (1 - Medium.Por) * Grid.Volume; % New rock volume
+            mv_old = (1 - Medium.Por) .* Grid.Volume;   % Old rock volume
+            pv_old =      Medium.Por  .* Grid.Volume;   % Old pore Volume
             
-            % Accumulation rock
-            h_rock_old = mv_old .* Rho_rock .* Medium.Cpr .* T_old; % this can be written with hRock property
-            h_rock_new = mv_new .* Rho_rock .* Medium.Cpr .* T_new;
-            Accumulation_rock = (h_rock_new - h_rock_old)/dt;
+            Medium.ComputePorosity(P_new);
+            mv_new = (1 - Medium.Por) .* Grid.Volume;   % New rock volume
+            pv_new =      Medium.Por  .* Grid.Volume;   % New pore volume
 
-            % Initialization with rock accumulation
-%             Residual_EB = Accumulation_rock;
-%             Residual_EB = Accumulation_rock + obj.Tk{1, 1+f} * T_new;
+            % Energy Accumulation Term for Rock
+            Rho_rock = Medium.Rho;
+            Accumulation_rock = ( mv_new .* Rho_rock .* hRock_new - mv_old .* Rho_rock .* hRock_old ) / dt;
 
-%             Residual_EB = Residual_EB + Accumulation_rock - obj.Tk{1, 1+f} * obj.dTdp(:,1) .* P_new - obj.Tk{1, 1+f} * obj.dTdh .* H_new;
-            Residual_EB = Accumulation_rock - obj.Tk{1, 1+f} * obj.dTdp(:,1) .* P_new - obj.Tk{1, 1+f} * obj.dTdh .* H_new;
-
-            % Above; we add terms to the residual that are independent of
-            % phase, i.e. rock-enthalpy and thermal conductivity (this value is the total conductivity, i.e. rock+water+steam)
-            % --> : I LOOP OVER THE PHASES IN THE FUNCTION THAT COMPUTES THERM.COND TENSOR D !! i.e. effective thermal conductivity
-            % (1-phi)*D_rock + phi*S_water*D_water + phi*S_steam*D_steam
+            % Energy Accumulation Term for Flkuid
+            Accumulation_fluid = ( pv_new .* rhoT_new .* hTfluid_new - pv_old .* rhoT_old .* hTfluid_old ) / dt;
             
-            
-            for ph=1:obj.NofPhases
-                % Create local variables
-                rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
-                P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End); %Medium.State.Properties(['P_', num2str(ph)]).Value;
-                S_old = State0.Properties(['S_', num2str(ph)]).Value(Index.Start:Index.End);
-                h_old = State0.Properties(['h_', num2str(ph)]).Value(Index.Start:Index.End);
+            % Phase dependent fluxes
+            Convection_Flux = zeros(Grid.N,1);   % Initialize convection flux
+            SourceTerm_Flux = zeros(Grid.N,1);   % Initialize source term flux
 
-                rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
-                P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
-                S_new = Medium.State.Properties(['S_', num2str(ph)]).Value;
-                h_new = Medium.State.Properties(['h_', num2str(ph)]).Value;
-
-                % This part incorporates phase pressures, so theoretically
-                % this does apply to capillary pressure
-                Medium.ComputePorosity(P_old);
-                pv_old = Medium.Por*Grid.Volume;         % Old pore Volume
-                Medium.ComputePorosity(P_new);           % Updating porosity
-                pv_new = Medium.Por*Grid.Volume;         % New pore volume
+            for ph=1:obj.NofPhases % Loop over the phases
+                P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;   % Phase pressure from iteration step nu
                 
-                % Accumulation fluid
-                h_fluid_old = pv_old .* rho_old .* h_old .* S_old;
-                h_fluid_new = pv_new .* rho_new .* h_new .* S_new;
-                Accumulation_fluid = (h_fluid_new - h_fluid_old)/dt;
-                % WHY DONT WE USE HTFLUID HERE ??? --> SHOULD NOT MAKE A
-                % DIFFERENCE, BUT WHO KNOWS, MAYBE IT DOES...?
-
-                % RESIDUAL
-                Residual_EB  = Residual_EB + Accumulation_fluid ...
-                    + obj.Thph{ph, 1+f} * P_new ...
-                    - obj.Ghph{ph, 1+f} * depth ...
-                    - qhw(Index.Start:Index.End, ph)...
-                    - qhf(Index.Start:Index.End, ph);
+                % Thermal Convection flux (summation of all phases)
+                Convection_Flux = Convection_Flux + obj.Thph{ph, 1+f} * P_new - obj.Ghph{ph, 1+f} * Grid.Depth;
+                
+                % SourceTerm flux
+                SourceTerm_Flux = SourceTerm_Flux + qhw(Index, ph) + qhf(Index, ph);
             end
+            
+            % Thermal Conduction flux: CondEff = (1-phi)*D_rock + phi*S_water*D_water + phi*S_steam*D_steam 
+            Conduction_Flux = obj.Tk{1, 1+f} * ( obj.dTdp(:,1) .* P_new + obj.dTdh .* hTfluid_new );
+            
+            % Fill residual with all flux terms: LHS - RHS
+            Residual_EB = Residual_EB + Accumulation_rock + Accumulation_fluid + Conduction_Flux + Convection_Flux - SourceTerm_Flux; 
+        
+            % end of function
         end
         function ResidualFull = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute source terms
@@ -305,75 +290,49 @@ classdef Geothermal_MultiPhase_formulation < formulation
         end
         function [J_MB_P , J_MB_H] = BuildMediumFlowJacobian(obj, Medium, Wells, Grid, dt, Index, f)
             % Create local variables
+            Index = Index.Start:Index.End;
+
             Nx = Grid.Nx;
             Ny = Grid.Ny;
             Nz = Grid.Nz;
             N = Grid.N;
             
+            % Initialize Jacobian blocks for Mass Balance
             J_MB_P = sparse(N,N);
             J_MB_H = sparse(N,N);
             
-            for ph=1:obj.NofPhases
-                
-                P = Medium.State.Properties(['P_', num2str(ph)]).Value;
+            % Porosity and its derivative 
+            P = Medium.State.Properties('P_2').Value;
+            Medium.ComputeDerPorosity(P);
+            phi = Medium.Por;
+            dphidp = Medium.DPor;
+            
+            % Phase dependent derivatives
+            for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
                 S = Medium.State.Properties(['S_',num2str(ph)]).Value;
-                Medium.ComputeDerPorosity(P);
-                phi = Medium.Por;
-                dphidp = Medium.DPor;
-                            
-                %% 1.J_MB_P Block
-                % 1.a Transmissibility part
-                J_MB_P = J_MB_P + obj.Tph{ph,1+f};
                 
-                % 1.b: Accumulation part
-%                 acc = (Grid.Volume/dt) .* (phi .* obj.drho_times_Sdp(Index.Start:Index.End,ph) + rho .* S .*dphidp);
-                acc = (Grid.Volume/dt) .* ( dphidp .* rho .* S                             + ...
-                                             phi   .* obj.drhodp(Index.Start:Index.End,ph) + ...
-                                             phi   .* rho                                  .* obj.dSdp(Index.Start:Index.End,ph) );
+                %% J_MB_P Block
+                % Derivative of Fluid Accumulation
+                vec = (Grid.Volume/dt) .* ( ...
+                                            dphidp .* rho                  .* S + ...
+                                            phi    .* obj.drhodp(Index,ph) .* S + ...
+                                            phi    .* rho                  .* obj.dSdp(Index,ph) ...
+                                           );
                 
-                % 1.c: Additional derivative term (P^nu) in convective flux
-                dMupx = obj.UpWind{ph,1+f}.x *( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) + ...
-                                                obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
-                dMupy = obj.UpWind{ph,1+f}.y *( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) + ...
-                                                obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
-                dMupz = obj.UpWind{ph,1+f}.z *( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) + ...
-                                                obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
-                
-                % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
-                vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
-                vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
-                vecY1 = min(reshape(obj.U{ph,1+f}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
-                vecY2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
-                vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
-                vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
-                % zeros(N,1); %
+                Derivative_Accumulation_Fluid = spdiags(vec, 0, N, N);
+                % *** we could use rhoT here, and take the Derivative_Accumulation_Fluid out of the phase loop ***
 
-                % construction of J_MB_P
-                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-                J_MB_P = J_MB_P + spdiags(DiagVecs, DiagIndx, N, N);
-                
-                
-                %% 2. J_MB_H Block
-                % 2.a: Transmissibility part (zero because d(P^nu)/dH = 0)
-                J_MB_H = J_MB_H + 0;
-                
-                % 2.b: Accumulation part
-%                 acc = (Grid.Volume/dt) .* phi .* obj.drho_times_Sdh(Index.Start:Index.End,ph);
-                acc = (Grid.Volume/dt) .* ( phi .* obj.drhodh(Index.Start:Index.End,ph) .* S + ...
-                                            phi .* rho                                  .* obj.dSdh(Index.Start:Index.End,ph) );
-                
-                % 2.c: Additional derivative term (P^nu) in convective flux; we get d(rho*lambda)/dH * P^nu
-                dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) + ...
-                                                 obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
-                dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) + ...
-                                                 obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
-                dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) + ...
-                                                 obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            );
-%                 dMupx = zeros(N,1);
-%                 dMupy = zeros(N,1);
-%                 dMupz = zeros(N,1);
+                % Derivative of Fluid Mass Convection Flux:
+                Transmissibility = obj.Tph{ph,1+f}; % (Transmissibility Term) x (Derivative of P_nu)
+
+                % (Derivative of Transmissibility Term) x (P_nu)
+                dMupx = obj.UpWind{ph,1+f}.x *( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) + ...
+                                                obj.dMobdp(Index, ph) .* rho(Index)            );
+                dMupy = obj.UpWind{ph,1+f}.y *( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) + ...
+                                                obj.dMobdp(Index, ph) .* rho(Index)            );
+                dMupz = obj.UpWind{ph,1+f}.z *( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) + ...
+                                                obj.dMobdp(Index, ph) .* rho(Index)            );
                 
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -382,72 +341,127 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 vecY2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
                 vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                 vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
+
+                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1, vecX1, vecY1, vecZ1];
+                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
+                
+                % Construct (Derivative of Transmissibility Term)
+                Derivative_Transmissibility = spdiags(DiagVecs, DiagIndx, N, N);
+                
+                % Construction of J_MB_P
+                J_MB_P = J_MB_P + Derivative_Accumulation_Fluid + Transmissibility + Derivative_Transmissibility;
+                
+                %% J_MB_H Block
+                % Derivative of Fluid Accumulation
+                vec = (Grid.Volume/dt) .* ( ...
+                                            phi .* obj.drhodh(Index,ph) .* S + ...
+                                            phi .* rho                  .* obj.dSdh(Index,ph) ...
+                                           );
+                Derivative_Accumulation_Fluid = spdiags(vec,0,N,N);
+                % *** we could use rhoT here, and take the Derivative_Accumulation_Fluid out of the phase loop ***
+                
+                % Derivative of Fluid Mass Convection Flux:
+                % (Transmissibility Term) x (Derivative of P_nu)
+                Transmissibility = 0;
+
+                % (Derivative of Transmissibility Term) x (P_nu)
+                dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) + ...
+                                                 obj.dMobdh(Index, ph) .* rho(Index)            );
+                dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) + ...
+                                                 obj.dMobdh(Index, ph) .* rho(Index)            );
+                dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) + ...
+                                                 obj.dMobdh(Index, ph) .* rho(Index)            );
+                
+                % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
+                vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
+                vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:,:), N, 1), 0) .* dMupx;
+                vecY1 = min(reshape(obj.U{ph,1+f}.y(:,1:Ny,:), N, 1), 0)   .* dMupy;
+                vecY2 = max(reshape(obj.U{ph,1+f}.y(:,2:Ny+1,:), N, 1), 0) .* dMupy;
+                vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
+                vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
+                
+                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1, vecX1, vecY1, vecZ1];
+                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
+                
+                % Construct (Derivative of Transmissibility Term)
+                Derivative_Transmissibility= spdiags(DiagVecs, DiagIndx, N, N);
                 
                 % construction of J_MB_H
-                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-                DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-                J_MB_H = J_MB_H + spdiags(DiagVecs, DiagIndx, N, N);
-            end
+                J_MB_H = J_MB_H + Derivative_Accumulation_Fluid + Transmissibility + Derivative_Transmissibility;
+                
+            end % end phase loop
                             
-            % Add Wells
+            % Add Source Term to all Jacobian blocks
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian
             if f == 0 % only for reservoir
                 [J_MB_P, J_MB_H] = obj.AddWellsToMassBalanceJacobian(J_MB_P, J_MB_H, Medium.State, Wells, Medium.K(:,1));
             end
+            
+            % end of function
         end
         function [J_EB_P , J_EB_H] = BuildMediumHeatJacobian(obj, Medium, Wells, Grid, dt, Index, f)
             % Create local variables
+            Index = Index.Start:Index.End;
+
             Nx = Grid.Nx;
             Ny = Grid.Ny;
             Nz = Grid.Nz;
-            N  = Grid.N;
+            N = Grid.N;
             
+            % Initialize Jacobian blocks for Energy Balance
             J_EB_P = sparse(N,N);
             J_EB_H = sparse(N,N);
             
-            Rho_rock = Medium.Rho;
+            % Porosity and its derivative 
             phi = Medium.Por;
             Medium.ComputeDerPorosity(Medium.State.Properties('P_2').Value);
             dphidp = Medium.DPor;
             
-            rhoT = Medium.State.Properties('rhoT').Value;
-            hTfluid = Medium.State.Properties('hTfluid').Value;
+            %% J_EB_P Block
+            % Derivative of Rock Energy Accumulation
             hRock = Medium.State.Properties('hRock').Value; 
+            rhoRock = Medium.Rho;
             
-            %% 1. J_EB_P Block
-            % 1.a: Accumulation part (only for rock)
-            acc_rock = (Grid.Volume/dt) .* (-1) .* dphidp .* Rho_rock .* hRock; 
-            J_EB_P = J_EB_P + spdiags(acc_rock, 0, N, N);
+            vec = (Grid.Volume/dt) .* (-1) .* dphidp .* rhoRock .* hRock; 
+            Derivative_Accumulation_Rock = spdiags(vec, 0, N, N);
 
-            % Heat conduction flux
-            J_EB_P = J_EB_P - obj.Tk{1,1+f} * obj.dTdp; % - obj.Tk{1,1+f} * obj.d2Td2p .* hTfluid;
-
-            % 1.b: Heat convection flux
-            for ph=1:obj.NofPhases
-                % Original transmissibility part
-                J_EB_P = J_EB_P + obj.Thph{ph, 1+f};
-                
+            % Phase dependent derivatives
+            % Initialize derivatives
+            Derivative_Accumulation_Fluid = zeros(N,1);
+            Convective_Transmissibility = zeros(N,1);
+            Derivative_Convective_Transmissibility = zeros(N,1);
+            Conductive_Transmissibility = zeros(N,1);
+            
+            % Total Fluid Enthalpy 
+            hTfluid = Medium.State.Properties('hTfluid').Value;
+            P = Medium.State.Properties('P_2').Value;
+            
+            for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
                 h = Medium.State.Properties(['h_',num2str(ph)]).Value;
                 S = Medium.State.Properties(['S_',num2str(ph)]).Value;
-                
-                % 1.c: Accumulation part (only for fluid)
-%                 acc_fluid = (Grid.Volume/dt) .* ( dphidp .* rho .* S .* hTfluid + phi .* obj.drho_times_Sdp(:,ph) .* hTfluid );
-                acc_fluid = (Grid.Volume/dt) .* ( dphidp .* rho              .* S              .* hTfluid + ...
-                                                   phi   .* obj.drhodp(:,ph) .* S              .* hTfluid + ...
-                                                   phi   .* rho              .* obj.dSdp(:,ph) .* hTfluid );
-                
 
-                % 1.d: Additional derivative term (P^nu) in convective flux
-                dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) .* h(Index.Start:Index.End) + ...
-                                               obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            .* h(Index.Start:Index.End) );
-                dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) .* h(Index.Start:Index.End) + ...
-                                               obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            .* h(Index.Start:Index.End) );
-                dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodp(Index.Start:Index.End, ph) .* h(Index.Start:Index.End) + ...
-                                               obj.dMobdp(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            .* h(Index.Start:Index.End) );
-%                 dMupx = zeros(N,1);
-%                 dMupy = zeros(N,1);
-%                 dMupz = zeros(N,1);
+                % Derivative of Fluid Energy Accumulation
+                vec = (Grid.Volume/dt) .* ( ...
+                                            dphidp .* rho              .* S              .* hTfluid + ...
+                                            phi    .* obj.drhodp(:,ph) .* S              .* hTfluid + ...
+                                            phi    .* rho              .* obj.dSdp(:,ph) .* hTfluid ...
+                                           );
+                
+                Derivative_Accumulation_Fluid = Derivative_Accumulation_Fluid + spdiags(vec,0,N,N);
+
+                % Derivative of Fluid Energy Convection Flux:
+                % (Transmissibility Term) x (Derivative of P_nu)
+                Convective_Transmissibility = Convective_Transmissibility + obj.Thph{ph, 1+f};
+
+                % (Derivative of Transmissibility Term) x (P_nu)
+                dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h(Index) + ...
+                                               obj.dMobdp(Index, ph) .* rho(Index)            .* h(Index) );
+                dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h(Index) + ...
+                                               obj.dMobdp(Index, ph) .* rho(Index)            .* h(Index) );
+                dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h(Index) + ...
+                                               obj.dMobdp(Index, ph) .* rho(Index)            .* h(Index) );
+                % *** In case of two-phase system, the phase enthalpy is in fact a function pressure; include dhdp? ***
                 
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -457,50 +471,70 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                 vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
 
-                % construction of J_MB_P
-                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc_fluid, vecX1, vecY1, vecZ1];
+                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1, vecX1, vecY1, vecZ1];
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-                J_EB_P = J_EB_P + spdiags(DiagVecs, DiagIndx, N, N);
-            end
-                        
-            %% 2. J_EB_H Block
-            % 2.a Accumulation fluid part 1
-            % DEZE IS HELEMAAL NIET GOED, STAAT NU OOK IN ACCUMULATION FLUID PART 2 .... (2 KEER DEZELFDE)
-            acc_fluid = phi .* rhoT .* (Grid.Volume/dt);
-            J_EB_H = J_EB_H + spdiags(acc_fluid, 0, N, N);
-            
-            % Heat conduction flux
-            J_EB_H = J_EB_H - obj.Tk{1,1+f} * obj.dTdh; % - obj.Tk{1,1+f} * obj.d2Td2h .* hTfluid;
-           
-            % 2.b Heat convection and conduction fluxes
-            for ph=1:obj.NofPhases
-                % Original transmissibility part                
-                J_EB_H = J_EB_H + 0;
                 
+                % Construct (Derivative of Transmissibility Term)
+                Derivative_Convective_Transmissibility = Derivative_Convective_Transmissibility + spdiags(DiagVecs, DiagIndx, N, N);
+                                
+            end % end of phase loop
+               
+            % Derivative of Fluid Energy Convection Flux:
+            % (Transmissibility Term) x (Derivative of P_nu)
+            Conductive_Transmissibility = Conductive_Transmissibility + obj.Tk{1,1+f} * obj.dTdp; 
+            
+            % (Derivative of Transmissibility Term) x (P_nu)
+            Derivative_Conductive_Transmissibility = Derivative_Conductive_Transmissibility + obj.Tk{1,1+f} * obj.d2Td2p .* P;
+
+            % construction of J_EB_P 
+            J_EB_P = J_EB_P + Derivative_Accumulation_Rock + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
+                              Derivative_Convective_Transmissibility + Conductive_Transmissibility + Derivative_Conductive_Transmissibility;
+
+                            
+            %% J_EB_H Block
+            % Derivative of Rock Energy Accumulation
+            vec = zeros(N,1); 
+            Derivative_Accumulation_Rock = spdiags(vec, 0, N, N);
+
+            % Phase dependent derivatives
+            % Initialize derivatives
+            Derivative_Accumulation_Fluid = zeros(N,1);
+            Convective_Transmissibility = zeros(N,1);
+            Derivative_Convective_Transmissibility = zeros(N,1);
+            Conductive_Transmissibility = zeros(N,1);
+            
+            % Total Fluid Enthalpy 
+            hTfluid = Medium.State.Properties('hTfluid').Value;
+            
+            for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
                 h = Medium.State.Properties(['h_',num2str(ph)]).Value;
                 S = Medium.State.Properties(['S_',num2str(ph)]).Value;
+
+                % Derivative of Fluid Energy Accumulation
+                vec = (Grid.Volume/dt) .* ( ...
+                                            phi .* obj.drhodh(:,ph) .* S              .* hTfluid + ...
+                                            phi .* rho              .* obj.dSdh(:,ph) .* hTfluid + ...
+                                            phi .* rho              .* S              .* 1 ...
+                                           );           
+                % *** This is the part where phi*rho*S was added to the accumulation term TWICE ***
                 
-                % 2.c: Accumulation fluid part 2 
-%                 acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drho_times_Sdh(:,ph) .* hTfluid + phi .* rho .* S .* 1);
-                acc_fluid = (Grid.Volume/dt) .* ( phi .* obj.drhodh(:,ph) .* S              .* hTfluid + ...
-                                                  phi .* rho              .* obj.dSdh(:,ph) .* hTfluid + ...
-                                                  phi .* rho              .* S              .* 1 );
+                Derivative_Accumulation_Fluid = Derivative_Accumulation_Fluid + spdiags(vec,0,N,N);
 
+                % Derivative of Fluid Energy Convection Flux:
+                % (Transmissibility Term) x (Derivative of P_nu)
+                Convective_Transmissibility = Convective_Transmissibility + 0;
 
-                % 2.d: Additional derivative term (P^nu) in convective flux
-                dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) .* h(Index.Start:Index.End) + ...
-                                               obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            .* h(Index.Start:Index.End) + ...
-                                               obj.Mob(Index.Start:Index.End, ph)    .* rho(Index.Start:Index.End)            .* 1 );
-                dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) .* h(Index.Start:Index.End) + ...
-                                               obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            .* h(Index.Start:Index.End) + ...
-                                               obj.Mob(Index.Start:Index.End, ph)    .* rho(Index.Start:Index.End)            .* 1 );
-                dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index.Start:Index.End, ph)    .* obj.drhodh(Index.Start:Index.End, ph) .* h(Index.Start:Index.End) + ...
-                                               obj.dMobdh(Index.Start:Index.End, ph) .* rho(Index.Start:Index.End)            .* h(Index.Start:Index.End) + ...
-                                               obj.Mob(Index.Start:Index.End, ph)    .* rho(Index.Start:Index.End)            .* 1 );
-%                 dMupx = zeros(N,1);
-%                 dMupy = zeros(N,1);
-%                 dMupz = zeros(N,1);
+                % (Derivative of Transmissibility Term) x (P_nu)
+                dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) .* h(Index) + ...
+                                               obj.dMobdh(Index, ph) .* rho(Index)            .* h(Index) + ...
+                                               obj.Mob(Index, ph)    .* rho(Index)            .* 1 );
+                dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) .* h(Index) + ...
+                                               obj.dMobdh(Index, ph) .* rho(Index)            .* h(Index) + ...
+                                               obj.Mob(Index, ph)    .* rho(Index)            .* 1 );
+                dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) .* h(Index) + ...
+                                               obj.dMobdh(Index, ph) .* rho(Index)            .* h(Index) + ...
+                                               obj.Mob(Index, ph)    .* rho(Index)            .* 1 );
 
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -510,17 +544,32 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 vecZ1 = min(reshape(obj.U{ph,1+f}.z(:,:,1:Nz), N, 1), 0)   .* dMupz;
                 vecZ2 = max(reshape(obj.U{ph,1+f}.z(:,:,2:Nz+1), N, 1), 0) .* dMupz;
 
-                % construction of J_MB_P
-                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc_fluid, vecX1, vecY1, vecZ1];
+                DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1, vecX1, vecY1, vecZ1];
                 DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-                J_EB_H = J_EB_H + spdiags(DiagVecs, DiagIndx, N, N);
-            end
+                
+                % Construct (Derivative of Transmissibility Term)
+                Derivative_Convective_Transmissibility = Derivative_Convective_Transmissibility + spdiags(DiagVecs, DiagIndx, N, N);
+                                
+            end % end of phase loop
+               
+            % Derivative of Fluid Energy Convection Flux:
+            % (Transmissibility Term) x (Derivative of P_nu)
+            Conductive_Transmissibility = Conductive_Transmissibility + obj.Tk{1,1+f} * obj.dTdh; 
+            
+            % (Derivative of Transmissibility Term) x (P_nu)
+            Derivative_Conductive_Transmissibility = Derivative_Conductive_Transmissibility + obj.Tk{1,1+f} * obj.d2Td2h .* hTfluid;
 
-            %% Add Wells
+            % construction of J_EB_P 
+            J_EB_H = J_EB_H + Derivative_Accumulation_Rock + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
+                              Derivative_Convective_Transmissibility + Conductive_Transmissibility + Derivative_Conductive_Transmissibility;
+                                        
+            % Add Source Term to all Jacobian blocks
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian
             if f == 0 % only for reservoir
                 [J_EB_P, J_EB_H] = obj.AddWellsToEnergyBalanceJacobian(J_EB_P, J_EB_H, Medium.State, Wells, Medium.K(:,1));
             end
+            
+            % end of function
         end
         function JacobianFull = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             %% Jacobian's assembly for MultiPhase geothermal reservoir
