@@ -431,6 +431,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Convective_Transmissibility = zeros(N,1);
             Derivative_Convective_Transmissibility = zeros(N,1);
             Conductive_Transmissibility = zeros(N,1);
+            Derivative_Conductive_Transmissibility = zeros(N,1);
             
             % Total Fluid Enthalpy 
             hTfluid = Medium.State.Properties('hTfluid').Value;
@@ -443,7 +444,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                 % Derivative of Fluid Energy Accumulation
                 vec = (Grid.Volume/dt) .* ( ...
-                                            dphidp .* rho              .* S              .* hTfluid + ...
+                                            dphidp .* rho              .* S              .* hTfluid + ... % should be phase enthalpy h
                                             phi    .* obj.drhodp(:,ph) .* S              .* hTfluid + ...
                                             phi    .* rho              .* obj.dSdp(:,ph) .* hTfluid ...
                                            );
@@ -457,6 +458,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 % (Derivative of Transmissibility Term) x (P_nu)
                 dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h(Index) + ...
                                                obj.dMobdp(Index, ph) .* rho(Index)            .* h(Index) );
+                                               % ADD DhDp AS h IS FUNCTION OF Pressure...??
+                                               
                 dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h(Index) + ...
                                                obj.dMobdp(Index, ph) .* rho(Index)            .* h(Index) );
                 dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h(Index) + ...
@@ -490,7 +493,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             J_EB_P = J_EB_P + Derivative_Accumulation_Rock + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
                               Derivative_Convective_Transmissibility + Conductive_Transmissibility + Derivative_Conductive_Transmissibility;
 
-                            
+                      
             %% J_EB_H Block
             % Derivative of Rock Energy Accumulation
             vec = zeros(N,1); 
@@ -502,6 +505,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Convective_Transmissibility = zeros(N,1);
             Derivative_Convective_Transmissibility = zeros(N,1);
             Conductive_Transmissibility = zeros(N,1);
+            Derivative_Conductive_Transmissibility = zeros(N,1);
             
             % Total Fluid Enthalpy 
             hTfluid = Medium.State.Properties('hTfluid').Value;
@@ -700,6 +704,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 % if the solution makes no sense, skip this step
                 return
             else
+                % Inflexion point correction
 %                 delta = obj.UpdateEnthalpy(delta, ProductionSystem, FluidModel, DiscretizationModel);
 
                 Nm = DiscretizationModel.ReservoirGrid.N;
@@ -865,40 +870,40 @@ classdef Geothermal_MultiPhase_formulation < formulation
         function d2Fdh2 = ComputeSecondDerivativeHeatConvectionFlux(obj, Medium, FluidModel, hTfluid)
             d2Fdh2 = zeros(size(obj.Mob,1),1);
             
-            % Get P and H indices 
-            [~,Pindex] = ismember( round(Medium.State.Properties('P_2').Value,-log10(FluidModel.Pstepsize)), round(FluidModel.Ptable,-log10(FluidModel.Pstepsize)) );
-            [~,Hindex] = ismember( round(hTfluid,-log10(FluidModel.Hstepsize)), round(FluidModel.Htable,-log10(FluidModel.Hstepsize)) );
+            % Construct P and H grid for interp functions 
+            [Hgrid,Pgrid] = meshgrid(FluidModel.Htable,FluidModel.Ptable);
+
 
             STable = FluidModel.TablePH.('S_1'); 
-            S1 = FluidModel.Phases(1).GetSaturation(Pindex, Hindex, STable); 
+            S1 = FluidModel.Phases(1).GetSaturation(Pgrid, Hgrid, STable, hTfluid, Medium.State.Properties('P_2').Value); 
             kr = FluidModel.RelPermModel.ComputeRelPerm(FluidModel.Phases, S1);
 
             for i=1:obj.NofPhases
                 % Density
                 rhoTable = FluidModel.TablePH.(['rho_', num2str(i)]);
-                rho(:,i) = FluidModel.Phases(i).GetDensity(Pindex, Hindex, rhoTable);
-                drhodh(:,i) = FluidModel.Phases(i).ComputeDrhoDh(Pindex, Hindex, rhoTable);
+                rho(:,i) = FluidModel.Phases(i).GetDensity(Pgrid, Hgrid, rhoTable, hTfluid, Medium.State.Properties('P_2').Value);
+                drhodh(:,i) = FluidModel.Phases(i).ComputeDrhoDh(Pgrid, Hgrid, rhoTable, hTfluid, Medium.State.Properties('P_2').Value);
                 
                 % Phase Enthalpy 
                 PhaseEnthalpyTable = FluidModel.TablePH.(['H_',num2str(i)]);
-                h(:,i) = FluidModel.Phases(i).GetPhaseEnthalpy(Pindex, PhaseEnthalpyTable);    
+                h(:,i) = FluidModel.Phases(i).GetPhaseEnthalpy(FluidModel.Ptable, PhaseEnthalpyTable, Medium.State.Properties('P_2').Value);    
 
                 % 2nd derivative density wrt enthalpy
-                d2rhodh2(:,i) = FluidModel.Phases(i).ComputeD2rhoDh2(Pindex, Hindex, rhoTable);
+                d2rhodh2(:,i) = FluidModel.Phases(i).ComputeD2rhoDh2(Pgrid, Hgrid, rhoTable, hTfluid, Medium.State.Properties('P_2').Value);
                 
                 % Viscosity
                 muTable = FluidModel.TablePH.(['mu_',num2str(i)]);
-                mu(:,i) = FluidModel.Phases(i).GetViscosity(Pindex, Hindex, muTable);
+                mu(:,i) = FluidModel.Phases(i).GetViscosity(Pgrid, Hgrid, muTable, hTfluid, Medium.State.Properties('P_2').Value);
                 
                 % Mobility
                 Mob(:,i) = kr(:,i)./mu(:,i);
 
                 % 1st derivatives Viscosity and Mobility
-                dmudh(:,i) = FluidModel.Phases(i).ComputeDmuDh(Pindex, Hindex, muTable);
+                dmudh(:,i) = FluidModel.Phases(i).ComputeDmuDh(Pgrid, Hgrid, muTable, hTfluid, Medium.State.Properties('P_2').Value);
                 dMobdh(:,i) = ( -1 .* dmudh(:,i) .* kr(:,i) ) ./ mu(:,i).^2;
                 
                 % 2nd derivatives Viscosity and Mobility
-                d2mudh2(:,i) = FluidModel.Phases(i).ComputeD2muDh2(Pindex, Hindex, muTable);
+                d2mudh2(:,i) = FluidModel.Phases(i).ComputeD2muDh2(Pgrid, Hgrid, muTable, hTfluid, Medium.State.Properties('P_2').Value);
                 d2Mobdh2(:,i) = -1 .* kr(:,i) .* ( d2mudh2(:,i) ./ mu(:,i).^2 - 2 .* dmudh(:,i) ./ mu(:,i).^3 );   
             end
             
@@ -914,10 +919,10 @@ classdef Geothermal_MultiPhase_formulation < formulation
             % per phase
             for ph=1:obj.NofPhases
                 d2Fdh2 = d2Fdh2 + ...
-                         d2rhodh2(:,ph) .* h(:,ph) .* Mob(:,ph) ;%    + ...
-%                          drhodh(:,ph)   .* h(:,ph) .* dMobdh(:,ph) + ...
-%                          drhodh(:,ph)   .* h(:,ph) .* dMobdh(:,ph) + ...
-%                          rho(:,ph)      .* h(:,ph) .* d2Mobdh2(:,ph) ;            
+                         d2rhodh2(:,ph) .* h(:,ph) .* Mob(:,ph) + ...
+                         drhodh(:,ph)   .* h(:,ph) .* dMobdh(:,ph) + ...
+                         drhodh(:,ph)   .* h(:,ph) .* dMobdh(:,ph) + ...
+                         rho(:,ph)      .* h(:,ph) .* d2Mobdh2(:,ph) ;            
             end 
         end
         function delta = UpdateEnthalpy(obj, delta, ProductionSystem, FluidModel, DiscretizationModel)
