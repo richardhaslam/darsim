@@ -184,7 +184,6 @@ classdef Immiscible_formulation < formulation
                     FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
                     acc = pv/dt .* obj.drhodp(Index.Start:Index.End,ph) .* s;
                     Jp = Jp + spdiags(acc,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
-                    %Test_P_CPG = full((UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')');
                     
                     % 2. Saturation Block
                     dMob_rho = obj.dMob(Index.Start:Index.End, ph) .* rho;
@@ -192,7 +191,6 @@ classdef Immiscible_formulation < formulation
                     FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
                     v = (-1)^(ph+1) .* pv/dt .* rho;
                     JS = spdiags(v,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
-                    %Test_S_CPG = full((UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')');
                     
                 case('cartesian_grid')
                     % 1.b: compressibility part
@@ -211,7 +209,6 @@ classdef Immiscible_formulation < formulation
                     DiagVecs = [-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1+acc, X1, Y1, Z1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                     Jp = Jp + spdiags(DiagVecs, DiagIndx, N, N);
-                    Test_P_CartG = full(spdiags([-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1, X1, Y1, Z1], DiagIndx, N, N));
                     
                     % 2. Saturation Block
                     dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMob(Index.Start:Index.End, ph) .* rho );
@@ -229,7 +226,6 @@ classdef Immiscible_formulation < formulation
                     DiagVecs = [-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1+v, X1, Y1, Z1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
                     JS = spdiags(DiagVecs,DiagIndx,N,N);
-                    Test_S_CartG = full(spdiags([-Z2, -Y2, -X2, Z2+Y2+X2-Z1-Y1-X1, X1, Y1, Z1], DiagIndx, N, N));
             end
             
             %Add capillarity
