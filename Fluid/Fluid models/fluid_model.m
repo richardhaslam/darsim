@@ -10,7 +10,7 @@ classdef fluid_model < handle
     properties
         name
         NofPhases
-        NofComp
+        NofComponents
         Phases
         Components
         RelPermModel
@@ -20,7 +20,7 @@ classdef fluid_model < handle
     methods
         function obj = fluid_model(n_phases, n_comp)
             obj.NofPhases = n_phases;
-            obj.NofComp = n_comp;
+            obj.NofComponents = n_comp;
             obj.Phases = phase.empty;
             obj.Components = component.empty;
             obj.WettingPhaseIndex = 1;
@@ -67,8 +67,8 @@ classdef fluid_model < handle
         end
         function dMobdz = ComputeDMobDz(obj, Status, dSdz)
             dMobdS = obj.ComputeDMobDS(Status.Properties('S_1').Value);
-            dMobdz = zeros(length(dMobdS), obj.NofComp-1);
-            for j=1:obj.NofComp-1
+            dMobdz = zeros(length(dMobdS), obj.NofComponents-1);
+            for j=1:obj.NofComponents-1
                 % Use chain rule
                 dMobdz(:,1,j) = dMobdS(:,1) .* dSdz(:,j);
                 dMobdz(:,2,j) = dMobdS(:,2) .* dSdz(:,j);

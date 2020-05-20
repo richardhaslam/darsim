@@ -549,7 +549,7 @@ classdef simulation_builder < handle
                     FlashCalculator.KvaluesCalculator = BO_Kvalues_calculator();
                     FluidModel.FlashCalculator = FlashCalculator;
                 case('Compositional')
-                    n_comp = obj.SimulationInput.FluidProperties.NofComp;
+                    n_comp = obj.SimulationInput.FluidProperties.NofComponents;
                     FluidModel = Comp_fluid_model(n_phases, n_comp);
                     %FlashCalculator = Standard_flash_calculator();
                     % Add phases
@@ -995,7 +995,7 @@ classdef simulation_builder < handle
                 case('SinglePhase')
                     CouplingStats = SinglePhase_Stats(obj.SimulatorSettings.MaxNumTimeSteps, 'SinglePhase');
             end
-            wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComp, simulation.ProductionSystem.Wells);
+            wellsData = wells_data(obj.SimulatorSettings.MaxNumTimeSteps, simulation.FluidModel.NofPhases, simulation.FluidModel.NofComponents, simulation.ProductionSystem.Wells);
             switch (obj.SimulatorSettings.DiscretizationModel)
                 case('ADM')
                     Summary = Run_Summary_ADM(obj.SimulatorSettings.MaxNumTimeSteps, CouplingStats, wellsData, simulation.DiscretizationModel.maxLevel(1)); % Only reservoir for now
@@ -1044,7 +1044,7 @@ classdef simulation_builder < handle
                     Writer = output_writer_FS(InputDirectory, obj.SimulationInput.ProblemName,...
                         simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd,...
                         simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
-                        simulation.FluidModel.NofComp);
+                        simulation.FluidModel.NofComponents);
             end
             Writer.AddPlotter(plotter);
         end

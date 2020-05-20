@@ -23,7 +23,7 @@ classdef injector_pressure < injector
             for i = 1:FluidModel.NofPhases
                 obj.QPhases(:,i) = obj.rho(:,i) .* obj.Mob(:,i) .* obj.PI .* K(obj.Cells).* (obj.p - p.Value(obj.Cells));
             end
-            obj.QComponents = zeros(length(obj.Cells), FluidModel.NofComp);
+            obj.QComponents = zeros(length(obj.Cells), FluidModel.NofComponents);
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
@@ -32,7 +32,7 @@ classdef injector_pressure < injector
                         obj.Qh(:,i) = obj.h(i) * obj.QPhases(:,i);
                     end
                 otherwise
-                    for j=1:FluidModel.NofComp
+                    for j=1:FluidModel.NofComponents
                         for phase=1:FluidModel.NofPhases
                             obj.QComponents(:, j) = obj.QComponents(:, j) + obj.x(:,(j-1)*2 + phase) .* obj.QPhases(:, phase);
                         end

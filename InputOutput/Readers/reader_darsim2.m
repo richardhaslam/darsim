@@ -664,7 +664,7 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.InputMatrix, 'COMPONENT PROPERTIES');
             index = find(~cellfun('isempty', temp));
             for i = 1:FluidProperties.NofComponents
-                FluidProperties.ComponentProperties = str2double(strsplit(char(obj.InputMatrix(index + i * 2))));
+                FluidProperties.ComponentProperties(i,:) = str2double(strsplit(char(obj.InputMatrix(index + i * 2))));
             end
             
             % 11. Gravity

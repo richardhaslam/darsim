@@ -47,7 +47,7 @@ classdef Reservoir_Simulator < handle
             disp('Fluid Model:');
             disp(['Type: ', obj.Simulation.FluidModel.name]);
             disp(['N of phases: ', num2str(obj.Simulation.FluidModel.NofPhases)]);
-            disp(['N of components:  ', num2str(obj.Simulation.FluidModel.NofComp)]);
+            disp(['N of components:  ', num2str(obj.Simulation.FluidModel.NofComponents)]);
             disp('---------------------------------------------------------');
             
             Time = obj.Simulation.TimeDriver.Sec2DHMS(obj.Simulation.TimeDriver.TotalTime);

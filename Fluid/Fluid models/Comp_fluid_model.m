@@ -138,10 +138,10 @@ classdef Comp_fluid_model < fluid_model
             % z = p, z1
             N = length(SinglePhase);
             Ni = zeros(N, obj.NofPhases);
-            x = zeros(N, obj.NofPhases*obj.NofComp);
+            x = zeros(N, obj.NofPhases*obj.NofComponents);
             for j=1:obj.NofPhases
                 Ni(:, j) = Status.Properties(['ni_', num2str(j)]).Value;
-                for i=1:obj.NofComp
+                for i=1:obj.NofComponents
                     x(:,(i-1)*obj.NofPhases + j) = Status.Properties(['x_', num2str(i),'ph',num2str(j)]).Value;
                 end
             end
@@ -150,27 +150,27 @@ classdef Comp_fluid_model < fluid_model
             k = obj.ComputeKvalues(Status);
             dk = obj.DKvalDp(Status);
             % Loop over all cells and do local inversion
-            dxdp = zeros(N, 2*obj.NofComp+1);
-            dxdz = zeros(N, 2*obj.NofComp+1, obj.NofComp-1);
+            dxdp = zeros(N, 2*obj.NofComponents+1);
+            dxdz = zeros(N, 2*obj.NofComponents+1, obj.NofComponents-1);
             for i = 1:N
-                dFdx = zeros(2*obj.NofComp + 1);
-                dFdz = zeros(2*obj.NofComp + 1, obj.NofComp);
-                for c=1:obj.NofComp
+                dFdx = zeros(2*obj.NofComponents + 1);
+                dFdz = zeros(2*obj.NofComponents + 1, obj.NofComponents);
+                for c=1:obj.NofComponents
                     % x_cv - k_c x_cl = 0
                     dFdx (c, (c-1)*2+1:(c-1)*2+2) = [1, -k(i,c)];
                     dFdz (c, 1) = -dk(i,c) * x(i, (c-1)*2+2);
                     % z_c - ni*x_cv - (1-ni)*x_cl = 0
-                    dFdx (obj.NofComp + c, (c-1)*2+1:(c-1)*2+2) = [-ni(i), ni(i)-1];
-                    dFdx (obj.NofComp + c, end) = x(i, (c-1)*2+2) - x(i, (c-1)*2+1);
-                    if c<obj.NofComp
-                        dFdz (obj.NofComp + c, c+1) = 1;
+                    dFdx (obj.NofComponents + c, (c-1)*2+1:(c-1)*2+2) = [-ni(i), ni(i)-1];
+                    dFdx (obj.NofComponents + c, end) = x(i, (c-1)*2+2) - x(i, (c-1)*2+1);
+                    if c<obj.NofComponents
+                        dFdz (obj.NofComponents + c, c+1) = 1;
                     end
                     % Sum x_cv-x_cl = 0
-                    dFdx (2*obj.NofComp + 1, (c-1)*2+1:(c-1)*2+2) = [1, -1]; 
+                    dFdx (2*obj.NofComponents + 1, (c-1)*2+1:(c-1)*2+2) = [1, -1]; 
                 end
-                dFdz (2*obj.NofComp, 2:obj.NofComp) = -1;
+                dFdz (2*obj.NofComponents, 2:obj.NofComponents) = -1;
                 dxdp(i,:) = (dFdx\dFdz(:,1))';
-                for j=1:obj.NofComp-1
+                for j=1:obj.NofComponents-1
                     dxdz(i,:,j) = (dFdx\dFdz(:,j+1))';
                 end
             end
@@ -217,8 +217,8 @@ classdef Comp_fluid_model < fluid_model
             rhov = Status.Properties('rho_1').Value;
             rhol = Status.Properties('rho_2').Value;
             ni = Status.Properties('ni_1').Value;
-            dSdz = zeros(length(ni), obj.NofComp - 1);
-            for j = 1:obj.NofComp-1
+            dSdz = zeros(length(ni), obj.NofComponents - 1);
+            for j = 1:obj.NofComponents-1
                 Num1 = rhol .* ni;
                 dNum1 = rhol .* dni(:,j);
                 Den1 = rhol .* ni + (1 - ni) .* rhov;
@@ -238,8 +238,8 @@ classdef Comp_fluid_model < fluid_model
                 rho(:,i) = Status.Properties(['rho_',num2str(i)]).Value;
                 S(:,i) = Status.Properties(['S_',num2str(i)]).Value;
             end
-            drhotdz = zeros(length(S), obj.NofComp-1);
-            for j=1:obj.NofComp-1
+            drhotdz = zeros(length(S), obj.NofComponents-1);
+            for j=1:obj.NofComponents-1
                 drhotdz(:,j) = drho(:,1) .* S(:,1) + rho(:,1) .* dS(:,j) + drho(:,2) .* S(:,2) - rho(:,2) .* dS(:,j);
             end
             % When it s one phase
@@ -247,8 +247,8 @@ classdef Comp_fluid_model < fluid_model
         end
         function dPc = ComputeDPcDz(obj, Status, dSdz)
             dPcdS = obj.ComputeDPcDS(Status.Properties('S_1').Value);
-            dPc = zeros(length(dPcdS), obj.NofComp-1);
-            for j=1:obj.NofComp-1
+            dPc = zeros(length(dPcdS), obj.NofComponents-1);
+            for j=1:obj.NofComponents-1
                 % Use chain rule
                 dPc(:,j) = dPcdS(:,1) .* dSdz(:,j);
             end

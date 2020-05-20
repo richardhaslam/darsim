@@ -34,7 +34,7 @@ classdef Production_System < handle
         function InitializeWells(obj, FluidModel, GravityModel, DiscretizationModel)
             %% Initialize Wells: 
             % 1. Create objects
-            obj.Wells.InitializeFluxes(FluidModel.NofPhases, FluidModel.NofComp);
+            obj.Wells.InitializeFluxes(FluidModel.NofPhases, FluidModel.NofComponents);
             % 2. Injectors pressures are adjusted to account for gravity
             % 2.a Estimate fluid properties inside injectors
             FluidModel.InitializeInjectors(obj.Wells.Inj);

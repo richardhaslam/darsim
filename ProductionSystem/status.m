@@ -60,7 +60,7 @@ methods
                 end
                 obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);
                 %% Compositional stuff
-                for i=1:FluidModel.NofComp
+                for i=1:FluidModel.NofComponents
                     obj.Properties(['z_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 1);
                     for j=1:FluidModel.NofPhases
                         obj.Properties(['x_', num2str(i), 'ph', num2str(j)]) = property(N, 1, 'scalar', false, 0, 1, i==j);

@@ -6,11 +6,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef norm_calculator_comp < norm_calculator
     methods
-        function [Balance, Equilibrium] = CalculateResidualNorm(obj, residual, N, Formulation)
+        function [Balance, RHSNorm, Equilibrium] = CalculateResidualNorm(obj, residual, RHS, N, Formulation)
             Balance = zeros(length(obj.FirstResidualNorm),1);
+            RHSNorm = zeros(length(obj.FirstRHSNorm)     ,1);
             n_comp = Formulation.NofComponents;
             for i=1:n_comp
                 Balance(i) = norm(residual((i-1)*N + 1:i*N), 2);
+                RHSNorm(i) = norm(RHS     ((i-1)*N + 1:i*N), 2);
             end
             Equilibrium = norm(residual(N*n_comp+1:end), inf);
         end

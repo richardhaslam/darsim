@@ -41,7 +41,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             obj.dMob = FluidModel.ComputeDMobDz(ProductionSystem.Reservoir.State, dSdz);
             obj.dPc = FluidModel.ComputeDPcDz(ProductionSystem.Reservoir.State, dSdz);
          end
-        function Residual = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
+        function [Residual, RHS] = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             %Create local variables
             N = DiscretizationModel.ReservoirGrid.N;          
             pv = ProductionSystem.Reservoir.Por*DiscretizationModel.ReservoirGrid.Volume;
@@ -72,7 +72,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
             depth = DiscretizationModel.ReservoirGrid.Depth;
             
             %Accumulation term
-            A = speye(N)*pv/dt;
+            A = speye(N).*pv/dt;
             
             %Source terms
             q = obj.ComputeSourceTerms(N, ProductionSystem.Wells);
@@ -85,6 +85,7 @@ classdef Overall_Composition_formulation < Compositional_formulation
                 n_old = rhoT_old .* z_old(:,i);
                 % Phase Transmissibilities
                 obj.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, rho, obj.GravityModel.RhoInt, x(:,(i-1)*2+1:(i-1)*2+2), i); 
+                RHS((i-1)*N+1:i*N) = q(:,i);
                 Residual((i-1)*N+1:i*N) = A * (n - n_old) ...             % Accumulation term
                            + obj.Tph{i, 1} *  P(:,1) ...    % Convective term                
                            + obj.Tph{i, 2} *  P(:,2)...
