@@ -330,7 +330,13 @@ classdef reader_darsim2 < reader
                 if isempty(index)
                     error('The keyword "Por" for porosity is missing. Please check the input file!\n');
                 end
-                ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
+                if contains(obj.InputMatrix(index - 1), 'INCLUDE')
+                    ReservoirProperties.PorosityInclude = 1;
+                    ReservoirProperties.PorosityFile = strcat(obj.Directory, '/', char(obj.InputMatrix(index + 1)));
+                else
+                    ReservoirProperties.PorosityInclude = 0;
+                    ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
+                end
             end
             
             % 5. Temperature

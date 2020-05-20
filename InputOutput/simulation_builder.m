@@ -263,7 +263,7 @@ classdef simulation_builder < handle
             N_ActiveCells = obj.SimulationInput.ReservoirProperties.Grid.N_ActiveCells;
             Cpr = obj.SimulationInput.ReservoirProperties.SpecificHeat;
             RockDensity = obj.SimulationInput.ReservoirProperties.RockDensity;
-            phi = obj.SimulationInput.ReservoirProperties.phi .* ones(N_ActiveCells, 1);
+            % Permeability Data
             K = ones(N_ActiveCells, 3);
             switch obj.SimulationInput.ReservoirProperties.PermUnit
                 case('m2')
@@ -336,9 +336,32 @@ classdef simulation_builder < handle
                 end
             end
             
-            % Adding permeability info to the reservoir
-            Reservoir.AddPermeabilityPorosity(K, phi);
+            %%%% Adding Porosity Data
+            if obj.SimulationInput.ReservoirProperties.PorosityInclude
+                fprintf('\n---> Reading porosity file ...');
+                field = load(obj.SimulationInput.ReservoirProperties.PorosityFile);
+                fprintf(' ---> Completed.\n');
+                
+                % reshape it to specified size
+                if (nx~=field(1,1)) || (ny~=field(2,1)) || (nz~=field(3,1))
+                    warning('The grid cells mentioned in the porosity file do not match with Reservoir grid cells.\n');
+                end
+                if (nx>field(1,1)) || (ny>field(2,1)) || (nz>field(3,1))
+                    error('The grid cells mentioned in the porosity file are less than that of Reservoir grid cells. Check the input file.\n');
+                end
+                field1 = reshape(field(4:end,1),[field(1,1) field(2,1) field(3,1)]);
+                % make it the size of the grid
+                phi = reshape(field1(1:nx, 1:ny, 1:nz), nx*ny*nz, 1);
+            else
+                phi = obj.SimulationInput.ReservoirProperties.phi .* ones(N_ActiveCells, 1);
+            end
+            if any(phi>=1) || any(phi<=0)
+                error('In the porosity data, there are values out of the physical range. Please check the Input file!')
+            end
             
+            %%%% Adding permeability and Porosity info to the reservoir
+            Reservoir.AddPermeabilityPorosity(K, phi);
+
             % Adding heat conductivity info to the reservoir
             if contains(obj.SimulatorSettings.Formulation,'Geothermal')
                 Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
