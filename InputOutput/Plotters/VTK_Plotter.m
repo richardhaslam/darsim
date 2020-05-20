@@ -172,7 +172,27 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, reshape(K(:,3), FractureGrid.N, 1), ' PERMZ');
             fprintf(fileID, '\n');
             fclose(fileID);
-        end   
+        end
+        function PlotPorosity(obj, ProductionSystem, DiscretizationModel)
+            obj.PlotReservoirPorosity(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.Por);
+            for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
+                obj.PlotFracturePorosity(DiscretizationModel.FracturesGrid.Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).Por, f);
+            end
+        end
+        function PlotReservoirPorosity(obj, ReservoirGrid, phi)
+            %Porosity
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'a');
+            obj.PrintScalar2VTK(fileID, reshape(phi, ReservoirGrid.N, 1), ' Porosity');
+            fprintf(fileID, '\n');
+            fclose(fileID);
+        end
+        function PlotFracturePorosity(obj, FractureGrid, phi, f)
+            %Permeability
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'a');
+            obj.PrintScalar2VTK(fileID, reshape(phi, FractureGrid.N, 1), ' Porosity');
+            fprintf(fileID, '\n');
+            fclose(fileID);
+        end
         function PlotBasisFunctions(obj,FineGrid, CoarseGrid, Prolp, Nf, Nc)
             obj.PlotReservoirBF(FineGrid(1), CoarseGrid(1,:), Prolp);
             for i=2:length(FineGrid)
