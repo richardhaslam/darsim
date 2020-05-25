@@ -323,6 +323,16 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             d2Mobdh2(isnan(d2Mobdh2))=0;
         end
         
+        function dhdp = ComputeDhDp(obj)
+            dhdp = zeros(length(obj.Pindex),obj.NofPhases);
+            for i=1:obj.NofPhases
+                hTable = obj.TablePH.(['H_',num2str(i)]);
+                dhdp(:,i) = obj.Phases(i).ComputeDhDp(obj.Ptable, hTable, obj.p);
+            end
+%             dhdp(:,2) = 0;
+        end
+
+
         % Other       
         function InitializeInjectors(obj, Inj)
             % Assuming saturation of injection phase is 1.0. We are assuming we are only injecting 1 phase, i.e. water

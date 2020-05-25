@@ -79,7 +79,6 @@ classdef therm_comp_Multiphase < phase
             dTdp = interp2(Hgrid, Pgrid, table_dTdp, h, p, 'linear');
         end
         
-
         function dmudp = ComputeDmuDp(obj, Pgrid, Hgrid, muTable, h, p)
             [~,table_dmudp] = gradient(muTable,obj.Hstepsize,obj.Pstepsize);
             dmudp = interp2(Hgrid, Pgrid, table_dmudp, h, p, 'linear');
@@ -129,6 +128,15 @@ classdef therm_comp_Multiphase < phase
             [table_d2mudh2,~] = gradient(table_dmudh,1); 
             d2mudh2 = interp2(Hgrid, Pgrid, table_d2mudh2, h, p, 'linear');
         end
+        
+        function dhdp = ComputeDhDp(obj, Ptable, hTable, p)
+            table_dhdp = gradient(hTable,obj.Pstepsize);
+            dhdp = interp1(Ptable, table_dhdp, p);
+            
+%             dhdp = ((rho - p.*drhodp)./rho.^2);
+
+        end
+
         
         % Injection properties; we are injecting only water, so it is
         % easier to use existing functions from Geothermal singlephase
