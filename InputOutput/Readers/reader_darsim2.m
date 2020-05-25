@@ -338,14 +338,25 @@ classdef reader_darsim2 < reader
             if strcmp(FluidProperties.FluidModel, 'Geothermal_MultiPhase')
                 if isfile(strcat(obj.Directory, '/', 'TablePH_Workspace.mat'))
                     fprintf('A file containing table properties already exists; a .mat-file is loaded instead of original tables');
-                    load(strcat(obj.Directory, '/','TablePh_Workspace.mat'),'FluidProperties');
+                    load(strcat(obj.Directory, '/','TablePH_Workspace.mat'),'FluidProperties');
                 else
-                    FluidProperties.TablePH = obj.ReadTables();
+                    FluidProperties.TablePH = obj.PH_ReadTables();
                     save(strcat(obj.Directory, '/','TablePH_Workspace.mat'),'FluidProperties');
                 end
             end
+            
+            % 12. Tables (in case of Geothermal SinglePhase)
+            if strcmp(FluidProperties.FluidModel, 'Geothermal_SinglePhase')
+                if isfile(strcat(obj.Directory, '/', 'TablePT_Workspace.mat'))
+                    fprintf('A file containing table properties already exists; a .mat-file is loaded instead of original tables');
+                    load(strcat(obj.Directory, '/','TablePT_Workspace.mat'),'FluidProperties');
+                else
+                    FluidProperties.TablePT = obj.PT_ReadTables();
+                    save(strcat(obj.Directory, '/','TablePT_Workspace.mat'),'FluidProperties');
+                end
+            end
         end
-        function TablePH = ReadTables(obj)
+        function TablePH = PH_ReadTables(obj)
             % Read thermodynamic property tables; 1 = Water, 2 = Steam
             TablePH.rho_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamDensity.txt'));
             TablePH.rho_2 = TablePH.rho_2(1:10:end,1:10:end);
@@ -372,10 +383,16 @@ classdef reader_darsim2 < reader
             TablePH.H_1 = TablePH.H_1(1:10:end);
             
             TablePH.Temperature = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_Temperature.txt'));
-            TablePH.Temperature = TablePH.Temperature(1:10:end,1:10:end);
-
-            
+            TablePH.Temperature = TablePH.Temperature(1:10:end,1:10:end);            
         end
+        function TablePT = PT_ReadTables(obj)
+            % Temperature tables test
+            TablePT.rho = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterDensity.txt'));
+            TablePT.cond = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterConductivity.txt'));
+            TablePT.h = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterEnthalpy.txt'));
+            TablePT.mu = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterViscosity.txt'));    
+        end
+
         function WellsInfo = ReadWellsInfo(obj, SimulationInput)
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
             temp = regexp(obj.InputMatrix, 'INJ', 'match');

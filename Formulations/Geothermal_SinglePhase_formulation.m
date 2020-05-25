@@ -8,6 +8,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Geothermal_SinglePhase_formulation < formulation
     properties
+        MatrixAssembler
+
+        Thph
+        Ghph
+        
         drhodT
         d2rhodT2
         dmudT
@@ -17,16 +22,20 @@ classdef Geothermal_SinglePhase_formulation < formulation
         d2hdT2
         dMobdT
         d2MobdT2
+        
+        dMobdp
+        
         Cp % fluid specific heat
         Kf % fluid conductivity
         Tk % transmisibility of rock conductivity
-        Th % transmisibility of rho .* h
     end
     methods
         function obj = Geothermal_SinglePhase_formulation()
             obj@formulation();
-            obj.Tph = cell(2,1);
-            obj.Gph = cell(2,1);
+            obj.Tph = cell(1,1);
+            obj.Gph = cell(1,1);
+            obj.Tk = cell(1,1);
+            obj.MatrixAssembler = matrix_assembler_geothermal();
         end
         function x = GetPrimaryUnknowns(obj, ProductionSystem, DiscretizationModel)
              Nt = DiscretizationModel.N; % total grid
@@ -73,6 +82,9 @@ classdef Geothermal_SinglePhase_formulation < formulation
             [obj.dhdT,obj.d2hdT2] = FluidModel.ComputeDhDT(ProductionSystem.Reservoir.State);
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('mu_1').Value); 
             [obj.dMobdT,obj.d2MobdT2] = FluidModel.ComputeDMobdT(ProductionSystem.Reservoir.State);
+            obj.dMobdp = zeros(size(obj.drhodp));
+            FluidModel.ComputeThermalConductivity(ProductionSystem.Reservoir)
+             
             %% 3. Fractures Properties and Derivatives
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 obj.drhodp = [obj.drhodp; FluidModel.ComputeDrhoDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
@@ -141,8 +153,8 @@ classdef Geothermal_SinglePhase_formulation < formulation
             
             % RESIDUAL
             Residual_T  = Accumulation ...
-                + obj.Th{ph, 1+f} * P_new ...
-                - obj.Gph{ph, 1+f} * depth ...
+                + obj.Thph{ph, 1+f} * P_new ...
+                - obj.Ghph{ph, 1+f} * depth ...
                 + obj.Tk{ph, 1+f} * T_new ...
                 - qhw(Index.Start:Index.End, ph)...
                 - qhf(Index.Start:Index.End, ph)...
@@ -168,13 +180,23 @@ classdef Geothermal_SinglePhase_formulation < formulation
             end
             Nt = DiscretizationModel.N;
             ResidualFull = zeros( 2*Nt , 1 );
-                        
+            
+            obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid , ProductionSystem.Reservoir.State );
+
+            
             for ph=1:obj.NofPhases
                 %% Transmissibilities of flow and heat
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                [obj.Tph{ph, 1}, obj.Gph{ph, 1}, obj.Th{ph, 1}, obj.Tk{1, 1}] = obj.TransmissibilityMatrix( ...
+                % Compute flow transmissibility and gravity
+                [obj.Tph{ph, 1}, obj.Gph{ph, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                    DiscretizationModel.ReservoirGrid, ...
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
+                % Compute (convective) heat transmissibility and gravity
+                [obj.Thph{ph, 1}, obj.Ghph{ph, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
                     obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
@@ -300,7 +322,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             
             % 1.J_TP
             % 1.a Pressure Block
-            J_TP = obj.Th{ph, 1+f};
+            J_TP = obj.Thph{ph, 1+f};
             
             % 1.b: compressibility part
             dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
@@ -617,7 +639,14 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                [obj.Tph{ph, 1}, obj.Gph{ph, 1}, ~, ~] = obj.TransmissibilityMatrix( ...
+                % Compute flow transmissibility and gravity
+                [obj.Tph{ph, 1}, obj.Gph{ph, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                    DiscretizationModel.ReservoirGrid, ...
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
+                % Compute (convective) heat transmissibility and gravity
+                [obj.Thph{ph, 1}, obj.Ghph{ph, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
                     obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
@@ -770,12 +799,22 @@ classdef Geothermal_SinglePhase_formulation < formulation
             end
             Nt = DiscretizationModel.N;
             R_T = zeros( Nt , 1 );
+            
+            obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid , ProductionSystem.Reservoir.State );
+
             for ph=1:obj.NofPhases
                 %% Transmissibilities of flow and heat
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                [obj.Tph{ph, 1}, obj.Gph{ph, 1}, obj.Th{ph, 1}, obj.Tk{1, 1}] = obj.TransmissibilityMatrix( ...
+                % Compute flow transmissibility and gravity
+                [obj.Tph{ph, 1}, obj.Gph{ph, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                    DiscretizationModel.ReservoirGrid, ...
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
+                % Compute (convective) heat transmissibility and gravity
+                [obj.Thph{ph, 1}, obj.Ghph{ph, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
                     obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
@@ -918,7 +957,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 % if the solution makes no sense, skip this step
                 return
             else
-                delta = obj.UpdateTemperature(delta, ProductionSystem, FluidModel, DiscretizationModel);
+%                 delta = obj.UpdateTemperature(delta, ProductionSystem, FluidModel, DiscretizationModel);
                 
                 Nm = DiscretizationModel.ReservoirGrid.N;
                 Nt = DiscretizationModel.N;
@@ -1022,14 +1061,14 @@ classdef Geothermal_SinglePhase_formulation < formulation
             Th = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz); 
             
             %% Tk Matrix
-            THx = zeros(Nx+1, Ny, Nz);
-            THy = zeros(Nx, Ny+1, Nz);
-            THz = zeros(Nx, Ny, Nz+1);
+            CHx = zeros(Nx+1, Ny, Nz);
+            CHy = zeros(Nx, Ny+1, Nz);
+            CHz = zeros(Nx, Ny, Nz+1);
             
-            THx(2:Nx,:,:)= Grid.THx(2:Nx,:,:); 
-            THy(:,2:Ny,:)= Grid.THy(:,2:Ny,:);
-            THz(:,:,2:Nz)= Grid.THz(:,:,2:Nz);
-            Tk = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, THx, THy, THz); % Transmisibility of rock conductivity
+            CHx(2:Nx,:,:)= Grid.CHx(2:Nx,:,:); 
+            CHy(:,2:Ny,:)= Grid.CHy(:,2:Ny,:);
+            CHz(:,:,2:Nz)= Grid.CHz(:,:,2:Nz);
+            Tk = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, CHx, CHy, CHz); % Transmisibility of rock conductivity
 
             % Construct matrix
             function Tph = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz) % remove function - end
@@ -1107,8 +1146,10 @@ classdef Geothermal_SinglePhase_formulation < formulation
             %Injectors
             for i=1:length(Inj)
                 a = Inj(i).Cells;
-                [dQdp, ~] = Inj(i).dQdPdT(K, obj.NofPhases);
-                [dQhdp, ~] = Inj(i).dQhdPdT(K, obj.NofPhases);
+                dQdp = Inj(i).ComputeWellMassFluxDerivativeWithRespectToPressure(K, obj.NofPhases);
+                dQhdp = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, 0, K, obj.NofPhases); % the zero is in place of dhdp
+                dQdT = Inj(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(obj.NofPhases);
+                dQhdT = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj.NofPhases);
                 for j=1:length(a)
                     % add derivative of inj well to Jpp
                     AP1(a(j),a(j)) = AP1(a(j),a(j)) - dQdp(j, ph);
@@ -1118,9 +1159,11 @@ classdef Geothermal_SinglePhase_formulation < formulation
             end
             %Producers
             for i=1:length(Prod)
-                b = Prod(i).Cells;
-                [dQdp , dQdT ] = Prod(i).dQdPdT(State, K, obj.Mob, obj.dMobdT, obj.drhodp, obj.drhodT, obj.NofPhases);
-                [dQhdp, dQhdT] = Prod(i).dQhdPdT(State, K, obj.Mob, obj.dMobdT, obj.drhodp, obj.drhodT, obj.dhdp, obj.dhdT, obj.NofPhases);
+                b = Prod(i).Cells;                
+                dQdp = Prod(i).ComputeWellMassFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dMobdp, obj.NofPhases); 
+                dQdT = Prod(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.dMobdT, obj.drhodT, obj.NofPhases);
+                dQhdp = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.dhdp, obj.drhodp, obj.dMobdp, obj.NofPhases); 
+                dQhdT = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.dMobdT, obj.drhodT, obj.dhdT, obj.NofPhases);
                 for j=1:length(b)
                     % add derivative of prod well to Jpp & JpT
                     AP1(b(j),b(j)) = AP1(b(j),b(j)) - dQdp(j, ph);                    

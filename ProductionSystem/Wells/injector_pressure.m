@@ -69,10 +69,12 @@ classdef injector_pressure < injector
         
         % Heat Flux Derivatives
         % We are taking the derivatives in the wells, but using cell properties. We should use the well properties to take the derivatives
-        function dQhdp = ComputeWellHeatFluxDerivativeWithRespectToPressure(obj, K, NofPhases)
+        function dQhdp = ComputeWellHeatFluxDerivativeWithRespectToPressure(obj, State, dhdp, K, NofPhases)
             dQhdp = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
-                dQhdp(:, i) = obj.rho(:,i) .* obj.h(:,i) .* obj.PI .* K(obj.Cells) .* obj.Mob(:,i) .* (-1) ;  
+                p = State.Properties(['P_',num2str(NofPhases)]).Value;
+                dQhdp(:, i) = obj.rho(:,i) .* obj.h(:,i) .* obj.PI .* K(obj.Cells) .* obj.Mob(:,i) .* (-1);% + ...
+%                               obj.rho(:,i) .* dhdp(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* obj.Mob(:,i) .* (obj.p - p(obj.Cells));  
             end
         end
         function dQhdT = ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj, NofPhases)
@@ -81,10 +83,11 @@ classdef injector_pressure < injector
                 dQhdT(:, i) = 0;
             end
         end
-        function dQhdh = ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(obj, NofPhases)
+        function dQhdh = ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(obj, State, K, NofPhases)
             dQhdh = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
-                dQhdh(:, i) = 0; 
+                p = State.Properties(['P_',num2str(NofPhases)]).Value;
+                dQhdh(:, i) = 0; %obj.rho(:,i) .* 1 .* obj.PI .* K(obj.Cells) .* obj.Mob(:,i) .* (obj.p - p(obj.Cells)) ; 
             end
         end
         

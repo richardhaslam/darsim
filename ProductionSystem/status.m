@@ -42,6 +42,7 @@ methods
                     obj.Properties(['h_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
                     obj.Properties(['mu_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
                     obj.Properties(['cond_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
+                    obj.Properties('CondEff') = property(N, 1, 'scalar', true, 0, 2000); 
                     obj.Properties('T') = property(N, 1, 'scalar', true, 0, 2000);
                 end
             case{'Geothermal_MultiPhase'}
@@ -58,7 +59,7 @@ methods
                     obj.Properties('rhoT') = property(N, 1, 'scalar', true, 0, 2000); %total density
                     obj.Properties('hTfluid') = property(N, 1, 'scalar', true, 0, 2000); %total fluid enthalpy
                     obj.Properties('hRock') = property(N, 1, 'scalar', true, 0, 2000); %rock enthalpy
-                    obj.Properties('CondEff') = property(N, 1, 'scalar', true, 0, 2000); %rock enthalpy
+                    obj.Properties('CondEff') = property(N, 1, 'scalar', true, 0, 2000); 
 
                     % Capillary pressure variable for multiphase geothermal
                     obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);

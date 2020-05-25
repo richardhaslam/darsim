@@ -555,9 +555,9 @@ classdef simulation_builder < handle
             Reservoir.AddPermeabilityPorosity(K, phi);
             % Adding thermal conductivity to the reservoir (maybe find other place for this)
             switch obj.SimulatorSettings.Formulation
-                case {'Geothermal_SinglePhase'}
-                    Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
-                case {'Geothermal_MultiPhase'}
+%                 case {'Geothermal_SinglePhase'}
+%                     Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
+                case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                     Reservoir.K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
                     % The effective thermal conductivity will be calculated later
             end
@@ -614,7 +614,7 @@ classdef simulation_builder < handle
                 Temperature = NaN;
                 Enthalpy = NaN;
                 switch (obj.SimulationInput.FluidProperties.FluidModel)
-                    case {'Geothermal_SinlgePhase','Geothermal_MultiPhase'}
+                    case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                         switch obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.name
                             case('BC_TEMPERATURE')
                                 Temperature = obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.Value;
@@ -796,6 +796,9 @@ classdef simulation_builder < handle
                 case{'Geothermal_SinglePhase'}
                     % build the geothermal singlephase fluid model
                     FluidModel = Geothermal_SinglePhase_fluid_model();
+                    
+                    FluidModel.TablePT = obj.SimulationInput.FluidProperties.TablePT;
+
                     Phase = therm_comp_phase();
                     FluidModel.AddPhase(Phase, 1);
                     obj.SimulatorSettings.CouplingType = 'FIM';

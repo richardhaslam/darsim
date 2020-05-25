@@ -27,10 +27,14 @@ classdef initializer_singlephase < initializer
                 
             %% 3 Compute Phase Density
             % Reservoir
-            FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State); % call initial density
+%             FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State); % call initial density
             switch FluidModel.name  
                 case {'Geothermal_SinglePhase'}
+%                 FluidModel.ComputeTableGrid();
+%                 FluidModel.GetPTValues(ProductionSystem.Reservoir.State);
+
                 FluidModel.ComputePhaseEnthalpies(ProductionSystem.Reservoir.State); % call enthalpy
+                FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State); % call initial density
                 FluidModel.ComputePhaseViscosities(ProductionSystem.Reservoir.State); % call viscosity
                 FluidModel.AddPhaseConductivities(ProductionSystem.Reservoir.State);
             end
