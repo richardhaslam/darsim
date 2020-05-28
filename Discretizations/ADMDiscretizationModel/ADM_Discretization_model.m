@@ -128,6 +128,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             obj.GlobalGrids(1).Children = cell(obj.GlobalGrids(1).N,1); % at finescale there is no children!
             obj.GlobalGrids(1).Verteces = vertcat(obj.FineGrid(:).Verteces); % This only contains information (zero and one) to check which finescale cell is vertex for higher coarsening levels
             obj.GlobalGrids(1).CoarseFactor = vertcat(obj.FineGrid(:).CoarseFactor);
+            obj.GlobalGrids(1).CoarseLevel = 1;
             % 2.1 Fathers
             for x = 1:n_levels - 0
                 % 2.1.1 Fathers for the first medium (reservoir)
@@ -144,6 +145,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 obj.GlobalGrids(L+1).N = sum([obj.CoarseGrid(:,L).N]);
                 obj.GlobalGrids(L+1).Verteces = vertcat(obj.CoarseGrid(:,L).Verteces); % This only contains information (zero and one) to check which coarsescale cell is vertex for higher coarsening levels
                 obj.GlobalGrids(L+1).CoarseFactor = vertcat(obj.CoarseGrid(:,L).CoarseFactor);
+                obj.GlobalGrids(L+1).CoarseLevel = L;
                 % 3.1 Fathers
                 for x = 1:n_levels - L
                     % 3.1.1 Fathers for the first medium (reservoir)
@@ -179,10 +181,6 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrid, obj.CoarseGrid, ProductionSystem);
             
             % Build ADM R and P operators
-            if any(strcmp(ProductionSystem.Reservoir.State.Properties.keys,'Tr'))
-                obj.ExtractReservoirADMGrid;
-                obj.OperatorsHandler.BuildReservoirADMRestriction(obj.ADMGrid_Reservoir, obj.ReservoirGrid)
-            end
             obj.OperatorsHandler.BuildADMOperators(obj.GlobalGrids, obj.ADMGrid);
         end
         function SelectADMGridCoarse(obj, ProductionSystem, Residual)
@@ -194,36 +192,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrid, obj.CoarseGrid, ProductionSystem);
             
             % Build ADM R and P operators
-            if any(strcmp(ProductionSystem.Reservoir.State.Properties.keys,'Tr'))
-                obj.ExtractReservoirADMGrid;
-                obj.OperatorsHandler.BuildReservoirADMRestriction(obj.ADMGrid_Reservoir, obj.ReservoirGrid)
-            end
             obj.OperatorsHandler.BuildADMOperators(obj.GlobalGrids, obj.ADMGrid);
-        end
-        function ExtractReservoirADMGrid(obj)
-            % Remove the fractures from ADMGrid to be used for RockTemperature Prolongation
-            obj.ADMGrid_Reservoir = adm_grid();
-            obj.ADMGrid_Reservoir.N = obj.ADMGrid.N(1,:);
-            obj.ADMGrid_Reservoir.Ntot = sum(obj.ADMGrid_Reservoir.N);
-            obj.ADMGrid_Reservoir.MaxLevel = obj.ADMGrid.MaxLevel;
-            obj.ADMGrid_Reservoir.level = zeros(obj.ADMGrid_Reservoir.Ntot,1);
-            obj.ADMGrid_Reservoir.CellIndex = zeros(obj.ADMGrid_Reservoir.Ntot,1);
-            obj.ADMGrid_Reservoir.Children = cell(obj.ADMGrid_Reservoir.Ntot,1);
-            obj.ADMGrid_Reservoir.GrandChildren = cell(obj.ADMGrid_Reservoir.Ntot,1);
-            for level = 0 : length(obj.ADMGrid_Reservoir.N)-1
-                IndexResStrart  = sum(obj.ADMGrid_Reservoir.N(1:level  )) + 1;
-                IndexResEnd     = sum(obj.ADMGrid_Reservoir.N(1:level+1));
-                IndexFullStrart = sum(sum(obj.ADMGrid.N(:,1:level))) + 1 ;
-                IndexFullEnd    = sum(sum(obj.ADMGrid.N(:,1:level))) + obj.ADMGrid.N(1,level+1);
-                obj.ADMGrid_Reservoir.level        ( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.level        ( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.CellIndex    ( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.CellIndex    ( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.Fathers      ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.Fathers      ( IndexFullStrart : IndexFullEnd , : );
-                obj.ADMGrid_Reservoir.Children     ( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.Children     ( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.GrandChildren( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.GrandChildren( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.Verteces     ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.Verteces     ( IndexFullStrart : IndexFullEnd , : );
-                obj.ADMGrid_Reservoir.CoarseFactor ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.CoarseFactor ( IndexFullStrart : IndexFullEnd , : );
-
-            end    
         end
         function [R, P] = AssembleFullOperators(obj)
             [R, P] = obj.OperatorsHandler.AssembleFullOperators();

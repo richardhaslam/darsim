@@ -73,7 +73,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 ADMProlp = Prolp * ADMProlp;
             end
             
-            % Last prolongation is different coz I use fine-scale ordering
+            % Last prolongation is different as I use fine-scale ordering
             Prolp = obj.LastProlongation(ADMGrid, GlobalGrids(1));
             
             % Multiply by previous objects

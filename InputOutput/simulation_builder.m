@@ -146,7 +146,7 @@ classdef simulation_builder < handle
                     % Reading the coarse node indices of fractures (for now
                     % only one level of multiscale)
                     if ~isempty(frac_CoarseNodeIndex)
-                        FractureGrid.CoarseNodeIndex = str2double(strsplit(FractureMatrix{frac_CoarseNodeIndex(f)+1}))';
+%                         FractureGrid.CoarseNodeIndex = str2double(strsplit(FractureMatrix{frac_CoarseNodeIndex(f)+1}))';
                     end
 
                     % Add fracture grid coordinates (it's for plotting purposes)

@@ -12,7 +12,6 @@ classdef adm_grid < grid_darsim & matlab.mixin.Copyable
         level
         CellIndex
         MaxLevel
-        GrandChildren
     end
     methods
         function Initialize(obj, n_total, numofactive, maxlevel)
@@ -24,20 +23,18 @@ classdef adm_grid < grid_darsim & matlab.mixin.Copyable
             obj.CellIndex = zeros(n_total, 1);
             obj.Fathers = zeros(n_total, maxlevel);
             obj.Children = cell(n_total, maxlevel);
-            obj.GrandChildren = cell(n_total, 1);
             obj.Verteces = zeros(n_total, maxlevel);
         end
         function Update(obj, Nx, Nf, Nc, FineGrid)
-             %       Nf     Nc
-             %    --------------- 
-             %    |      |      |
-             % Nf |  I   |  0   | 
-             %    |______|______|           
-             %    |      |      |
-             % Nx |      |      |
-             %    |      |      |
-             %    ---------------
-            
+            %       Nf     Nc
+            %    --------------- 
+            %    |      |      |
+            % Nf |  I   |  0   | 
+            %    |______|______|           
+            %    |      |      |
+            % Nx |      |      |
+            %    |      |      |
+            %    ---------------
             obj.N(:, obj.MaxLevel + 1) = 0;
             obj.MaxLevel = obj.MaxLevel - 1;
             obj.N(:, obj.MaxLevel + 1) = obj.N(:, obj.MaxLevel + 1) + Nx;
@@ -51,17 +48,19 @@ classdef adm_grid < grid_darsim & matlab.mixin.Copyable
             
             % Make a new vector to store the new children
             ChildrenOfNc = obj.Children;
-            obj.Children = reshape({obj.Children{1:sum(Nf)}}, sum(Nf), 1); cell(sum(Nx), 1);
+            obj.Children = vertcat( obj.Children(1:sum(Nf),:) , cell(sum(Nx), MaxLevels) );
             
             % Add the new cells to the new ADM grid
             h = sum(Nf) + 1;
             for CoarseNode = (sum(Nf)+1) : (sum(Nf)+sum(Nc))
-                FineNodes = ChildrenOfNc{CoarseNode}; % if level l children belong to l-1
+                FineNodes = ChildrenOfNc{CoarseNode,1}; % if level l children belong to l-1
                 n_children = length(FineNodes);
                 obj.CellIndex(h:h + n_children-1) = FineNodes;
-                obj.Children = [obj.Children; reshape({FineGrid.Children{FineNodes}}, n_children, 1)];
-                obj.Fathers(h:h + n_children-1,:) = FineGrid.Fathers(FineNodes,:);
-                obj.Verteces(h:h + n_children-1,:) = FineGrid.Verteces(FineNodes,:);
+                for i = 1 : FineGrid.CoarseLevel
+                    obj.Children(h:h + n_children-1, i) = FineGrid.Children(FineNodes, i);
+                end
+                obj.Fathers(h:h + n_children-1 , FineGrid.CoarseLevel+1:end ) = FineGrid.Fathers(FineNodes,:);
+                obj.Verteces(h:h + n_children-1, FineGrid.CoarseLevel+1:end ) = FineGrid.Verteces(FineNodes,:);
                 h = h + n_children;
             end
         end

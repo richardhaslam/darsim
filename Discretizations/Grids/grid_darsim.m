@@ -12,12 +12,13 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         Depth
         Active
         Fathers
-        Children = {};
+        Children = {}
         Verteces
         CoarseFactor
         GridCoords
         ActiveTime
-        CoarseNodeIndex
+        %CoarseNodeIndex
+        CoarseLevel
     end
     methods
         function Initialise(obj, currentLevel, maxLevel)

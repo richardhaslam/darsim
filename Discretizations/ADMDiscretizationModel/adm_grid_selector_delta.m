@@ -16,7 +16,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step based on delta x
-            %% 1. Reset all cells to be active and stor x{m}
+            %% 1. Reset all cells to be active and store x{m}
             n_media = length(FineGrid);
             Var = cell(n_media, 1);
             for m=1:n_media
@@ -91,31 +91,31 @@ classdef adm_grid_selector_delta < adm_grid_selector
             %1. Select Active Coarse Blocks
             Nc = CoarseGrid.N;
             for c = 1:Nc
-                % Saturation of fine_cells belonging to coarse block c
+                % Values of the variable "Var" for FineGrid cells belonging to CoarseGrid block c
                 Var_children = Var(CoarseGrid.Children{c, 1});
-                % Max e Min saturation inside c
+                % Finding max and min values inside CoarseGrid block c
                 VarMax = max(Var_children);
                 VarMin = min(Var_children);
                 if CoarseGrid.Active(c) == 1
-                    n = CoarseGrid.Neighbours(c).indexes;
-                    Nn = length(n);
+                    Neighbor = CoarseGrid.Neighbours(c).indexes;
+                    NofNeighbor = length(Neighbor);
                     i = 1;
-                    while i <= Nn
-                        % Man mix saturation of neighbour n(i)
-                        Var_children = Var(CoarseGrid.Children{n(i), end});
-                        VarN_max = max(Var_children);
-                        VarN_min = min(Var_children);
+                    while i <= NofNeighbor
+                        % Finding max and min values of neighbour i
+                        Var_children = Var(CoarseGrid.Children{Neighbor(i), end});
+                        VarNeighborMax = max(Var_children);
+                        VarNeighborMin = min(Var_children);
                         if flag == false
-                            if (abs(VarMax-VarN_min) > obj.tol || abs(VarMin-VarN_max) > obj.tol)
+                            if (abs(VarMax-VarNeighborMin) > obj.tol || abs(VarMin-VarNeighborMax) > obj.tol)
                                 CoarseGrid.Active(c) = 0;
-                                i = Nn + 1;
+                                i = NofNeighbor + 1;
                             else
                                 i = i+1;
                             end
                         else
-                            if (abs(VarMax-VarN_min) > 2*obj.tol || abs(VarMin-VarN_max) > 2*obj.tol)
+                            if (abs(VarMax-VarNeighborMin) > 2*obj.tol || abs(VarMin-VarNeighborMax) > 2*obj.tol)
                                 CoarseGrid.Active(c) = 0;
-                                i = Nn + 1;
+                                i = NofNeighbor + 1;
                             else
                                 i = i+1;
                             end
@@ -123,7 +123,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
                     end
                 end
             end
-            %2. Do not coarsen neighbours of cells that are fine
+            %2. Do not coarsen neighbours of cells that are at finescale resolution
             DummyActive = CoarseGrid.Active;
             for i = 1:Nc
                 if (CoarseGrid.Active(i) == 0)
@@ -132,9 +132,8 @@ classdef adm_grid_selector_delta < adm_grid_selector
             end
             CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
             
-            %3. Set to inactive fine block belonging to Active Coarse Blocks
-            %Cindeces = find();
-            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;
+            %3. Set to inactive the fine block belonging to Active Coarse Blocks
+            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,1}]) = 0;
         end
         function SelectCoarseFineC(obj, FineGrid, CoarseGrid)
             FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;

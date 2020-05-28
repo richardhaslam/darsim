@@ -62,7 +62,7 @@ classdef grid_mapper < handle
                         Jmin = Grid(LL+L).J(c,LL+1) - floor(CF(2)/2); Jmin = max(Jmin,1);
                         Jmax = Grid(LL+L).J(c,LL+1) + floor(CF(2)/2); Jmax = min(Jmax,Grid(L).Ny);
                         Kmin = Grid(LL+L).K(c,LL+1) - floor(CF(3)/2); Kmin = max(Kmin,1);
-                        Kmax = Grid(LL+L).K(c,LL+1) + floor(CF/2); Kmax = min(Kmax,Grid(L).Nz);
+                        Kmax = Grid(LL+L).K(c,LL+1) + floor(CF(3)/2); Kmax = min(Kmax,Grid(L).Nz);
                         i = Imin:Imax;
                         j = Jmin:Jmax;
                         k = Kmin:Kmax;

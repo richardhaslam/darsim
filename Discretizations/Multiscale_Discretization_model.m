@@ -58,22 +58,13 @@ classdef Multiscale_Discretization_model < Discretization_model
             disp(newline);
         end
         function ConstructCoarseGrids(obj, Inj, Prod)
-            if mod( obj.ReservoirGrid.Nx , obj.Coarsening(1,1,1) ) == 0 && ...
-               mod( obj.ReservoirGrid.Ny , obj.Coarsening(1,2,1) ) == 0 && ...
-               mod( obj.ReservoirGrid.Nz , obj.Coarsening(1,3,1) ) == 0
-                obj.Vertex_On_Corner = 0;
-                fprintf('The verteces are not on the corners.\n');
-            elseif mod( max((obj.ReservoirGrid.Nx-1),1) , obj.Coarsening(1,1,1) ) == 0 && ...
-                   mod( max((obj.ReservoirGrid.Ny-1),1) , obj.Coarsening(1,2,1) ) == 0 && ...
-                   mod( max((obj.ReservoirGrid.Nz-1),1) , obj.Coarsening(1,3,1) ) == 0
-                obj.Vertex_On_Corner = 1;
-                fprintf('The verteces are on the corners.\n');
-            else
-                error('The number of reservoir grid cells do not comply with coarsening ratios. Please check the input files.');
-            end
+            obj.CheckIfNumberOfGridCellsMatchTheCoarseningSettings();
+            
             %% 1. Reservoir
             % Construct all coarse grids for reservoir
+            obj.ReservoirGrid.CoarseLevel = 0;
             obj.CoarseGrid(1,1) = coarse_grid();
+            obj.CoarseGrid(1,1).CoarseLevel = 1;
             obj.CoarseGrid(1,1).CoarseFactor = obj.Coarsening(1,:,1);
             obj.CoarseGrid(1,1).Vertex_On_Corner = obj.Vertex_On_Corner;
             obj.CoarseGrid(1,1).BuildCoarseGrid(obj.ReservoirGrid, obj.Coarsening(1,:,1));
@@ -82,6 +73,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             obj.Nc(1, 1) = obj.CoarseGrid(1,1).N;
             for L=2:obj.maxLevel(1)
                 obj.CoarseGrid(1,L) = coarse_grid();
+                obj.CoarseGrid(1,L).CoarseLevel = L;
                 obj.CoarseGrid(1,L).CoarseFactor = obj.Coarsening(1,:,L);
                 obj.CoarseGrid(1,L).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1,L).BuildCoarseGrid([obj.ReservoirGrid, obj.CoarseGrid(1,1:L-1)],obj.Coarsening(1,:,1:L));
@@ -97,7 +89,9 @@ classdef Multiscale_Discretization_model < Discretization_model
             % Construct all coarse grids for fractures
             for f = 1 : size(obj.Coarsening,1) - 1
                 % minMaxLevel = min( obj.maxLevel(1) , obj.maxLevel(1+f) );
+                obj.FracturesGrid.Grids(f).CoarseLevel = 0;
                 obj.CoarseGrid(1+f,1) = coarse_grid();
+                obj.CoarseGrid(1+f,1).CoarseLevel = 1;
                 obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
                 obj.CoarseGrid(1+f,1).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1+f,1).BuildCoarseGrid(obj.FracturesGrid.Grids(f),obj.Coarsening(1+f,:,1));
@@ -105,6 +99,7 @@ classdef Multiscale_Discretization_model < Discretization_model
                 obj.Nc(f+1,1) = obj.CoarseGrid(1+f,1).N;
                 for L = 2 : obj.maxLevel(1)
                     obj.CoarseGrid(1+f,L) = coarse_grid();
+                    obj.CoarseGrid(1+f,L).CoarseLevel = L;
                     obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
                     obj.CoarseGrid(1+f,L).Vertex_On_Corner = obj.Vertex_On_Corner;
                     obj.CoarseGrid(1+f,L).BuildCoarseGrid([obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:L-1)],obj.Coarsening(1+f,:,1:L));
@@ -118,6 +113,7 @@ classdef Multiscale_Discretization_model < Discretization_model
                     % afterwards no coare node (lowest computational demand).
                     for L = obj.maxLevel(1+f)+1 : obj.maxLevel(1)
                         obj.CoarseGrid(1+f,L) = coarse_grid();
+                        obj.CoarseGrid(1+f,L).CoarseLevel = L;
                         obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
                         obj.CoarseGrid(1+f,L).Nx = 0;
                         obj.CoarseGrid(1+f,L).Ny = 0;
@@ -158,6 +154,36 @@ classdef Multiscale_Discretization_model < Discretization_model
         end
         function SelectADMGrid(obj, ProductionSystem)
             % virtual call
+        end
+        function CheckIfNumberOfGridCellsMatchTheCoarseningSettings(obj)
+            % Check for reservoir
+            if mod( obj.ReservoirGrid.Nx , obj.Coarsening(1,1,end) ) == 0 && ...
+               mod( obj.ReservoirGrid.Ny , obj.Coarsening(1,2,end) ) == 0 && ...
+               mod( obj.ReservoirGrid.Nz , obj.Coarsening(1,3,end) ) == 0
+                obj.Vertex_On_Corner = 0;
+                fprintf('The verteces are not on the corners.\n');
+            elseif mod( max((obj.ReservoirGrid.Nx-1),1) , obj.Coarsening(1,1,end) ) == 0 && ...
+                   mod( max((obj.ReservoirGrid.Ny-1),1) , obj.Coarsening(1,2,end) ) == 0 && ...
+                   mod( max((obj.ReservoirGrid.Nz-1),1) , obj.Coarsening(1,3,end) ) == 0
+                obj.Vertex_On_Corner = 1;
+                fprintf('The verteces are on the corners.\n');
+            else
+                error('DARSim2 Error: The number of reservoir grid cells do not comply with coarsening settings. Please check the input files.');
+            end
+            % Check for fractures
+            for f = 1 : size(obj.Coarsening,1) - 1
+                if mod( obj.FracturesGrid.Grids(f).Nx , obj.Coarsening(1+f,1,end) ) == 0 && ...
+                   mod( obj.FracturesGrid.Grids(f).Ny , obj.Coarsening(1+f,2,end) ) == 0 && ...
+                   mod( obj.FracturesGrid.Grids(f).Nz , obj.Coarsening(1+f,3,end) ) == 0
+                   % It is OK. Do nothing.
+                elseif mod( max((obj.FracturesGrid.Grids(f).Nx-1),1) , obj.Coarsening(1+f,1,end) ) == 0 && ...
+                       mod( max((obj.FracturesGrid.Grids(f).Ny-1),1) , obj.Coarsening(1+f,2,end) ) == 0 && ...
+                       mod( max((obj.FracturesGrid.Grids(f).Nz-1),1) , obj.Coarsening(1+f,3,end) ) == 0
+                       % It is OK. Do nothing.
+                else
+                    error('DARSim2 Error: The number of grid cells in fracture #%d  do not comply with coarsening settings. Please check the input files.',f);
+                end
+            end
         end
     end
 end

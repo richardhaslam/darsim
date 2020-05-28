@@ -30,11 +30,7 @@ classdef operators_handler_adm < operators_handler
             % Prolongation (do the pressure last coz it modifies ADMGrid)
             start2 = tic;
             for i=length(obj.ProlongationBuilders):-1:1
-                if i==3 && ~isempty(obj.ADMRest_Reservoir)
-                    obj.ADMProl{i} = obj.ProlongationBuilders(i).ADMProlongation(ADMGrid, GlobalGrids, obj.ADMRest_Reservoir);
-                else
-                    obj.ADMProl{i} = obj.ProlongationBuilders(i).ADMProlongation(ADMGrid, GlobalGrids, obj.ADMRest);
-                end
+                obj.ADMProl{i} = obj.ProlongationBuilders(i).ADMProlongation(ADMGrid, GlobalGrids, obj.ADMRest);
             end
             prolongation = toc(start2);
             disp(['Full Prolongation built in: ', num2str(prolongation), ' s']);
@@ -49,7 +45,7 @@ classdef operators_handler_adm < operators_handler
             obj.ADMRest(sub2ind(size(obj.ADMRest), rows, columns)) = 1;
             % Coarse levels cells
             for c = Nf + 1:ADMGrid.Ntot
-                indexes = ADMGrid.GrandChildren{c};
+                indexes = ADMGrid.Children{c,ADMGrid.level(c)};
                 indexes(indexes==0)=[];
                 obj.ADMRest(c, indexes) = 1;
             end
