@@ -112,18 +112,25 @@ classdef bf_updater < handle
             %
             %     iyc = 2 ixc =1                       iyc = 2   ixc =2
             
-            %% 0. Define local variables 
-            nxf = vertcat(FineGrid(1:end).Nx);
-            nyf = vertcat(FineGrid(1:end).Ny);
-            nzf = vertcat(FineGrid(1:end).Nz);
-            nf  = vertcat(FineGrid(1:end).N );
+            %% 0. Define local variables
+            nxf = vertcat(FineGrid.Nx);
+            nyf = vertcat(FineGrid.Ny);
+            nzf = vertcat(FineGrid.Nz);
+            nf  = vertcat(FineGrid.N );
+            if FineGrid(1).CoarseLevel > 0
+                nxf( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+                nyf( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+                nzf( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+                nf ( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+            end
+            
             nxcf = cf(:,1);
             nycf = cf(:,2);
             nzcf = cf(:,3);
- 
-            nxc = vertcat(CoarseGrid(1:end).Nx);
-            nyc = vertcat(CoarseGrid(1:end).Ny);
-            nzc = vertcat(CoarseGrid(1:end).Nz);
+            
+            nxc = vertcat(CoarseGrid.Nx);  nxc( [CoarseGrid.hasCoarseNodes] == 0 ) = 0;
+            nyc = vertcat(CoarseGrid.Ny);  nyc( [CoarseGrid.hasCoarseNodes] == 0 ) = 0;
+            nzc = vertcat(CoarseGrid.Nz);  nzc( [CoarseGrid.hasCoarseNodes] == 0 ) = 0;
             
             %% 1. Define number of cells of each block
             if ~CoarseGrid(1).Vertex_On_Corner
@@ -146,8 +153,8 @@ classdef bf_updater < handle
 
             for m=1:length(FineGrid)
                 % faces
-                if CoarseGrid(m).N == 0 && FineGrid(m).Ny > 1
-                    nff = nff + FineGrid(m).N;
+                if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny > 1
+                    nff = nff + nf(m);
                 else
                     nff = nff + (nxcf(m)-1)*(nycf(m)-1)*nxc_hybrid(m)*nyc_hybrid(m)*nzc(m) + ...
                               (nycf(m)-1)*(nzcf(m)-1)*nyc_hybrid(m)*nzc_hybrid(m)*nxc(m) + ...
@@ -155,8 +162,8 @@ classdef bf_updater < handle
                 end
                         
                 % edges
-                if CoarseGrid(m).N == 0 && FineGrid(m).Ny == 1
-                    nee = nee + FineGrid(m).N;
+                if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny == 1
+                    nee = nee + nf(m);
                 else
                     nee = nee + (nxcf(m)-1)*nxc_hybrid(m)*nyc(m)*nzc(m) + ...
                                 (nycf(m)-1)*nyc_hybrid(m)*nxc(m)*nzc(m) + ...
@@ -234,17 +241,17 @@ classdef bf_updater < handle
                     end
                     % In case there are no coarse node in this media, all
                     % the cells are faces (if 2D) or edges (if 1D)
-                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny > 1
-                        for j = 1 : FineGrid(m).Ny
-                            for i = 1 : FineGrid(m).Nx
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny > 1
+                        for j = 1 : nyf(m)
+                            for i = 1 : nxf(m)
                                 ijk = sum(nf(1:m-1)) + (j-1) * FineGrid(m).Ny + i;
                                 iff0 = iff0 + 1;
                                 P(iff0, ijk) = 1;
                             end
                         end
                     end
-                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny == 1
-                        for i = 1 : FineGrid(m).Nx
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny == 1
+                        for i = 1 : nxf(m)
                             ijk = sum(nf(1:m-1)) + i;
                             iee0 = iee0 + 1;
                             P(iee0, ijk) = 1;
@@ -306,17 +313,17 @@ classdef bf_updater < handle
                     end
                     % In case there are no coarse node in this media, all
                     % the cells are faces (if 2D) or edges (if 1D)
-                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny > 1
-                        for j = 1 : FineGrid(m).Ny
-                            for i = 1 : FineGrid(m).Nx
-                                ijk = sum(nf(1:m-1)) + (j-1) * FineGrid(m).Ny + i;
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny > 1
+                        for j = 1 : nyf(m)
+                            for i = 1 : nxf(m)
+                                ijk = sum(nf(1:m-1)) + (j-1) * nyf(m) + i;
                                 iff0 = iff0 + 1;
                                 P(iff0, ijk) = 1;
                             end
                         end
                     end
-                    if CoarseGrid(m).N == 0 && FineGrid(m).Ny == 1
-                        for i = 1 : FineGrid(m).Nx
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny == 1
+                        for i = 1 : nxf(m)
                             ijk = sum(nf(1:m-1)) + i;
                             iee0 = iee0 + 1;
                             P(iee0, ijk) = 1;

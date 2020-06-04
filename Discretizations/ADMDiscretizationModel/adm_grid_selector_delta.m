@@ -16,17 +16,17 @@ classdef adm_grid_selector_delta < adm_grid_selector
         end
         function SelectGrid(obj, FineGrid, CoarseGrid, ADMGrid, ProductionSystem, Residual, maxLevel)
             % SELECT the ADM GRID for next time-step based on delta x
-            %% 1. Reset all cells to be active and store x{m}
+            %% 1. Reset all cells to be active and store Var{m}
             n_media = length(FineGrid);
             Var = cell(n_media, 1);
             for m=1:n_media
-                FineGrid(m).Active = ones(FineGrid(m).N, 1);
+                FineGrid(m).Active(:) = 1;
                 if m==1
                     % for now wells are only in the reservoir
                     CoarseGrid(m,1).Active = obj.NoWellsCoarseCells;
                     Var{m} = ProductionSystem.Reservoir.State.Properties(obj.key).Value;
                 else
-                    CoarseGrid(m,1).Active = ones(CoarseGrid(m).N, 1);
+                    CoarseGrid(m,1).Active(:) = 1;
                     Var{m} = ProductionSystem.FracturesNetwork.Fractures(m-1).State.Properties(obj.key).Value;
                 end
             end
@@ -92,7 +92,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
             Nc = CoarseGrid.N;
             for c = 1:Nc
                 % Values of the variable "Var" for FineGrid cells belonging to CoarseGrid block c
-                Var_children = Var(CoarseGrid.Children{c, 1});
+                Var_children = Var(CoarseGrid.Children{c, end});
                 % Finding max and min values inside CoarseGrid block c
                 VarMax = max(Var_children);
                 VarMin = min(Var_children);
@@ -102,9 +102,9 @@ classdef adm_grid_selector_delta < adm_grid_selector
                     i = 1;
                     while i <= NofNeighbor
                         % Finding max and min values of neighbour i
-                        Var_children = Var(CoarseGrid.Children{Neighbor(i), end});
-                        VarNeighborMax = max(Var_children);
-                        VarNeighborMin = min(Var_children);
+                        Var_children_Neighbor = Var(CoarseGrid.Children{Neighbor(i), end});
+                        VarNeighborMax = max(Var_children_Neighbor);
+                        VarNeighborMin = min(Var_children_Neighbor);
                         if flag == false
                             if (abs(VarMax-VarNeighborMin) > obj.tol || abs(VarMin-VarNeighborMax) > obj.tol)
                                 CoarseGrid.Active(c) = 0;
@@ -133,7 +133,9 @@ classdef adm_grid_selector_delta < adm_grid_selector
             CoarseGrid.Active = DummyActive.*CoarseGrid.Active;
             
             %3. Set to inactive the fine block belonging to Active Coarse Blocks
-            FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,1}]) = 0;
+            %if CoarseGrid.N ~= 0
+                FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,1}]) = 0;
+            %end
         end
         function SelectCoarseFineC(obj, FineGrid, CoarseGrid)
             FineGrid.Active([CoarseGrid.Children{CoarseGrid.Active == 1,:}]) = 0;

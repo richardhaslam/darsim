@@ -18,6 +18,7 @@ classdef coarse_grid < grid_darsim
         Wells
         DeltaS
         Vertex_On_Corner
+        hasCoarseNodes
     end
     methods
         function obj = coarse_grid() 

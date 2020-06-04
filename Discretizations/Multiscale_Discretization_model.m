@@ -65,6 +65,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             obj.ReservoirGrid.CoarseLevel = 0;
             obj.CoarseGrid(1,1) = coarse_grid();
             obj.CoarseGrid(1,1).CoarseLevel = 1;
+            obj.CoarseGrid(1,1).hasCoarseNodes = 1;
             obj.CoarseGrid(1,1).CoarseFactor = obj.Coarsening(1,:,1);
             obj.CoarseGrid(1,1).Vertex_On_Corner = obj.Vertex_On_Corner;
             obj.CoarseGrid(1,1).BuildCoarseGrid(obj.ReservoirGrid, obj.Coarsening(1,:,1));
@@ -74,6 +75,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             for L=2:obj.maxLevel(1)
                 obj.CoarseGrid(1,L) = coarse_grid();
                 obj.CoarseGrid(1,L).CoarseLevel = L;
+                obj.CoarseGrid(1,L).hasCoarseNodes = 1;
                 obj.CoarseGrid(1,L).CoarseFactor = obj.Coarsening(1,:,L);
                 obj.CoarseGrid(1,L).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1,L).BuildCoarseGrid([obj.ReservoirGrid, obj.CoarseGrid(1,1:L-1)],obj.Coarsening(1,:,1:L));
@@ -92,6 +94,7 @@ classdef Multiscale_Discretization_model < Discretization_model
                 obj.FracturesGrid.Grids(f).CoarseLevel = 0;
                 obj.CoarseGrid(1+f,1) = coarse_grid();
                 obj.CoarseGrid(1+f,1).CoarseLevel = 1;
+                obj.CoarseGrid(1+f,1).hasCoarseNodes = 1;
                 obj.CoarseGrid(1+f,1).CoarseFactor = obj.Coarsening(1+f,:,1);
                 obj.CoarseGrid(1+f,1).Vertex_On_Corner = obj.Vertex_On_Corner;
                 obj.CoarseGrid(1+f,1).BuildCoarseGrid(obj.FracturesGrid.Grids(f),obj.Coarsening(1+f,:,1));
@@ -100,6 +103,7 @@ classdef Multiscale_Discretization_model < Discretization_model
                 for L = 2 : obj.maxLevel(1)
                     obj.CoarseGrid(1+f,L) = coarse_grid();
                     obj.CoarseGrid(1+f,L).CoarseLevel = L;
+                    obj.CoarseGrid(1+f,L).hasCoarseNodes = 1;
                     obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
                     obj.CoarseGrid(1+f,L).Vertex_On_Corner = obj.Vertex_On_Corner;
                     obj.CoarseGrid(1+f,L).BuildCoarseGrid([obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,1:L-1)],obj.Coarsening(1+f,:,1:L));
@@ -112,22 +116,24 @@ classdef Multiscale_Discretization_model < Discretization_model
                     % This fracture is coarsened upto the last coarsening level,
                     % afterwards no coare node (lowest computational demand).
                     for L = obj.maxLevel(1+f)+1 : obj.maxLevel(1)
-                        obj.CoarseGrid(1+f,L) = coarse_grid();
-                        obj.CoarseGrid(1+f,L).CoarseLevel = L;
-                        obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
-                        obj.CoarseGrid(1+f,L).Nx = 0;
-                        obj.CoarseGrid(1+f,L).Ny = 0;
-                        obj.CoarseGrid(1+f,L).Nz = 0;
-                        obj.CoarseGrid(1+f,L).N = 0;
+%                         obj.CoarseGrid(1+f,L) = coarse_grid();
+%                         obj.CoarseGrid(1+f,L).CoarseLevel = L;
+%                         obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
+%                         obj.CoarseGrid(1+f,L).Nx = 0;
+%                         obj.CoarseGrid(1+f,L).Ny = 0;
+%                         obj.CoarseGrid(1+f,L).Nz = 0;
+%                         obj.CoarseGrid(1+f,L).N = 0;
+                        obj.CoarseGrid(1+f,L).Verteces(:) = 0;
+                        obj.CoarseGrid(1+f,L).hasCoarseNodes = 0;
                     end
                 end
             end
             
 			fprintf('Coarsening ratio in reservoir: %d x %d x %d\n' , obj.Coarsening(1,1,1), obj.Coarsening(1,2,1), obj.Coarsening(1,3,1) );
             for L = 1 : obj.maxLevel(1)
-                fprintf('Number of reservoir coarse nodes at level %d: %d\n' , L, obj.Nc(1,L) );
+                fprintf('Number of reservoir coarse nodes at level %d: %d\n' , L, obj.Nc(1,L).*obj.CoarseGrid(1,L).hasCoarseNodes );
                 if (size(obj.Coarsening,1) - 1) > 0
-                    fprintf('Number of fractures coarse nodes at level %d: %d\n' , L, sum(obj.Nc(2:end,L)));
+                    fprintf('Number of fractures coarse nodes at level %d: %d\n' , L, sum(obj.Nc(2:end,L)).*[obj.CoarseGrid(2:end,L).hasCoarseNodes] );
                 end
             end
         end

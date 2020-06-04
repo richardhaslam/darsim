@@ -60,7 +60,9 @@ classdef adm_grid < grid_darsim & matlab.mixin.Copyable
                     obj.Children(h:h + n_children-1, i) = FineGrid.Children(FineNodes, i);
                 end
                 obj.Fathers(h:h + n_children-1 , FineGrid.CoarseLevel+1:end ) = FineGrid.Fathers(FineNodes,:);
+                obj.Fathers(h:h + n_children-1 , 1:FineGrid.CoarseLevel     ) = -1;
                 obj.Verteces(h:h + n_children-1, FineGrid.CoarseLevel+1:end ) = FineGrid.Verteces(FineNodes,:);
+                obj.Verteces(h:h + n_children-1 , 1:FineGrid.CoarseLevel     ) = -1;
                 h = h + n_children;
             end
         end

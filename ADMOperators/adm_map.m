@@ -61,8 +61,11 @@ classdef adm_map < handle
             obj.OriginalIndexNf = ADMGrid.CellIndex(1:sum(obj.Nf));
             
             % Verteces
-            obj.Verteces = find(ADMGrid.Verteces(:,level));
+            % obj.Verteces = find(ADMGrid.Verteces(:,level)); from the old implementation. Replacing it with the line below.
+            obj.Verteces = find(all(ADMGrid.Verteces(:,1:level)~=0, 2));
             obj.OriginalIndexVerteces = ADMGrid.Fathers(obj.Verteces, level);
+            SelfGridsOfThisLevel = find(all(ADMGrid.Verteces(:,1:level)==-1, 2));
+            obj.OriginalIndexVerteces(obj.OriginalIndexVerteces==-1) = ADMGrid.CellIndex(SelfGridsOfThisLevel);
             
             % Coarse nodes that will be prolonged
             obj.OriginalIndexNc = ADMGrid.CellIndex(sum(obj.Nf)+1 : end);

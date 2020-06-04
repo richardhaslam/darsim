@@ -165,7 +165,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                     % 3.2.2 Children for the rest of the media (fractures)
                     for m = 2:n_media
                         if ~isempty(obj.CoarseGrid(m,L).Children)
-                            Children_Temp = vertcat(Children_Temp, cellfun(@(a) a+Nc_global(m-1,x) , obj.CoarseGrid(m,L).Children(:,x),'un',0) );
+                            Children_Temp = vertcat(Children_Temp, cellfun(@(a) a+Nc_global(m-1,L-x+1) , obj.CoarseGrid(m,L).Children(:,x),'un',0) );
                         end
                     end
                     obj.GlobalGrids(L+1).Children(:,x) = Children_Temp;

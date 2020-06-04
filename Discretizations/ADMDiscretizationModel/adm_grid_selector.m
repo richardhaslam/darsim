@@ -25,10 +25,13 @@ classdef adm_grid_selector < handle
         function DefinePossibleActive(obj, CoarseGrid, FineGrid, level)
             % For a given level defines possible active cells
             for m=1:length(FineGrid)
-                CoarseGrid(m).Active = ones(CoarseGrid(m).N, 1);
+                %CoarseGrid(m).Active = ones(CoarseGrid(m).N, 1);
+                CoarseGrid(m).Active(:) = 1;
                 
                 % If a cell inside a CoarseGrid block is refined, the whole block cannot be coarsened
-                CoarseGrid(m).Active( unique( FineGrid(m).Fathers(FineGrid(m).Active == 0,1) ) ) = 0;
+                %if CoarseGrid(m).N ~= 0
+                    CoarseGrid(m).Active( unique( FineGrid(m).Fathers(FineGrid(m).Active == 0,1) ) ) = 0;
+                %end
                 
                 % Force the jump between two neighbouring cells to be max 1 level!
                 Nc = CoarseGrid(m).N;
@@ -96,43 +99,57 @@ classdef adm_grid_selector < handle
                         % 1. Adding Fathers
                         if ~isempty(Grid.Fathers)
                             ADMGrid.Fathers(h, :) = Grid.Fathers(i, :) + N_global(2:end);
+                        else
+                            ADMGrid.Fathers(h, :) = -1; % Assigning an invalid dummy value
                         end
                         
                         % 2. Adding Children
-                        % There is no Children in the finescale level.
+                        % There is no Children in the finescale level as there is no level below it.
                         
                         % 3. Adding Verteces
-                        ADMGrid.Verteces(h,:) = Grid.Verteces(i,:);
+                        if ~isempty(Grid.Verteces)
+                            ADMGrid.Verteces(h,:) = Grid.Verteces(i,:);
+                        else
+                            ADMGrid.Verteces(h, :) = -1; % Assigning an invalid dummy value
+                        end
                         
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     elseif level > 0  &&  level < MaxStaticLevel
                         % 1. Adding Fathers
                         if ~isempty(Grid.Fathers)
                             ADMGrid.Fathers(h, level+1:end) = Grid.Fathers(i, :) + N_global(level+2:end);
+                            ADMGrid.Fathers(h, 1:level) = -1; % Assigning an invalid dummy value
+                        else
+                            ADMGrid.Fathers(h, :) = -1; % Assigning an invalid dummy value
                         end
                         
                         % 2. Adding Children
                         for L = 1 : level
-                            ADMGrid.Children{h, L} = Grid.Children{i, L} + N_global(L+1);
+                            ADMGrid.Children{h, L} = Grid.Children{i, L} + N_global(level-L+1);
                         end
                         
                         % 3. Adding Verteces
                         if ~isempty(Grid.Verteces)
                             ADMGrid.Verteces(h, level+1:end) = Grid.Verteces(i, :);
+                            ADMGrid.Verteces(h, 1:level) = -1; % Assigning an invalid dummy value
+                        else
+                            ADMGrid.Verteces(h, :) = -1; % Assigning an invalid dummy value
                         end
                         
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     elseif level == MaxStaticLevel
                         % 1. Adding Fathers
-                        % There is no Father in the coarsest level.
+                        % There is no Father in the coarsest level as there is no level above it.
+                        ADMGrid.Fathers(h, :) = -1; % Assigning an invalid dummy value
                         
                         % 2. Adding Children
                         for L = 1 : level
-                            ADMGrid.Children{h, L} = Grid.Children{i, L} + N_global(L+1);
+                            ADMGrid.Children{h, L} = Grid.Children{i, L} + N_global(level-L+1);
                         end
                         
                         % 3. Adding Verteces
                         % There is no vertex in the coarsest level as there is no level above it.
+                        ADMGrid.Verteces(h, :) = -1; % Assigning an invalid dummy value
                     end
                     
                     count = count + 1;
