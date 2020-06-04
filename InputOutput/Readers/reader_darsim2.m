@@ -54,6 +54,9 @@ classdef reader_darsim2 < reader
         end
         function [SimulationInput, SimulatorSettings] = ReadInformation(obj)
             %% INPUT FILE
+            % 0. Passinbg the main input directory to simulation_builder
+            SimulationInput.Directory = obj.Directory;
+            
             % 1. Name of the Problem 
             temp = strfind(obj.InputMatrix, 'TITLE'); % Search a specific string and find all rows containing matches
             SimulationInput.ProblemName = char(obj.InputMatrix(find(~cellfun('isempty', temp)) + 1));
@@ -651,12 +654,43 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.InputMatrix, 'RELPERM');
             index = find(~cellfun('isempty', temp));
             FluidProperties.RelPerm.name = char(obj.InputMatrix(index + 1));
-            FluidProperties.RelPerm.s_irr(1) = str2double(obj.InputMatrix(index + 3));
-            FluidProperties.RelPerm.s_irr(2) = str2double(obj.InputMatrix(index + 5));
-            FluidProperties.RelPerm.Kre(1) = str2double(obj.InputMatrix(index + 7));
-            FluidProperties.RelPerm.Kre(2) = str2double(obj.InputMatrix(index + 9));
-            FluidProperties.RelPerm.n(1) = str2double(obj.InputMatrix(index + 11));
-            FluidProperties.RelPerm.n(2) = str2double(obj.InputMatrix(index + 13));
+            switch FluidProperties.RelPerm.name
+                case{'Linear','Quadratic','Corey','Foam'}
+                    FluidProperties.RelPerm.s_irr(1) = str2double(obj.InputMatrix(index + 3));
+                    FluidProperties.RelPerm.s_irr(2) = str2double(obj.InputMatrix(index + 5));
+                    FluidProperties.RelPerm.Kre(1) = str2double(obj.InputMatrix(index + 7));
+                    FluidProperties.RelPerm.Kre(2) = str2double(obj.InputMatrix(index + 9));
+                    FluidProperties.RelPerm.n(1) = str2double(obj.InputMatrix(index + 11));
+                    FluidProperties.RelPerm.n(2) = str2double(obj.InputMatrix(index + 13));
+                case('Table')
+                    FluidProperties.RelPerm.FileFormat = char(obj.InputMatrix(index + 3));
+                    FluidProperties.RelPerm.TableType = char(obj.InputMatrix(index + 5));
+                    
+                    switch FluidProperties.RelPerm.TableType
+                        case{'Drainage','Imbibition'}
+                            NumOfTable = 1;
+                        case('Cyclic')
+                            NumOfTable = 2;
+                    end
+                    for n = 1 : NumOfTable
+                        FileName = char(obj.InputMatrix(index + 6+n));
+                        FluidProperties.RelPerm.TableFile{n,1} = strcat(obj.Directory,'/',FileName);
+                        switch FluidProperties.RelPerm.FileFormat
+                            case('MATLAB')
+                                % Not implemented yet
+                                error('The reading of RelPerm tables with MATLAB file format is not supported yet.');
+                            case('TXT')
+                                fileID = fopen(FluidProperties.RelPerm.TableFile{n,1}, 'r');
+                                % Read lines from input file
+                                Temp = textscan(fileID, '%s', 'Delimiter', '\n');
+                                Temp = Temp{1};
+                                Temp = Temp(2:end);
+                                FluidProperties.RelPerm.TableData{n,1} = str2double(split(Temp,' '));
+                                fclose(fileID);
+                        end
+                    end
+            end
+            
 
             % 9. Capillarity
             temp = strfind(obj.InputMatrix, 'CAPILLARITY');

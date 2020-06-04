@@ -638,6 +638,9 @@ classdef simulation_builder < handle
                     FluidModel.RelPermModel = relperm_model_foam();
                 case('Corey')
                     FluidModel.RelPermModel = relperm_model_brookscorey();
+                case('Table')
+                    FluidModel.RelPermModel = relperm_model_table(obj.SimulationInput.FluidProperties.RelPerm.TableType,...
+                                                                  obj.SimulationInput.FluidProperties.RelPerm.TableData);
             end
             % Irriducible sat
             for i=1:FluidModel.NofPhases
