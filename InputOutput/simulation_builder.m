@@ -102,6 +102,7 @@ classdef simulation_builder < handle
                 otherwise
                     error('At this moment, only "CartesianGrid" and "CornerPointGrid" discretization models are supported in DARSim!\n');
             end
+            [FracturesGrid, CrossConnections] = obj.ScanFracturesData(FractureMatrix, ReservoirGrid);
             
     
             %% 2. Define your discretization Model (choose between FS and ADM)
@@ -1088,7 +1089,8 @@ classdef simulation_builder < handle
                     end
             end
         end
-        function ScanFracturesData(obj, FractureMatrix)
+        function [FracturesGrid, CrossConnections] = ScanFracturesData(obj, FractureMatrix, ReservoirGrid)
+            Nm = ReservoirGrid.N;
             temp = strfind(FractureMatrix, 'TYPE');
             fracGen_Type = find(~cellfun('isempty', temp));
             fracGen_Type = strsplit(FractureMatrix{fracGen_Type},' ');
