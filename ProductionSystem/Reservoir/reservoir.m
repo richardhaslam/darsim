@@ -26,6 +26,8 @@ classdef reservoir < handle
         K_Cond_eff % effective conductivity
         Cpr % rock specific heat
         rhoRock % density of reservoir rock
+        bulkMod % Bulk modulus of the reservoir
+        shearMod % Shear modulus of the reservoir
         Dp = 1e-3;% grain diameter
     end
     methods

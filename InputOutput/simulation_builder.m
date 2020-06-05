@@ -520,6 +520,8 @@ classdef simulation_builder < handle
             nz = obj.SimulationInput.ReservoirProperties.Grid.N(3);
             Cpr = obj.SimulationInput.ReservoirProperties.SpecificHeat;
             RockDensity = obj.SimulationInput.ReservoirProperties.RockDensity;
+            BulkModulus = obj.SimulationInput.ReservoirProperties.BulkModulus;
+            ShearModulus = obj.SimulationInput.ReservoirProperties.ShearModulus;
             K = ones(nx*ny*nz, 3);
             switch obj.SimulationInput.ReservoirProperties.PermUnit
                 case('m2')
@@ -596,6 +598,8 @@ classdef simulation_builder < handle
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
             Reservoir.rhoRock = RockDensity;
+            Reservoir.bulkMod = BulkModulus;
+            Reservoir.shearMod = ShearModulus;
             Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')

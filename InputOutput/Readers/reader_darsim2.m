@@ -228,9 +228,9 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.InputMatrix, 'COMPRESSIBILITY');
             index_comp = find(~cellfun('isempty', temp));
             ReservoirProperties.Compressibility = str2double(obj.InputMatrix{index_comp+((NofPhases+1)*2)});
-             if isnan(ReservoirProperties.Compressibility)
-                 ReservoirProperties.Compressibility = 0; % Default value if not defined [1/Pa]
-             end
+            if isnan(ReservoirProperties.Compressibility)
+                ReservoirProperties.Compressibility = 0; % Default value if not defined [1/Pa]
+            end
             
             % 7. Rock Density
             temp = strfind(obj.InputMatrix, 'DENSITY');
@@ -256,6 +256,17 @@ classdef reader_darsim2 < reader
                 ReservoirProperties.SpecificHeat = 790; % Default value if not defined [J/Kg/K]
             else
                 ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+((NofPhases+1)*2)});
+            end
+            
+            % 10. Rock Moduli
+            temp = strfind(obj.InputMatrix, 'ELASTIC MODULI');
+            index_mod = find(~cellfun('isempty', temp));
+            if isempty(index_mod)
+                ReservoirProperties.BulkModulus = 16; % Default value if not defined [GPa]
+                ReservoirProperties.ShearModulus = 2; % Default value if not defined [GPa]
+            else
+                ReservoirProperties.BulkModulus = str2double(obj.InputMatrix{index_mod + 2});
+                ReservoirProperties.ShearModulus = str2double(obj.InputMatrix{index_mod + 4});
             end
             
         end

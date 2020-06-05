@@ -57,11 +57,12 @@ classdef output_writer < handle
             obj.FormatStats = [obj.FormatStats, ' %10.2f\n'];
             
             %Format for Solution
-            obj.FormatSol = '%10.2f';
-            for i = 2:2
-                obj.FormatSol = [obj.FormatSol, ' %10.5f'];
-            end
-            obj.FormatSol = [obj.FormatSol, ' %10.5f\n'];
+            obj.FormatSol = '%7d';
+            obj.FormatSol = [obj.FormatSol, ' %15.5e'];
+            obj.FormatSol = [obj.FormatSol, ' %15.5e'];
+            obj.FormatSol = [obj.FormatSol, ' %17.3f'];
+            obj.FormatSol = [obj.FormatSol, ' %17.3f'];
+            obj.FormatSol = [obj.FormatSol, ' %17.3f\n'];
         end
         function AddPlotter(obj, plotter)
             obj.Plotter = plotter;
@@ -71,6 +72,7 @@ classdef output_writer < handle
             fileID = fopen(strcat(obj.Directory, 'Solution/', obj.ProblemName,'_Sol',num2str(index),'.txt'),'w');
 	    Names = ProductionSystem.Reservoir.State.Properties.keys;
             if ismember('Tf',Names) % Geothermal_2T
+                fprintf(fileID, ['%5s', '%16s', '%16s', '%16s', '%18s\n'], 'Id','Pressure [bar]','Saturation [-]','Tf [C]','Tr [C]');
                 FormatSol_Geo = ['%10.0f', ' %10.5f', ' %10.5f', ' %10.5f', ' %10.5f\n'];
                 fprintf(fileID, FormatSol_Geo, [cells', 
                     ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5, ...
@@ -86,6 +88,7 @@ classdef output_writer < handle
                         ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('Tr').Value]');
                 end
             elseif ismember('T',Names) % Geothermal_1T
+                fprintf(fileID, ['%5s', '%16s', '%16s', '%18s\n'], 'Id','Pressure [bar]','Saturation [-]','Temperature [C]');
                 FormatSol_Geo = ['%10.0f', ' %10.5f', ' %10.5f', ' %10.5f\n'];
                 fprintf(fileID, FormatSol_Geo, [cells', ...
                     ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5, ...
@@ -99,8 +102,10 @@ classdef output_writer < handle
                         ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('T').Value]');
                 end
             else % Not Geothermal
+                fprintf(fileID, ['%7s', '%16s', '%16s', '%18s', '%18s', '%18s\n'], 'Id','Pressure [bar]','Saturation [-]','Density [kg/m^3]','P-velocity [m/s]','S-velocity [m/s]');
                 fprintf(fileID, obj.FormatSol, [cells', ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5, ...
-                    ProductionSystem.Reservoir.State.Properties('S_1').Value]');
+                ProductionSystem.Reservoir.State.Properties('S_1').Value, ProductionSystem.Reservoir.State.Properties('rhoTotal').Value, ...
+                ProductionSystem.Reservoir.State.Properties('cPwave').Value,ProductionSystem.Reservoir.State.Properties('cSwave').Value]');
                 for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
                     cells = cells(end)+1:cells(end)+length(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_1').Value);
                     fprintf(fileID, obj.FormatSol, [cells', ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('P_1').Value/1e5, ...

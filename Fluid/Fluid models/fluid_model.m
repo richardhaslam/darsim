@@ -60,6 +60,27 @@ classdef fluid_model < handle
             rhoTotal.Value = phi.*rhoFluid.Value + (1-phi).*rhoRock;
             
         end
+        
+        function ComputePwaveVelocity(obj, State, bulkMod, shearMod)
+            % Compute the total density
+            obj.ComputeFluidDensity(State);
+            cPwave = State.Properties('cPwave');
+            rhoTotal = State.Properties('rhoTotal');
+            
+            cPwave.Value = sqrt((bulkMod.*1e9 + (4/3).*shearMod.*1e9)./rhoTotal.Value);
+            
+        end
+        
+        function ComputeSwaveVelocity(obj, State, shearMod)
+            % Compute the total density
+            obj.ComputeFluidDensity(State);
+            cSwave = State.Properties('cSwave');
+            rhoTotal = State.Properties('rhoTotal');
+            
+            cSwave.Value = sqrt((shearMod.*1e9)./rhoTotal.Value);
+            
+        end
+        
         function dMobdS = ComputeDMobDS(obj, s)
             dMobdS = zeros(length(s), obj.NofPhases);
             dkr = obj.RelPermModel.ComputeDerivative(obj.Phases, s);

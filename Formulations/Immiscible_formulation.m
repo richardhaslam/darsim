@@ -323,6 +323,9 @@ classdef Immiscible_formulation < formulation
                 FluidModel.ComputeTotalDensity(ProductionSystem.Reservoir.State,ProductionSystem.Reservoir.Por,ProductionSystem.Reservoir.rhoRock);
                 % Update Pc
                 FluidModel.ComputePc(ProductionSystem.Reservoir.State);
+                % Update Pwave velocity
+                FluidModel.ComputePwaveVelocity(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.bulkMod, ProductionSystem.Reservoir.shearMod);
+                FluidModel.ComputeSwaveVelocity(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.shearMod);
 
                 %% 2. Update fractures pressure and densities
                 if ProductionSystem.FracturesNetwork.Active

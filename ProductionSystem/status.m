@@ -34,6 +34,8 @@ methods
                 end
                 obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);
                 obj.Properties('rhoTotal') = property(N, 1, 'scalar', false, 1e3, 1e6);
+                obj.Properties('cPwave') = property(N, 1, 'scalar', false, 1e3, 1e6);
+                obj.Properties('cSwave') = property(N, 1, 'scalar', false, 1e3, 1e6);
             case{'Geothermal_1T','Geothermal_2T'}
                 %%% Add properties of geothermal
                 for i=1:FluidModel.NofPhases % for now this will be only 1
