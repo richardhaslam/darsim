@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef relperm_model < handle
     properties
+        S_irr
     end
     methods (Abstract)
         obj = ComputeRelPerm(obj);

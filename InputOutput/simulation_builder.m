@@ -102,7 +102,9 @@ classdef simulation_builder < handle
                 otherwise
                     error('At this moment, only "CartesianGrid" and "CornerPointGrid" discretization models are supported in DARSim!\n');
             end
-            [FracturesGrid, CrossConnections] = obj.ScanFracturesData(FractureMatrix, ReservoirGrid);
+            if obj.SimulationInput.FracturesProperties.Fractured
+                [FracturesGrid, CrossConnections] = obj.ScanFracturesData(FractureMatrix, ReservoirGrid);
+            end
             
     
             %% 2. Define your discretization Model (choose between FS and ADM)
@@ -642,7 +644,9 @@ classdef simulation_builder < handle
                 case('Table')
                     FluidModel.RelPermModel = relperm_model_table(obj.SimulationInput.FluidProperties.RelPerm.TableType,...
                                                                   obj.SimulationInput.FluidProperties.RelPerm.TableData);
+                    obj.SimulationInput.FluidProperties.RelPerm.s_irr = FluidModel.RelPermModel.S_irr;
             end
+            
             % Irriducible sat
             for i=1:FluidModel.NofPhases
                 FluidModel.Phases(i).sr = obj.SimulationInput.FluidProperties.RelPerm.s_irr(i);

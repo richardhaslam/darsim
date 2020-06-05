@@ -10,6 +10,11 @@ classdef relperm_model_table < relperm_model
     properties
         Table
         Type
+        Sw_from_Table
+        krw_from_Table
+        krnw_from_Table
+        krw_curve
+        krnw_curve
     end
     methods
         function obj = relperm_model_table(type,table)
@@ -17,52 +22,72 @@ classdef relperm_model_table < relperm_model
             obj.Type = type;
             switch type
                 case('Imbibition')
-                    obj.Table.Imbibition.TableData = table{1};
+                    obj.Table.Data = table{1};
+                    obj.S_irr(1) = min( obj.Table.Data(:,1) );
+                    obj.S_irr(2) = 1 - max( obj.Table.Data(:,1) );
                 case('Drainage')
-                    obj.Table.Draianage.TableData = table{1};
+                    obj.Table.Data = table{1};
+                    obj.S_irr(2) = min( obj.Table.Data(:,1) );
+                    obj.S_irr(1) = 1 - max( obj.Table.Data(:,1) );
                 case('Cyclic')
-                    obj.Table.Imbibition.TableData = table{1};
-                    obj.Table.Draianage.TableData = table{2};
+%                     obj.Table.Imbibition.TableData = table{1};
+%                     obj.Table.Draianage.TableData = table{2};
+                    error('Cyclic rel perm is not implemented yet');
             end
             obj.SplineCurveFit();
         end
         function SplineCurveFit(obj)
-            % Continue here
-            Sw = obj.Table.Imbibition(:,1);
-            krw = obj.Table.Imbibition(:,3);
-            krnw = obj.Table.Imbibition(:,4);
-            kr(:,1) = spline(Sw,krw);
-            %obj.Table.Imbibition.SplineData = ...
-            %kr = coeff(:,1).*Sw.^3 + coeff(:,2).*Sw.^2 + coeff(:,3).*Sw.^1 + coeff(:,4);
+            obj.Sw_from_Table = obj.Table.Data(:,1);
+            obj.krw_from_Table = obj.Table.Data(:,3);
+            obj.krnw_from_Table = obj.Table.Data(:,4);
+            % Obtaining the curvature of the rel perm from the tables using spline function
+            obj.krw_curve = spline(obj.Sw_from_Table,obj.krw_from_Table);
+            obj.krnw_curve = spline(obj.Sw_from_Table,obj.krnw_from_Table);
         end
         function kr = ComputeRelPerm(obj, Phases, s)
             % Rescale saturations
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
             S = max(S, 0);
+
             % Phase 1 relative permeability
-            kr(:,1) = S.^obj.n(1);
-            kr(s < Phases(1).sr, 1) = 0;
-            kr(s < Phases(1).sr, 2) = 1;
+            kr(:,1) = spline(1-obj.Sw_from_Table,obj.krnw_from_Table, S);
+            kr(s <= Phases(1).sr, 1) = 0;
+            kr(s >= 1-Phases(2).sr, 1) = 1;
+            
             % Phase 2 relative permeability
-            kr(:,2) = (1-S).^obj.n(2);
-            kr(s > 1 - Phases(2).sr, 2) = 0;
-            kr(s > 1 - Phases(2).sr, 1) = 1;
+            kr(:,2) = spline(obj.Sw_from_Table,obj.krnw_from_Table, S);
+            kr(1-s <= Phases(2).sr, 2) = 0;
+            kr(1-s >= 1-Phases(1).sr, 2) = 1;
         end
         function dkr = ComputeDerivative(obj, Phases, s)
             S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
             
-            dkr(:,1) = (1-Phases(1).sr-Phases(2).sr)^(-1)* obj.n(1) * S.^(obj.n(1)-1);
+            % Calcuting the first derivative of spline curve using MATLAB built-in function fnder
+            dkrw_curve = fnder(obj.krw_curve,1);
+            dkrnw_curve = fnder(obj.krnw_curve,1);
+
+            % Obtaining the first derivative of the rel perm using the spline curve derivative
+            dkr(:,1) = ppval(dkrw_curve,S);
             dkr(s < Phases(1).sr, 1) = 0;
             dkr(s < Phases(1).sr, 2) = 0;
-            dkr(:,2) = -(1-Phases(1).sr-Phases(2).sr)^(-1)*obj.n(2)*(1-S).^(obj.n(2)-1);
+            
+            dkr(:,2) = ppval(dkrnw_curve,S);
             dkr(s > 1 - Phases(2).sr, 2) = 0;
             dkr(s > 1 - Phases(2).sr, 1) = 0;
         end
         function ddkr = ComputeSecondDerivative(obj, Phases, s)
-            ddkr(:,1) = ones(length(s), 1) * (1-Phases(1).sr-Phases(2).sr)^(-1)*2;
+            S = (s-Phases(1).sr)/(1-Phases(1).sr-Phases(2).sr);
+            
+            % Calcuting the second derivative of spline curve using MATLAB built-in function fnder
+            ddkrw_curve = fnder(obj.krw_curve,2);
+            ddkrnw_curve = fnder(obj.krnw_curve,2);
+            
+            % Obtaining the second derivative of the rel perm using the spline curve second derivative
+            ddkr(:,1) = ppval(ddkrw_curve,S);
             ddkr(s < Phases(1).sr, 1) = 0;
             ddkr(s < Phases(1).sr, 2) = 0;
-            ddkr(:,2) = ones(length(s), 1) * (1-Phases(1).sr-Phases(2).sr)^(-1)*2;
+            
+            ddkr(:,2) = ppval(ddkrnw_curve,S);
             ddkr(s > 1 - Phases(2).sr, 2) = 0;
             ddkr(s > 1 - Phases(2).sr, 1) = 0;
         end
