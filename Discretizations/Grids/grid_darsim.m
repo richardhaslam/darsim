@@ -15,10 +15,10 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         Children = {}
         Verteces
         CoarseFactor
+        CoarseLevel
         GridCoords
         ActiveTime
-        %CoarseNodeIndex
-        CoarseLevel
+        Neighbours
     end
     methods
         function Initialise(obj, currentLevel, maxLevel)

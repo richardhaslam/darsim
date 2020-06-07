@@ -112,23 +112,38 @@ classdef Multiscale_Discretization_model < Discretization_model
                 end
                 obj.GridMapper.AssignFathersandVerteces([obj.FracturesGrid.Grids(f), obj.CoarseGrid(1+f,:)], obj.maxLevel(1));
 
+                % Flagging the coarse grids of fractures whose coarse nodes will not be used in ADM
                 if obj.CoarseningSwitch(1+f) == 1
                     % This fracture is coarsened upto the last coarsening level,
-                    % afterwards no coare node (lowest computational demand).
+                    % afterwards it will disappear (lowest computational demand).
                     for L = obj.maxLevel(1+f)+1 : obj.maxLevel(1)
-%                         obj.CoarseGrid(1+f,L) = coarse_grid();
-%                         obj.CoarseGrid(1+f,L).CoarseLevel = L;
-%                         obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
-%                         obj.CoarseGrid(1+f,L).Nx = 0;
-%                         obj.CoarseGrid(1+f,L).Ny = 0;
-%                         obj.CoarseGrid(1+f,L).Nz = 0;
-%                         obj.CoarseGrid(1+f,L).N = 0;
-                        obj.CoarseGrid(1+f,L).Verteces(:) = 0;
+                        %obj.CoarseGrid(1+f,L) = coarse_grid();
+                        %obj.CoarseGrid(1+f,L).Nx = 0;
+                        %obj.CoarseGrid(1+f,L).Ny = 0;
+                        %obj.CoarseGrid(1+f,L).Nz = 0;
+                        %obj.CoarseGrid(1+f,L).N = 0;
+                        %obj.CoarseGrid(1+f,L).CoarseLevel = L;
+                        %obj.CoarseGrid(1+f,L).CoarseFactor = obj.Coarsening(1+f,:,L);
                         obj.CoarseGrid(1+f,L).hasCoarseNodes = 0;
+                        %obj.CoarseGrid(1+f,L).Verteces(:) = 0;
                     end
+                    %obj.FracturesGrid.Grids(f).Verteces( : , obj.maxLevel(1+f)+1:end ) = 0;
                 end
             end
             
+            %% 3. Adding the non-neighboring connections to the list of neighbors for each coarse nodes (only for fractured cases)
+            % 3.1 Coarsening level 1
+            % 3.1.1 Reservoir
+            % 3.1.2 Fractures
+            
+            % 3.2 Coarsening levels above 1
+            for L = 2 : obj.maxLevel(1)
+                % 3.2.1 reservoir
+                % 3.2.2 Fractures
+            end
+            % Will be implmented later.
+            
+            %% 4. Printing out the coarsening data
 			fprintf('Coarsening ratio in reservoir: %d x %d x %d\n' , obj.Coarsening(1,1,1), obj.Coarsening(1,2,1), obj.Coarsening(1,3,1) );
             for L = 1 : obj.maxLevel(1)
                 fprintf('Number of reservoir coarse nodes at level %d: %d\n' , L, obj.Nc(1,L).*obj.CoarseGrid(1,L).hasCoarseNodes );

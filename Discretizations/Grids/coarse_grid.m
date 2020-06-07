@@ -14,7 +14,6 @@ classdef coarse_grid < grid_darsim
         I
         J
         K
-        Neighbours
         Wells
         DeltaS
         Vertex_On_Corner
@@ -40,7 +39,7 @@ classdef coarse_grid < grid_darsim
             obj.N = obj.Nx*obj.Ny*obj.Nz;
             obj.DeltaS = zeros(obj.N, 1);
             
-            % Coordinates of the centres
+            %% Coordinates of the centres
             obj.I = ones(obj.N, 1+length(FineGrids));
             obj.J = ones(obj.N, 1+length(FineGrids));
             obj.K = ones(obj.N, 1+length(FineGrids));
@@ -78,18 +77,15 @@ classdef coarse_grid < grid_darsim
                 end
             end
 
+            %% Initializing "Active", "Fathers" and "Wells" data
             obj.Active = zeros(obj.N, 1);
             obj.Wells = cell(obj.N, 1);
             obj.Fathers = zeros(obj.N, 1);
             
-            if obj.Nz == 1 && obj.Ny == 1
-                obj.AssignNeighbours1D();
-            elseif obj.Nz == 1 && obj.Ny > 1
-                obj.AssignNeighbours2D();
-            else
-                obj.AssignNeighbours();
-            end
+            %% Assigning neighbors
+            obj.AssignNeighbours();
             
+            %% Adding the coordinates of the grids (for purpose of visualizations)
             CF = FullCF(:,:,end)./FullCF(:,:,end-1);
             obj.AddGridCoordinates(FineGrids(end),CF); 
         end
@@ -132,7 +128,16 @@ classdef coarse_grid < grid_darsim
             end
         end
         function AssignNeighbours(obj)
-            % Let s do the 8 corners separetely
+            if obj.Nz == 1 && obj.Ny == 1
+                obj.AssignNeighbours1D();
+            elseif obj.Nz == 1 && obj.Ny > 1
+                obj.AssignNeighbours2D();
+            else
+                obj.AssignNeighbours3D();
+            end
+        end
+        function AssignNeighbours3D(obj)
+            % Lets do the 8 corners separetely
             % 1
             i = 1;
             j = 1;

@@ -55,6 +55,35 @@ classdef Discretization_model < handle
                     obj.AddHarmonicConductivities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
                 end
             end
+            
+            % Adding the non-neighboring connections to the list of neighbors (in case of having fractures)
+            if ProductionSystem.FracturesNetwork.Active
+                for c = 1:length(obj.CrossConnections)
+                    Frac_Global_Index = c + obj.ReservoirGrid.N;
+                    Frac_Local_Index = obj.Index_Global_to_Local(Frac_Global_Index);
+                    f = Frac_Local_Index.f;
+                    g = Frac_Local_Index.g;
+                    
+                    % Assigning matrix-fracture non-neighboring connections
+                    Reservoir_Overlaps = obj.CrossConnections(c).Cells( obj.CrossConnections(c).Cells <= obj.ReservoirGrid.N);
+                    obj.FracturesGrid.Grids(f).Neighbours(g).indexes = horzcat(obj.FracturesGrid.Grids(f).Neighbours(g).indexes, Reservoir_Overlaps');
+                    for n = 1:length(Reservoir_Overlaps)
+                        Im = Reservoir_Overlaps(n);
+                        obj.ReservoirGrid.Neighbours(Im).indexes = horzcat(obj.ReservoirGrid.Neighbours(Im).indexes, Frac_Global_Index);
+                    end
+                    
+                    % Assigning fracture-fracture non-neighboring connections
+                    Fracture_Overlaps = obj.CrossConnections(c).Cells( obj.CrossConnections(c).Cells > obj.ReservoirGrid.N);
+                    obj.FracturesGrid.Grids(f).Neighbours(g).indexes = horzcat(obj.FracturesGrid.Grids(f).Neighbours(g).indexes, Fracture_Overlaps');
+                    for n = 1:length(Fracture_Overlaps)
+                        If = Fracture_Overlaps(n);
+                        Frac2_Local_Index = obj.Index_Global_to_Local(If);
+                        f2 = Frac2_Local_Index.f;
+                        g2 = Frac2_Local_Index.g;
+                        obj.FracturesGrid.Grids(f2).Neighbours(g2).indexes = horzcat(obj.FracturesGrid.Grids(f2).Neighbours(g2).indexes, Frac_Global_Index);
+                    end
+                end
+            end
         end
         function DefinePerforatedCells(obj, Wells)
             % Has to be improved for Diagonal wells (maybe using trajectories)

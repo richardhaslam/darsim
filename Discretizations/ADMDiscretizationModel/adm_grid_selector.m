@@ -29,9 +29,7 @@ classdef adm_grid_selector < handle
                 CoarseGrid(m).Active(:) = 1;
                 
                 % If a cell inside a CoarseGrid block is refined, the whole block cannot be coarsened
-                %if CoarseGrid(m).N ~= 0
-                    CoarseGrid(m).Active( unique( FineGrid(m).Fathers(FineGrid(m).Active == 0,1) ) ) = 0;
-                %end
+                CoarseGrid(m).Active( unique( FineGrid(m).Fathers(FineGrid(m).Active == 0,1) ) ) = 0;
                 
                 % Force the jump between two neighbouring cells to be max 1 level!
                 Nc = CoarseGrid(m).N;
@@ -60,8 +58,10 @@ classdef adm_grid_selector < handle
                 Nc_global(m, 1) = sum([FineGrid(1:m-1).N]);
                 for x = 1:max(maxLevel)
                     Nc_global(m, x+1) = sum([CoarseGrid(1:m-1, x).N]);
-                    NumberOfActive(m, x+1) = sum(CoarseGrid(m, x).Active);
-                    TotalActive = TotalActive + sum(CoarseGrid(m, x).Active);
+                    if CoarseGrid(m,x).hasCoarseNodes
+                        NumberOfActive(m, x+1) = sum(CoarseGrid(m, x).Active);
+                        TotalActive = TotalActive + sum(CoarseGrid(m, x).Active);
+                    end
                 end
             end
             
@@ -74,10 +74,10 @@ classdef adm_grid_selector < handle
             end
             
             % 4. Add Coarse Grids cells
-            for l = 1:max(maxLevel)
+            for L = 1:max(maxLevel)
                 for m=1:n_media
-                    if l <= maxLevel(m)
-                        obj.AddActiveCells(ADMGrid, CoarseGrid(m, l), l, Nc_global(m, :));
+                    if CoarseGrid(m,L).hasCoarseNodes
+                        obj.AddActiveCells(ADMGrid, CoarseGrid(m, L), L, Nc_global(m, :));
                     end
                 end
             end
