@@ -83,9 +83,9 @@ classdef bf_updater_FAMS < bf_updater_ms
             Start_c = 1;
             for m=1:length(obj.Amedia)
                 [Nf, ~] = size(obj.Amedia{m});
-                End_f = Start_f + Nf - 1;
-                End_c = Start_c + Grid(m).N - 1 ;
-                if Grid(m).hasCoarseNodes == 1
+                if Grid(m).hasCoarseNodes
+                    End_f = Start_f + Nf - 1;
+                    End_c = Start_c + Grid(m).N - 1 ;
                     obj.Amedia{m} = P(Start_f:End_f, Start_c:End_c)' * obj.Amedia{m} * P(Start_f:End_f, Start_c:End_c);
                     obj.Amedia{m} = obj.TransformIntoTPFA(obj.Amedia{m}, Grid(m));
                 else

@@ -148,7 +148,7 @@ classdef Multiscale_Discretization_model < Discretization_model
             for L = 1 : obj.maxLevel(1)
                 fprintf('Number of reservoir coarse nodes at level %d: %d\n' , L, obj.Nc(1,L).*obj.CoarseGrid(1,L).hasCoarseNodes );
                 if (size(obj.Coarsening,1) - 1) > 0
-                    fprintf('Number of fractures coarse nodes at level %d: %d\n' , L, sum(obj.Nc(2:end,L)).*[obj.CoarseGrid(2:end,L).hasCoarseNodes] );
+                    fprintf('Number of fractures coarse nodes at level %d: %d\n' , L, sum(obj.Nc(2:end,L).*[obj.CoarseGrid(2:end,L).hasCoarseNodes]') );
                 end
             end
         end

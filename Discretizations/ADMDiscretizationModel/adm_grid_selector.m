@@ -57,7 +57,7 @@ classdef adm_grid_selector < handle
                 TotalActive = TotalActive + sum(FineGrid(m).Active);
                 Nc_global(m, 1) = sum([FineGrid(1:m-1).N]);
                 for x = 1:max(maxLevel)
-                    Nc_global(m, x+1) = sum([CoarseGrid(1:m-1, x).N]);
+                    Nc_global(m, x+1) = sum([CoarseGrid(1:m-1, x).N].*[CoarseGrid(1:m-1, x).hasCoarseNodes]);
                     if CoarseGrid(m,x).hasCoarseNodes
                         NumberOfActive(m, x+1) = sum(CoarseGrid(m, x).Active);
                         TotalActive = TotalActive + sum(CoarseGrid(m, x).Active);
