@@ -36,7 +36,7 @@ classdef adm_grid_selector < handle
                 temp = 1 - CoarseGrid(m).Active;
                 for j=1:Nc
                     if CoarseGrid(m).Active(j) == 1
-                        vecNei = CoarseGrid(m).Neighbours(j).indexes;
+                        vecNei = CoarseGrid(m).Neighbours{j};
                         check = sum(temp(vecNei));
                         if check > 0
                             CoarseGrid(m).Active(j) = 0;

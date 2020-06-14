@@ -12,6 +12,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
         BFUpdater
         Dimensions
         ADMmap
+        Alpha = 1e-3; % This is a factor used to cut the basis functions lower than this value and reduce the region of influence
     end
     methods
         function obj = prolongation_builder_MSPressure(n, cf)
@@ -56,6 +57,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 %Build tpfa coarse system of level x (with MsFE)
                 obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(:, x));
             end
+            obj.CorrectTheBasisFunctionsRegionOfInfluence(maxLevel)
             StaticOperators = toc(start1);
             disp(['Pressure static operators built in: ', num2str(StaticOperators), ' s']);
         end
@@ -1131,5 +1133,23 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             end % End of loop over the wells
             Residual = A * deltaP_w - q_w;
         end % End of StaticMultilevelPressureGuess
+        function CorrectTheBasisFunctionsRegionOfInfluence(obj,maxLevel)
+            for L = 1:maxLevel(1)
+                for c = 1:size(obj.P{L},2)
+                    BF = obj.P{L}(:,c);
+                    BF_Sum_Previous = sum(BF);
+                    
+                    BF(BF<obj.Alpha) = 0;
+                    BF_Sum_New = sum(BF);
+                    
+                    Diff = BF_Sum_Previous - BF_Sum_New;
+                    weightList = 1 - BF;
+                    weightList(weightList==1)=0;
+                    weightList = weightList / sum(weightList);
+                    
+                    obj.P{L}(:,c) = BF + Diff * weightList;
+                end
+            end
+        end
     end
 end

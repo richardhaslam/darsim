@@ -58,31 +58,7 @@ classdef Discretization_model < handle
             
             % Adding the non-neighboring connections to the list of neighbors (in case of having fractures)
             if ProductionSystem.FracturesNetwork.Active
-                for c = 1:length(obj.CrossConnections)
-                    Frac_Global_Index = c + obj.ReservoirGrid.N;
-                    Frac_Local_Index = obj.Index_Global_to_Local(Frac_Global_Index);
-                    f = Frac_Local_Index.f;
-                    g = Frac_Local_Index.g;
-                    
-                    % Assigning matrix-fracture non-neighboring connections
-                    Reservoir_Overlaps = obj.CrossConnections(c).Cells( obj.CrossConnections(c).Cells <= obj.ReservoirGrid.N);
-                    obj.FracturesGrid.Grids(f).Neighbours(g).indexes = horzcat(obj.FracturesGrid.Grids(f).Neighbours(g).indexes, Reservoir_Overlaps');
-                    for n = 1:length(Reservoir_Overlaps)
-                        Im = Reservoir_Overlaps(n);
-                        obj.ReservoirGrid.Neighbours(Im).indexes = horzcat(obj.ReservoirGrid.Neighbours(Im).indexes, Frac_Global_Index);
-                    end
-                    
-                    % Assigning fracture-fracture non-neighboring connections
-                    Fracture_Overlaps = obj.CrossConnections(c).Cells( obj.CrossConnections(c).Cells > obj.ReservoirGrid.N);
-                    obj.FracturesGrid.Grids(f).Neighbours(g).indexes = horzcat(obj.FracturesGrid.Grids(f).Neighbours(g).indexes, Fracture_Overlaps');
-                    for n = 1:length(Fracture_Overlaps)
-                        If = Fracture_Overlaps(n);
-                        Frac2_Local_Index = obj.Index_Global_to_Local(If);
-                        f2 = Frac2_Local_Index.f;
-                        g2 = Frac2_Local_Index.g;
-                        obj.FracturesGrid.Grids(f2).Neighbours(g2).indexes = horzcat(obj.FracturesGrid.Grids(f2).Neighbours(g2).indexes, Frac_Global_Index);
-                    end
-                end
+                obj.AddNonNeighboringConnectionsToNeighborsListAtFineScale();
             end
         end
         function DefinePerforatedCells(obj, Wells)
@@ -157,6 +133,40 @@ classdef Discretization_model < handle
             end
             if Index_Local_to_Global(obj, indexing.i, indexing.j, indexing.k, indexing.f, indexing.g) ~= I
                 error('i,j,k are not correspondent with I. Check the formula again!');
+            end
+        end
+        function AddNonNeighboringConnectionsToNeighborsListAtFineScale(obj)
+            % Initializing the NonNeighbours properties as cell arrays
+            obj.ReservoirGrid.NonNeighbours = cell(obj.ReservoirGrid.N,1);
+            for f = 1 : obj.FracturesGrid.Nfrac
+                obj.FracturesGrid.Grids(f).NonNeighbours = cell(obj.FracturesGrid.N(f),1);
+            end
+            
+            % Looping over the connections between each fracture element and its overlaping cells from the other media (reservoir or other fractures)
+            for c = 1:length(obj.CrossConnections)
+                Frac_Global_Index = c + obj.ReservoirGrid.N;
+                Frac_Local_Index = obj.Index_Global_to_Local(Frac_Global_Index);
+                f = Frac_Local_Index.f;
+                g = Frac_Local_Index.g;
+                
+                % Assigning matrix-fracture non-neighboring connections
+                Reservoir_Overlaps = obj.CrossConnections(c).Cells( obj.CrossConnections(c).Cells <= obj.ReservoirGrid.N);
+                obj.FracturesGrid.Grids(f).NonNeighbours{g} = unique([obj.FracturesGrid.Grids(f).NonNeighbours{g}, Reservoir_Overlaps']);
+                for n = 1:length(Reservoir_Overlaps)
+                    Im = Reservoir_Overlaps(n);
+                    obj.ReservoirGrid.NonNeighbours{Im} = unique([obj.ReservoirGrid.NonNeighbours{Im}, Frac_Global_Index]);
+                end
+                
+                % Assigning fracture-fracture non-neighboring connections
+                Fracture_Overlaps = obj.CrossConnections(c).Cells( obj.CrossConnections(c).Cells > obj.ReservoirGrid.N);
+                obj.FracturesGrid.Grids(f).NonNeighbours{g} = unique([obj.FracturesGrid.Grids(f).NonNeighbours{g}, Fracture_Overlaps']);
+                for n = 1:length(Fracture_Overlaps)
+                    If = Fracture_Overlaps(n);
+                    Frac2_Local_Index = obj.Index_Global_to_Local(If);
+                    f2 = Frac2_Local_Index.f;  if f2 == f, error('Sth is wrong'); end
+                    g2 = Frac2_Local_Index.g;
+                    obj.FracturesGrid.Grids(f2).NonNeighbours{g2} = unique([obj.FracturesGrid.Grids(f2).NonNeighbours{g2}, Frac_Global_Index]);
+                end
             end
         end
         function AddHarmonicPermeabilities(obj, Reservoir, Fractures)

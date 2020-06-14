@@ -44,17 +44,22 @@ classdef adm_map < handle
             
             % NumOfChildrenFull: Number of children at each level belonging to each of the ADM grid cell
             NumOfChildrenFull = cellfun('length',ADMGrid.Children);
+            
+            obj.Nx = zeros(size(ADMGrid.N,1),1);
             % Looping over each medium (reservor and fractures)
-            for m = 1 : size(ADMGrid.N,1)
-                % Finding the start and end index of this medium from the ADMGrid
-                Start = sum(sum(ADMGrid.N(1:m-1,:)))+1;
-                End = sum(sum(ADMGrid.N(1:m,:)));
-                % Extracting the NumOfChildren for this medium
-                NumOfChildrenMedia = NumOfChildrenFull(Start:End, :);
-                % Nx = number of finer grid cells inside the grid cells of the medium at current level ("level")
-                % As the "Children" contains all the childeren at all levels, we use the first column to take
-                % the children from only one level finer and not more.
-                obj.Nx(m,1) = sum( NumOfChildrenMedia( ADMGrid.level(Start:End)==level , 1 ) );
+            for L = 0 : size(ADMGrid.N,2)-1
+                counter = sum(sum(ADMGrid.N(:,1:L)));
+                for m = 1 : size(ADMGrid.N,1)
+                    % Finding the start and end index of this medium from the ADMGrid
+                    Start = counter + sum(ADMGrid.N(1:m-1,L+1))+1;
+                    End   = counter + sum(ADMGrid.N(1:m  ,L+1));
+                    % Extracting the NumOfChildren for this medium
+                    NumOfChildrenMedia = NumOfChildrenFull(Start:End, :);
+                    % Nx = number of finer grid cells inside the grid cells of the medium at current level ("level")
+                    % As the "Children" contains all the childeren at all levels, we use the first column to take
+                    % the children from only one level finer and not more.
+                    obj.Nx(m,1) = obj.Nx(m,1) + sum( NumOfChildrenMedia( ADMGrid.level(Start:End)==level , 1 ) );
+                end
             end
             
             % Original Indeces of Nf
@@ -62,7 +67,7 @@ classdef adm_map < handle
             
             % Verteces
             % obj.Verteces = find(ADMGrid.Verteces(:,level)); from the old implementation. Replacing it with the line below.
-            obj.Verteces = find(all(ADMGrid.Verteces(:,1:level)~=0, 2));
+            obj.Verteces = find(all(ADMGrid.Verteces(:,1:level)~=0, 2) );
             obj.OriginalIndexVerteces = ADMGrid.Fathers(obj.Verteces, level);
             SelfGridsOfThisLevel = find(all(ADMGrid.Verteces(:,1:level)==-1, 2));
             obj.OriginalIndexVerteces(obj.OriginalIndexVerteces==-1) = ADMGrid.CellIndex(SelfGridsOfThisLevel);

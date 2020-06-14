@@ -18,7 +18,8 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         CoarseLevel
         GridCoords
         ActiveTime
-        Neighbours
+        Neighbours = struct;
+        NonNeighbours = struct;
     end
     methods
         function Initialise(obj, currentLevel, maxLevel)
