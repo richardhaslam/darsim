@@ -41,7 +41,7 @@ classdef adm_grid < grid_darsim & matlab.mixin.Copyable
             obj.Ntot = sum(Nf) + sum(Nx);
             
             obj.CellIndex = [obj.CellIndex(1:sum(Nf)); zeros(sum(Nx), 1)];
-            [~, MaxLevels] = size(obj.Fathers); 
+            MaxLevels = size(obj.Fathers,2); 
             obj.Fathers = [obj.Fathers(1:sum(Nf),:); zeros(sum(Nx), MaxLevels)];
             obj.Verteces = [obj.Verteces(1:sum(Nf),:); zeros(sum(Nx), MaxLevels)];
             obj.level = [obj.level(1:sum(Nf)); ones(sum(Nx), 1)*obj.MaxLevel];

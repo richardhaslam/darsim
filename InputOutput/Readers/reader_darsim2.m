@@ -571,6 +571,10 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'TOLERANCE');
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.ADMSettings.tol = str2double(obj.SettingsMatrix(x+1));
+                SimulatorSettings.ADMSettings.Coupling = char(obj.SettingsMatrix(x+2));
+                if ~strcmp(SimulatorSettings.ADMSettings.Coupling,'COUPLED') && ~strcmp(SimulatorSettings.ADMSettings.Coupling,'DECOUPLED')
+                    SimulatorSettings.ADMSettings.Coupling = 'DECOUPLED';
+                end
                 for L = 1:SimulatorSettings.ADMSettings.maxLevel(1)
                     SimulatorSettings.ADMSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
@@ -608,7 +612,7 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.ADMSettings.BF_MaxContrast = 1e2;
+                    SimulatorSettings.ADMSettings.BF_MaxContrast = 1e3;
                 else
                     SimulatorSettings.ADMSettings.BF_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
@@ -617,9 +621,18 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = 1e1;
+                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = 1e3;
                 else
                     SimulatorSettings.ADMSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
+                end
+                
+                % Correction of basis functions region of influence by cutting the values less than alpha  
+                temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_REGION_OF_INFLUENCE_CUT');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.ADMSettings.BF_alpha = 0;
+                else
+                    SimulatorSettings.ADMSettings.BF_alpha = str2double(obj.SettingsMatrix(Index+1));
                 end
                 
                 % ADM settings in the fractures
@@ -694,7 +707,7 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.MMsSettings.BF_MaxContrast = 1e2;
+                    SimulatorSettings.MMsSettings.BF_MaxContrast = 1e3;
                 else
                     SimulatorSettings.MMsSettings.BF_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
@@ -703,9 +716,18 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = 1e1;
+                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = 1e3;
                 else
                     SimulatorSettings.MMsSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
+                end
+                
+                % Correction of basis functions region of influence by cutting the values less than alpha  
+                temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_REGION_OF_INFLUENCE_CUT');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.ADMSettings.BF_alpha = 0;
+                else
+                    SimulatorSettings.ADMSettings.BF_alpha = str2double(obj.SettingsMatrix(Index+1));
                 end
                 
                 % MMs settings in fractures

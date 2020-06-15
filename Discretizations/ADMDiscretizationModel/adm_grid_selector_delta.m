@@ -98,7 +98,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
                 VarMax = max(Var_children);
                 VarMin = min(Var_children);
                 if CoarseGrids(m).Active(c) == 1
-                    % 1. Checking the neighbours (inside this medium itself)
+                    % 1.1. Checking the neighbours (inside this medium itself)
                     Neighbour = CoarseGrids(m).Neighbours{c};
                     NofNeighbour = length(Neighbour);
                     i = 1;
@@ -124,38 +124,41 @@ classdef adm_grid_selector_delta < adm_grid_selector
                         end
                     end
                     
-                    % 2. Checking the non-neighbours (inside other media)
-                    NonNeighbour = CoarseGrids(m).NonNeighbours{c};
-                    NOfNonNeighbour = length(NonNeighbour);
-                    i = 1;
-                    while i <= NOfNonNeighbour
-                        % Finding max and min values of non-neighbour i
-                        Ind = cumsum(Nc) - NonNeighbour(i);
-                        Ind(Ind<0) = nan;
-                        [~, m_other] = min(Ind);
-                        if m == m_other,  error("The non-neighboring connection cannot be from the same medium. Something is wrong.");  end
-                        c_other = NonNeighbour(i) - sum(Nc(1:m_other-1));
-                        Var_children_NonNeighbor = Var{m_other}(CoarseGrids(m_other).Children{c_other, end});
-                        VarNonNeighborMax = max(Var_children_NonNeighbor);
-                        VarNonNeighborMin = min(Var_children_NonNeighbor);
-                        if flag == false
-                            if (abs(VarMax-VarNonNeighborMin) > obj.tol || abs(VarMin-VarNonNeighborMax) > obj.tol)
-                                CoarseGrids(m).Active(c) = 0;
-                                i = NOfNonNeighbour + 1;
+                    % 1.2. Checking the non-neighbours (inside other media) if any
+                    if obj.isCoupled && length(CoarseGrids) > 1 % which means we have fractures
+                        NonNeighbour = CoarseGrids(m).NonNeighbours{c};
+                        NOfNonNeighbour = length(NonNeighbour);
+                        i = 1;
+                        while i <= NOfNonNeighbour
+                            % Finding max and min values of non-neighbour i
+                            Ind = cumsum(Nc) - NonNeighbour(i);
+                            Ind(Ind<0) = nan;
+                            [~, m_other] = min(Ind);
+                            if m == m_other,  error("The non-neighboring connection cannot be from the same medium. Something is wrong.");  end
+                            c_other = NonNeighbour(i) - sum(Nc(1:m_other-1));
+                            Var_children_NonNeighbor = Var{m_other}(CoarseGrids(m_other).Children{c_other, end});
+                            VarNonNeighborMax = max(Var_children_NonNeighbor);
+                            VarNonNeighborMin = min(Var_children_NonNeighbor);
+                            if flag == false
+                                if (abs(VarMax-VarNonNeighborMin) > obj.tol || abs(VarMin-VarNonNeighborMax) > obj.tol)
+                                    CoarseGrids(m).Active(c) = 0;
+                                    i = NOfNonNeighbour + 1;
+                                else
+                                    i = i+1;
+                                end
                             else
-                                i = i+1;
-                            end
-                        else
-                            if (abs(VarMax-VarNonNeighborMin) > 2*obj.tol || abs(VarMin-VarNonNeighborMax) > 2*obj.tol)
-                                CoarseGrids(m).Active(c) = 0;
-                                i = NOfNonNeighbour + 1;
-                            else
-                                i = i+1;
+                                if (abs(VarMax-VarNonNeighborMin) > 2*obj.tol || abs(VarMin-VarNonNeighborMax) > 2*obj.tol)
+                                    CoarseGrids(m).Active(c) = 0;
+                                    i = NOfNonNeighbour + 1;
+                                else
+                                    i = i+1;
+                                end
                             end
                         end
                     end
                 end
             end
+            
             %2. Do not coarsen neighbours of cells that are at finescale resolution
             DummyActive = CoarseGrids(m).Active;
             for i = 1:Nc(m)

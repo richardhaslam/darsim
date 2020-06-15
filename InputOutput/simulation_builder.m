@@ -416,6 +416,7 @@ classdef simulation_builder < handle
                                prolongationbuilder.BFUpdater.MaxContrast = ADMSettings.BF_MaxContrast;
                             end
                             prolongationbuilder.BFUpdater.pEDFM_MaxContrast = ADMSettings.pEDFM_MaxContrast;
+                            prolongationbuilder.alpha = ADMSettings.BF_alpha;
                     end
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                     
@@ -443,24 +444,6 @@ classdef simulation_builder < handle
                         operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
                     end
                     
-                    % a.3 Rock Temperature operator builder
-                    if obj.SimulatorSettings.Formulation == "Geothermal_2T"
-                        switch (ADMSettings.TrInterpolator)
-                            case ('Constant')
-                                prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
-                            otherwise
-                                prolongationbuilder = prolongation_builder_MSRockTemperature(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
-                                prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
-                                if strcmp(ADMSettings.TrInterpolator, 'Homogeneous')
-                                    prolongationbuilder.BFUpdater.MaxContrast = 1;
-                                else
-                                    prolongationbuilder.BFUpdater.MaxContrast = ADMSettings.BF_MaxContrast;
-                                end
-                        end
-                        i = length(operatorshandler.ProlongationBuilders);
-                        operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
-                    end
-                    
                     % b. Grid selection criterion (time\space based)
                     switch (ADMSettings.GridSelCriterion)
                         case('dfdx')
@@ -472,6 +455,12 @@ classdef simulation_builder < handle
                         case('residual')
                             gridselector = adm_grid_selector_residual(ADMSettings.tol);
                     end
+                    if strcmp(ADMSettings.Coupling,'COUPLED')
+                        gridselector.isCoupled = 1;
+                    else
+                        gridselector.isCoupled = 0;
+                    end
+                        
                     Discretization = ADM_Discretization_model(ADMSettings.maxLevel, ADMSettings.Coarsening);
                     Discretization.CoarseningSwitch = ADMSettings.CoarseningSwitch;
                     Discretization.AddADMGridSelector(gridselector);
@@ -483,19 +472,20 @@ classdef simulation_builder < handle
                     operatorshandler = operators_handler_MMs(MMsSettings.Coarsening(1,:,:));
                     prolongationbuilder = prolongation_builder_MSPressure(MMsSettings.maxLevel(1), MMsSettings.Coarsening(:,:,1) );
                     if ~obj.SimulationInput.FracturesProperties.Fractured
-                        if obj.SimulatorSettings.Formulation == "Geothermal_2T"
-                            prolongationbuilder.BFUpdater = bf_updater_ms_P_geothermal();
-                        else
-                            prolongationbuilder.BFUpdater = bf_updater_ms();
-                        end
+                        prolongationbuilder.BFUpdater = bf_updater_ms();
                     else
                         prolongationbuilder.BFUpdater = bf_updater_FAMS();
                         prolongationbuilder.BFUpdater.BFtype = MMsSettings.BFtype;
                     end
                     % Reduce contrast for BF computation to remove peaks
-                    prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
-                    prolongationbuilder.BFUpdater.MaxContrast = MMsSettings.BF_MaxContrast;
+                    if strcmp(MMsSettings.PInterpolator, 'Homogeneous')
+                        prolongationbuilder.BFUpdater.MaxContrast = 1;
+                    else
+                        prolongationbuilder.BFUpdater.MaxContrast = MMsSettings.BF_MaxContrast;
+                    end
                     prolongationbuilder.BFUpdater.pEDFM_MaxContrast = MMsSettings.pEDFM_MaxContrast;
+                    prolongationbuilder.alpha = MMsSettings.BF_alpha;
+                    
                     if MMsSettings.CorrectionFunctions
                         prolongationbuilder.BFUpdater.CorrectionFunctions = true;
                     end

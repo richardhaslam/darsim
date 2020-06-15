@@ -11,6 +11,7 @@ classdef adm_grid_selector < handle
         tol
         NoWellsCoarseCells
         key
+        isCoupled
     end
     methods (Abstract)
         obj = SelectGrid(obj)
