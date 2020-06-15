@@ -28,6 +28,13 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         function InitializeMapping(obj, ProductionSystem, FluidModel)
             fprintf('Algebraic Dynamic Multilevel (ADM) method run with %d levels and tolerance %s%s = %f\n', ...
                  obj.maxLevel(1), char(916), obj.ADMGridSelector.key, obj.ADMGridSelector.tol);
+            if length(obj.Nf) > 1 % which means there are fractures
+                if obj.ADMGridSelector.isCoupled
+                    fprintf('ADM grid selection strategy is coupled.\n');
+                else
+                    fprintf('ADM grid selection strategy is decoupled.\n');
+                end
+            end
             % Construct Coarse Grids
             disp(char(2));
             disp('Constructing coarse grids');
