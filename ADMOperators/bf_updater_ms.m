@@ -74,9 +74,9 @@ classdef bf_updater_ms < bf_updater
             Tx_Alpha = FineGrid.Tx_Alpha(2:Nx,:,:);
             Ty_Alpha = FineGrid.Ty_Alpha(:,2:Ny,:);
             Tz_Alpha = FineGrid.Tz_Alpha(:,:,2:Nz);
-            Tx_Alpha(Tx_Alpha>(1-Reduction))=Tx_Alpha(Tx_Alpha>(1-Reduction)).*(1-Reduction);
-            Ty_Alpha(Ty_Alpha>(1-Reduction))=Ty_Alpha(Ty_Alpha>(1-Reduction)).*(1-Reduction);
-            Tz_Alpha(Tz_Alpha>(1-Reduction))=Tz_Alpha(Tz_Alpha>(1-Reduction)).*(1-Reduction);
+            Tx_Alpha( Tx_Alpha>(1-Reduction) ) = Tx_Alpha( Tx_Alpha>(1-Reduction)) .* (1-Reduction);
+            Ty_Alpha( Ty_Alpha>(1-Reduction) ) = Ty_Alpha( Ty_Alpha>(1-Reduction)) .* (1-Reduction);
+            Tz_Alpha( Tz_Alpha>(1-Reduction) ) = Tz_Alpha( Tz_Alpha>(1-Reduction)) .* (1-Reduction);
             Tx(2:Nx,:,:) = Tx(2:Nx,:,:) .* ( 1 - Tx_Alpha );
             Ty(:,2:Ny,:) = Ty(:,2:Ny,:) .* ( 1 - Ty_Alpha );
             Tz(:,:,2:Nz) = Tz(:,:,2:Nz) .* ( 1 - Tz_Alpha );

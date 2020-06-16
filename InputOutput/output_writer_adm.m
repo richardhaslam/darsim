@@ -7,23 +7,22 @@
 classdef output_writer_adm < output_writer
     properties
         FormatADM
-        basisfunctions
+        PlotBasisFunctions
         dynamicBF
     end
     methods
         function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp)
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
-            obj.basisfunctions = true;
             obj.dynamicBF = false;
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.Plotter.PlotSolution(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotPermeability(ProductionSystem, DiscretizationModel);
             obj.Plotter.PlotADMGrid(ProductionSystem, DiscretizationModel);
-            if obj.basisfunctions
+            if obj.PlotBasisFunctions
                 obj.Plotter.PlotBasisFunctions(DiscretizationModel.FineGrid, ...
                     DiscretizationModel.CoarseGrid, DiscretizationModel.OperatorsHandler.ProlongationBuilders(1).P, DiscretizationModel.Nf, DiscretizationModel.Nc);
-                obj.basisfunctions = false;
+                obj.PlotBasisFunctions = false;
             end
             if obj.dynamicBF
                 pressure = 0;

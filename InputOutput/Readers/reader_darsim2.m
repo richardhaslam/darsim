@@ -621,7 +621,7 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = 1e3;
+                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = inf;
                 else
                     SimulatorSettings.ADMSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
@@ -716,7 +716,7 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = 1e3;
+                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = inf;
                 else
                     SimulatorSettings.MMsSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
@@ -782,6 +782,14 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.SettingsMatrix, 'OUTPUT'); 
             xv = find(~cellfun('isempty', temp));
             SimulatorSettings.plotting = char(obj.SettingsMatrix(xv+1)); %Matlab or VTK
+            
+            temp = strfind(obj.SettingsMatrix, 'PLOT_BASIS_FUNCTIONS');
+            xv = find(~cellfun('isempty', temp));
+            if ~isempty(xv)
+                SimulatorSettings.PlotBasisFunctions = true;
+            else
+                SimulatorSettings.PlotBasisFunctions = false;
+            end
         end
     end
 end
