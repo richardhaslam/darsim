@@ -15,8 +15,16 @@ Coarsening = ones(NumOfFrac+1,3,DiscretizationModel.maxLevel(1)+1);
 Coarsening(:,:,2:end) = DiscretizationModel.Coarsening;
 
 % Reservoir Data
-Nm = [DiscretizationModel.ReservoirGrid.Nx/(Coarsening(1,1,Level))
-      DiscretizationModel.ReservoirGrid.Ny/(Coarsening(1,2,Level))];
+% If the coarse nodes positioning starts from the corner of the domain,
+% different formula is needed to calculate the number of coarse grid
+% cells
+if DiscretizationModel.Vertex_On_Corner
+    Nm = [(DiscretizationModel.ReservoirGrid.Nx-1) / (Coarsening(1,1,Level)) + 1
+          (DiscretizationModel.ReservoirGrid.Ny-1) / (Coarsening(1,2,Level)) + 1];
+else
+    Nm = [DiscretizationModel.ReservoirGrid.Nx/(Coarsening(1,1,Level))
+          DiscretizationModel.ReservoirGrid.Ny/(Coarsening(1,2,Level))];
+end
 
 Lm = [ProductionSystem.Reservoir.Length
       ProductionSystem.Reservoir.Width];
@@ -37,9 +45,19 @@ for f = 1 : NumOfFrac
     if DiscretizationModel.FracturesGrid.Grids(f).Ny~=1
         error('This test case has a fracture in 2D. Fractures should only be 1D lines. Therefore "Plot2D" cannot provide visulization!\n');
     end
-    Nf(f) = DiscretizationModel.FracturesGrid.Grids(f).Nx/(Coarsening(f+1,1,Level));
+    % If the coarse nodes positioning starts from the corner of the domain,
+    % different formula is needed to calculate the number of coarse grid
+    % cells
+    if DiscretizationModel.Vertex_On_Corner
+        Nf(f) = (DiscretizationModel.FracturesGrid.Grids(f).Nx-1) / (Coarsening(f+1,1,Level)) + 1;
+    else
+        Nf(f) = DiscretizationModel.FracturesGrid.Grids(f).Nx/(Coarsening(f+1,1,Level));
+    end
+    
+    
     Lf(f) = ProductionSystem.FracturesNetwork.Fractures(f).Length;
     df(f) = Lf(f)/Nf(f);
+    
     
     Point_Start(:,f) = [DiscretizationModel.FracturesGrid.Grids(f).GridCoords(1,1)
                         DiscretizationModel.FracturesGrid.Grids(f).GridCoords(1,2)];
@@ -47,10 +65,18 @@ for f = 1 : NumOfFrac
     Point_End(:,f)   = [DiscretizationModel.FracturesGrid.Grids(f).GridCoords(end,1)
                         DiscretizationModel.FracturesGrid.Grids(f).GridCoords(end,2)];
     
-    dfx = (Point_End(1,f)-Point_Start(1,f))/Nf(f);
-    dfy = (Point_End(2,f)-Point_Start(2,f))/Nf(f);
-    Xf{f} = linspace( Point_Start(1,f)+dfx , Point_End(1,f)-dfx , Nf(f) )';
-    Yf{f} = linspace( Point_Start(2,f)+dfx , Point_End(2,f)-dfy , Nf(f) )';
+    % Some fractures might be homogenized in the coarse levels (i.e., they
+    % have no coarse nodes). We need to ignore those fractures for
+    % plotting.
+    if Nf(f) > DiscretizationModel.FracturesGrid.Grids(f).Nx
+        Nf(f) = 0;
+    else
+        dfx = (Point_End(1,f)-Point_Start(1,f))/Nf(f);
+        dfy = (Point_End(2,f)-Point_Start(2,f))/Nf(f);
+        Xf{f} = linspace( Point_Start(1,f)+dfx , Point_End(1,f)-dfx , Nf(f) )';
+        Yf{f} = linspace( Point_Start(2,f)+dfx , Point_End(2,f)-dfy , Nf(f) )';
+    end
+    
 end
 Var = zeros(prod(Nm)+sum(Nf),length(BF_Index));
 for n = 1 : length(BF_Index)
@@ -70,7 +96,11 @@ for n = 1 : length(BF_Index)
     for f = 1 : NumOfFrac
         If_Start = prod(Nm)+sum(Nf(1:f-1))+1;
         If_End   = If_Start + Nf(f)-1;
-        plot3(Xf{f},Yf{f},Var(If_Start:If_End,n)*1.01,'r','LineWidth',4);
+        if Nf(f) == 0
+            
+        else
+            plot3(Xf{f},Yf{f},Var(If_Start:If_End,n)*1.01 + 1e-3,'r','LineWidth',4);
+        end
         %     if (length(frac) <= 5) && ( strcmp(func_name,'Error'  )==0 )
         %         plot3(frac(f).xcf,frac(f).ycf,max(func)*ones(Nf(f),1),'r','LineWidth',4);
         %     end
