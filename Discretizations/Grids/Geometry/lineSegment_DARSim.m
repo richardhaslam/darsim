@@ -14,16 +14,16 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
         AB_vec
     end
     methods
+        %%
         function obj = lineSegment_DARSim(pointA,pointB)
-            %%
             obj.InitializeLineInfinite(pointB-pointA);
             obj.PointA = pointA;
             obj.PointB = pointB;
             obj.PointM = (pointA+pointB)/2;
             obj.AB_vec = pointB - pointA;
         end
+        %%
         function [Geostatus, intersectPoint] = Obtain_LineSegment_LineSengment_Intersection(obj, Line, Epsilon)
-            %%
             Geostatus.areParallel = NaN;
             Geostatus.areCollinear = NaN;
             Geostatus.areSkew = NaN;

@@ -33,7 +33,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
                               Grid.CornerPointGridData.Cell.NW_Top_Corner,...
                               Grid.CornerPointGridData.Cell.NE_Top_Corner)';
             Corners = reshape(Corners(:),3,Grid.N*8)';
-            Corners(:,3) = -Corners(:,3);
+            %Corners(:,3) = -Corners(:,3);
             fprintf(fileID, '%f %f %f\n',Corners');
             fprintf(fileID, '\n');
             

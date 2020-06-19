@@ -80,9 +80,9 @@ classdef hexahedron_DARSim < polyhedron_DARSim
             Vec2_mini = ( obj.NW_Bot - obj.SW_Bot ) .* (0:Refinement) / Refinement;
             Vec3_mini = ( obj.SW_Top - obj.SW_Bot ) .* (0:Refinement) / Refinement;
 
-            for i = 1 : Refinement+1
+            for k = 1 : Refinement+1
                 for j = 1 : Refinement+1
-                    PointsInHexahedron = obj.SW_Bot + Vec1_mini(i) + Vec2_mini(j) + Vec3_mini;
+                    PointsInHexahedron = obj.SW_Bot + Vec1_mini + Vec2_mini(:,j) + Vec3_mini(:,k);
                     AvgDistance = AvgDistance + sum ( abs( a * PointsInHexahedron(1,:) + b * PointsInHexahedron(2,:) + c * PointsInHexahedron(3,:) - d ) );
                 end
             end

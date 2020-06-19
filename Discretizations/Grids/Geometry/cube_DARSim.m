@@ -70,7 +70,7 @@ classdef cube_DARSim < hexahedron_DARSim
             
             AvgDistance = AvgDistance / sqrt( a^2 + b^2 + c^2 ) / (Refinement+1)^3 ;
         end
-        %
+        %%
         function [intersectCoordFinal, intersectCoordTemp , areCoplanar] = Obtain_Cube_Tetragon_Intersection(obj, Tetragon, Epsilon)
             % Assigning reservoir properties
             % Coordinates of reservoir grid nodes in each direction

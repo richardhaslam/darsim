@@ -124,18 +124,31 @@ classdef VTK_Plotter < Plotter
             fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-            fprintf(fileID, 'BINARY\n');
+            
+            if obj.isBinary
+                fprintf(fileID, 'BINARY\n');
+            else
+            	fprintf(fileID, 'ASCII\n');
+            end
             fprintf(fileID, '\n');
+            
             fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
             fprintf(fileID, '\n');
+            
             fprintf(fileID, 'POINTS    %d   double\n', size(Grid.GridCoords,1) );
-            %fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
-            fwrite(fileID, Grid.GridCoords', 'double', 'b');
+            if obj.isBinary
+                fwrite(fileID, Grid.GridCoords', 'double', 'b');
+            else
+                fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
+            end
+            fprintf(fileID, '\n');
+            
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
             fprintf(fileID, '\n');
-            %ADD ADM coarse grids
+            
+            %Add ADM coarse grids
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             N_var = double(Fracture.State.Properties.Count);
