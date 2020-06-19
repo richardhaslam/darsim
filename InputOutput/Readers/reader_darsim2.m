@@ -170,8 +170,8 @@ classdef reader_darsim2 < reader
                         error('The keyword "DIMENS" is missing. Please check the input file!\n');
                     end
                     ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
-                        str2double(obj.InputMatrix{index+2});
-                        str2double(obj.InputMatrix{index+3})];
+                                                str2double(obj.InputMatrix{index+2});
+                                                str2double(obj.InputMatrix{index+3})];
                     
                 case('CartesianGrid')
                     % Assume it is Cartesian
@@ -182,8 +182,8 @@ classdef reader_darsim2 < reader
                         error('The keyword "DIMENS" is missing. Please check the input file!\n');
                     end
                     ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
-                        str2double(obj.InputMatrix{index+2});
-                        str2double(obj.InputMatrix{index+3})];
+                                                str2double(obj.InputMatrix{index+2});
+                                                str2double(obj.InputMatrix{index+3})];
                     % 2. GridSize
                     temp = strfind(obj.InputMatrix, 'SPECGRID');
                     index = find(~cellfun('isempty', temp));
@@ -191,8 +191,8 @@ classdef reader_darsim2 < reader
                         error('The keyword "SPECGRID" is missing. Please check the input file!\n');
                     end
                     ReservoirProperties.Grid.N = [str2double(obj.InputMatrix{index+1});...
-                        str2double(obj.InputMatrix{index+2});
-                        str2double(obj.InputMatrix{index+3})];
+                                                  str2double(obj.InputMatrix{index+2});
+                                                  str2double(obj.InputMatrix{index+3})];
                     ReservoirProperties.Grid.N_ActiveCells = prod(ReservoirProperties.Grid.N);
                 otherwise
                     error('The discretization method should either be "CartesianGrid" or "CornerPointGrid". Check the input file!\n');
@@ -402,10 +402,10 @@ classdef reader_darsim2 < reader
             end
             temp = strsplit(obj.FractureMatrix{index},' ');
             FracturesProperties.NrOfFrac = str2double( temp{end} );
-            
         end
         function CornerPointGridData = ReadCornerPointGridData(obj)
             fprintf('Reading the CornerPointGrid input file:\n');
+            
             temp = strfind(obj.CornerPointGridMatrix, 'RESERVOIR_GRID_NX');
             index = find(~cellfun('isempty', temp));
             if isempty(index)

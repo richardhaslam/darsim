@@ -102,6 +102,9 @@ classdef simulation_builder < handle
                 otherwise
                     error('At this moment, only "CartesianGrid" and "CornerPointGrid" discretization models are supported in DARSim!\n');
             end
+            if obj.SimulationInput.FracturesProperties.Fractured
+                [FracturesGrid, CrossConnections] = obj.ScanFracturesData(FractureMatrix, ReservoirGrid);
+            end
             
     
             %% 2. Define your discretization Model (choose between FS and ADM)
@@ -641,7 +644,9 @@ classdef simulation_builder < handle
                 case('Table')
                     FluidModel.RelPermModel = relperm_model_table(obj.SimulationInput.FluidProperties.RelPerm.TableType,...
                                                                   obj.SimulationInput.FluidProperties.RelPerm.TableData);
+                    obj.SimulationInput.FluidProperties.RelPerm.s_irr = FluidModel.RelPermModel.S_irr;
             end
+            
             % Irriducible sat
             for i=1:FluidModel.NofPhases
                 FluidModel.Phases(i).sr = obj.SimulationInput.FluidProperties.RelPerm.s_irr(i);
@@ -1088,7 +1093,8 @@ classdef simulation_builder < handle
                     end
             end
         end
-        function ScanFracturesData(obj, FractureMatrix)
+        function [FracturesGrid, CrossConnections] = ScanFracturesData(obj, FractureMatrix, ReservoirGrid)
+            Nm = ReservoirGrid.N;
             temp = strfind(FractureMatrix, 'TYPE');
             fracGen_Type = find(~cellfun('isempty', temp));
             fracGen_Type = strsplit(FractureMatrix{fracGen_Type},' ');
@@ -1111,8 +1117,8 @@ classdef simulation_builder < handle
             frac_input_res_grid = find(~cellfun('isempty', temp));
             frac_input_res_grid = strsplit(FractureMatrix{frac_input_res_grid},' ');
             if ( ReservoirGrid.Nx ~= str2double(frac_input_res_grid{2}) ) || ...
-                    ( ReservoirGrid.Ny ~= str2double(frac_input_res_grid{4}) ) || ...
-                    ( ReservoirGrid.Nz ~= str2double(frac_input_res_grid{6}) )
+               ( ReservoirGrid.Ny ~= str2double(frac_input_res_grid{4}) ) || ...
+               ( ReservoirGrid.Nz ~= str2double(frac_input_res_grid{6}) )
                 error('The number of grid cells for reservoir in the "fracture" input file does not match the simulation input file!');
             end
             

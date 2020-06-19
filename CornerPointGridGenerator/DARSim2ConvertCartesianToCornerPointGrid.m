@@ -18,24 +18,24 @@ Commented = startsWith(InputMatrix, '--');
 InputMatrix(Commented) = {'--'}; % removing the string if it is commented.
 
 % Reading the size of the reservoir
-temp = strfind(obj.InputMatrix, 'DIMENS');
+temp = strfind(InputMatrix, 'DIMENS');
 index = find(~cellfun('isempty', temp));
 if isempty(index)
     error('The keyword "DIMENS" is missing. Please check the input file!\n');
 end
-Lx = str2double(obj.InputMatrix{index+1});
-Ly = str2double(obj.InputMatrix{index+2});
-Lz = str2double(obj.InputMatrix{index+3});
+Lx = str2double(InputMatrix{index+1});
+Ly = str2double(InputMatrix{index+2});
+Lz = str2double(InputMatrix{index+3});
 
 % Reading number of grid cells
-temp = strfind(obj.InputMatrix, 'SPECGRID');
+temp = strfind(InputMatrix, 'SPECGRID');
 index = find(~cellfun('isempty', temp));
 if isempty(index)
     error('The keyword "SPECGRID" is missing. Please check the input file!\n');
 end
-Nx = str2double(obj.InputMatrix{index+1});
-Ny = str2double(obj.InputMatrix{index+2});
-Nz = str2double(obj.InputMatrix{index+3});
+Nx = str2double(InputMatrix{index+1});
+Ny = str2double(InputMatrix{index+2});
+Nz = str2double(InputMatrix{index+3});
 
 %% CARTESIAN GRID GEOMETRY DATA: INPUT FILE GENERATION
 % SECTION 1: CELL DATA: NODES + CENTROIDS + VOLUMES

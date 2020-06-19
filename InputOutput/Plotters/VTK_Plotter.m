@@ -189,7 +189,7 @@ classdef VTK_Plotter < Plotter
         function PlotFracturePorosity(obj, FractureGrid, phi, f)
             %Permeability
             fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'a');
-            obj.PrintScalar2VTK(fileID, reshape(phi, FractureGrid.N, 1), ' Porosity');
+            obj.PrintScalar2VTK(fileID, reshape(phi*ones(FractureGrid.N,1), FractureGrid.N, 1), ' Porosity');
             fprintf(fileID, '\n');
             fclose(fileID);
         end

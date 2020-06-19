@@ -1,14 +1,13 @@
 % Class of line segment for DARSim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%DARSim Reservoir Simulator
-%Author: Mousa HosseiniMehr
-%TU Delft
-%Created: 2020-03-09
-%Last modified: 2020-03-09
+% DARSim Reservoir Simulator
+% Author: Mousa HosseiniMehr
+% TU Delft
+% Created: 2020-03-09
+% Last modified: 2020-06-17
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef lineSegment_DARSim < line_DARSim
+classdef lineSegment_DARSim < lineInfinite_DARSim
     properties
-        PointA
         PointB
         PointM
         Points
@@ -17,7 +16,7 @@ classdef lineSegment_DARSim < line_DARSim
     methods
         function obj = lineSegment_DARSim(pointA,pointB)
             %%
-            obj.InitializeLine(pointB-pointA);
+            obj.InitializeLineInfinite(pointB-pointA);
             obj.PointA = pointA;
             obj.PointB = pointB;
             obj.PointM = (pointA+pointB)/2;
@@ -35,14 +34,15 @@ classdef lineSegment_DARSim < line_DARSim
             L1B = obj.PointB; L2B = Line.PointB;
             V1 = L1B - L1A;
             V2 = L2B - L2A;
+            
             % Obtaining the geostatus between the lines
-            if ( norm( cross(obj.unit_vec, Line.unit_vec) ) < Epsilon )
+            if ( norm( cross(obj.unitVec, Line.unitVec) ) < Epsilon )
                 % The lines are either parallel or even collinear.
                 Geostatus.areParallel = 1;
                 Geostatus.areSkew = 0;
                 
                 % checking if there is any distance between the prarallel line segment
-                parallelDistance = norm( cross( (Line.PointA - obj.PointA) , obj.unit_vec ) );
+                parallelDistance = norm( cross( (Line.PointA - obj.PointA) , obj.unitVec ) );
                 if parallelDistance > Epsilon
                     % The lines are parallel, no intersection occurs.
                     Geostatus.areCollinear = 0;
