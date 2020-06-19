@@ -55,7 +55,8 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
                     Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
                     Hexahedron.Centroid = Centroids(I,:)';
                     
-                    [Geostatus, IntersectPoints] = Hexahedron.Obtain_Hexahedron_LineSegment_Intersection(LineSegment);
+                    Epsilon = 1e-10 * ( min(obj.ReservoirGrid.Volume) )^(1/3);
+                    [Geostatus, IntersectPoints] = Hexahedron.Obtain_Polyhedron_LineSegment_Intersection(LineSegment,Epsilon);
                     
                     % Add the neighboring cells to the list for intersection check if it is the first try
                     % but no intersection occurs, so another one must be checked

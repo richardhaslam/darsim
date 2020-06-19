@@ -1117,8 +1117,8 @@ classdef simulation_builder < handle
             frac_input_res_grid = find(~cellfun('isempty', temp));
             frac_input_res_grid = strsplit(FractureMatrix{frac_input_res_grid},' ');
             if ( ReservoirGrid.Nx ~= str2double(frac_input_res_grid{2}) ) || ...
-                    ( ReservoirGrid.Ny ~= str2double(frac_input_res_grid{4}) ) || ...
-                    ( ReservoirGrid.Nz ~= str2double(frac_input_res_grid{6}) )
+               ( ReservoirGrid.Ny ~= str2double(frac_input_res_grid{4}) ) || ...
+               ( ReservoirGrid.Nz ~= str2double(frac_input_res_grid{6}) )
                 error('The number of grid cells for reservoir in the "fracture" input file does not match the simulation input file!');
             end
             
