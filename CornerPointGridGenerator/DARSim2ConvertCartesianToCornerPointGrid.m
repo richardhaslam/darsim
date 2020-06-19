@@ -41,7 +41,7 @@ Nz = str2double(obj.InputMatrix{index+3});
 % SECTION 1: CELL DATA: NODES + CENTROIDS + VOLUMES
 G = cartGrid([Nx, Ny, Nz], [Lx, Ly, Lz]);                                  % Create Cartesian Grid
 G = computeGeometry(G);                                                    % Compute Geomtery of the Cartesian Grid
-NC = linspace(1, G.cells.num, G.cells.num)';                               % Create Cell Index Vector (Total Number of Cells)
+NCi = linspace(1, G.cells.num, G.cells.num)';                               % Create Cell Index Vector (Total Number of Cells)
 CF = G.cells.faces;                                                        % Faces linked to the Cells
 LI = (CF(:,2) ~= 5)&(CF(:,2) ~= 6);                                        % Just consider Top and Bttm Faces of the Cell
 CF(LI,:) = [];                                                             % Just consider Top and Bttm Faces of the Cell 
@@ -50,7 +50,7 @@ N = reshape((ntf((CF(:,1)),:))',8,[])';                                    % Res
 NC = G.nodes.coords;                                                       % X, Y and Z coordinates of the nodes
 
 % Cell Data: Cell Index + Nodes Coordinates (Top/Bttm (NW NE SW SE)) + Centroids (x, y z coordinates) + Volumes
-CellData = [NC NC(N(:,4),:) NC(N(:,3),:) NC(N(:,1),:) NC(N(:,2),:) NC(N(:,8),:) NC(N(:,7),:) NC(N(:,5),:) NC(N(:,6),:) G.cells.centroids G.cells.volumes];
+CellData = [NCi NC(N(:,4),:) NC(N(:,3),:) NC(N(:,1),:) NC(N(:,2),:) NC(N(:,8),:) NC(N(:,7),:) NC(N(:,5),:) NC(N(:,6),:) G.cells.centroids G.cells.volumes];
 
 % SECTION 2: INTERNAL FACES DATA (FACES CONNECTED TO CELLS)
 NF = linspace(1, G.faces.num, G.faces.num)';                      % Create Face Index Vector (Total Number of Faces)
