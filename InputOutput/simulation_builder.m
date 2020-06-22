@@ -23,13 +23,7 @@ classdef simulation_builder < handle
             simulation.Summary = obj.BuildSummary(simulation);
             
             % Add gravity model
-            if strcmp(obj.SimulationInput.ReservoirProperties.Discretization,'CornerPointGrid')
-                simulation.Formulation.GravityModel = gravity_model_CornerPointGrid(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
-            elseif strcmp(obj.SimulationInput.ReservoirProperties.Discretization,'CartesianGrid')
-                simulation.Formulation.GravityModel = gravity_model(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
-            else
-                error('The discretization method should either be "CartesianGrid" or "CornerPointGrid". Check the input file!\n');
-            end
+            simulation.Formulation.GravityModel = gravity_model(simulation.DiscretizationModel, simulation.FluidModel.NofPhases, simulation.ProductionSystem.FracturesNetwork.NumOfFrac);
             switch (obj.SimulationInput.FluidProperties.Gravity)
                 case('ON')
                     simulation.Formulation.GravityModel.g = 9.806;
@@ -45,17 +39,7 @@ classdef simulation_builder < handle
             VarValues = ones(N, length(obj.SimulationInput.Init));
             for i=1:length(obj.SimulationInput.Init)
                 VarValues(:, i) = VarValues(:, i) * obj.SimulationInput.Init(i);
-            end
-            
-%             S1=  reshape(VarValues(:, 2),99,99,1);
-%             S1(1:50,:) = ones(50,99);
-%             S1 = reshape(S1,N,1);
-%             VarValues(:, 2) = S1;
-% 
-%             S2 =  reshape(VarValues(:, 3),99,99,1);
-%             S2(51:end,:) = zeros(49,99);
-%             S2 = reshape(S2,N,1);
-%             VarValues(:, 3) = S2;            
+            end        
             
             switch(simulation.FluidModel.name)
                 case('SinglePhase')
@@ -64,17 +48,6 @@ classdef simulation_builder < handle
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    %                     % Perturb initial S
-                    %                     nx = simulation.DiscretizationModel.ReservoirGrid.Nx;
-                    %                     rng(0);
-                    %                     perturbations = rand(20, 1);
-                    %                     np = nx / 20;
-                    %                     for i=1:20
-                    %                         newval((i-1)*np + 1:i*np) = perturbations(i);
-                    %                     end
-                    %                     index = 1:nx:N;
-                    %                     VarValues(index, 2) = newval;
-                    %                     VarValues(:, 3) = 1 - VarValues(:, 2);
                     simulation.Initializer = initializer(VarNames, VarValues);
                 case("Geothermal_2T")
                     VarNames = {'P_1', 'Tf', 'Tr' ,'S_1'};
@@ -102,7 +75,7 @@ classdef simulation_builder < handle
                 otherwise
                     error('At this moment, only "CartesianGrid" and "CornerPointGrid" discretization models are supported in DARSim!\n');
             end
-            if obj.SimulationInput.FracturesProperties.Fractured
+            if obj.SimulationInput.FracturesProperties.isFractured
                 [FracturesGrid, CrossConnections] = obj.ScanFracturesData(FractureMatrix, ReservoirGrid);
             end
             
@@ -246,7 +219,7 @@ classdef simulation_builder < handle
             
             %% 3. Add Grids to the Discretization Model
             Discretization.AddReservoirGrid(ReservoirGrid);
-            if obj.SimulationInput.FracturesProperties.Fractured
+            if obj.SimulationInput.FracturesProperties.isFractured
                 Discretization.AddFracturesGrid(FracturesGrid);
                 Discretization.AddCrossConnections(CrossConnections);
             end
@@ -479,14 +452,14 @@ classdef simulation_builder < handle
             ProductionSystem.AddWells(Wells);
             
             %% FRACTURE NETWORK
-            if obj.SimulationInput.FracturesProperties.Fractured
+            if obj.SimulationInput.FracturesProperties.isFractured
                 FracturesNetwork = fracture_system();
                 FracturesNetwork.Active = 1;
                 temp = strfind(FractureMatrix, 'NUM_FRACS');
                 index = find(~cellfun('isempty', temp));
                 temp = strsplit(FractureMatrix{index},' ');
-                NrOfFrac = temp{end};
-                FracturesNetwork.NumOfFrac = str2double( NrOfFrac );
+                NumOfFrac = temp{end};
+                FracturesNetwork.NumOfFrac = str2double( NumOfFrac );
                 
                 temp = strfind(FractureMatrix, 'PROPERTIES');
                 frac_index = find(~cellfun('isempty', temp));
@@ -1080,7 +1053,7 @@ classdef simulation_builder < handle
             Writer.AddPlotter(plotter);
         end
         function DefineProperties(obj, ProductionSystem, FluidModel, DiscretizationModel)
-            switch(obj.SimulationInput.FracturesProperties.Fractured)
+            switch(obj.SimulationInput.FracturesProperties.isFractured)
                 case(0)
                     ProductionSystem.Reservoir.State.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
                     ProductionSystem.Reservoir.State_old.AddProperties(FluidModel, DiscretizationModel.ReservoirGrid.N);
@@ -1094,42 +1067,36 @@ classdef simulation_builder < handle
             end
         end
         function [FracturesGrid, CrossConnections] = ScanFracturesData(obj, FractureMatrix, ReservoirGrid)
-            Nm = ReservoirGrid.N;
-            temp = strfind(FractureMatrix, 'TYPE');
-            fracGen_Type = find(~cellfun('isempty', temp));
-            fracGen_Type = strsplit(FractureMatrix{fracGen_Type},' ');
+            fprintf('This simulation uses input from "%s" fracture generator.\n', obj.SimulationInput.FracturesProperties.FractureModelType );
             
-            fprintf('This simulation uses input from "%s" fracture generator.\n', fracGen_Type{2});
-            NrOfFrac = obj.SimulationInput.FracturesProperties.NrOfFrac;
-            fprintf('Extracting data from %02d fractures ...\n', NrOfFrac);
-            FracturesGrid = fractures_grid(NrOfFrac);
-            
-            temp = strfind(FractureMatrix, 'DIMENSION');
-            frac_input_res_dimen = find(~cellfun('isempty', temp));
-            frac_input_res_dimen = strsplit(FractureMatrix{frac_input_res_dimen},' ');
-            if ( obj.SimulationInput.ReservoirProperties.size(1) ~= str2double(frac_input_res_dimen{2}) ) || ...
-                    ( obj.SimulationInput.ReservoirProperties.size(2) ~= str2double(frac_input_res_dimen{4}) ) || ...
-                    ( obj.SimulationInput.ReservoirProperties.size(3) ~= str2double(frac_input_res_dimen{6}) )
-                error('The dimension of reservoir in the "fracture" input file does not match the simulation input file!');
+            if ~strcmp( obj.SimulationInput.FracturesProperties.DiscretizationType, obj.SimulationInput.ReservoirProperties.Discretization )
+                error('The discretization type used in "Fracture_Output" file (%s) does not match the one in the simulation input file (%s)!', ...
+                        obj.SimulationInput.FracturesProperties.DiscretizationType, obj.SimulationInput.ReservoirProperties.Discretization );
             end
             
-            temp = strfind(FractureMatrix, 'RESERVOIR_GRID');
-            frac_input_res_grid = find(~cellfun('isempty', temp));
-            frac_input_res_grid = strsplit(FractureMatrix{frac_input_res_grid},' ');
-            if ( ReservoirGrid.Nx ~= str2double(frac_input_res_grid{2}) ) || ...
-               ( ReservoirGrid.Ny ~= str2double(frac_input_res_grid{4}) ) || ...
-               ( ReservoirGrid.Nz ~= str2double(frac_input_res_grid{6}) )
-                error('The number of grid cells for reservoir in the "fracture" input file does not match the simulation input file!');
+            NumOfFrac = obj.SimulationInput.FracturesProperties.NumOfFrac;
+            fprintf('Extracting data from %02d fractures ...\n', NumOfFrac);
+            FracturesGrid = fractures_grid(NumOfFrac);
+            
+            if ( obj.SimulationInput.ReservoirProperties.size(1) ~= obj.SimulationInput.FracturesProperties.Reservoir.Lx ) || ...
+               ( obj.SimulationInput.ReservoirProperties.size(2) ~= obj.SimulationInput.FracturesProperties.Reservoir.Ly ) || ...
+               ( obj.SimulationInput.ReservoirProperties.size(3) ~= obj.SimulationInput.FracturesProperties.Reservoir.Lz )
+%                error('The dimension of reservoir in the "Fracture_Output" file does not match the simulation input file!');
             end
             
-            
+            if ( ReservoirGrid.Nx ~= obj.SimulationInput.FracturesProperties.Reservoir.Nx ) || ...
+               ( ReservoirGrid.Ny ~= obj.SimulationInput.FracturesProperties.Reservoir.Ny ) || ...
+               ( ReservoirGrid.Nz ~= obj.SimulationInput.FracturesProperties.Reservoir.Nz )
+                error('The number of grid cells for reservoir in the "Fracture_Output" file does not match the simulation input file!');
+            end
+
             temp = strfind(FractureMatrix, 'PROPERTIES');
             frac_index = find(~cellfun('isempty', temp));
             
-            Nf = zeros(NrOfFrac,1);
-            for f = 1 : NrOfFrac
+            Nf = zeros(NumOfFrac,1);
+            for f = 1 : NumOfFrac
                 % Creat cartesian grid in each fracture
-                frac_info_split = strsplit(FractureMatrix{frac_index(f)},' ');
+                frac_info_split = strsplit( FractureMatrix{frac_index(f)} , ' ' );
                 grid_temp = strsplit(frac_info_split{8}, 'x');
                 nx = str2double(grid_temp{1});
                 ny = str2double(grid_temp{2});
@@ -1137,21 +1104,13 @@ classdef simulation_builder < handle
                 FractureGrid = cartesian_grid([nx;ny;nz]);
                 
                 % Add fracture grid coordinates (it's for plotting purposes)
-                temp = strfind(FractureMatrix, 'GRID_COORDS_X');
-                frac_grid_coords_x = find(~cellfun('isempty', temp));
-                temp = strfind(FractureMatrix, 'GRID_COORDS_Y');
-                frac_grid_coords_y = find(~cellfun('isempty', temp));
-                temp = strfind(FractureMatrix, 'GRID_COORDS_Z');
-                frac_grid_coords_z = find(~cellfun('isempty', temp));
-                frac_grid_coords_x_split = strsplit(FractureMatrix{frac_grid_coords_x(f)},' ');
-                frac_grid_coords_y_split = strsplit(FractureMatrix{frac_grid_coords_y(f)},' ');
-                frac_grid_coords_z_split = strsplit(FractureMatrix{frac_grid_coords_z(f)},' ');
-                frac_grid_coords_x_split = str2double(frac_grid_coords_x_split);
-                frac_grid_coords_y_split = str2double(frac_grid_coords_y_split);
-                frac_grid_coords_z_split = str2double(frac_grid_coords_z_split);
-                frac_grid_coords_x_split(1) = [];
-                frac_grid_coords_y_split(1) = [];
-                frac_grid_coords_z_split(1) = [];
+                temp = strfind(FractureMatrix, 'GRID_COORDS_X');  frac_grid_coords_x = find(~cellfun('isempty', temp));  
+                temp = strfind(FractureMatrix, 'GRID_COORDS_Y');  frac_grid_coords_y = find(~cellfun('isempty', temp));
+                temp = strfind(FractureMatrix, 'GRID_COORDS_Z');  frac_grid_coords_z = find(~cellfun('isempty', temp));
+                
+                frac_grid_coords_x_split = str2double( strsplit(FractureMatrix{frac_grid_coords_x(f)},' ') );  frac_grid_coords_x_split(1) = [];
+                frac_grid_coords_y_split = str2double( strsplit(FractureMatrix{frac_grid_coords_y(f)},' ') );  frac_grid_coords_y_split(1) = [];
+                frac_grid_coords_z_split = str2double( strsplit(FractureMatrix{frac_grid_coords_z(f)},' ') );  frac_grid_coords_z_split(1) = [];
                 FractureGrid.GridCoords = [ frac_grid_coords_x_split' , frac_grid_coords_y_split' , frac_grid_coords_z_split' ];
                 FracturesGrid.AddGrid(FractureGrid, f);
                 Nf(f) = nx*ny*nz;
@@ -1179,13 +1138,14 @@ classdef simulation_builder < handle
             temp = strfind(FractureMatrix, 'FRAC_CONN_pEDFM');
             fracConnIndeces_pEDFM = find(~cellfun('isempty', temp));
             
-            %n_phases = str2double(inputMatrix(obj.Comp_Type + 3)); % Number of phases (useful to define size of some objects)
+            % Number of phases (useful to define size of some objects)
             n_phases = obj.SimulationInput.FluidProperties.NofPhases;
             fprintf('---> Fracture ');
             
-            for f = 1 : NrOfFrac
+            Nm = ReservoirGrid.N;
+            for f = 1 : NumOfFrac
                 if (f>1),  fprintf(repmat('\b', 1, 9+27));  end
-                fprintf('%04d/%04d',f,NrOfFrac);
+                fprintf('%04d/%04d',f,NumOfFrac);
                 % looping over all global fracture cells
                 fprintf(' ---> Grid cell ');
                 for If = 1:Nf(f)
@@ -1218,7 +1178,7 @@ classdef simulation_builder < handle
                     end
                     
                     % Adding fracture-matrix pEDFM connectivities
-                    if strcmp(fracGen_Type{2},'pEDFM')
+                    if strcmp(obj.SimulationInput.FracturesProperties.FractureModelType,'pEDFM')
                         rockConnInd_pEDFM = rockConnIndeces_pEDFM( rockConnIndeces_pEDFM > fracCellIndeces(IfGlobal) );
                         rockConnInd_pEDFM = rockConnInd_pEDFM( rockConnInd_pEDFM < fracCellIndeces(IfGlobal+1) );
                         if length(rockConnInd_pEDFM) ~= NumOfRockConn_pEDFM
@@ -1259,7 +1219,7 @@ classdef simulation_builder < handle
                     end
                     
                     % Adding fracture-fracture pEDFM connectivities
-                    if strcmp(fracGen_Type{2},'pEDFM')
+                    if strcmp(obj.SimulationInput.FracturesProperties.FractureModelType,'pEDFM')
                         fracConnInd_pEDFM = fracConnIndeces_pEDFM( fracConnIndeces_pEDFM > fracCellIndeces(IfGlobal) );
                         fracConnInd_pEDFM = fracConnInd_pEDFM( fracConnInd_pEDFM < fracCellIndeces(IfGlobal+1) );
                         for m = 1 : NumOfFracConn_pEDFM
@@ -1293,79 +1253,93 @@ classdef simulation_builder < handle
             end
             
             % Reading the pEDFM alpha corrections for reservoir transmissiblities
-            if strcmp(fracGen_Type{2},'pEDFM')
+            if strcmp(obj.SimulationInput.FracturesProperties.FractureModelType,'pEDFM')
                 
-                % reservoir
-                Tx_alpha = zeros(ReservoirGrid.Nx+1,ReservoirGrid.Ny,ReservoirGrid.Nz);
-                Ty_alpha = zeros(ReservoirGrid.Nx,ReservoirGrid.Ny+1,ReservoirGrid.Nz);
-                Tz_alpha = zeros(ReservoirGrid.Nx,ReservoirGrid.Ny,ReservoirGrid.Nz+1);
-                % Tx_alpha
-                temp = strfind(FractureMatrix, 'ROCK_ALPHA_TX');
-                ALPHA_TX_index = find(~cellfun('isempty', temp));
-                for t = 1 : length(ALPHA_TX_index)
-                    ALPHA_TX_Split = strsplit(FractureMatrix{ALPHA_TX_index(t)},' ');
-                    i = str2double(ALPHA_TX_Split{2})+1;
-                    j = str2double(ALPHA_TX_Split{3})+1;
-                    k = str2double(ALPHA_TX_Split{4})+1;
-                    alpha = str2double(ALPHA_TX_Split{5});
-                    Tx_alpha(i,j,k) = alpha;
+                % 1. Reservoir
+                switch obj.SimulationInput.FracturesProperties.DiscretizationType
+                    case('CartesianGrid')
+                        pEDFM_alpha_Tx = zeros(ReservoirGrid.Nx+1,ReservoirGrid.Ny,ReservoirGrid.Nz);
+                        pEDFM_alpha_Ty = zeros(ReservoirGrid.Nx,ReservoirGrid.Ny+1,ReservoirGrid.Nz);
+                        pEDFM_alpha_Tz = zeros(ReservoirGrid.Nx,ReservoirGrid.Ny,ReservoirGrid.Nz+1);
+                        % pEDFM_alpha_Tx
+                        temp = strfind(FractureMatrix, 'ROCK_ALPHA_TX');
+                        pEDFM_alpha_Tx_index = find(~cellfun('isempty', temp));
+                        for t = 1 : length(pEDFM_alpha_Tx_index)
+                            pEDFM_alpha_Tx_Split = strsplit(FractureMatrix{pEDFM_alpha_Tx_index(t)},' ');
+                            i     = str2double(pEDFM_alpha_Tx_Split{2})+1;
+                            j     = str2double(pEDFM_alpha_Tx_Split{3})+1;
+                            k     = str2double(pEDFM_alpha_Tx_Split{4})+1;
+                            alpha = str2double(pEDFM_alpha_Tx_Split{5});
+                            pEDFM_alpha_Tx(i,j,k) = alpha;
+                        end
+                        % pEDFM_alpha_Ty
+                        temp = strfind(FractureMatrix, 'ROCK_ALPHA_TY');
+                        pEDFM_alpha_Ty_index = find(~cellfun('isempty', temp));
+                        for t = 1 : length(pEDFM_alpha_Ty_index)
+                            pEDFM_alpha_Ty_Split = strsplit(FractureMatrix{pEDFM_alpha_Ty_index(t)},' ');
+                            i     = str2double(pEDFM_alpha_Ty_Split{2})+1;
+                            j     = str2double(pEDFM_alpha_Ty_Split{3})+1;
+                            k     = str2double(pEDFM_alpha_Ty_Split{4})+1;
+                            alpha = str2double(pEDFM_alpha_Ty_Split{5});
+                            pEDFM_alpha_Ty(i,j,k) = alpha;
+                        end
+                        % pEDFM_alpha_Tz
+                        temp = strfind(FractureMatrix, 'ROCK_ALPHA_TZ');
+                        pEDFM_alpha_Tz_index = find(~cellfun('isempty', temp));
+                        for t = 1 : length(pEDFM_alpha_Tz_index)
+                            pEDFM_alpha_Tz_Split = strsplit(FractureMatrix{pEDFM_alpha_Tz_index(t)},' ');
+                            i     = str2double(pEDFM_alpha_Tz_Split{2})+1;
+                            j     = str2double(pEDFM_alpha_Tz_Split{3})+1;
+                            k     = str2double(pEDFM_alpha_Tz_Split{4})+1;
+                            alpha = str2double(pEDFM_alpha_Tz_Split{5});
+                            pEDFM_alpha_Tz(i,j,k) = alpha;
+                        end
+                        ReservoirGrid.AddpEDFMCorrections( pEDFM_alpha_Tx , pEDFM_alpha_Ty , pEDFM_alpha_Tz );
+                        
+                    case('CornerPointGrid')
+                        pEDFM_alpha_T = zeros( length(ReservoirGrid.Trans) , 1 );
+                        temp = strfind(FractureMatrix, 'ROCK_pEDFM_ALPHA');
+                        pEDFM_alpha_T_index = find(~cellfun('isempty', temp));
+                        for t = 1 : length(pEDFM_alpha_T_index)
+                            pEDFM_alpha_T_Split = strsplit(FractureMatrix{pEDFM_alpha_T_index(t)},' ');
+                            i     = str2double(pEDFM_alpha_T_Split{2})+1;
+                            alpha = str2double(pEDFM_alpha_T_Split{3});
+                            pEDFM_alpha_T(i) = alpha;
+                        end
+                        ReservoirGrid.AddpEDFMCorrections( pEDFM_alpha_T );
                 end
-                % Ty_alpha
-                temp = strfind(FractureMatrix, 'ROCK_ALPHA_TY');
-                ALPHA_TY_index = find(~cellfun('isempty', temp));
-                for t = 1 : length(ALPHA_TY_index)
-                    ALPHA_TY_Split = strsplit(FractureMatrix{ALPHA_TY_index(t)},' ');
-                    i = str2double(ALPHA_TY_Split{2})+1;
-                    j = str2double(ALPHA_TY_Split{3})+1;
-                    k = str2double(ALPHA_TY_Split{4})+1;
-                    alpha = str2double(ALPHA_TY_Split{5});
-                    Ty_alpha(i,j,k) = alpha;
-                end
-                % Tz_alpha
-                temp = strfind(FractureMatrix, 'ROCK_ALPHA_TZ');
-                ALPHA_TZ_index = find(~cellfun('isempty', temp));
-                for t = 1 : length(ALPHA_TZ_index)
-                    ALPHA_TZ_Split = strsplit(FractureMatrix{ALPHA_TZ_index(t)},' ');
-                    i = str2double(ALPHA_TZ_Split{2})+1;
-                    j = str2double(ALPHA_TZ_Split{3})+1;
-                    k = str2double(ALPHA_TZ_Split{4})+1;
-                    alpha = str2double(ALPHA_TZ_Split{5});
-                    Tz_alpha(i,j,k) = alpha;
-                end
-                ReservoirGrid.AddpEDFMCorrections(Tx_alpha,Ty_alpha,Tz_alpha)
-                
-                % fractures
-                Tx_alpha = cell(FracturesGrid.Nfrac,1);
-                Ty_alpha = cell(FracturesGrid.Nfrac,1);
-                Tz_alpha = 0;
+                % 2. Fractures
+                pEDFM_alpha_Tx = cell(FracturesGrid.Nfrac,1);
+                pEDFM_alpha_Ty = cell(FracturesGrid.Nfrac,1);
+                pEDFM_alpha_Tz = 0;
                 for f = 1 : FracturesGrid.Nfrac
-                    Tx_alpha{f} = zeros(FracturesGrid.Grids(f).Nx+1,FracturesGrid.Grids(f).Ny);
-                    Ty_alpha{f} = zeros(FracturesGrid.Grids(f).Nx,FracturesGrid.Grids(f).Ny+1);
+                    pEDFM_alpha_Tx{f} = zeros(FracturesGrid.Grids(f).Nx+1,FracturesGrid.Grids(f).Ny);
+                    pEDFM_alpha_Ty{f} = zeros(FracturesGrid.Grids(f).Nx,FracturesGrid.Grids(f).Ny+1);
                 end
                 % Tx_alpha
                 temp = strfind(FractureMatrix, 'FRAC_ALPHA_TX');
-                ALPHA_TX_index = find(~cellfun('isempty', temp));
-                for t = 1 : length(ALPHA_TX_index)
-                    ALPHA_TX_Split = strsplit(FractureMatrix{ALPHA_TX_index(t)},' ');
-                    f   = str2double(ALPHA_TX_Split{2})+1;
-                    i_f = str2double(ALPHA_TX_Split{3})+1;
-                    j_f = str2double(ALPHA_TX_Split{4})+1;
-                    alpha = str2double(ALPHA_TX_Split{5});
-                    Tx_alpha{f}(i_f,j_f) = alpha;
+                pEDFM_alpha_Tx_index = find(~cellfun('isempty', temp));
+                for t = 1 : length(pEDFM_alpha_Tx_index)
+                    pEDFM_alpha_Tx_Split = strsplit(FractureMatrix{pEDFM_alpha_Tx_index(t)},' ');
+                    f   = str2double(pEDFM_alpha_Tx_Split{2})+1;
+                    i_f = str2double(pEDFM_alpha_Tx_Split{3})+1;
+                    j_f = str2double(pEDFM_alpha_Tx_Split{4})+1;
+                    alpha = str2double(pEDFM_alpha_Tx_Split{5});
+                    pEDFM_alpha_Tx{f}(i_f,j_f) = alpha;
                 end
                 % Ty_alpha
                 temp = strfind(FractureMatrix, 'FRAC_ALPHA_TY');
-                ALPHA_TY_index = find(~cellfun('isempty', temp));
-                for t = 1 : length(ALPHA_TY_index)
-                    ALPHA_TY_Split = strsplit(FractureMatrix{ALPHA_TY_index(t)},' ');
-                    f   = str2double(ALPHA_TY_Split{2})+1;
-                    i_f = str2double(ALPHA_TY_Split{3})+1;
-                    j_f = str2double(ALPHA_TY_Split{4})+1;
-                    alpha = str2double(ALPHA_TY_Split{5});
-                    Ty_alpha{f}(i_f,j_f) = alpha;
+                pEDFM_alpha_Ty_index = find(~cellfun('isempty', temp));
+                for t = 1 : length(pEDFM_alpha_Ty_index)
+                    pEDFM_alpha_Ty_Split = strsplit(FractureMatrix{pEDFM_alpha_Ty_index(t)},' ');
+                    f   = str2double(pEDFM_alpha_Ty_Split{2})+1;
+                    i_f = str2double(pEDFM_alpha_Ty_Split{3})+1;
+                    j_f = str2double(pEDFM_alpha_Ty_Split{4})+1;
+                    alpha = str2double(pEDFM_alpha_Ty_Split{5});
+                    pEDFM_alpha_Ty{f}(i_f,j_f) = alpha;
                 end
                 for f = 1 : FracturesGrid.Nfrac
-                    FracturesGrid.Grids(f).AddpEDFMCorrections(Tx_alpha{f},Ty_alpha{f},Tz_alpha)
+                    FracturesGrid.Grids(f).AddpEDFMCorrections(pEDFM_alpha_Tx{f},pEDFM_alpha_Ty{f},pEDFM_alpha_Tz)
                 end
             end
             

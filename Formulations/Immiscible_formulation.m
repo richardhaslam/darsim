@@ -248,9 +248,6 @@ classdef Immiscible_formulation < formulation
             % m| J2m_pm J2m_pf | J2m_sm J2m_sf | | dsm |   | R2m |
             % f| J2f_pm J2f_pf | J2f_sm J2f_sf | | dsf |   | R2f |
             %  |---------------|---------------|
-            Nx = DiscretizationModel.ReservoirGrid.Nx;
-            Ny = DiscretizationModel.ReservoirGrid.Ny;
-            Nz = DiscretizationModel.ReservoirGrid.Nz;
             Nm = DiscretizationModel.ReservoirGrid.N;
             Nt = DiscretizationModel.N;
             Reservoir = ProductionSystem.Reservoir;
@@ -276,8 +273,8 @@ classdef Immiscible_formulation < formulation
                 %% Jacobian of the fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Nf = DiscretizationModel.FracturesGrid.N;
-                    Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
-                    Index.End = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, DiscretizationModel.FracturesGrid.Grids(f).N);
+                    Index.Start = DiscretizationModel.Index_Local_to_Global(Nm, f, 1);
+                    Index.End = DiscretizationModel.Index_Local_to_Global(Nm, f, DiscretizationModel.FracturesGrid.Grids(f).N);
                     [Jfp, JfS] = BuildMediumJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f, ph);
                     Jp  = blkdiag(Jp, Jfp);
                     JS  = blkdiag(JS, JfS);

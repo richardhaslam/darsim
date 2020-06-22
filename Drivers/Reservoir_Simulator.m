@@ -35,7 +35,7 @@ classdef Reservoir_Simulator < handle
             Nz = obj.Simulation.DiscretizationModel.ReservoirGrid.Nz;
             disp(['Grid: ', num2str(Nx), ' x ',  num2str(Ny), ' x ', num2str(Nz), ' = ', num2str(Nx*Ny*Nz)]);
             disp('---------------------------------------------------------');
-            if obj.Builder.SimulationInput.FracturesProperties.Fractured
+            if obj.Builder.SimulationInput.FracturesProperties.isFractured
                 for f = 1:obj.Simulation.DiscretizationModel.FracturesGrid.Nfrac
                     Nx = obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Nx;
                     Ny = obj.Simulation.DiscretizationModel.FracturesGrid.Grids(f).Ny;

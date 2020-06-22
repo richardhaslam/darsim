@@ -100,8 +100,8 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
             Fractured = find(~cellfun('isempty', temp));
             if isempty(Fractured)
-                SimulationInput.FracturesProperties.Fractured = 0;
-                SimulationInput.FracturesProperties.NrOfFrac = 0;
+                SimulationInput.FracturesProperties.isFractured = 0;
+                SimulationInput.FracturesProperties.NumOfFrac = 0;
             else
                  SimulationInput.FracturesProperties = obj.ReadFracturesProperties();
             end
@@ -394,14 +394,89 @@ classdef reader_darsim2 < reader
         end
         function FracturesProperties = ReadFracturesProperties(obj)
             %%%%%%%%%%%%%PROPERTIES OF THE FRACTURES%%%%%%%%%%%%%%%%
-            FracturesProperties.Fractured = 1;
+            % Marking the simulation as fractured
+            FracturesProperties.isFractured = 1;
+
+            % Reading the discretization approach used in fracture generator
+            temp = strfind(obj.FractureMatrix, 'DISCRETIZATION');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "DISCRETIZATION" is missing. Please check the Fracture_Output file!\n');
+            end
+            temp = strsplit(obj.FractureMatrix{index},' ');
+            FracturesProperties.DiscretizationType = temp{end};
+            
+            % Reading the fracture model approach (EDFM or pEDFM)
+            temp = strfind(obj.FractureMatrix, 'FRACTURE_MODEL_TYPE');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "FRACTURE_MODEL_TYPE" (for fracture model approach EDFM or pEDFM) is missing. Please check the Fracture_Output file!\n');
+            end
+            temp = strsplit(obj.FractureMatrix{index},' ');
+            FracturesProperties.FractureModelType = temp{end};
+            
+            % Reading the reservoir size (Lx,Ly,Lz [m3]) from the fracture file
+            temp = strfind(obj.FractureMatrix, 'DIMENSION');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "DIMENSION" is missing. Please check the Fracture_Output file!\n');
+            end
+            temp = strsplit(obj.FractureMatrix{index},' ');
+            FracturesProperties.Reservoir.Lx = str2double(temp{2});
+            FracturesProperties.Reservoir.Ly = str2double(temp{4});
+            FracturesProperties.Reservoir.Lz = str2double(temp{6});
+            
+            % Reading the reservoir grid (Nx,Ny,Nz) from the fracture file
+            temp = strfind(obj.FractureMatrix, 'RESERVOIR_GRID');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "RESERVOIR_GRID" is missing. Please check the Fracture_Output file!\n');
+            end
+            temp = strsplit(obj.FractureMatrix{index},' ');
+            FracturesProperties.Reservoir.Nx = str2double(temp{2});
+            FracturesProperties.Reservoir.Ny = str2double(temp{4});
+            FracturesProperties.Reservoir.Nz = str2double(temp{6});
+            
+            % Reading the number of active grids reservoir grids from the fracture file
+            temp = strfind(obj.FractureMatrix, 'RESERVOIR_ACTIVE_GRID');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "RESERVOIR_ACTIVE_GRID" is missing. Please check the Fracture_Output file!\n');
+            end
+            temp = strsplit(obj.FractureMatrix{index},' ');
+            FracturesProperties.Reservoir.N = str2double(temp{2});
+            
+            % Reading the ADM settings of the reservoir from the fracture file
+            temp = strfind(obj.FractureMatrix, 'RESERVOIR_ADM');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                warning('The keyword "RESERVOIR_ADM" is missing in the Fracture_Output file.\nThe default values will be set.');
+                FracturesProperties.ReservoirADM.isActive = 0;
+                FracturesProperties.ReservoirADM.CoarseLevel = 1;
+                FracturesProperties.ReservoirADM.CoarseRatio = [ 1 ; 1 ; 1];
+            end
+            temp = strsplit(obj.FractureMatrix{index},{' ',',','[',']'});
+            FracturesProperties.ReservoirADM.isActive = str2double(temp{2});
+            FracturesProperties.ReservoirADM.CoarseLevel = str2double(temp{3});
+            FracturesProperties.ReservoirADM.CoarseRatio = [ str2double(temp{4}) ; str2double(temp{5}) ; str2double(temp{6}) ];
+            
+            % Reading the number of fractures
             temp = strfind(obj.FractureMatrix, 'NUM_FRACS');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "NUM_FRACS" is missing. Please check the Fracture_Output file!\n');
             end
             temp = strsplit(obj.FractureMatrix{index},' ');
-            FracturesProperties.NrOfFrac = str2double( temp{end} );
+            FracturesProperties.NumOfFrac = str2double( temp{2} );
+            
+            % Reading the number of all fractures grids
+            temp = strfind(obj.FractureMatrix, 'NUM_TOTAL_FRACS_GRIDS');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "NUM_TOTAL_FRACS_GRIDS" is missing. Please check the Fracture_Output file!\n');
+            end
+            temp = strsplit(obj.FractureMatrix{index},' ');
+            FracturesProperties.NumOfAllFracGrids = str2double( temp{2} );
         end
         function CornerPointGridData = ReadCornerPointGridData(obj)
             fprintf('Reading the CornerPointGrid input file:\n');

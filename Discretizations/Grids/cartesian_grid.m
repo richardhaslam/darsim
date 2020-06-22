@@ -21,9 +21,9 @@ classdef cartesian_grid < grid_darsim
         Tx
         Ty
         Tz
-        Tx_Alpha = 0; % Correction for pEDFM Connectivities
-        Ty_Alpha = 0; % Correction for pEDFM Connectivities
-        Tz_Alpha = 0; % Correction for pEDFM Connectivities
+        pEDFM_alpha_Tx = 0; % Correction for pEDFM Connectivities
+        pEDFM_alpha_Ty = 0; % Correction for pEDFM Connectivities
+        pEDFM_alpha_Tz = 0; % Correction for pEDFM Connectivities
         THx % transmisibility of heat conductivity
         THy % transmisibility of heat conductivity
         THz % transmisibility of heat conductivity
@@ -46,9 +46,9 @@ classdef cartesian_grid < grid_darsim
             obj.THx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
             obj.THy = zeros(obj.Nx, obj.Ny+1, obj.Nz);
             obj.THz = zeros(obj.Nx, obj.Ny, obj.Nz+1);
-            obj.Tx_Alpha = zeros(obj.Nx+1, obj.Ny, obj.Nz);
-            obj.Ty_Alpha = zeros(obj.Nx, obj.Ny+1, obj.Nz);
-            obj.Tz_Alpha = zeros(obj.Nx, obj.Ny, obj.Nz+1);
+            obj.pEDFM_alpha_Tx = zeros(obj.Nx+1, obj.Ny, obj.Nz);
+            obj.pEDFM_alpha_Ty = zeros(obj.Nx, obj.Ny+1, obj.Nz);
+            obj.pEDFM_alpha_Tz = zeros(obj.Nx, obj.Ny, obj.Nz+1);
         end
         function Initialize(obj, Reservoir)
             obj.dx = Reservoir.Length/obj.Nx;
@@ -58,25 +58,16 @@ classdef cartesian_grid < grid_darsim
             obj.Ay = obj.dx * obj.dz;
             obj.Az = obj.dx * obj.dy;
             obj.Volume = obj.dx * obj.dy * obj.dz;
+            obj.AssignNeighbours();
             obj.ComputeRockTransmissibilities(Reservoir.K);
-%             obj.ComputeRockHeatConductivities(Reservoir.K_Cond_eff);
+            if ~isempty(Reservoir.K_Cond_eff)
+                obj.ComputeRockHeatConductivities(Reservoir.K_Cond_eff);
+            end
             obj.CoarseFactor = [1, 1, 1];
             obj.Children = cell(obj.N, 1);
             obj.GrandChildren = cell(obj.N, 1);
-            if obj.Nz == 1 && obj.Ny == 1
-                obj.AssignNeighbours1D();
-            elseif obj.Nz == 1 && obj.Ny > 1
-                obj.AssignNeighbours2D();
-            else
-                obj.AssignNeighbours();
-            end
             obj.AddCoordinates();
             obj.Depth = zeros(obj.N, 1);
-        end
-        function AddpEDFMCorrections(obj,Tx_Alpha,Ty_Alpha,Tz_Alpha)
-            obj.Tx_Alpha = Tx_Alpha;
-            obj.Ty_Alpha = Ty_Alpha;
-            obj.Tz_Alpha = Tz_Alpha;
         end
         function ComputeRockTransmissibilities(obj, K)
             %Harmonic average of permeability.
@@ -96,14 +87,19 @@ classdef cartesian_grid < grid_darsim
             obj.Ty(:,2:obj.Ny,:) = obj.Ay./obj.dy.*KHy(:,2:obj.Ny,:);
             obj.Tz(:,:,2:obj.Nz) = obj.Az./obj.dz.*KHz(:,:,2:obj.Nz);
         end
+        function AddpEDFMCorrections(obj,pEDFM_alpha_Tx,pEDFM_alpha_Ty,pEDFM_alpha_Tz)
+            obj.pEDFM_alpha_Tx = pEDFM_alpha_Tx;
+            obj.pEDFM_alpha_Ty = pEDFM_alpha_Ty;
+            obj.pEDFM_alpha_Tz = pEDFM_alpha_Tz;
+        end
         function CorrectTransmissibilitiesForpEDFM(obj)
-            obj.Tx(2:obj.Nx,:,:) = obj.Tx(2:obj.Nx,:,:) .* ( 1 - obj.Tx_Alpha(2:obj.Nx,:,:) );
-            obj.Ty(:,2:obj.Ny,:) = obj.Ty(:,2:obj.Ny,:) .* ( 1 - obj.Ty_Alpha(:,2:obj.Ny,:) );
-            obj.Tz(:,:,2:obj.Nz) = obj.Tz(:,:,2:obj.Nz) .* ( 1 - obj.Tz_Alpha(:,:,2:obj.Nz) );
+            obj.Tx(2:obj.Nx,:,:) = obj.Tx(2:obj.Nx,:,:) .* ( 1 - obj.pEDFM_alpha_Tx(2:obj.Nx,:,:) );
+            obj.Ty(:,2:obj.Ny,:) = obj.Ty(:,2:obj.Ny,:) .* ( 1 - obj.pEDFM_alpha_Ty(:,2:obj.Ny,:) );
+            obj.Tz(:,:,2:obj.Nz) = obj.Tz(:,:,2:obj.Nz) .* ( 1 - obj.pEDFM_alpha_Tz(:,:,2:obj.Nz) );
             
-            obj.THx(2:obj.Nx,:,:) = obj.THx(2:obj.Nx,:,:) .* ( 1 - obj.Tx_Alpha(2:obj.Nx,:,:) );
-            obj.THy(:,2:obj.Ny,:) = obj.THy(:,2:obj.Ny,:) .* ( 1 - obj.Ty_Alpha(:,2:obj.Ny,:) );
-            obj.THz(:,:,2:obj.Nz) = obj.THz(:,:,2:obj.Nz) .* ( 1 - obj.Tz_Alpha(:,:,2:obj.Nz) );
+            obj.THx(2:obj.Nx,:,:) = obj.THx(2:obj.Nx,:,:) .* ( 1 - obj.pEDFM_alpha_Tx(2:obj.Nx,:,:) );
+            obj.THy(:,2:obj.Ny,:) = obj.THy(:,2:obj.Ny,:) .* ( 1 - obj.pEDFM_alpha_Ty(:,2:obj.Ny,:) );
+            obj.THz(:,:,2:obj.Nz) = obj.THz(:,:,2:obj.Nz) .* ( 1 - obj.pEDFM_alpha_Tz(:,:,2:obj.Nz) );
         end
         function ComputeRockHeatConductivities(obj, K_Cond)
             %Harmonic average of permeability.
@@ -124,272 +120,40 @@ classdef cartesian_grid < grid_darsim
             obj.THz(:,:,2:obj.Nz) = obj.Az./obj.dz.*KHz(:,:,2:obj.Nz);
         end
         function AssignNeighbours(obj)
-            % Lets do the 8 corners separetely
-            % 1
-            i = 1;
-            j = 1;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 2.
-            i = obj.Nx;
-            j = 1;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 3.
-            i = 1;
-            j = obj.Ny;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 4.
-            i = obj.Nx;
-            j = obj.Ny;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 5
-            j = 1;
-            k = 1;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 6
-            j = obj.Ny;
-            k = 1;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 7
-            j = 1;
-            k = obj.Nz;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
-            % 8
-            j = obj.Ny;
-            k = obj.Nz;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
+            % West Neighbors
+            [i,j,k] = meshgrid( 0:obj.Nx-1 , 1:obj.Ny , 1:obj.Nz );  i(i<1) = nan;
+            IW = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IW = reshape(permute(IW,[2 1 3]),obj.N,1);
             
-            % 9
-            i = 1;
-            k = 1;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 10
-            i = obj.Nx;
-            k = 1;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 11
-            i = 1;
-            k = obj.Nz;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
-            % 12
-            i = obj.Nx;
-            k = obj.Nz;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
-
-            % Let's do the faces first
-            i = 1;
-            for k=2:obj.Nz-1
-                for j=2:obj.Ny-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            i = obj.Nx;
-            for k=2:obj.Nz-1
-                for j=2:obj.Ny-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g + obj.Nx*obj.Ny];
-                end
-            end
-            j = 1;
-            for k=2:obj.Nz-1
-                for i=2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            j = obj.Ny;
-            for k=2:obj.Nz-1
-                for i = 2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            k = 1;
-            for j=2:obj.Ny-1
-                for i=2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            k = obj.Nz;
-            for j=2:obj.Ny-1
-                for i = 2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
+            % East Neighbors
+            [i,j,k] = meshgrid( 2:obj.Nx+1 , 1:obj.Ny , 1:obj.Nz );  i(i>obj.Nx) = nan;
+            IE = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IE = reshape(permute(IE,[2 1 3]),obj.N,1);
             
+            % South Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 0:obj.Ny-1 , 1:obj.Nz );  j(j<1) = nan;
+            IS = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IS = reshape(permute(IS,[2 1 3]),obj.N,1);
             
-            % All inner cells (easy ones)
-            for k = 2:obj.Nz-1
-                for i = 2:obj.Nx-1
-                    for j=2:obj.Ny-1
-                        g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                        obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                    end
-                end
-            end
-        end
-        function AssignNeighbours2D(obj)
-            i = 1;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx;
-                if j~=1 && j~= obj.Ny
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx];
-                elseif j == 1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx];
-                elseif j == obj.Ny
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx];
-                end
-            end
-            i = obj.Nx;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx;
-                if j~=1 && j~=obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx];
-                elseif j == 1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx];
-                elseif j == obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx];
-                end
-            end
-            j = 1;
-            for i=2:obj.Nx-1
-                g = i + (j-1)*obj.Nx;
-                obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx];
-            end
-            j = obj.Ny;
-            for i = 2:obj.Nx-1
-                g = i + (j-1)*obj.Nx;
-                obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx];
-            end
+            % North Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 2:obj.Ny+1 , 1:obj.Nz );  j(j>obj.Ny) = nan;
+            IN = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IN = reshape(permute(IN,[2 1 3]),obj.N,1);
             
-            for i = 2:obj.Nx-1
-                for j=2:obj.Ny-1
-                    g = i + (j-1)*obj.Nx;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx];
-                end
-            end
-        end
-        function AssignNeighbours1D(obj)
-            i = 1;
-            g = i;
-            obj.Neighbours(g).indexes = g+1;
-            i = obj.Nx;
-            g = i;
-            obj.Neighbours(g).indexes = g-1;
-            for i = 2:obj.Nx-1
-                g = i;
-                obj.Neighbours(g).indexes = [g-1, g+1];
-            end  
+            % Bottom Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 0:obj.Nz-1 );  k(k<1) = nan;
+            IB = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IB = reshape(permute(IB,[2 1 3]),obj.N,1);
+            
+            % Top Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 2:obj.Nz+1 );  k(k>obj.Nz) = nan;
+            IT = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IT = reshape(permute(IT,[2 1 3]),obj.N,1);
+            
+            % Assembling the array for all the neighbors
+            Neighbours = [IW,IE,IS,IN,IB,IT];
+            obj.Neighbours = num2cell(Neighbours,2);
+            obj.Neighbours = cellfun(@(x) x(~isnan(x)),obj.Neighbours ,'UniformOutput' ,false);
         end
         function AddCoordinates(obj)
             % Add I, J coordinates to Grid

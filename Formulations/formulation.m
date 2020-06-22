@@ -45,12 +45,12 @@ classdef formulation < handle
                 P_Global(1:Grid.N, i) = P;
                 [obj.UpWind{i, 1}, obj.U{i, 1}] = Phases(i).UpWindAndRockFluxes(Grid, P, obj.GravityModel.RhoInt{i, 1});
             end
-            %% Fractures upwind operators
+            % Fractures upwind operators
             if ProductionSystem.FracturesNetwork.Active
                 End = Grid.N;
                 Grids = DiscretizationModel.FracturesGrid.Grids;
                 for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    obj.GravityModel.ComputeInterfaceDensities(Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).State, f);
+                    %obj.GravityModel.ComputeInterfaceDensities(Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).State, f);
                     % Compute phase rock velocities and Upwind operators
                     Start = End+1;
                     End = Start + Grids(f).N - 1;

@@ -87,26 +87,6 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
             Well.Cells = unique(Well.Cells);
             Well.ResizeObjects(length(Well.Cells));
         end
-        function I = Index_Local_to_Global(obj, i, j, k, f, g)
-            if (i<1),  error('i should at least be 1 but is not!');  end
-            if (j<1),  error('j should at least be 1 but is not!');  end
-            if (k<1),  error('k should at least be 1 but is not!');  end
-            if (i>obj.ReservoirGrid.Nx),  i = obj.ReservoirGrid.Nx;  end
-            if (j>obj.ReservoirGrid.Ny),  j = obj.ReservoirGrid.Ny;  end
-            if (k>obj.ReservoirGrid.Nz),  k = obj.ReservoirGrid.Nz;  end
-            if (f<0),  error('f (fracture index) cannot be negative!');  end
-            if (f>obj.FracturesGrid.Nfrac),  error('f exceeds the number of fractures!');  end
-            if (g<0),  error('g (fracture cell index) cannot be negative!');  end
-            if (f~=0)&&(g>obj.FracturesGrid.Grids(f).N),  error('g exceeds the number of fracture cells!');  end
-            
-            if (f==0) && (g==0)
-                I = (k-1)*(obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny) + (j-1)*(obj.ReservoirGrid.Nx) + i;
-            elseif (f~=0) && (g~=0)
-                I = (obj.ReservoirGrid.N) + sum(obj.FracturesGrid.N(1:f-1)) + g;
-            else
-                error('For global indexing in the reservoir both f & g must be zero!\nFor global indexing in the fractures both f & g must be non-zero!');
-            end
-        end
         function indexing = Index_Global_to_Local(obj, I)
             if (I<1),  error('Global indexing (I) cannot be negative!');  end
             if (I>obj.N),  error('Global indexing (I) cannot exceed total number of cells!');  end

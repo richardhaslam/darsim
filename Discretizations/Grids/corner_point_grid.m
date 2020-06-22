@@ -10,6 +10,7 @@ classdef corner_point_grid < grid_darsim
     properties
         CornerPointGridData
         Trans
+        pEDFM_alpha_Trans
         HeatTrans
         Nx
         Ny
@@ -31,6 +32,7 @@ classdef corner_point_grid < grid_darsim
         end
         function Initialize(obj, Reservoir)
             obj.Volume = obj.CornerPointGridData.Cell.Volume;
+            obj.Neighbours = obj.CornerPointGridData.Cell.Index_Neighbors;
             obj.ComputeRockTransmissibilities(Reservoir.K);
             obj.ConstructConnectivityMatrix();
         end
@@ -45,6 +47,9 @@ classdef corner_point_grid < grid_darsim
             Trans_Half_1 = abs(Trans_Half_1);
             Trans_Half_2 = abs(Trans_Half_2);
             obj.Trans = Trans_Half_1 .* Trans_Half_2 ./ (Trans_Half_1 + Trans_Half_2);
+        end
+        function AddpEDFMCorrections(obj,pEDFM_alpha_Trans)
+            obj.pEDFM_alpha_Trans = pEDFM_alpha_Trans;
         end
         function CorrectTransmissibilitiesForpEDFM(obj)
             % Virtual Call

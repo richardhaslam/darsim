@@ -15,6 +15,7 @@ classdef Discretization_model < handle
         ReservoirGrid
         FracturesGrid
         CrossConnections
+        UnifiedGrid
     end
     methods
         function AddReservoirGrid(obj, reservoirgrid)
@@ -82,6 +83,21 @@ classdef Discretization_model < handle
                 error('DARSim Error: The %s #%d does not perforate any grid cell. Please check coordinate of this well in the input file.', Well_Type, w);
             end
             Well.PI = Well.PI(Well.Cells);
+        end
+        function I = Index_Local_to_Global(obj, Im, f, g)
+            if (Im>obj.ReservoirGrid.N),  Im = obj.ReservoirGrid.N;  end
+            if (f<0),  error('f (fracture index) cannot be negative!');  end
+            if (f>obj.FracturesGrid.Nfrac),  error('f exceeds the number of fractures!');  end
+            if (g<0),  error('g (fracture cell index) cannot be negative!');  end
+            if (f~=0)&&(g>obj.FracturesGrid.Grids(f).N),  error('g exceeds the number of fracture cells!');  end
+            
+            if (f==0) && (g==0)
+                I = Im;
+            elseif (f~=0) && (g~=0)
+                I = (obj.ReservoirGrid.N) + sum(obj.FracturesGrid.N(1:f-1)) + g;
+            else
+                error('For global indexing in the reservoir both f & g must be zero!\nFor global indexing in the fractures both f & g must be non-zero!');
+            end
         end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)
             % virtual call

@@ -65,8 +65,8 @@ classdef initializer < handle
             %% Fractures
             if ProductionSystem.FracturesNetwork.Active
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                    Index.Start = DiscretizationModel.Index_Local_to_Global(DiscretizationModel.ReservoirGrid.Nx, DiscretizationModel.ReservoirGrid.Ny, DiscretizationModel.ReservoirGrid.Nz, f, 1);
-                    Index.End = DiscretizationModel.Index_Local_to_Global(DiscretizationModel.ReservoirGrid.Nx, DiscretizationModel.ReservoirGrid.Ny, DiscretizationModel.ReservoirGrid.Nz, f, DiscretizationModel.FracturesGrid.Grids(f).N);
+                    Index.Start = DiscretizationModel.Index_Local_to_Global(DiscretizationModel.ReservoirGrid.N, f, 1);
+                    Index.End = DiscretizationModel.Index_Local_to_Global(DiscretizationModel.ReservoirGrid.N, f, DiscretizationModel.FracturesGrid.Grids(f).N);
                     Formulation.SinglePhase(Index.Start:Index.End) = FluidModel.Flash(ProductionSystem.FracturesNetwork.Fractures(f).State);
 
                     % 3 Compute Phase Density

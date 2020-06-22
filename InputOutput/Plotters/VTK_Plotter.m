@@ -140,7 +140,7 @@ classdef VTK_Plotter < Plotter
             if obj.isBinary
                 fwrite(fileID, Grid.GridCoords', 'double', 'b');
             else
-                fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
+                fprintf(fileID, '%f %f %f\n' , Grid.GridCoords'); 
             end
             fprintf(fileID, '\n');
             
