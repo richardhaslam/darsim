@@ -99,7 +99,7 @@ for G = 1 : length(Geometries)
     disp( '******************* Writing the data into output text file *********************' );
     disp(['Writing into file ', OutputFileName, '#', G]);
     
-    fid = fopen(strcat(Directory,OutputFileName,'_',num2str(G),'.txt') , 'w+' );
+    fid = fopen(strcat(Directory,'\',OutputFileName,'_',num2str(G),'.txt') , 'w+' );
     fprintf(fid, '%% Node Locations for each one of the cells, Nx * Ny *Nz\n');
     fprintf(fid, '%% Coordinates X,Y,Z of the eight nones for each one of the cells\n');
     fprintf(fid, '\n');
@@ -159,7 +159,7 @@ for G = 1 : length(Geometries)
     disp( '******************* Writing the data into output text file *********************' );
     disp(['Writing into file ', OutputFileName, '#', G]);
     
-    fid = fopen(strcat(Directory, OutputFileName, '_', num2str(G),'.txt'), 'w+');
+    fid = fopen(strcat(Directory,'\', OutputFileName, '_', num2str(G),'.txt'), 'w+');
     fprintf(fid, '%% Rock Properties of the Norne Field\n');
     fprintf(fid, '%% Rock Properties Values of Active Cells of the Corner Point Grid Model\n');
     fprintf(fid, '%% Permeability tensor is assumed to be diagonal\n');
