@@ -327,6 +327,7 @@ classdef reader_darsim2 < reader
             if strcmp(ReservoirProperties.Discretization,'CornerPointGrid') && sum(strcmp(fieldnames(ReservoirProperties.CornerPointGridData), 'Porosity'))
                 % Do nothing, beacuse the porosity data already exist in CornerPointGridData.
                 ReservoirProperties.phi = ReservoirProperties.CornerPointGridData.Porosity;
+                ReservoirProperties.PorosityInclude = 0;
             else
                 temp = strfind(obj.InputMatrix, 'POR');
                 index = find(~cellfun('isempty', temp));
