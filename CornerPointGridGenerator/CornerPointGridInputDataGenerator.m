@@ -62,8 +62,8 @@ for G = 1 : length(Geometries)
     
     NF = linspace(1, Geometry.faces.num, Geometry.faces.num)';                                      % Create Face Index Vector (Total Number of Faces)
     
-    nn_min = min(diff(Geometry.faces.nodePos));                                                     % min # of faces 2 cells
-    nn_max = max(diff(Geometry.faces.nodePos));                                                     % max # of faces 2 cells
+    nn_min = min(diff(Geometry.faces.nodePos));                                                     % min # of nodes in faces
+    nn_max = max(diff(Geometry.faces.nodePos));                                                     % max # of nodes in faces
     
     % Assembly Matrix with Face Geometry Data
     IF = [NF, Geometry.faces.neighbors, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals NtF2];
