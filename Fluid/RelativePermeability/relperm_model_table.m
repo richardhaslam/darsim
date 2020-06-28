@@ -56,7 +56,7 @@ classdef relperm_model_table < relperm_model
             S_w = max(S_w, 0);
             obj.krMax_w = max(obj.kr_w_from_Table); 
             n_w_guess = 2;
-            [obj.n_w, Rsquared_Corey_w] = fminsearch(PowerLawRelationship(n_w_guess,S_w,obj.kr_w_from_Table),);
+            [obj.n_w, Rsquared_Corey_w] = fminsearch(PowerLawRelationship(n_w_guess,S_w,obj.kr_w_from_Table));
                
             nonzeroKrnw = length(nonzeros(obj.kr_nw_from_Table)); 
             if nonzeroKrnw+2 <= length(obj.kr_nw_from_Table)
