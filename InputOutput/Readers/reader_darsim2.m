@@ -40,16 +40,24 @@ classdef reader_darsim2 < reader
             obj.SettingsMatrix(Commented) = {'--'}; % removing the string if it is commented.
             
             %% Read Fracture File
-            fractured = sum(contains(obj.InputMatrix, 'FRACTURED'));
-            if fractured 
-                FractureFile = strcat(obj.Directory, '/Fracture_Output.txt');
-                fileID = fopen(FractureFile, 'r');
-				fprintf('Reading fracture file ...');
-                matrix = textscan(fileID, '%s', 'Delimiter', '\n');
-                obj.FractureMatrix = matrix{1};
-                fclose(fileID);
-				fprintf('--> Successful.\n\n');
+            temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                Boolean = obj.InputMatrix{index+1};
+                if strcmp(Boolean,'ON')
+                    FractureFile = strcat(obj.Directory,'/',obj.InputMatrix{index+2});
+                    if ~isfile(FractureFile)
+                        error('DARSim Error: The fracture input file "%s" does not exist!\n', FractureFile);
+                    end
+                    fileID = fopen(FractureFile, 'r');
+                    fprintf('Reading fracture file ...');
+                    matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                    obj.FractureMatrix = matrix{1};
+                    fclose(fileID);
+                    fprintf('--> Successful.\n\n');
+                end
             end
+
             [Builder.SimulationInput, Builder.SimulatorSettings] = ReadInformation(obj);
         end
         function [SimulationInput, SimulatorSettings] = ReadInformation(obj)
@@ -98,12 +106,18 @@ classdef reader_darsim2 < reader
             
             % 7. Read Fractures' Properties (if any)
             temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
-            Fractured = find(~cellfun('isempty', temp));
-            if isempty(Fractured)
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
                 SimulationInput.FracturesProperties.isFractured = 0;
                 SimulationInput.FracturesProperties.NumOfFrac = 0;
             else
-                 SimulationInput.FracturesProperties = obj.ReadFracturesProperties();
+                Boolean = obj.InputMatrix{index+1};
+                if strcmp(Boolean,'ON')
+                    SimulationInput.FracturesProperties = obj.ReadFracturesProperties();
+                else
+                    SimulationInput.FracturesProperties.isFractured = 0;
+                    SimulationInput.FracturesProperties.NumOfFrac = 0;
+                end
             end
             
             %% SIMULATOR'S SETTINGS
