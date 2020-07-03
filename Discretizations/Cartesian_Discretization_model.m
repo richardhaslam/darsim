@@ -87,32 +87,6 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
             Well.Cells = unique(Well.Cells);
             Well.ResizeObjects(length(Well.Cells));
         end
-%         function indexing = Index_Global_to_Local(obj, I)
-%             if (I<1),  error('Global indexing (I) cannot be negative!');  end
-%             if (I>obj.N),  error('Global indexing (I) cannot exceed total number of cells!');  end
-%             if I <= obj.ReservoirGrid.Nx*obj.ReservoirGrid.Ny*obj.ReservoirGrid.Nz
-%                 indexing.i = mod( I , obj.ReservoirGrid.Nx );
-%                 if ( indexing.i==0 ),   indexing.i = obj.ReservoirGrid.Nx;   end
-%                 indexing.j = mod(  (I-indexing.i)/obj.ReservoirGrid.Nx  , obj.ReservoirGrid.Ny ) +1;
-%                 if ( indexing.j==0 ),   indexing.j = obj.ReservoirGrid.Ny;   end
-%                 indexing.k = mod( ((I-indexing.i)/obj.ReservoirGrid.Nx -indexing.j+1)/obj.ReservoirGrid.Ny , obj.ReservoirGrid.Nz ) +1;               
-%                 if ( indexing.k==0 ),   indexing.k = obj.ReservoirGrid.Nz;   end
-%                 indexing.f = 0;
-%                 indexing.g = 0;
-%             else
-%                 indexing.i = obj.ReservoirGrid.Nx;
-%                 indexing.j = obj.ReservoirGrid.Ny;
-%                 indexing.k = obj.ReservoirGrid.Nz;
-%                 temp = I - obj.ReservoirGrid.N;
-%                 temp = find( temp - cumsum(obj.FracturesGrid.N) <= 0);
-%                 indexing.f = temp(1);
-%                 indexing.g = I - obj.ReservoirGrid.N - sum( obj.FracturesGrid.N(1:indexing.f-1) );
-%                 if indexing.g==0,  indexing.g = obj.FracturesGrid.Grids(indexing.f).N;  end
-%             end
-%             if Index_Local_to_Global(obj, indexing.i, indexing.j, indexing.k, indexing.f, indexing.g) ~= I
-%                 error('i,j,k are not correspondent with I. Check the formula again!');
-%             end
-%         end
         function AddHarmonicPermeabilities(obj, Reservoir, Fractures)
             Dxm = obj.ReservoirGrid.dx;
             Dym = obj.ReservoirGrid.dy;

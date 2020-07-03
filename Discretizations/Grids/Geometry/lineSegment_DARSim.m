@@ -23,7 +23,7 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
             obj.AB_vec = pointB - pointA;
         end
         %%
-        function [Geostatus, intersectPoint] = Obtain_LineSegment_LineSengment_Intersection(obj, Line, Epsilon)
+        function [Geostatus, intersectPoint] = Obtain_LineSegment_LineSegment_Intersection(obj, Line, Epsilon)
             Geostatus.areParallel = NaN;
             Geostatus.areCollinear = NaN;
             Geostatus.areSkew = NaN;

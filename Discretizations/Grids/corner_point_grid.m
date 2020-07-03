@@ -50,9 +50,10 @@ classdef corner_point_grid < grid_darsim
         end
         function AddpEDFMCorrections(obj,pEDFM_alpha_Trans)
             obj.pEDFM_alpha_Trans = pEDFM_alpha_Trans;
+            obj.pEDFM_alpha_Trans(obj.pEDFM_alpha_Trans>0) = 1;
         end
         function CorrectTransmissibilitiesForpEDFM(obj)
-            % Virtual Call
+            obj.Trans = obj.Trans .* ( 1 - obj.pEDFM_alpha_Trans );
         end
         function AddGridCoordinates(obj)
             obj.GridCoords = [obj.CornerPointGridData.Cell.NW_Top_Corner, obj.CornerPointGridData.Cell.NE_Top_Corner, ...
