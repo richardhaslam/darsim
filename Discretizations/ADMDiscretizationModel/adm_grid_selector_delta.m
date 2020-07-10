@@ -124,7 +124,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
                         end
                     end
                     
-                    % 1.2. Checking the non-neighbours (inside other media) if any
+                    % 1.2. Checking the non-neighbours (inside other media) if any (this is for coupled ADM)
                     if obj.isCoupled && length(CoarseGrids) > 1 % which means we have fractures
                         NonNeighbour = CoarseGrids(m).NonNeighbours{c};
                         NOfNonNeighbour = length(NonNeighbour);
@@ -139,6 +139,15 @@ classdef adm_grid_selector_delta < adm_grid_selector
                             Var_children_NonNeighbor = Var{m_other}(CoarseGrids(m_other).Children{c_other, end});
                             VarNonNeighborMax = max(Var_children_NonNeighbor);
                             VarNonNeighborMin = min(Var_children_NonNeighbor);
+                            
+                            % We do not want to keep the fine-scale resolution around the non-conductive fractures.
+                            % Therefore, if the saturation inside a fracture (m_other>1) does not change or it is always
+                            % smaller than the saturation of the matrix (meaning it is non-conductive),
+                            % it should not check the non-neighboring cells:
+                            if m_other>1 && VarNonNeighborMax < VarMin
+                                i = i+1;
+                                continue;
+                            end
                             if flag == false
                                 if (abs(VarMax-VarNonNeighborMin) > obj.tol || abs(VarMin-VarNonNeighborMax) > obj.tol)
                                     CoarseGrids(m).Active(c) = 0;
