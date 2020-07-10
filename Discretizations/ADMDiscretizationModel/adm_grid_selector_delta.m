@@ -148,6 +148,7 @@ classdef adm_grid_selector_delta < adm_grid_selector
                                 i = i+1;
                                 continue;
                             end
+                            
                             if flag == false
                                 if (abs(VarMax-VarNonNeighborMin) > obj.tol || abs(VarMin-VarNonNeighborMax) > obj.tol)
                                     CoarseGrids(m).Active(c) = 0;
