@@ -15,7 +15,7 @@ classdef producer_pressure < producer
         function AdjustConstraint(obj, GravityModel, rhoT, h)
             rho = rhoT(obj.Cells);
             obj.BHPDepth = max(h);
-            obj.p = obj.p - rho .*GravityModel.g .*(obj.BHPDepth - h);
+            obj.p = obj.p - rho .* GravityModel.g .* (obj.BHPDepth - h);
         end
         function UpdateState(obj, State, K, Mob, FluidModel)
             p = State.Properties(['P_',num2str(FluidModel.NofPhases)]);
