@@ -538,7 +538,29 @@ classdef reader_darsim2 < reader
             end
             CornerPointGridData.N_ExternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
             
-            % Reading internal faces
+            temp = strfind(obj.CornerPointGridMatrix, 'N_NODES');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "N_NODES" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.N_Nodes = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            %%% Reading nodes
+            temp = strfind(obj.CornerPointGridMatrix, 'NODES_COORDINATES');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "NODES_COORDINATES" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            
+            fprintf('---> Reading Nodes ... ');
+            TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_Nodes-1);
+            splitStr = regexp(TEMP, ',', 'split');
+            splitStr = str2double( vertcat( splitStr{:} ) );
+            Nodes_XYZ_Coordinate = splitStr(:,2:4);
+            fprintf('Done!\n');
+            CornerPointGridData.Nodes_XYZ_Coordinate = Nodes_XYZ_Coordinate;
+            
+            %%% Reading internal faces
             temp = strfind(obj.CornerPointGridMatrix, 'INTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -556,10 +578,11 @@ classdef reader_darsim2 < reader
             Internal_Face.CellNeighbor1Vec = splitStr(:,10:12);
             Internal_Face.CellNeighbor2Index = splitStr(:,13);
             Internal_Face.CellNeighbor2Vec = splitStr(:,14:16);
+            
             fprintf('Done!\n');
             CornerPointGridData.Internal_Face = Internal_Face;
             
-            % Reading external faces
+            %%% Reading external faces
             temp = strfind(obj.CornerPointGridMatrix, 'EXTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -578,7 +601,7 @@ classdef reader_darsim2 < reader
             fprintf('Done!\n');
             CornerPointGridData.External_Face = External_Face;
             
-            % Reading cells
+            %%% Reading cells
             temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -613,7 +636,8 @@ classdef reader_darsim2 < reader
             fprintf('Done!\n');
             CornerPointGridData.Cell = Cell;
             
-            % Reading the rock properties (porosity and permeability)
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Reading the rock properties (porosity and permeability)
             if isempty(obj.CornerPointGridRockPropertiesMatrix)
                 return;
             end
