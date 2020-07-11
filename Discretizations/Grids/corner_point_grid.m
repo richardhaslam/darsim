@@ -28,6 +28,7 @@ classdef corner_point_grid < grid_darsim
             obj.Active = ones(obj.N, 1);
             obj.ActiveTime = ones(obj.N, 1);
             obj.Trans = zeros(ReservoirProperties.CornerPointGridData.N_InternalFaces,1);
+            obj.pEDFM_alpha_Trans = zeros(ReservoirProperties.CornerPointGridData.N_InternalFaces,1);
             obj.HeatTrans = zeros(ReservoirProperties.CornerPointGridData.N_InternalFaces,1);
         end
         function Initialize(obj, Reservoir)
