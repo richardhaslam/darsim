@@ -40,16 +40,24 @@ classdef reader_darsim2 < reader
             obj.SettingsMatrix(Commented) = {'--'}; % removing the string if it is commented.
             
             %% Read Fracture File
-            fractured = sum(contains(obj.InputMatrix, 'FRACTURED'));
-            if fractured 
-                FractureFile = strcat(obj.Directory, '/Fracture_Output.txt');
-                fileID = fopen(FractureFile, 'r');
-				fprintf('Reading fracture file ...');
-                matrix = textscan(fileID, '%s', 'Delimiter', '\n');
-                obj.FractureMatrix = matrix{1};
-                fclose(fileID);
-				fprintf('--> Successful.\n\n');
+            temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                Boolean = obj.InputMatrix{index+1};
+                if strcmp(Boolean,'ON')
+                    FractureFile = strcat(obj.Directory,'/',obj.InputMatrix{index+2});
+                    if ~isfile(FractureFile)
+                        error('DARSim Error: The fracture input file "%s" does not exist!\n', FractureFile);
+                    end
+                    fileID = fopen(FractureFile, 'r');
+                    fprintf('Reading fracture file ...');
+                    matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                    obj.FractureMatrix = matrix{1};
+                    fclose(fileID);
+                    fprintf('--> Successful.\n\n');
+                end
             end
+
             [Builder.SimulationInput, Builder.SimulatorSettings] = ReadInformation(obj);
         end
         function [SimulationInput, SimulatorSettings] = ReadInformation(obj)
@@ -98,12 +106,18 @@ classdef reader_darsim2 < reader
             
             % 7. Read Fractures' Properties (if any)
             temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
-            Fractured = find(~cellfun('isempty', temp));
-            if isempty(Fractured)
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
                 SimulationInput.FracturesProperties.isFractured = 0;
                 SimulationInput.FracturesProperties.NumOfFrac = 0;
             else
-                 SimulationInput.FracturesProperties = obj.ReadFracturesProperties();
+                Boolean = obj.InputMatrix{index+1};
+                if strcmp(Boolean,'ON')
+                    SimulationInput.FracturesProperties = obj.ReadFracturesProperties();
+                else
+                    SimulationInput.FracturesProperties.isFractured = 0;
+                    SimulationInput.FracturesProperties.NumOfFrac = 0;
+                end
             end
             
             %% SIMULATOR'S SETTINGS
@@ -524,7 +538,29 @@ classdef reader_darsim2 < reader
             end
             CornerPointGridData.N_ExternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
             
-            % Reading internal faces
+            temp = strfind(obj.CornerPointGridMatrix, 'N_NODES');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "N_NODES" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.N_Nodes = str2double( obj.CornerPointGridMatrix{index+1} );
+            
+            %%% Reading nodes
+            temp = strfind(obj.CornerPointGridMatrix, 'NODES_COORDINATES');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "NODES_COORDINATES" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            
+            fprintf('---> Reading Nodes ... ');
+            TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_Nodes-1);
+            splitStr = regexp(TEMP, ',', 'split');
+            splitStr = str2double( vertcat( splitStr{:} ) );
+            Nodes_XYZ_Coordinate = splitStr(:,2:4);
+            fprintf('Done!\n');
+            CornerPointGridData.Nodes_XYZ_Coordinate = Nodes_XYZ_Coordinate;
+            
+            %%% Reading internal faces
             temp = strfind(obj.CornerPointGridMatrix, 'INTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -542,10 +578,27 @@ classdef reader_darsim2 < reader
             Internal_Face.CellNeighbor1Vec = splitStr(:,10:12);
             Internal_Face.CellNeighbor2Index = splitStr(:,13);
             Internal_Face.CellNeighbor2Vec = splitStr(:,14:16);
+            Internal_Face.Corners = num2cell( splitStr(:,17:end) , 2);
+
+            for i = 1 : length( Internal_Face.Corners )
+                % removing junk data from the corner lists
+                Internal_Face.Corners{i}( Internal_Face.Corners{i} == 0) = [];
+                Internal_Face.Corners{i}( isnan(Internal_Face.Corners{i}) ) = [];
+                
+                % ordering the corners clockwise
+                % (https://nl.mathworks.com/matlabcentral/answers/429265-how-to-order-vertices-of-a-flat-convex-polygon-in-3d-space-along-the-edge)
+                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( Internal_Face.Corners{i} , :);
+                xyzc = mean(xyz,1);
+                P = xyz - xyzc;
+                [~,~,V] = svd(P,0);
+                [~,is] = sort(atan2(P*V(:,1),P*V(:,2)));
+                Internal_Face.Corners{i} = Internal_Face.Corners{i}(is);
+            end
+            
             fprintf('Done!\n');
             CornerPointGridData.Internal_Face = Internal_Face;
             
-            % Reading external faces
+            %%% Reading external faces
             temp = strfind(obj.CornerPointGridMatrix, 'EXTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -561,10 +614,27 @@ classdef reader_darsim2 < reader
             External_Face.Nvec = splitStr(:,6:8);
             External_Face.CellNeighborIndex = splitStr(:,9); % An external face has only one connection (to only one cell).
             External_Face.CellNeighborVec = splitStr(:,10:12);
+            External_Face.Corners = num2cell( splitStr(:,13:end) , 2);
+            
+            for i = 1 : length( External_Face.Corners )
+                % removing junk data from the corner lists
+                External_Face.Corners{i}( External_Face.Corners{i} == 0) = [];
+                External_Face.Corners{i}( isnan(External_Face.Corners{i}) ) = [];
+                
+                % ordering the corners clockwise
+                % (https://nl.mathworks.com/matlabcentral/answers/429265-how-to-order-vertices-of-a-flat-convex-polygon-in-3d-space-along-the-edge)
+                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( External_Face.Corners{i} , :);
+                xyzc = mean(xyz,1);
+                P = xyz - xyzc;
+                [~,~,V] = svd(P,0);
+                [~,is] = sort(atan2(P*V(:,1),P*V(:,2)));
+                External_Face.Corners{i} = External_Face.Corners{i}(is);
+            end
+            
             fprintf('Done!\n');
             CornerPointGridData.External_Face = External_Face;
             
-            % Reading cells
+            %%% Reading cells
             temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -575,19 +645,27 @@ classdef reader_darsim2 < reader
             TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1);
             splitStr = regexp(TEMP, ',', 'split');
             splitStr = str2double( vertcat( splitStr{:} ) );
-            Cell.NW_Top_Corner = splitStr(:,2:4);
-            Cell.NE_Top_Corner = splitStr(:,5:7);
-            Cell.SW_Top_Corner = splitStr(:,8:10);
-            Cell.SE_Top_Corner = splitStr(:,11:13);
-            Cell.NW_Bot_Corner = splitStr(:,14:16);
-            Cell.NE_Bot_Corner = splitStr(:,17:19);
-            Cell.SW_Bot_Corner = splitStr(:,20:22);
-            Cell.SE_Bot_Corner = splitStr(:,23:25);
-            Cell.Centroid = splitStr(:,26:28);
-            Cell.Volume = splitStr(:,29);
+            Cell.NW_Top_Corner = splitStr(:,2);
+            Cell.NE_Top_Corner = splitStr(:,3);
+            Cell.SW_Top_Corner = splitStr(:,4);
+            Cell.SE_Top_Corner = splitStr(:,5);
+            Cell.NW_Bot_Corner = splitStr(:,6);
+            Cell.NE_Bot_Corner = splitStr(:,7);
+            Cell.SW_Bot_Corner = splitStr(:,8);
+            Cell.SE_Bot_Corner = splitStr(:,9);
+            Cell.Centroid = splitStr(:,10:12);
+            Cell.Volume = splitStr(:,13);
+            Cell.Faces = num2cell( splitStr(:,14:end) , 2);
+            
+            % removing junk data from the face lists of the cells
+            for i = 1 : length( Cell.Faces )
+                Cell.Faces{i}( Cell.Faces{i} == 0) = [];
+                Cell.Faces{i}( isnan(Cell.Faces{i}) ) = [];
+            end
+            
+            % Obtaining the cell neighbors
             Cell.N_Neighbors = zeros(CornerPointGridData.N_ActiveCells , 1);
             Cell.Index_Neighbors = cell(CornerPointGridData.N_ActiveCells , 1);
-            % Obtaining the cell neighbors
             for i = 1 : CornerPointGridData.N_ActiveCells
                 faceIndex = find(Internal_Face.CellNeighbor1Index==i);
                 neighborIndex = Internal_Face.CellNeighbor2Index(faceIndex);
@@ -599,7 +677,8 @@ classdef reader_darsim2 < reader
             fprintf('Done!\n');
             CornerPointGridData.Cell = Cell;
             
-            % Reading the rock properties (porosity and permeability)
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Reading the rock properties (porosity and permeability)
             if isempty(obj.CornerPointGridRockPropertiesMatrix)
                 return;
             end

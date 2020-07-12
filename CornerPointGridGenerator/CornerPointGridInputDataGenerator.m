@@ -43,7 +43,7 @@ for G = 1 : length(Geometries)
     [X,Y] = ismember(F,FN3(:,1));                                                                   % Obtain Index and Location                                      
     FN4 = FN3(Y(X),:);                                                                              
     FN5 = reshape(FN4(:,2:5)',8,[])';                                                               % Reshape: Cells vs Nodes
-    
+    FN5 = [FN5(:,4) FN5(:,3) FN5(:,1:2) FN5(:,8) FN5(:,7) FN5(:,5:6)];
     FtC = accumarray(CF2(:,1),CF2(:,2),[],@(x){x});                                                 % Find Faces to Cells
     FtC2 = padcat(FtC{:});                                                                          % Convert Cell Array to Matrix
     FtC2 = FtC2';                                                                                   % Cells X Faces
@@ -51,7 +51,7 @@ for G = 1 : length(Geometries)
     nf_min = min(diff(Geometry.cells.facePos));                                                     % min # of faces in cells
     nf_max = max(diff(Geometry.cells.facePos));                                                     % max # of faces in cells
     
-    Section2 = [(1:1:Geometry.cells.num)' FN5 Geometry.cells.centroids Geometry.cells.volumes FtC2] % 8 (nodes number per cell + tag nodes)
+    Section2 = [(1:1:Geometry.cells.num)' FN5 Geometry.cells.centroids Geometry.cells.volumes FtC2]; % 8 (nodes number per cell + tag nodes)
     
     % SECTION 3: INTERNAL FACES (FACES CONNECTED TO CELLS)
     FN = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2) .' Geometry.faces.nodes]; % Face + Nodes
@@ -72,7 +72,7 @@ for G = 1 : length(Geometries)
     % Create Centroid Vector: Face Centroid - Cell Centroid
     c_vec = [Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,2),:), Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,3),:)];
     % Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
-    IF2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6) IF(:,11:16)];
+    IF2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6) IF(:,11:end)];
     
     
     % SECTION 4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
@@ -82,7 +82,7 @@ for G = 1 : length(Geometries)
     EF(LI,:) = [];                                                             % Delete Internal Faces
     EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];                                      % Delete Cell Neighboors  == 0
     % External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
-    EF3 = [EF2 Geometry.faces.centroids(EF2(:,1),:) - Geometry.cells.centroids(EF2(:,9)) EF(:,11:16)];
+    EF3 = [EF2 Geometry.faces.centroids(EF2(:,1),:) - Geometry.cells.centroids(EF2(:,9)) EF(:,11:end)];
     
     %% CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
     % POROSITY
@@ -114,10 +114,11 @@ for G = 1 : length(Geometries)
     [K, i, j] = permTensor(rock, Geometry.griddim);                                   % Create K Tensor
     K_text = [Geometry.cells.indexMap K];                                             % Create K Tensor
     
+    
+    disp( '******************* Writing the data into output text files *********************' );
     %% OUTOUT FILE 1: GRID GEOMETRY DATA
     OutputFileName = 'CornerPointGrid_DARSim_InputData';
-    disp( '******************* Writing the data into output text file *********************' );
-    disp(['Writing into file ', OutputFileName, '#', G]);
+    disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
     
     fid = fopen(strcat(Directory,'\',OutputFileName,'_',num2str(G),'.txt') , 'w+' );
     fprintf(fid, '%% Node Locations for each one of the cells, Nx * Ny *Nz\n');
@@ -151,7 +152,7 @@ for G = 1 : length(Geometries)
     fprintf(fid, '%% Section 1: Nodes Coordinates\n');
     fprintf(fid, 'NODES_COORDINATES\n');
     fprintf(fid,'%s %7s %17s %17s\n','Node No.  ','x','y','z');
-    for ii = 1:10%size(Section1,1)
+    for ii = 1:size(Section1,1)
         fprintf(fid,'%6d ,   %6f ,   %6f ,   %6f\n', Section1(ii,:)');
     end
     
@@ -162,8 +163,15 @@ for G = 1 : length(Geometries)
     fprintf(fid,'%s %6s %9s %9s %9s %9s %9s %9s %9s %33s %24s %17s\n','Cell No.  ',...
                 'NW_T','NE_T','SW_T','SE_T','NW_B','NE_B','SW_B','SE_B','Cell Centroid(x;y;z)','Cell Volume','Faces to Cell');
     
-    for ii = 1:10%size(Section2,1)
-        fprintf(fid,'%7d, %8d, %8d, %8d, %8d, %8d, %8d, %8d, %8d,    %6.5f,%6.5f,%6.5f ,    %6.5f,    %d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n', Section2(ii,:)');
+    FormatSpec = "%7d, %8d, %8d, %8d, %8d, %8d, %8d, %8d, %8d,    %6.5f,%6.5f,%6.5f ,    %6.5f,    ";
+    for n = 1 : size(Section2,2) - 13
+        FormatSpec = strcat(FormatSpec,"%d,");
+    end
+    FormatSpec = char(FormatSpec);
+    FormatSpec(end)=[];
+    FormatSpec = strcat(FormatSpec,'\n');
+    for ii = 1:size(Section2,1)
+        fprintf(fid,FormatSpec, Section2(ii,:)');
     end
    
     fprintf(fid, '\n\n');
@@ -172,10 +180,17 @@ for G = 1 : length(Geometries)
     fprintf(fid, '\n');
     fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
     fprintf(fid,'%s %13s %33s %41s %15s %35s %15s %32s %23s\n','Faces No.','Face Area',...
-        'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)','Nodes to Faces');
+                'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)','Nodes to Faces');
     
-    for ii = 1:10%size(IF2,1)
-        fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f , %6.0d , % 12.6f,% 12.6f,% 11.6f,   %d,%d,%d,%d,%d,%d\n', IF2(ii,:)');
+    FormatSpec = "%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , %13.6f,%12.6f,%8.6f , %6.0d , %12.6f,%12.6f,%11.6f , %6.0d , %12.6f,%12.6f,%11.6f,   ";
+    for n = 1 : size(IF2,2) - 16
+        FormatSpec = strcat(FormatSpec,"%d,");
+    end
+    FormatSpec = char(FormatSpec);
+    FormatSpec(end)=[];
+    FormatSpec = strcat(FormatSpec,'\n');
+    for ii = 1:size(IF2,1)
+        fprintf(fid,FormatSpec, IF2(ii,:)');
     end
     
     fprintf(fid, '\n\n');
@@ -185,14 +200,20 @@ for G = 1 : length(Geometries)
     fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
     fprintf(fid,'%s %12s %34s %42s %15s %37s %28s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)','Nodes to Faces');
     
-    for ii = 1:10%size(EF3,1)
-        fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , % 13.6f,%12.6f,% 8.6f , %6.0d , % 12.6f,% 12.6f, % 11.6f,   %d,%d,%d,%d,%d,%d\n', EF3(ii,:)');
+    FormatSpec = "%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , %13.6f,%12.6f,%8.6f , %6.0d , %12.6f,%12.6f,%11.6f,   ";
+    for n = 1 : size(EF3,2) - 12
+        FormatSpec = strcat(FormatSpec,"%d,");
+    end
+    FormatSpec = char(FormatSpec);
+    FormatSpec(end)=[];
+    FormatSpec = strcat(FormatSpec,'\n');
+    for ii = 1:size(EF3,1)
+        fprintf(fid,'%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , %13.6f,%12.6f,%8.6f , %6.0d , %12.6f,%12.6f,%11.6f,   %d,%d,%d,%d,%d,%d\n', EF3(ii,:)');
     end
     fclose(fid);
     %% OUTPUT FILE 2: ROCK PROPERTIES DATA
     OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData';
-    disp( '******************* Writing the data into output text file *********************' );
-    disp(['Writing into file ', OutputFileName, '#', G]);
+    disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
     
     fid = fopen(strcat(Directory,'\', OutputFileName, '_', num2str(G),'.txt'), 'w+');
     fprintf(fid, '%% Rock Properties of the Norne Field\n');
@@ -247,6 +268,7 @@ for G = 1 : length(Geometries)
         fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e\n', K_text(ii,:)');
     end
     fclose(fid);
-
+    
 end
+
 end

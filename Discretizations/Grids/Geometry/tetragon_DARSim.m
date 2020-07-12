@@ -84,25 +84,25 @@ classdef tetragon_DARSim < polygon_DARSim
             Line1 = lineSegment_DARSim(obj.PointM , point);
             
             Line2 = lineSegment_DARSim(obj.PointA , obj.PointB);
-            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSengment_Intersection( Line2, Epsilon );
+            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection( Line2, Epsilon );
             if     ( Geostatus.haveIntersect == 0 )             ,  isInside = 1;
             elseif ( norm (IntersectPoint - point ) < Epsilon ) ,  isInside = 1;
             else                                                ,  isInside = 0;  return;  end
             
             Line2 = lineSegment_DARSim(obj.PointB , obj.PointC);
-            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSengment_Intersection( Line2, Epsilon );
+            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection( Line2, Epsilon );
             if     ( Geostatus.haveIntersect == 0 )             ,  isInside = 1;
             elseif ( norm (IntersectPoint - point ) < Epsilon ) ,  isInside = 1;
             else                                                ,  isInside = 0;  return;  end
             
             Line2 = lineSegment_DARSim(obj.PointC , obj.PointD);
-            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSengment_Intersection( Line2, Epsilon );
+            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection( Line2, Epsilon );
             if     ( Geostatus.haveIntersect == 0 )             ,  isInside = 1;
             elseif ( norm (IntersectPoint - point ) < Epsilon ) ,  isInside = 1;
             else                                                ,  isInside = 0;  return;  end
             
             Line2 = lineSegment_DARSim(obj.PointD , obj.PointA);
-            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSengment_Intersection( Line2, Epsilon );
+            [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection( Line2, Epsilon );
             if     ( Geostatus.haveIntersect == 0 )             ,  isInside = 1;
             elseif ( norm (IntersectPoint - point ) < Epsilon ) ,  isInside = 1;
             else                                                ,  isInside = 0;  return;  end
@@ -136,7 +136,7 @@ classdef tetragon_DARSim < polygon_DARSim
                         for j = [2,3,4,1]
                             Line1 = lineSegment_DARSim(obj.Points(:,i)     ,obj.Points(:,j)     );
                             Line2 = lineSegment_DARSim(Tetragon.Points(:,i),Tetragon.Points(:,j));
-                            [lineGeostatus, lineIntersectPoint] = Line1.Obtain_LineSegment_LineSengment_Intersection(Line2, Epsilon);
+                            [lineGeostatus, lineIntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection(Line2, Epsilon);
                             if lineGeostatus.haveIntersect == 1
                                 Geostatus.haveIntersect = 1;
                                 intersectNr = intersectNr + 1;
@@ -209,7 +209,7 @@ classdef tetragon_DARSim < polygon_DARSim
                 intersectNr = 0;
                 for i = 1 : 8
                     Line_temp = lineSegment_DARSim( allPoints(:,ind1(i)) , allPoints(:,ind2(i)) );
-                    [lineGeostatus, lineIntersectPoint] = Line_temp.Obtain_LineSegment_LineSengment_Intersection( intersectionLine, Epsilon );
+                    [lineGeostatus, lineIntersectPoint] = Line_temp.Obtain_LineSegment_LineSegment_Intersection( intersectionLine, Epsilon );
                     if lineGeostatus.haveIntersect == 1
                         Geostatus.haveIntersect = 1;
                         intersectNr = intersectNr + 1;

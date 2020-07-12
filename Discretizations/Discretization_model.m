@@ -99,6 +99,25 @@ classdef Discretization_model < handle
                 error('For global indexing in the reservoir both f & g must be zero!\nFor global indexing in the fractures both f & g must be non-zero!');
             end
         end
+        function indexing = Index_Global_to_Local(obj, I)
+            if (I<1),  error('Global indexing (I) cannot be negative!');  end
+            if (I>obj.N),  error('Global indexing (I) cannot exceed total number of cells!');  end
+            if I <= obj.ReservoirGrid.N
+                indexing.Im = I;
+                indexing.f = 0;
+                indexing.g = 0;
+            else
+                indexing.Im = obj.ReservoirGrid.N;
+                temp = I - obj.ReservoirGrid.N;
+                temp = find( temp - cumsum(obj.FracturesGrid.N) <= 0);
+                indexing.f = temp(1);
+                indexing.g = I - obj.ReservoirGrid.N - sum( obj.FracturesGrid.N(1:indexing.f-1) );
+                if indexing.g==0,  indexing.g = obj.FracturesGrid.Grids(indexing.f).N;  end
+            end
+            if obj.Index_Local_to_Global(indexing.Im, indexing.f, indexing.g) ~= I
+                error('Im is not correspondent with I. Check the formula again!');
+            end
+        end
         function AverageMassOnCoarseBlocks(obj, Status, FluidModel, Formulation)
             % virtual call
         end

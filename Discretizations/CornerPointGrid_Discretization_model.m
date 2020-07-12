@@ -39,11 +39,11 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
             end
             
             % Merge the reservoir and all the fracture grids (if any) into one unified grid
-            if ProductionSystem.FracturesNetwork.Active
-                obj.AddUnifiedGrid();
-            else
-                obj.UnifiedGrid = obj.ReservoirGrid;
-            end
+%             if ProductionSystem.FracturesNetwork.Active
+%                 obj.AddUnifiedGrid();
+%             else
+%                 obj.UnifiedGrid = obj.ReservoirGrid;
+%             end
         end
         function AddUnifiedGrid(obj)
             CPGData = obj.ReservoirGrid.CornerPointGridData;
@@ -177,10 +177,12 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                 g1 = Ind_frac1_Local.g;
                 
                 indices_m = Cells( Cells <= Nm );
-                obj.CrossConnections(If1Local).T_Geo(1:length(indices_m)) = ...
-                    CI(1:length(indices_m)) .* ( obj.ReservoirGrid.Volume(indices_m).^(1/3) + Fractures(f1).Thickness ) ./...
-                    ( ( obj.ReservoirGrid.Volume(indices_m).^(1/3) ./ Reservoir.K(indices_m,1) ) + ( Fractures(f1).Thickness ./ Fractures(f1).K(g1,1) ) );
-   
+                if ~isempty(indices_m)
+                    obj.CrossConnections(If1Local).T_Geo(1:length(indices_m)) = ...
+                        CI(1:length(indices_m)) .* ( obj.ReservoirGrid.Volume(indices_m).^(1/3) + Fractures(f1).Thickness ) ./...
+                        ( ( obj.ReservoirGrid.Volume(indices_m).^(1/3) ./ Reservoir.K(indices_m,1) ) + ( Fractures(f1).Thickness ./ Fractures(f1).K(g1,1) ) );
+                end
+                
                 indices_f = Cells( Cells > Nm );
                 if ~isempty(indices_f)
                     for n = 1:length(indices_f)
@@ -194,25 +196,6 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                               ( ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 ./ Fractures(f1).K(g1,1) ) + ( Fractures(f2).Thickness ./ Fractures(f2).K(g2,1) ) );
                     end
                 end
-            end
-        end
-        function indexing = Index_Global_to_Local(obj, I)
-            if (I<1),  error('Global indexing (I) cannot be negative!');  end
-            if (I>obj.N),  error('Global indexing (I) cannot exceed total number of cells!');  end
-            if I <= obj.ReservoirGrid.N
-                indexing.Im = I;
-                indexing.f = 0;
-                indexing.g = 0;
-            else
-                indexing.Im = obj.ReservoirGrid.N;
-                temp = I - obj.ReservoirGrid.N;
-                temp = find( temp - cumsum(obj.FracturesGrid.N) <= 0);
-                indexing.f = temp(1);
-                indexing.g = I - obj.ReservoirGrid.N - sum( obj.FracturesGrid.N(1:indexing.f-1) );
-                if indexing.g==0,  indexing.g = obj.FracturesGrid.Grids(indexing.f).N;  end
-            end
-            if obj.Index_Local_to_Global(indexing.Im, indexing.f, indexing.g) ~= I
-                error('Im is not correspondent with I. Check the formula again!');
             end
         end
         function ObtainPerforatedCellsBasedOnIJKList(obj, Well, Well_Type, w)
@@ -243,14 +226,14 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                 while Count <= length(indList)
                     I = indList(Count);
                     Count = Count+1;
-                    NW_Top = obj.CornerPointGridData.Cell.NW_Top_Corner(I,:)';
-                    SW_Top = obj.CornerPointGridData.Cell.SW_Top_Corner(I,:)';
-                    SE_Top = obj.CornerPointGridData.Cell.SE_Top_Corner(I,:)';
-                    NE_Top = obj.CornerPointGridData.Cell.NE_Top_Corner(I,:)';
-                    NW_Bot = obj.CornerPointGridData.Cell.NW_Bot_Corner(I,:)';
-                    SW_Bot = obj.CornerPointGridData.Cell.SW_Bot_Corner(I,:)';
-                    SE_Bot = obj.CornerPointGridData.Cell.SE_Bot_Corner(I,:)';
-                    NE_Bot = obj.CornerPointGridData.Cell.NE_Bot_Corner(I,:)';
+                    NW_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NW_Top_Corner(I) , : )';
+                    SW_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SW_Top_Corner(I) , : )';
+                    SE_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SE_Top_Corner(I) , : )';
+                    NE_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NE_Top_Corner(I) , : )';
+                    NW_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NW_Bot_Corner(I) , : )';
+                    SW_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SW_Bot_Corner(I) , : )';
+                    SE_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SE_Bot_Corner(I) , : )';
+                    NE_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NE_Bot_Corner(I) , : )';
                     
                     Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
                     Hexahedron.Centroid = obj.CornerPointGridData.Cell.Centroid(I,:)';

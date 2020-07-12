@@ -283,6 +283,7 @@ classdef Immiscible_formulation < formulation
                 %Jphnoconn{ph} = horzcat(Jp, JS);
                 %% ADD frac-matrix and frac-frac connections
                 for c = 1:length(DiscretizationModel.CrossConnections)
+                    if isempty(DiscretizationModel.CrossConnections(c).Cells),  continue;  end
                     T_Geo = DiscretizationModel.CrossConnections(c).T_Geo;
                     UpWind = DiscretizationModel.CrossConnections(c).UpWind;
                     i = c + Nm;

@@ -1,6 +1,5 @@
 classdef cross_connections < handle
-    %UNTITLED3 Summary of this class goes here
-    %   Detailed explanation goes here
+    % Contains the information of non-neighboring connectivities between different media (fracture0matrix and fracture-fracture)
     properties
         Cells
         CI

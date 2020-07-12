@@ -1081,7 +1081,7 @@ classdef simulation_builder < handle
             if ( obj.SimulationInput.ReservoirProperties.size(1) ~= obj.SimulationInput.FracturesProperties.Reservoir.Lx ) || ...
                ( obj.SimulationInput.ReservoirProperties.size(2) ~= obj.SimulationInput.FracturesProperties.Reservoir.Ly ) || ...
                ( obj.SimulationInput.ReservoirProperties.size(3) ~= obj.SimulationInput.FracturesProperties.Reservoir.Lz )
-%                error('The dimension of reservoir in the "Fracture_Output" file does not match the simulation input file!');
+               warning('The dimension of reservoir in the "Fracture_Output" file does not match the simulation input file. This may cause inconsistency!');
             end
             
             if ( ReservoirGrid.Nx ~= obj.SimulationInput.FracturesProperties.Reservoir.Nx ) || ...
@@ -1117,6 +1117,7 @@ classdef simulation_builder < handle
             end
             
             % Reading the non-neighboring connectivities of frac-frac and frac-matrix
+            NumOfAllFracGrids = obj.SimulationInput.FracturesProperties.NumOfAllFracGrids;
             CrossConnections = cross_connections();
             
             temp = strfind(FractureMatrix, '/');
@@ -1163,6 +1164,7 @@ classdef simulation_builder < handle
                     Counter=0;
                     
                     % Adding fracture-matrix EDFM connectivities
+                    CrossConnections(IfGlobal,1).Cells = [];
                     rockConnInd_EDFM = rockConnIndeces_EDFM( rockConnIndeces_EDFM > fracCellIndeces(IfGlobal) );
                     rockConnInd_EDFM = rockConnInd_EDFM( rockConnInd_EDFM < fracCellIndeces(IfGlobal+1) );
                     if length(rockConnInd_EDFM) ~= NumOfRockConn_EDFM
