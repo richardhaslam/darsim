@@ -51,7 +51,6 @@ classdef corner_point_grid < grid_darsim
         end
         function AddpEDFMCorrections(obj,pEDFM_alpha_Trans)
             obj.pEDFM_alpha_Trans = pEDFM_alpha_Trans;
-            obj.pEDFM_alpha_Trans(obj.pEDFM_alpha_Trans>0) = 1;
         end
         function CorrectTransmissibilitiesForpEDFM(obj)
             obj.Trans = obj.Trans .* ( 1 - obj.pEDFM_alpha_Trans );

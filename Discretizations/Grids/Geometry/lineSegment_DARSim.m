@@ -58,7 +58,7 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
                     if ( arcCos_Theta_L2A_1 * arcCos_Theta_L2A_2 > Epsilon ) && ( intersectNr <= 2 )
                         intersectNr = intersectNr + 1;
                         Geostatus.haveIntersect = 1;
-                        intersectPoint = [ intersectPoint , L2A ];
+                        intersectPoint = [ intersectPoint ; L2A ];
                     end
                     
                     % Checking if point L2B is an intersection or not
@@ -67,7 +67,7 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
                     if ( arcCos_Theta_L2B_1 * arcCos_Theta_L2B_2 > Epsilon ) && ( intersectNr <= 2 )
                         intersectNr = intersectNr + 1;
                         Geostatus.haveIntersect = 1;
-                        intersectPoint = [ intersectPoint , L2B ];
+                        intersectPoint = [ intersectPoint ; L2B ];
                     end
                     
                     % Checking if point L1A is an intersection or not
@@ -76,7 +76,7 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
                     if ( arcCos_Theta_L1A_1 * arcCos_Theta_L1A_2 > Epsilon ) && ( intersectNr <= 2 )
                         intersectNr = intersectNr + 1;
                         Geostatus.haveIntersect = 1;
-                        intersectPoint = [ intersectPoint , L1A ];
+                        intersectPoint = [ intersectPoint ; L1A ];
                     end
                     
                     % Checking if point L1B is an intersection or not
@@ -85,7 +85,7 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
                     if ( arcCos_Theta_L1B_1 * arcCos_Theta_L1B_2 > Epsilon ) && ( intersectNr <= 2 )
                         intersectNr = intersectNr + 1;
                         Geostatus.haveIntersect = 1;
-                        intersectPoint = [ intersectPoint , L1B ];
+                        intersectPoint = [ intersectPoint ; L1B ];
                     end
                 end
                 
@@ -93,8 +93,8 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
                 % The lines are either intersected or skew.
                 Geostatus.areParallel  = 0;
                 Geostatus.areCollinear = 0;
-                t = det( [ (L2A-L1A), V2 , cross(V1,V2) ] ) / norm(cross(V1,V2))^2;
-                s = det( [ (L2A-L1A), V1 , cross(V1,V2) ] ) / norm(cross(V1,V2))^2;
+                t = det( [ (L2A-L1A)', V2' , cross(V1,V2)' ] ) / norm(cross(V1,V2))^2;
+                s = det( [ (L2A-L1A)', V1' , cross(V1,V2)' ] ) / norm(cross(V1,V2))^2;
                 
                 if norm( (L1A + t*V1) - (L2A + s*V2) ) < Epsilon
                     % Intersection occurs

@@ -91,9 +91,6 @@ classdef cartesian_grid < grid_darsim
             obj.pEDFM_alpha_Tx = pEDFM_alpha_Tx;
             obj.pEDFM_alpha_Ty = pEDFM_alpha_Ty;
             obj.pEDFM_alpha_Tz = pEDFM_alpha_Tz;
-%             obj.pEDFM_alpha_Tx(obj.pEDFM_alpha_Tx>0) = 1;
-%             obj.pEDFM_alpha_Ty(obj.pEDFM_alpha_Ty>0) = 1;
-%             obj.pEDFM_alpha_Tz(obj.pEDFM_alpha_Tz>0) = 1;
         end
         function CorrectTransmissibilitiesForpEDFM(obj)
             obj.Tx(2:obj.Nx,:,:) = obj.Tx(2:obj.Nx,:,:) .* ( 1 - obj.pEDFM_alpha_Tx(2:obj.Nx,:,:) );

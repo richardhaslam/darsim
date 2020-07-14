@@ -12,8 +12,6 @@ classdef tetragon_DARSim < polygon_DARSim
         PointB
         PointC
         PointD
-        PointM
-        Points
         AB_vec
         AD_vec
         AC_vec
@@ -42,14 +40,13 @@ classdef tetragon_DARSim < polygon_DARSim
             obj.AB_vec = pointB - pointA;
             obj.AD_vec = pointD - pointA;
             n_vec = cross(obj.AB_vec,obj.AD_vec);
-            pointM = (pointA+pointB+pointC+pointD)/4;
-            obj.InitializePlaneInfinite(n_vec,pointM);
+            obj.Centroid = (pointA+pointB+pointC+pointD)/4;
+            obj.InitializePlaneInfinite(n_vec,obj.Centroid);
             obj.PointA = pointA;
             obj.PointB = pointB;
             obj.PointC = pointC;
             obj.PointD = pointD;
-            obj.PointM = pointM;
-            obj.Points = [pointA,pointB,pointC,pointD,pointM];
+            obj.Vertex = [pointA;pointB;pointC;pointD];
             obj.AC_vec = obj.PointC - obj.PointA;
             obj.BC_vec = obj.PointC - obj.PointB;
             obj.CD_vec = obj.PointD - obj.PointC;
@@ -64,7 +61,7 @@ classdef tetragon_DARSim < polygon_DARSim
             % Namely: v1 . (v2 x v3) = 0;
             dx = norm(obj.PointA - obj.PointC);
             dy = norm(obj.PointB - obj.PointD);
-            Epsilon = 1e-10 * mean([dx,dy]);
+            Epsilon = 1e-5 * mean([dx,dy]);
             if abs( dot( obj.AB_vec, cross(obj.AC_vec, obj.AD_vec) ) ) > Epsilon
                 warning('This is not a tetragon, because the four corners are not coplanar!');
                 obj.AllCornersAreCoplanar = 0;
@@ -75,13 +72,13 @@ classdef tetragon_DARSim < polygon_DARSim
         %%
         function isInside = Is_Point_Inside_Tetragon(obj, point , Epsilon)
             isInside  = NaN;
-            if dot( obj.nVec , (point-obj.PointM) ) > Epsilon
+            if dot( obj.nVec , (point-obj.Centroid) ) > Epsilon
                 % The Point is not on the plane
                 isInside = 0;
                 return;
             end
             
-            Line1 = lineSegment_DARSim(obj.PointM , point);
+            Line1 = lineSegment_DARSim(obj.Centroid , point);
             
             Line2 = lineSegment_DARSim(obj.PointA , obj.PointB);
             [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection( Line2, Epsilon );
@@ -125,8 +122,10 @@ classdef tetragon_DARSim < polygon_DARSim
                 % means that the point lies within both tetragons resulting in
                 % coplanarity of these two tetragons.
                 % if a2*x1 + b2*y1 + c2*z1 = d2, then the tetragons are coplanar.
-                if abs( Tetragon.Eq.a * obj.PointM(1) + Tetragon.Eq.b * obj.PointM(2) + ...
-                        Tetragon.Eq.c * obj.PointM(3) - Tetragon.Eq.d ) < Epsilon
+                if abs( Tetragon.Eq.a * obj.Centroid(1) + ...
+                        Tetragon.Eq.b * obj.Centroid(2) + ...
+                        Tetragon.Eq.c * obj.Centroid(3) - ...
+                        Tetragon.Eq.d                     ) < Epsilon
                     % The tetragons are coplanar
                     Geostatus.areCoplanar = 1;
                     
@@ -134,13 +133,13 @@ classdef tetragon_DARSim < polygon_DARSim
                     for i = [1,2,3,4]
                         intersectNr = 0;
                         for j = [2,3,4,1]
-                            Line1 = lineSegment_DARSim(obj.Points(:,i)     ,obj.Points(:,j)     );
-                            Line2 = lineSegment_DARSim(Tetragon.Points(:,i),Tetragon.Points(:,j));
+                            Line1 = lineSegment_DARSim(obj.Vertex(i,:)     ,obj.Vertex(j,:)     );
+                            Line2 = lineSegment_DARSim(Tetragon.Vertex(i,:),Tetragon.Vertex(j,:));
                             [lineGeostatus, lineIntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection(Line2, Epsilon);
                             if lineGeostatus.haveIntersect == 1
                                 Geostatus.haveIntersect = 1;
                                 intersectNr = intersectNr + 1;
-                                IntersectPoints = [IntersectPoints , lineIntersectPoint];
+                                IntersectPoints = [IntersectPoints ; lineIntersectPoint];
                             end
                             if intersectNr == 2,  continue;  end  % each edge of 1st plane segment can have intersection with maximum two edges of the 2nd plane segment
                         end
@@ -168,7 +167,7 @@ classdef tetragon_DARSim < polygon_DARSim
                 RHS = [ obj.Eq.d      - obj.nVec(3)*P2M(3)
                         Tetragon.Eq.d - Tetragon.nVec(3)*P2M(3) ];
                 if abs(det(Axy)) > Epsilon
-                    intLine_Point0    = zeros(3,1);
+                    intLine_Point0    = zeros(1,3);
                     Unknowns          = Axy \ RHS;
                     intLine_Point0(1) = Unknowns(1);
                     intLine_Point0(2) = Unknowns(2);
@@ -179,7 +178,7 @@ classdef tetragon_DARSim < polygon_DARSim
                     RHS = [ obj.Eq.d      - obj.nVec(2)*P2M(2)
                             Tetragon.Eq.d - Tetragon.nVec(2)*P2M(2) ];
                     if abs(det(Axz)) > Epsilon
-                        intLine_Point0    = zeros(3,1);
+                        intLine_Point0    = zeros(1,3);
                         Unknowns          = Axz \ RHS;
                         intLine_Point0(1) = Unknowns(1);
                         intLine_Point0(3) = Unknowns(2);
@@ -189,7 +188,7 @@ classdef tetragon_DARSim < polygon_DARSim
                         Ayz = [ obj.nVec(2) , obj.nVec(3) ; Tetragon.nVec(2) , Tetragon.nVec(3) ];
                         RHS = [ obj.Eq.d      - obj.nVec(1)*P2M(1)
                                 Tetragon.Eq.d - Tetragon.nVec(1)*P2M(1) ];
-                        intLine_Point0    = zeros(3,1);
+                        intLine_Point0    = zeros(1,3);
                         Unknowns       = Ayz \ RHS;
                         intLine_Point0(2) = Unknowns(1);
                         intLine_Point0(3) = Unknowns(2);
@@ -203,17 +202,17 @@ classdef tetragon_DARSim < polygon_DARSim
                 intersectionLine = lineSegment_DARSim(intLine_A ,intLine_B);
                 
                 % Checking the intersection between the obtained line segment and each side of each tetragon
-                allPoints = [obj.Points(:,1:4), Tetragon.Points(:,1:4)];
+                allPoints = [obj.Vertex(1:4,:); Tetragon.Vertex(1:4,:)];
                 ind1 = [1,2,3,4,5,6,7,8];
                 ind2 = [2,3,4,1,6,7,8,5];
                 intersectNr = 0;
                 for i = 1 : 8
-                    Line_temp = lineSegment_DARSim( allPoints(:,ind1(i)) , allPoints(:,ind2(i)) );
+                    Line_temp = lineSegment_DARSim( allPoints(ind1(i),:) , allPoints(ind2(i),:) );
                     [lineGeostatus, lineIntersectPoint] = Line_temp.Obtain_LineSegment_LineSegment_Intersection( intersectionLine, Epsilon );
                     if lineGeostatus.haveIntersect == 1
                         Geostatus.haveIntersect = 1;
                         intersectNr = intersectNr + 1;
-                        IntersectPoints = [IntersectPoints , lineIntersectPoint];
+                        IntersectPoints = [IntersectPoints ; lineIntersectPoint];
                     end
                     if intersectNr == 4,  continue;  end % intersection line can have intersection with maximum two edges of each plane segment (four intersections max)
                 end
@@ -239,24 +238,24 @@ classdef tetragon_DARSim < polygon_DARSim
  
             AD_Coords = [linspace(obj.PointA(1), obj.PointD(1), Refinement+1)
                          linspace(obj.PointA(2), obj.PointD(2), Refinement+1)
-                         linspace(obj.PointA(3), obj.PointD(3), Refinement+1)];
+                         linspace(obj.PointA(3), obj.PointD(3), Refinement+1)]';
                      
             BC_Coords = [linspace(obj.PointB(1), obj.PointC(1), Refinement+1)
                          linspace(obj.PointB(2), obj.PointC(2), Refinement+1)
-                         linspace(obj.PointB(3), obj.PointC(3), Refinement+1)];
+                         linspace(obj.PointB(3), obj.PointC(3), Refinement+1)]';
             
             GridCoords  = zeros( Refinement+1, Refinement+1, 3 );
             for i = 1 : Refinement+1
-                GridCoords(:,i,1) = linspace( AD_Coords(1,i) , BC_Coords(1,i) , Refinement+1 );                          
-                GridCoords(:,i,2) = linspace( AD_Coords(2,i) , BC_Coords(2,i) , Refinement+1 );
-                GridCoords(:,i,3) = linspace( AD_Coords(3,i) , BC_Coords(3,i) , Refinement+1 );
+                GridCoords(:,i,1) = linspace( AD_Coords(i,1) , BC_Coords(i,1) , Refinement+1 );                          
+                GridCoords(:,i,2) = linspace( AD_Coords(i,2) , BC_Coords(i,2) , Refinement+1 );
+                GridCoords(:,i,3) = linspace( AD_Coords(i,3) , BC_Coords(i,3) , Refinement+1 );
             end
             
             x1 = Line.PointA  - Line.unitVec * 1e3;
             x2 = Line.PointA  + Line.unitVec * 1e3;
             for j = 1 : Refinement+1
                 for i = 1 : Refinement+1
-                    x0 = [ GridCoords(i,j,1); GridCoords(i,j,2); GridCoords(i,j,3) ];
+                    x0 = [ GridCoords(i,j,1), GridCoords(i,j,2), GridCoords(i,j,3) ];
                     AvgDistance = AvgDistance + norm(cross(x2-x1,x1-x0))/norm(x2-x1);
                 end
             end

@@ -77,8 +77,8 @@ classdef lineInfinite_DARSim < handle
                 L2B = Line.PointA + Line.unitVec * 1e3;
                 V1 = L1B - L1A;
                 V2 = L2B - L2A;
-                t = det( [ (L2A-L1A), V2 , cross(V1,V2) ] ) / norm(cross(V1,V2))^2;
-                s = det( [ (L2A-L1A), V1 , cross(V1,V2) ] ) / norm(cross(V1,V2))^2;
+                t = det( [ (L2A-L1A)', V2' , cross(V1,V2)' ] ) / norm(cross(V1,V2))^2;
+                s = det( [ (L2A-L1A)', V1' , cross(V1,V2)' ] ) / norm(cross(V1,V2))^2;
                 
                 if norm( (L1A + t*V1) - (L2A + s*V2) ) < Epsilon
                     % Intersection occurs

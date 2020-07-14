@@ -135,7 +135,7 @@ fprintf(fid, '%% Section 2: Cartesian Grid Nodes + Geometry\n');
 fprintf(fid, '%% [Nodes Coordinates (x;y;z)] + [Cell Centroid(x;y;z)] + [Cell Volume (m3)]\n');
 fprintf(fid, 'CELL_GEOMETRY\n');
 fprintf(fid,'%s %6s %9s %9s %9s %9s %9s %9s %9s %26s %15s\n','Cell No.  ',...
-                'NW_T','NE_T','SW_T','SE_T','NW_B','NE_B','SW_B','SE_B','Cell Centroid(x;y;z)','Cell Volume');
+                'SW_B','SE_B','NE_B','NW_B','SW_T','SE_T','NE_T','NW_T','Cell Centroid(x;y;z)','Cell Volume');
 
 for ii = 1:size(Section2,1)
     fprintf(fid,'%7d, %8d, %8d, %8d, %8d, %8d, %8d, %8d, %8d,    %6.5f,%6.5f,%6.5f ,    %6.5f\n', Section2(ii,:)');

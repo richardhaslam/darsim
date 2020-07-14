@@ -17,6 +17,7 @@ classdef planeInfinite_DARSim < handle
         function obj = planeInfinite_DARSim(n_vec,point)
             if nargin >= 1
                 obj.nVec = n_vec / norm(n_vec);
+                obj.nVec( isnan(obj.nVec) ) = 0;
             end
             if nargin >= 2
                 obj.InitializePlaneInfinite(n_vec,point);
@@ -26,6 +27,7 @@ classdef planeInfinite_DARSim < handle
         function InitializePlaneInfinite(obj,n_vec,point)
             % Eq of the plane follows ax+by+cz=d.
             obj.nVec = n_vec / norm(n_vec);
+            obj.nVec( isnan(obj.nVec) ) = 0;
             obj.Eq.a = obj.nVec(1);
             obj.Eq.b = obj.nVec(2);
             obj.Eq.c = obj.nVec(3);
@@ -40,11 +42,11 @@ classdef planeInfinite_DARSim < handle
             end
         end
         %%
-        function [Geostatus, intersectPoint] = Obtain_PlaneInfinite_LineInfinite_Intersection(obj, Line, Epsilon)
+        function [Geostatus, IntersectPoint] = Obtain_PlaneInfinite_LineInfinite_Intersection(obj, Line, Epsilon)
             Geostatus.areParallel = NaN;
             Geostatus.areCoplanar = NaN;
             Geostatus.haveIntersect = NaN;
-            intersectPoint = [];
+            IntersectPoint = [];
             
             % Obtaining the geostatus between the line and the plane
             if abs( dot(obj.nVec,Line.unitVec) ) < Epsilon
@@ -82,7 +84,33 @@ classdef planeInfinite_DARSim < handle
                 x = Line.Eq.a * t + Line.Eq.x0;
                 y = Line.Eq.b * t + Line.Eq.y0;
                 z = Line.Eq.c * t + Line.Eq.z0;
-                intersectPoint = [x;y;z];
+                IntersectPoint = [x,y,z];
+            end
+        end
+        %%
+        function [Geostatus, IntersectPoint] = Obtain_PlaneInfinite_LineSegment_Intersection(obj, LineSegment, Epsilon)
+            % 1. First, we check if the plane of this polygon intersect with the infinite extenstion of the line segment
+            [Geostatus, IntersectPoint] = obj.Obtain_PlaneInfinite_LineInfinite_Intersection(LineSegment, Epsilon);
+            if size(IntersectPoint,1) > 1
+                error('ADMIRE Error: The intersection between a plane and a line cannot be more than one point.');
+            end
+            
+            if Geostatus.haveIntersect == 1 && ~isempty(IntersectPoint)
+                % 2. Now, we check if the intersection point lies inside the line segment
+                % Point C is inside the line segment AB only if dot product of AC and BC is negative.
+                if dot( IntersectPoint-LineSegment.PointA , IntersectPoint-LineSegment.PointB ) <= 0
+                    PointIsInsideLineSegment = 1;
+                else
+                    PointIsInsideLineSegment = 0;
+                end
+                
+                if PointIsInsideLineSegment
+                    % The information is already correctly reported with [Geostatus, intersectPoint].
+                    % No further action is needed.
+                else
+                    Geostatus.haveIntersect = NaN;
+                    IntersectPoint = [];
+                end
             end
         end
         %%

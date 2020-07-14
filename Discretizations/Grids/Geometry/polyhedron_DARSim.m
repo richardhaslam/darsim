@@ -36,7 +36,7 @@ classdef polyhedron_DARSim < handle
             tL = 1; % for the minimum leaving segment parameter
             for i= 1 : obj.NumOfFace
                 % Checking if the normal vector is pointing outward, and if not, fixing it:
-                if dot( obj.Centroid - obj.Face(i).PointM , obj.Face(i).nVec) > 0
+                if dot( obj.Centroid - obj.Face(i).Centroid , obj.Face(i).nVec) > 0
                     obj.Face(i).nVec = - obj.Face(i).nVec;
                 end
                 
@@ -88,7 +88,7 @@ classdef polyhedron_DARSim < handle
                 % We have intersection. The valid intersection points are:
                 PointE = LineSegment.PointA + tE * LineSegment.AB_vec;
                 PointL = LineSegment.PointA + tL * LineSegment.AB_vec;
-                IntersectPoints = [PointE, PointL];
+                IntersectPoints = [PointE; PointL];
             end
         end
     end
