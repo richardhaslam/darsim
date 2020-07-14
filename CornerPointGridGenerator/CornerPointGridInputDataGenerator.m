@@ -71,16 +71,19 @@ for G = 1 : length(Geometries)
     IF(LI,:) = [];                                                                                  % Delete External Faces
     % Create Centroid Vector: Face Centroid - Cell Centroid
     c_vec = [Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,2),:), Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,3),:)];
+    % Create new index for Internal Faces
+    IF(:,1)= linspace(1, size(IF,1), size(IF,1))';                                                  % Create Face Index Vector (Internal Faces)
     % Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
     IF2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6) IF(:,11:end)];
-    
-    
+
     % SECTION 4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
     % Assembly Matrix with Face Geometry Data
     EF = [NF, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals, Geometry.faces.neighbors NtF2];
     LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                       % Delete Internal Faces
     EF(LI,:) = [];                                                             % Delete Internal Faces
     EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];                                      % Delete Cell Neighboors  == 0
+    % Create new index for External Faces
+    EF2(:,1)= linspace(1, size(EF2,1), size(EF2,1))';                          % Create Face Index Vector (External Faces)
     % External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
     EF3 = [EF2 Geometry.faces.centroids(EF2(:,1),:) - Geometry.cells.centroids(EF2(:,9)) EF(:,11:end)];
     
