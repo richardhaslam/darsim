@@ -59,7 +59,6 @@ classdef VTK_Plotter < Plotter
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)
             obj.PlotReservoirSolution(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid);
-            obj.PlotInternalFaces(ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid);
             for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
                 obj.PlotFractureSolution(ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), f);
             end

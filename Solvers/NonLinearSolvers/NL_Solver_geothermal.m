@@ -17,7 +17,7 @@ methods
             case {'Geothermal_1T','Geothermal_2T'}
                 obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
                 Formulation.ConstrainedPressureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
-                Formulation.ConstrainedTemperatureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
+%                 Formulation.ConstrainedTemperatureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
                 obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         end
     end

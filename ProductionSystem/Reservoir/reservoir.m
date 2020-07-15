@@ -51,7 +51,8 @@ classdef reservoir < handle
         end
         function AddConductivity(obj, k_cond_rock, k_cond_fluid)
             obj.K_Cond_rock = k_cond_rock;
-            obj.K_Cond_eff  = k_cond_fluid * obj.Por + k_cond_rock * (1-obj.Por) * ones(size(obj.K));
+            obj.K_Cond_eff  = k_cond_fluid .* obj.Por + k_cond_rock .* (1-obj.Por);
+            obj.K_Cond_eff  = obj.K_Cond_eff .* ones(size(obj.K));
         end
         function AddCoarsePermeability(obj, k_coarse)
             obj.K_coarse = k_coarse;

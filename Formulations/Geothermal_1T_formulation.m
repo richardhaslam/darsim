@@ -93,7 +93,7 @@ classdef Geothermal_1T_formulation < formulation
             end
         end
         %% Methods for FIM Coupling
-        function Residual_P   = BuildMediumFlowResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
+        function [Residual_P, RHS]   = BuildMediumFlowResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
             % Create local variables
             rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
             P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End); % P at previous time step
@@ -109,13 +109,14 @@ classdef Geothermal_1T_formulation < formulation
             Accumulation = (pv_new.*rho_new - pv_old.*rho_old)/dt;
 
             % RESIDUAL
+            RHS = qw(Index.Start:Index.End, ph);
             Residual_P  = Accumulation ...
                 + obj.Tph{ph, 1+f} * P_new...
                 - obj.Gph{ph, 1+f} * depth...
                 - qw(Index.Start:Index.End, ph)...
                 - qf(Index.Start:Index.End, ph);
         end
-        function Residual_T   = BuildMediumHeatResidual(obj, Medium, Grid, dt, State0, Index, qhw, qhf, RTf, f, ph)
+        function [Residual_T, RHS]   = BuildMediumHeatResidual(obj, Medium, Grid, dt, State0, Index, qhw, qhf, RTf, f, ph)
             % Create local variables
             rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
             P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End); % P at previous time step
@@ -140,6 +141,7 @@ classdef Geothermal_1T_formulation < formulation
             Accumulation = (U_eff_new - U_eff_old)/dt;
             
             % RESIDUAL
+            RHS = qhw(Index.Start:Index.End, ph);
             Residual_T  = Accumulation ...
                 + obj.Th{ph, 1+f} * P_new ...
                 - obj.Gph{ph, 1+f} * depth ...
@@ -148,7 +150,7 @@ classdef Geothermal_1T_formulation < formulation
                 - qhf(Index.Start:Index.End, ph)...
                 - RTf(Index.Start:Index.End, ph);
         end
-        function ResidualFull = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
+        function [ResidualFull, RHS] = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute source terms
             [Qw, Qhw] = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             Qf = zeros(DiscretizationModel.N, obj.NofPhases);              % Mass Flow flux between each two media 
@@ -167,6 +169,7 @@ classdef Geothermal_1T_formulation < formulation
                 Nf = 0;
             end
             Nt = DiscretizationModel.N;
+            RHS = zeros( 2*Nt , 1 );
             ResidualFull = zeros( 2*Nt , 1 );
                         
             for ph=1:obj.NofPhases
@@ -196,8 +199,9 @@ classdef Geothermal_1T_formulation < formulation
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                Residualm = BuildMediumFlowResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, Qw, Qf, 0, ph);
+                [Residualm, RHSm] = BuildMediumFlowResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, Qw, Qf, 0, ph);
                 ResidualFull((ph-1)*Nt + Index.Start: (ph-1)*Nt + Index.End) = Residualm;
+                RHS(         (ph-1)*Nt + Index.Start: (ph-1)*Nt + Index.End) = RHSm;
                 % Fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Index.Start = Index.End+1;
@@ -212,8 +216,9 @@ classdef Geothermal_1T_formulation < formulation
                 Index.End = Index.Start + Nm - 1;
                 Index_r.Start = 1;
                 Index_r.End = Nm;
-                Residualm = BuildMediumHeatResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index_r, Qhw, Qhf, RTf, 0, ph);
+                [Residualm, RHSm] = BuildMediumHeatResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index_r, Qhw, Qhf, RTf, 0, ph);
                 ResidualFull(Index.Start: Index.End) = Residualm;
+                RHS(         Index.Start: Index.End) = RHSm;
                 % Fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Index.Start = Index.End + 1;
@@ -242,38 +247,64 @@ classdef Geothermal_1T_formulation < formulation
             % 1.a Pressure Block
             J_PP = obj.Tph{ph,1+f};
             
-            % 1.b: compressibility part
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
-            
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-            acc = Grid.Volume/dt .* (por .* obj.drhodp(Index.Start:Index.End) + rho .*dpor);
-            
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_PP = J_PP + spdiags(DiagVecs, DiagIndx, N, N);
-            
-            % 2. J_PT
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
-            % Construct JPT block
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-            acc =  Grid.Volume/dt .* por .* obj.drhodT(Index.Start:Index.End) ;
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_PT = spdiags(DiagVecs,DiagIndx,N,N);
+            switch class(Grid)
+                case('corner_point_grid')
+                    nc = Grid.N;
+                    nf = length(Grid.Trans);
+                    C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+                    D1 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)]; D1(D1==1)=0;
+                    D2 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)];
+                    UpwindPermutation1 = sparse([(1:nf)'; (1:nf)'], C, D1, nf, nc)';
+                    UpwindPermutation2 = sparse([(1:nf)'; (1:nf)'], C, D2, nf, nc)';
+                    
+                    % 1.b: compressibility part
+                    Mob_drhodp = obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End, ph);
+                    dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp;
+                    FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
+                    acc = Grid.Volume/dt .* (por .* obj.drhodp(Index.Start:Index.End) + rho .*dpor);
+                    J_PP = J_PP + spdiags(acc,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
+                    
+                    % 2. J_PT
+                    dMobdT_drhodT = obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End);
+                    dMobUpwind = obj.UpWind{ph,1+f} * dMobdT_drhodT;
+                    FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
+                    acc =  Grid.Volume/dt .* por .* obj.drhodT(Index.Start:Index.End) ;
+                    J_PT = spdiags(acc,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
+                    
+                case('cartesian_grid')
+                    % 1.b: compressibility part
+                    dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
+                    dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
+                    dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* obj.drhodp(Index.Start:Index.End) );
+                    
+                    vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
+                    vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
+                    vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
+                    vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
+                    acc = Grid.Volume/dt .* (por .* obj.drhodp(Index.Start:Index.End) + rho .*dpor);
+                    
+                    DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
+                    DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
+                    J_PP = J_PP + spdiags(DiagVecs, DiagIndx, N, N);
+                    
+                    % 2. J_PT
+                    dMupx = obj.UpWind{ph,1+f}.x * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
+                    dMupy = obj.UpWind{ph,1+f}.y * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
+                    dMupz = obj.UpWind{ph,1+f}.z * ( obj.dMobdT(Index.Start:Index.End, ph) .* rho + obj.Mob(Index.Start:Index.End, ph) .* obj.drhodT(Index.Start:Index.End) );
+                    
+                    vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
+                    vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
+                    vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
+                    vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
+                    acc =  Grid.Volume/dt .* por .* obj.drhodT(Index.Start:Index.End) ;
+                    DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
+                    DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
+                    J_PT = spdiags(DiagVecs,DiagIndx,N,N);
+            end
             
             % Add Wells
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian
@@ -302,42 +333,70 @@ classdef Geothermal_1T_formulation < formulation
             % 1.a Pressure Block
             J_TP = obj.Th{ph, 1+f};
             
-            % 1.b: compressibility part
-            dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
-            
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-            acc = (Grid.Volume/dt) .* ( obj.Cp.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
-            
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_TP = J_TP + spdiags(DiagVecs, DiagIndx, N, N);
-            
-            % 2. J_TT
-            J_TT = obj.Tk{1, 1+f};
-            Mob  = obj.Mob(Index.Start:Index.End, ph);
-            
-            dMupx = obj.UpWind{ph,1+f}.x * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            dMupy = obj.UpWind{ph,1+f}.y * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            dMupz = obj.UpWind{ph,1+f}.z * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
-            % Construct JTT block
-            vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
-            vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
-            vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
-            vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
-            vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
-            vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-            acc = (Grid.Volume/dt) .* ( obj.Cp .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
-            
-            DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
-            DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
-            J_TT = J_TT + spdiags(DiagVecs, DiagIndx, N, N);
+            switch class(Grid)
+                case('corner_point_grid')
+                    nc = Grid.N;
+                    nf = length(Grid.Trans);
+                    C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+                    D1 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)]; D1(D1==1)=0;
+                    D2 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)];
+                    UpwindPermutation1 = sparse([(1:nf)'; (1:nf)'], C, D1, nf, nc)';
+                    UpwindPermutation2 = sparse([(1:nf)'; (1:nf)'], C, D2, nf, nc)';
+                    
+                    % 1.b: compressibility part
+                    Mob_drhodp_dhdp = obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho );
+                    dMobUpwind = obj.UpWind{ph,1+f} * Mob_drhodp_dhdp;
+                    FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
+                    acc = (Grid.Volume/dt) .* ( obj.Cp.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
+                    J_TP = J_TP + spdiags(acc,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
+                    
+                    % 2. J_TT
+                    J_TT = obj.Tk{1, 1+f};
+                    Mob  = obj.Mob(Index.Start:Index.End, ph);
+                    dMobdT_drhodT_dhdt = obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob;
+                    dMobUpwind = obj.UpWind{ph,1+f} * dMobdT_drhodT_dhdt;
+                    FluxDerivative = dMobUpwind .* abs(obj.U{ph,1+f});
+                    acc = (Grid.Volume/dt) .* ( obj.Cp .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
+                    J_TT = J_TT + spdiags(acc,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
+                    
+                case('cartesian_grid')
+                    % 1.b: compressibility part
+                    dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
+                    dMupy = obj.UpWind{ph,1+f}.y * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
+                    dMupz = obj.UpWind{ph,1+f}.z * ( obj.Mob(Index.Start:Index.End, ph) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho ) );
+                    
+                    vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
+                    vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
+                    vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
+                    vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
+                    acc = (Grid.Volume/dt) .* ( obj.Cp.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
+                    
+                    DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
+                    DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
+                    J_TP = J_TP + spdiags(DiagVecs, DiagIndx, N, N);
+                    
+                    % 2. J_TT
+                    J_TT = obj.Tk{1, 1+f};
+                    Mob  = obj.Mob(Index.Start:Index.End, ph);
+                    
+                    dMupx = obj.UpWind{ph,1+f}.x * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
+                    dMupy = obj.UpWind{ph,1+f}.y * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
+                    dMupz = obj.UpWind{ph,1+f}.z * (obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob);
+                    % Construct JTT block
+                    vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx  ,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecX2 = max(reshape(obj.U{ph,1+f}.x(2:Nx+1,:     ,:     ), N, 1), 0) .* dMupx;
+                    vecY1 = min(reshape(obj.U{ph,1+f}.y(:     ,1:Ny  ,:     ), N, 1), 0) .* dMupy;
+                    vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
+                    vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
+                    vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
+                    acc = (Grid.Volume/dt) .* ( obj.Cp .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
+                    
+                    DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
+                    DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
+                    J_TT = J_TT + spdiags(DiagVecs, DiagIndx, N, N);
+            end
             
             % Add Wells
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian

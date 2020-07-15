@@ -115,6 +115,8 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             end
 
             fclose(fileID);
+            
+            obj.PlotInternalFaces(Reservoir, Grid);
         end
     end
     methods (Access = private)

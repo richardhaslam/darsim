@@ -30,12 +30,12 @@ classdef convergence_checker < handle
             obj.FirstResidualNorm = zeros(obj.NumberOfEq,1);
             obj.FirstRHSNorm = zeros(obj.NumberOfEq,1);
             for eq = 1 : obj.NumberOfEq
-                obj.FirstResidualNorm(eq) = norm(obj.FirstResidual((eq -1)*Nt+1:eq*Nt), inf); % The inf norm is better for LTS.
-                obj.FirstRHSNorm(eq)      = norm(obj.FirstRHS(     (eq -1)*Nt+1:eq*Nt), inf);
+                obj.FirstResidualNorm(eq) = norm(obj.FirstResidual((eq-1)*Nt+1:eq*Nt), inf); % The inf norm is better for LTS.
+                obj.FirstRHSNorm(eq)      = norm(obj.FirstRHS(     (eq-1)*Nt+1:eq*Nt), inf);
             end
             obj.NormCalculator.FirstResidualNorm = obj.FirstResidualNorm;
-            obj.NormCalculator.FirstRHSNorm      = obj.FirstResidualNorm;
-            % Initializing the "ResidualNorm" as empty, to use it clean for
+            obj.NormCalculator.FirstRHSNorm      = obj.FirstRHSNorm;
+            % Initializing the "ResidualNorm" as empty, to use it is clean for
             % the coming iteration loop.
             obj.ResidualNorm = [];
             obj.RHSNorm = [];
