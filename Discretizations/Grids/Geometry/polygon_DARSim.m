@@ -55,9 +55,9 @@ classdef polygon_DARSim < planeInfinite_DARSim
             for n = 1 : obj.NumOfVertex
                 Line2 = lineSegment_DARSim( obj.Vertex(n,:) , obj.Vertex(mod((end+n)-1,end)+1,:) );
                 [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection( Line2, Epsilon );
-                if     ( Geostatus.haveIntersect == 0 )             ,  isInside = 1;
-                elseif ( norm (IntersectPoint - point ) < Epsilon ) ,  isInside = 1;
-                else                                                ,  isInside = 0;  return;  end    
+                if     ( Geostatus.haveIntersect == 0 )                                         ,  isInside = 1;
+                elseif ~isempty(IntersectPoint) && ( norm (IntersectPoint - point ) < Epsilon ) ,  isInside = 1;
+                else                                                                            ,  isInside = 0;  return;  end
             end
         end
         %%
