@@ -54,11 +54,16 @@ for G = 1 : length(Geometries)
     Section2 = [(1:1:Geometry.cells.num)' FN5 Geometry.cells.centroids Geometry.cells.volumes FtC2]; % 8 (nodes number per cell + tag nodes)
     
     % SECTION 3: INTERNAL FACES (FACES CONNECTED TO CELLS)
-    FN = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2) .' Geometry.faces.nodes]; % Face + Nodes
-    
-    NtF = accumarray(FN(:,1),FN(:,2),[],@(x){x});                                                   % Find Nodes to Faces                                           
-    NtF2 = padcat(NtF{:});                                                                          % Convert Cell Array to Matrix
-    NtF2 = NtF2';                                                                                   % Faces X Nodes
+%     FN = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2) .' Geometry.faces.nodes]; % Face + Nodes
+%     
+%     NtF = accumarray(FN(:,1),FN(:,2),[],@(x){x});                                                   % Find Nodes to Faces                                           
+%     NtF2 = padcat(NtF{:});                                                                          % Convert Cell Array to Matrix
+%     NtF2 = NtF2';                                                                                   % Faces X Nodes
+
+    nodes = Geometry.faces.nodes;
+    pos   = Geometry.faces.nodePos;
+    faces = 1:Geometry.faces.num ;
+    NtF2 = get_face_topo(nodes, pos, faces);                             % f = Faces
     
     NF = linspace(1, Geometry.faces.num, Geometry.faces.num)';                                      % Create Face Index Vector (Total Number of Faces)
     
@@ -71,8 +76,7 @@ for G = 1 : length(Geometries)
     IF(LI,:) = [];                                                                                  % Delete External Faces
     % Create Centroid Vector: Face Centroid - Cell Centroid
     c_vec = [Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,2),:), Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,3),:)];
-    % Create new index for Internal Faces
-%     IF(:,1)= linspace(1, size(IF,1), size(IF,1))';                                                  % Create Face Index Vector (Internal Faces)
+
     % Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
     IF2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6) IF(:,11:end)];
 
@@ -82,8 +86,7 @@ for G = 1 : length(Geometries)
     LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                       % Delete Internal Faces
     EF(LI,:) = [];                                                             % Delete Internal Faces
     EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];                                      % Delete Cell Neighboors  == 0
-    % Create new index for External Faces
-%     EF2(:,1)= linspace(1, size(EF2,1), size(EF2,1))';                          % Create Face Index Vector (External Faces)
+
     % External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
     EF3 = [EF2 Geometry.faces.centroids(EF2(:,1),:) - Geometry.cells.centroids(EF2(:,9)) EF(:,11:end)];
     
@@ -274,4 +277,33 @@ for G = 1 : length(Geometries)
     
 end
 
+end
+%% --------------------------------------------------------------------------
+function [f, present] = get_face_topo(nodes, pos, faces)
+   eIX = pos;
+   nn  = double(diff([pos(faces), ...
+                      pos(faces + 1)], [], 2));
+   fn  = double(nodes(mcolon(eIX(faces), eIX(faces + 1) - 1), 1));
+
+   m   = numel(faces);
+   n   = max(nn);
+   f   = nan([n, m]);
+
+   present           = false([max(nodes), 1]);
+   present(fn)       = true;
+
+   node_num          = zeros([max(nodes), 1]);
+   node_num(present) = 1 : sum(double(present));
+
+   off = reshape((0 : m - 1) .* n, [], 1);
+
+   f(mcolon(off + 1, off + nn)) = node_num(fn);
+
+   tmp         = isfinite(f);
+   nnode       = sum(tmp,1);
+   ind         = sub2ind(size(f),nnode,1:size(f,2));
+   tmp         = repmat(f(ind),size(f,1),1);
+   f(isnan(f)) = tmp(isnan(f));
+  
+   f = f .';
 end
