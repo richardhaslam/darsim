@@ -57,7 +57,7 @@ classdef producer_pressure < producer
             dQdT = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
                 rho = State.Properties(['rho_',num2str(i)]);
-                dQdp = Mob(obj.Cells,i) * obj.PI .* K(obj.Cells) .* ( rho.Value(obj.Cells) * (-1) + (obj.p - p.Value(obj.Cells)) .* drhodp(obj.Cells,i) ); 
+                dQdp = Mob(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* ( rho.Value(obj.Cells) .* (-1) + (obj.p - p.Value(obj.Cells)) .* drhodp(obj.Cells,i) ); 
                 dQdT = obj.PI .* K(obj.Cells) .* (obj.p - p.Value(obj.Cells)) .* ( rho.Value(obj.Cells) .* dMobdT(obj.Cells,i) + Mob(obj.Cells,i) .* drhodT(obj.Cells,i));
             end
         end
