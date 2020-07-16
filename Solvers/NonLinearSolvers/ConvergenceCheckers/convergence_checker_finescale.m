@@ -6,7 +6,7 @@
 %Created: 13 July 2016
 %Last modified: 13 July 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef convergence_checker_FS < convergence_checker
+classdef convergence_checker_finescale < convergence_checker
     properties
         
     end

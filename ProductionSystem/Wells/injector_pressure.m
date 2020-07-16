@@ -28,7 +28,7 @@ classdef injector_pressure < injector
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
-                case{'Geothermal_1T','Geothermal_2T'}
+                case{'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                     for i = 1:FluidModel.NofPhases
                         obj.Qh(:,i) = obj.h(i) * obj.QPhases(:,i);
                     end

@@ -166,7 +166,6 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
             obj.UnifiedGrid.ConstructConnectivityMatrix();
         end
         function AddHarmonicPermeabilities(obj, Reservoir, Fractures)
-
             Nm = obj.ReservoirGrid.N;
             for If1Local = 1 : length(obj.CrossConnections)
                 Cells = obj.CrossConnections(If1Local).Cells;
@@ -194,6 +193,38 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                         obj.CrossConnections(If1Local).T_Geo(length(indices_m)+n) = ...
                             CI(length(indices_m)+n) * ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 + Fractures(f2).Thickness ) ./...
                               ( ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 ./ Fractures(f1).K(g1,1) ) + ( Fractures(f2).Thickness ./ Fractures(f2).K(g2,1) ) );
+                    end
+                end
+            end
+        end
+        function AddHarmonicConductivities(obj, Reservoir, Fractures)
+            Nm = obj.ReservoirGrid.N;
+            for If1Local = 1 : length(obj.CrossConnections)
+                Cells = obj.CrossConnections(If1Local).Cells;
+                CI = obj.CrossConnections(If1Local).CI;
+                If1Global = Nm+If1Local; % Global index of this fracture cell;
+                Ind_frac1_Local = obj.Index_Global_to_Local(If1Global);
+                f1 = Ind_frac1_Local.f;
+                g1 = Ind_frac1_Local.g;
+                
+                indices_m = Cells( Cells <= Nm );
+                if ~isempty(indices_m)
+                    obj.CrossConnections(If1Local).T_Geo_Cond(1:length(indices_m)) = ...
+                        CI(1:length(indices_m)) .* ( obj.ReservoirGrid.Volume(indices_m).^(1/3) + Fractures(f1).Thickness ) ./...
+                        ( ( obj.ReservoirGrid.Volume(indices_m).^(1/3) ./ Reservoir.K_Cond_eff(indices_m,1) ) + ( Fractures(f1).Thickness ./ Fractures(f1).K_Cond_eff(g1,1) ) );
+                end
+                
+                indices_f = Cells( Cells > Nm );
+                if ~isempty(indices_f)
+                    for n = 1:length(indices_f)
+                        If2Global = indices_f(n);
+                        If2Local = If2Global - Nm;
+                        Ind_frac2_Local = obj.Index_Global_to_Local(indices_f(n));
+                        f2 = Ind_frac2_Local.f;
+                        g2 = Ind_frac2_Local.g;
+                        obj.CrossConnections(If1Local).T_Geo_Cond(length(indices_m)+n) = ...
+                            CI(length(indices_m)+n) * ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 + Fractures(f2).Thickness ) ./...
+                              ( ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 ./ Fractures(f1).K_Cond_eff(g1,1) ) + ( Fractures(f2).Thickness ./ Fractures(f2).K_Cond_eff(g2,1) ) );
                     end
                 end
             end

@@ -6,8 +6,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Immiscible_formulation < formulation
     properties
-        MatrixAssembler
-        % Sequential run variables
         Mobt
         Utot
         Qwells
@@ -18,7 +16,6 @@ classdef Immiscible_formulation < formulation
         Ths
         UPc
         Ghs
-
     end
     methods
         %% constructor
@@ -119,8 +116,9 @@ classdef Immiscible_formulation < formulation
             end
             % Transmissibility of reservoir
             for i=1:obj.NofPhases
-                [obj.Tph{i, 1}, obj.Gph{i, 1}] = ...
-                    obj.MatrixAssembler.TransmissibilityMatrix(DiscretizationModel.ReservoirGrid, obj.UpWind{i, 1}, obj.Mob(1:DiscretizationModel.ReservoirGrid.N, i), ...
+                [obj.Tph{i, 1}, obj.Gph{i, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                    DiscretizationModel.ReservoirGrid, ...
+                    obj.UpWind{i, 1}, obj.Mob(1:DiscretizationModel.ReservoirGrid.N, i), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(i)]).Value, obj.GravityModel.RhoInt{i, 1});
             end
             
@@ -273,8 +271,8 @@ classdef Immiscible_formulation < formulation
                 %% Jacobian of the fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Nf = DiscretizationModel.FracturesGrid.N;
-                    Index.Start = DiscretizationModel.Index_Local_to_Global(Nm, f, 1);
-                    Index.End = DiscretizationModel.Index_Local_to_Global(Nm, f, DiscretizationModel.FracturesGrid.Grids(f).N);
+                    Index.Start = DiscretizationModel.Index_Local_to_Global( Nm, f, 1     );
+                    Index.End   = DiscretizationModel.Index_Local_to_Global( Nm, f, Nf(f) );
                     [Jfp, JfS] = BuildMediumJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f, ph);
                     Jp  = blkdiag(Jp, Jfp);
                     JS  = blkdiag(JS, JfS);

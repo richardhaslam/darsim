@@ -6,13 +6,13 @@
 %Created: 24 January 2018
 %Last modified: 24 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Geothermal_1T_fluid_model < fluid_model
+classdef geothermal_singlephase_fluid_model < fluid_model
     properties
     end
     methods
-        function obj = Geothermal_1T_fluid_model()
+        function obj = geothermal_singlephase_fluid_model()
             obj@fluid_model(1, 1);
-            obj.name = 'Geothermal_1T';
+            obj.name = 'Geothermal_SinglePhase';
         end
         function SinglePhase = Flash(obj, Status)
             SinglePhase (:) = 1;

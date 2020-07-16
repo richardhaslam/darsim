@@ -27,7 +27,7 @@ classdef producer_pressure < producer
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
-                case{'Geothermal_1T','Geothermal_2T'}
+                case{'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                     for i = 1:FluidModel.NofPhases
                         h = State.Properties(['h_', num2str(i)]);
                         obj.Qh(:,i) = h.Value(obj.Cells) .* obj.QPhases(:,i);

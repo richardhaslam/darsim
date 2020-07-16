@@ -14,10 +14,10 @@ methods
         
         % Use CPR for Pressure (only for geothermal)
         switch(FluidModel.name)
-            case {'Geothermal_1T','Geothermal_2T'}
+            case {'Geothermal_SinlgePhase'}
                 obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
                 Formulation.ConstrainedPressureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
-%                 Formulation.ConstrainedTemperatureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
+                Formulation.ConstrainedTemperatureResidual(FluidModel, ProductionSystem, DiscretizationModel, dt, obj.SystemBuilder.State);
                 obj.SystemBuilder.ComputePropertiesAndDerivatives(Formulation, ProductionSystem, FluidModel, DiscretizationModel);
         end
     end

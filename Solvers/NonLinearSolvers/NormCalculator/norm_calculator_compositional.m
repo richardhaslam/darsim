@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef norm_calculator_comp < norm_calculator
+classdef norm_calculator_compositional < norm_calculator
     methods
         function [Balance, RHSNorm, Equilibrium] = CalculateResidualNorm(obj, residual, RHS, N, Formulation)
             Balance = zeros(length(obj.FirstResidualNorm),1);

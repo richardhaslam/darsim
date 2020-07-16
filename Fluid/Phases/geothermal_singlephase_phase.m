@@ -6,7 +6,7 @@
 %Created: 24 January 2018
 %Last modified: 24 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef therm_comp_phase < phase
+classdef geothermal_singlephase_phase < phase
     properties
         rho0 % Reference density
         mu0 % Reference viscosity

@@ -169,7 +169,7 @@ classdef reader_darsim2 < reader
                         ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
                         save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
                     end
-                    
+
                     ReservoirProperties.Grid.N(1) = ReservoirProperties.CornerPointGridData.Nx;
                     ReservoirProperties.Grid.N(2) = ReservoirProperties.CornerPointGridData.Ny;
                     ReservoirProperties.Grid.N(3) = ReservoirProperties.CornerPointGridData.Nz;
@@ -774,15 +774,6 @@ classdef reader_darsim2 < reader
             FluidProperties.FluidModel = char(obj.InputMatrix{index+1});
             FluidProperties.NofPhases = str2double(obj.InputMatrix{index+3});
             FluidProperties.NofComponents = str2double(obj.InputMatrix{index+5});
-            if FluidProperties.FluidModel == "Geothermal_2T"
-                temp = strfind(obj.InputMatrix, 'AVERAGED_TEMPERATURE');
-                T_ave = find(~cellfun('isempty', temp));
-                if isempty(T_ave)
-                    FluidProperties.AveragedTemperature = "Off";
-                else
-                    FluidProperties.AveragedTemperature = "On";
-                end
-            end
             % 2. Density
             temp = strfind(obj.InputMatrix, 'DENSITY');
             index_density = find(~cellfun('isempty', temp));
@@ -955,7 +946,7 @@ classdef reader_darsim2 < reader
                 
                 % Reading the temperature of well (only for injection)
                 switch SimulationInput.FluidProperties.FluidModel
-                    case{'Geothermal_SinlgePhase','Geothermal_MultiPhase'}
+                    case{'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                         Well.Temperature = str2double(WellInputMatrix(temperature+1));
                 end
                 if strcmp(WellInputMatrix(type+1),'INJ')
@@ -1031,12 +1022,14 @@ classdef reader_darsim2 < reader
                         SimulatorSettings.Formulation = 'Immiscible';
                     case('Immiscible')
                         SimulatorSettings.Formulation = 'Immiscible';
-                    case("Geothermal_1T")
-                        SimulatorSettings.Formulation = "Geothermal_1T";
-                    case("Geothermal_2T")
-                        SimulatorSettings.Formulation = "Geothermal_2T";
-                    otherwise
+                    case('Geothermal_SinglePhase')
+                        SimulatorSettings.Formulation = 'Geothermal_SinglePhase';
+                    case('Geothermal_MultiPhase')
+                        SimulatorSettings.Formulation = 'Geothermal_MultiPhase';
+                    case('Molar')
                         SimulatorSettings.Formulation = 'Molar';
+                    otherwise
+                        error('The formulation defined in the input file is not valid');
                 end
             else
                 SimulatorSettings.Formulation =  char(obj.SettingsMatrix(xv+1));

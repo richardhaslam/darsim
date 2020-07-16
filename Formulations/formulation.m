@@ -17,6 +17,7 @@ classdef formulation < handle
         drhodp
         GravityModel
         SinglePhase
+        MatrixAssembler
     end
     methods (Abstract)
         obj = BuildResidual(obj)

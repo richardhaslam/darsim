@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef convergence_checker_FS_molar < convergence_checker_FS
+classdef convergence_checker_finescale_molar < convergence_checker_finescale
     properties
     end
     methods 

@@ -6,7 +6,7 @@
 %Created: 24 January 2018
 %Last modified: 24 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Geothermal_1T_formulation < formulation
+classdef geothermal_singlephase_formulation < formulation
     properties
         drhodT
         d2rhodT2
@@ -20,10 +20,10 @@ classdef Geothermal_1T_formulation < formulation
         Cp % fluid specific heat
         Kf % fluid conductivity
         Tk % transmisibility of rock conductivity
-        Th % transmisibility of rho .* h
+        Thph % transmisibility of rho .* h
     end
     methods
-        function obj = Geothermal_1T_formulation()
+        function obj = geothermal_singlephase_formulation()
             obj@formulation();
             obj.Tph = cell(2,1);
             obj.Gph = cell(2,1);
@@ -101,9 +101,9 @@ classdef Geothermal_1T_formulation < formulation
             rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
             depth = Grid.Depth;
             Medium.ComputePorosity(P_old);
-            pv_old = Medium.Por*Grid.Volume;
+            pv_old = Medium.Por.*Grid.Volume;
             Medium.ComputePorosity(P_new);
-            pv_new = Medium.Por*Grid.Volume;
+            pv_new = Medium.Por.*Grid.Volume;
             
             % Accumulation Term
             Accumulation = (pv_new.*rho_new - pv_old.*rho_old)/dt;
@@ -129,11 +129,11 @@ classdef Geothermal_1T_formulation < formulation
             
             % Pore Volume & Rock Volume
             Medium.ComputePorosity(P_old);
-            pv_old = Medium.Por*Grid.Volume;         % Old pore Volume
-            mv_old = (1 - Medium.Por) * Grid.Volume; % Old rock volume
+            pv_old = Medium.Por.*Grid.Volume;         % Old pore Volume
+            mv_old = (1 - Medium.Por) .* Grid.Volume; % Old rock volume
             Medium.ComputePorosity(P_new);           % Updating porosity
-            pv_new = Medium.Por*Grid.Volume;         % New pore volume
-            mv_new = (1 - Medium.Por) * Grid.Volume; % New rock volume
+            pv_new = Medium.Por.*Grid.Volume;         % New pore volume
+            mv_new = (1 - Medium.Por) .* Grid.Volume; % New rock volume
             
             % Accumulation Term
             U_eff_old = ( rho_old .* obj.Cp .* pv_old + Rho_rock .* Medium.Cpr .* mv_old ) .* T_old;
@@ -143,7 +143,7 @@ classdef Geothermal_1T_formulation < formulation
             % RESIDUAL
             RHS = qhw(Index.Start:Index.End, ph);
             Residual_T  = Accumulation ...
-                + obj.Th{ph, 1+f} * P_new ...
+                + obj.Thph{ph, 1+f} * P_new ...
                 - obj.Gph{ph, 1+f} * depth ...
                 + obj.Tk{ph, 1+f} * T_new ...
                 - qhw(Index.Start:Index.End, ph)...
@@ -177,7 +177,7 @@ classdef Geothermal_1T_formulation < formulation
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                [obj.Tph{ph, 1}, obj.Gph{ph, 1}, obj.Th{ph, 1}, obj.Tk{1, 1}] = obj.TransmissibilityMatrix( ...
+                [obj.Tph{ph, 1}, obj.Gph{ph, 1}, obj.Thph{ph, 1}, obj.Tk{1, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
                     obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
                     ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
@@ -187,7 +187,7 @@ classdef Geothermal_1T_formulation < formulation
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Index.Start = Index.End+1;
                     Index.End = Index.Start + Nf(f) - 1;
-                    [obj.Tph{ph, 1+f}, obj.Gph{ph, 1+f}, obj.Th{ph, 1+f}, obj.Tk{1, 1+f}] = obj.TransmissibilityMatrix( ...
+                    [obj.Tph{ph, 1+f}, obj.Gph{ph, 1+f}, obj.Thph{ph, 1+f}, obj.Tk{1, 1+f}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
                         DiscretizationModel.FracturesGrid.Grids(f), ...
                         obj.UpWind{ph, 1+f}, obj.Mob(Index.Start:Index.End, ph), ...
                         ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(ph)]).Value, ...
@@ -236,7 +236,7 @@ classdef Geothermal_1T_formulation < formulation
             Ny = Grid.Ny;
             Nz = Grid.Nz;
             N = Grid.N;
-            
+            N_Face = length(obj.UpWind{ph,1+f});
             P = Medium.State.Properties(['P_', num2str(ph)]).Value;
             rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
             Medium.ComputeDerPorosity(P);
@@ -318,6 +318,7 @@ classdef Geothermal_1T_formulation < formulation
             Ny = Grid.Ny;
             Nz = Grid.Nz;
             N  = Grid.N;
+            N_Face = length(obj.UpWind{ph,1+f});
             
             P   = Medium.State.Properties(['P_', num2str(ph)]).Value;
             T   = Medium.State.Properties(['T']).Value;
@@ -331,7 +332,7 @@ classdef Geothermal_1T_formulation < formulation
             
             % 1.J_TP
             % 1.a Pressure Block
-            J_TP = obj.Th{ph, 1+f};
+            J_TP = obj.Thph{ph, 1+f};
             
             switch class(Grid)
                 case('corner_point_grid')
@@ -429,8 +430,8 @@ classdef Geothermal_1T_formulation < formulation
                 %% Jacobian of the fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Nf = DiscretizationModel.FracturesGrid.N;
-                    Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
-                    Index.End = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, Nf(f));
+                    Index.Start = DiscretizationModel.Index_Local_to_Global( Nm, f, 1     );
+                    Index.End   = DiscretizationModel.Index_Local_to_Global( Nm, f, Nf(f) );
                     % Flow Jacobian Block
                     [Jf_PP, Jf_PT] = BuildMediumFlowJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f, ph);
                     J_PP  = blkdiag(J_PP, Jf_PP);
@@ -1025,82 +1026,6 @@ classdef Geothermal_1T_formulation < formulation
                         FluidModel.ComputePhaseEnthalpies(ProductionSystem.FracturesNetwork.Fractures(f).State);
                     end
                 end
-            end
-        end
-        function [Tph, Gph, Th, Tk] = TransmissibilityMatrix(obj, Grid, UpWind, Mob, rho, h, RhoInt)
-            % Tph: Mass flow transmissibility
-            % Gph: Gravity component of mass flow transmissibility
-            % Th : Heat convection transmissibility (Tph*rho)
-            % Tk : Heat conduction transmissibility
-            
-            Nx = Grid.Nx;
-            Ny = Grid.Ny;
-            Nz = Grid.Nz;
-            N = Grid.N;
-            
-            %% Tph matrix
-            Tx = zeros(Nx+1, Ny, Nz);
-            Ty = zeros(Nx, Ny+1, Nz);
-            Tz = zeros(Nx, Ny, Nz+1);
-            
-            % Apply upwind operator
-            Mupx = UpWind.x*(Mob .* rho);
-            Mupy = UpWind.y*(Mob .* rho);
-            Mupz = UpWind.z*(Mob .* rho);
-            Mupx = reshape(Mupx, Nx, Ny, Nz);
-            Mupy = reshape(Mupy, Nx, Ny, Nz);
-            Mupz = reshape(Mupz, Nx, Ny, Nz);
-
-            Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-            Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-            Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
-            Tph = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz); 
-            
-            %% Gph matrix
-            Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt.x(2:Grid.Nx,:,:);
-            Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt.y(:,2:Grid.Ny,:);
-            Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt.z(:,:,2:Grid.Nz);   
-            Gph = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz);
-            
-            %% Th Matrix
-            Tx = zeros(Nx+1, Ny, Nz);
-            Ty = zeros(Nx, Ny+1, Nz);
-            Tz = zeros(Nx, Ny, Nz+1);
-
-            % Apply upwind operator
-            Mupx = UpWind.x*(Mob .* rho .* h);
-            Mupy = UpWind.y*(Mob .* rho .* h);
-            Mupz = UpWind.z*(Mob .* rho .* h);
-            Mupx = reshape(Mupx, Nx, Ny, Nz);
-            Mupy = reshape(Mupy, Nx, Ny, Nz);
-            Mupz = reshape(Mupz, Nx, Ny, Nz);
-
-            Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-            Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-            Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
-            Th = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz); 
-            
-            %% Tk Matrix
-            THx = zeros(Nx+1, Ny, Nz);
-            THy = zeros(Nx, Ny+1, Nz);
-            THz = zeros(Nx, Ny, Nz+1);
-            
-            THx(2:Nx,:,:)= Grid.THx(2:Nx,:,:); 
-            THy(:,2:Ny,:)= Grid.THy(:,2:Ny,:);
-            THz(:,:,2:Nz)= Grid.THz(:,:,2:Nz);
-            Tk = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, THx, THy, THz); % Transmisibility of rock conductivity
-
-            % Construct matrix
-            function Tph = ReshapeTransmisibility(Grid, Nx, Ny, Nz, N, Tx, Ty, Tz) % remove function - end
-                x1 = reshape(Tx(1:Nx,:,:), N, 1);
-                x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
-                y1 = reshape(Ty(:,1:Ny,:), N, 1);
-                y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
-                z1 = reshape(Tz(:,:,1:Nz), N, 1);
-                z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
-                DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
-                DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-                Tph = spdiags(DiagVecs,DiagIndx,N,N);
             end
         end
         function [Qw, Qhw]= ComputeSourceTerms(obj, N, Wells)
