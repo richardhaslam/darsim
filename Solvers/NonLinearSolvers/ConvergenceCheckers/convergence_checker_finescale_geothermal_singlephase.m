@@ -22,9 +22,13 @@ classdef convergence_checker_finescale_geothermal_singlephase < convergence_chec
             % Compute Norms
             [ obj.ResidualNorm(iter,:), obj.RHSNorm(iter,:) ] = obj.NormCalculator.CalculateResidualNorm(residual, RHS, Nt, Formulation);
             [dp, dT] = obj.NormCalculator.CalculateSolutionNorm(delta, DiscretizationModel.N, State);
+
+            obj.ResidualNorm( imag(obj.ResidualNorm) ~= 0 ) = NaN;
+            obj.RHSNorm     ( imag(obj.RHSNorm     ) ~= 0 ) = NaN;
+            dp              ( imag(dp              ) ~= 0 ) = NaN;
+            dT              ( imag(dT              ) ~= 0 ) = NaN;
             
             converged = obj.CheckConvergenceCondition(iter,dp,dT);
-
         end
         function converged = CheckConvergenceCondition(obj,iter,dp,dT)
             disp(['Iter ', num2str(iter, '%02d') '-->   ', num2str(obj.ResidualNorm(iter,1), '%5.5e'), '      ' ...

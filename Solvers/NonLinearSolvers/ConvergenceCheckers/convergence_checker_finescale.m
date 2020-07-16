@@ -26,6 +26,11 @@ classdef convergence_checker_finescale < convergence_checker
             [ obj.ResidualNorm(iter,:), obj.RHSNorm(iter,:) ] = obj.NormCalculator.CalculateResidualNorm(residual, RHS, Nt, Formulation);
             [dp, dS] = obj.NormCalculator.CalculateSolutionNorm(delta, DiscretizationModel.N, State);
             
+            obj.ResidualNorm( imag(obj.ResidualNorm) ~= 0 ) = NaN;
+            obj.RHSNorm     ( imag(obj.RHSNorm     ) ~= 0 ) = NaN;
+            dp              ( imag(dp              ) ~= 0 ) = NaN;
+            dS              ( imag(dS              ) ~= 0 ) = NaN;
+            
             disp(['Iter ', num2str(iter, '%02d') '-->   ', num2str(obj.ResidualNorm(iter,1), '%5.5e'), '        ' ...
                                                          , num2str(obj.ResidualNorm(iter,2), '%5.5e'), '        ' ...
                                                          , num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
