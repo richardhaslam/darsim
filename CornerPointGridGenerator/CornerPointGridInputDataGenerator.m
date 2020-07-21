@@ -1,7 +1,6 @@
 %% CornerPointGrid Converter for DARSim2
-% Based on MRST (Matlab Reservoir Simulation Toolbox), it reads the input file(in an Eclipse file format)
-% and generates the input file with the cell geometry that can be read by DARSim2.
-% 
+% Based on MRST (Matlab Reservoir Simulation Toolbox), it reads the input file(in an Eclipse file format)and generates the input file 
+% with the cell geometry that can be read by DARSim2.
 % Author: Janio Piguave
 % Modified on: 2020/01/22
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -10,94 +9,96 @@ function CornerPointGridInputDataGenerator(Directory,FileName)
 % Read subset of ECLIPSE GRID file. Return: CartDims + ZCORN + COORD + ACTNUM
 InputFile = strcat(Directory,'\',FileName);
 grdecl = readGRDECL(InputFile);
-Geometries = processGRDECL(grdecl, 'Verbose', true);                                               % Compute grid topology and geometry from pillar grid description
-% Compute geometry of  cells: centroids, volumes, areas
-% grdecl.ACTNUM(Geometries(2).cells.indexMap)= 0;                                                  % Norne Field: Delete Small Section
-% G = computeGeometry(G(1));                                                                       % Norne Field: Compute geometry of  cells: centroids, volumes, areas
+Geometries = processGRDECL(grdecl, 'Verbose', true);                                                       % Compute grid topology and geometry from pillar grid description
 
 for G = 1 : length(Geometries)
-    Geometry = computeGeometry(Geometries(G));
-    ACTNUM = grdecl.ACTNUM;
-    % Removing the active cells of other geometries (if any) from the raw data (grdecl.ACTNUM)
+    Geometry = computeGeometry(Geometries(G));                                                             % Compute geometry of  cells: centroids, volumes, areas                                                                    
+    ACTNUM = grdecl.ACTNUM;                                                                                % Removing the active cells of other geometries (if any) from the raw data (grdecl.ACTNUM)
     for i = [1:G-1,G+1:length(Geometries)]
         ACTNUM(Geometries(i).cells.indexMap)= 0;
     end
-    
-    % SECTION 1: CELLS NODES (X, Y, Z COORDINATES)
-    Section1 = [(1:1:Geometry.nodes.num)' Geometry.nodes.coords]; 
-    
-    % SECTION 2: CELLS NODES + CELLS CENTROIDS + CELL VOLUMES
-    CF = [gridCellNo(Geometry) Geometry.cells.faces];                                               % Cell + Face + Tag
-    CF2 = CF;
-    LI = (CF(:,3) == 1)|(CF(:,3) == 2)|(CF(:,3) == 3)|(CF(:,3) == 4);                               % Identify N S E W faces (1 2 3 4 Tags)
-    CF(LI,:) = [];                                                                                  % Delete N S E W faces (1 2 3 4 Tags)                            
-    FN = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2) .' Geometry.faces.nodes]; % Face + Nodes
-    F = CF(:,2);                                                                                    % Faces (T B) for each one of the cells
-    id_f = ismember(FN(:,1),F);                                                                     % Identify the T/B Faces in [Face + Nodes]
-    FN2 = FN(id_f,:);                                                                               % T/B Faces with their nodes
 
-    F2 = vec2mat(FN2(:,1),4);                                                                       % T/B Faces
-    N = vec2mat(FN2(:,2),4);                                                                        % T/B Nodes
-    FN3 = [F2(:,1) N];                                                                              % T/B Faces + Nodes
+    %% SECTION 1: CELLS NODES (X, Y, Z COORDINATES)
+    Section_1 = [(1:1:Geometry.nodes.num)' Geometry.nodes.coords]; 
+    
+    %% SECTION 2: CELLS NODES + CELLS CENTROIDS + CELL VOLUMES
+    FtC_1 = [gridCellNo(Geometry) Geometry.cells.faces];                                                   % Cell + Faces to Cell + Faces Tag
+    LI = (FtC_1(:,3) == 1)|(FtC_1(:,3) == 2)|(FtC_1(:,3) == 3)|(FtC_1(:,3) == 4);                          % Logical Index: N/S/E/W faces(Faces Tag: 1 2 3 4)
+    FtC_1(LI,:) = [];                                                                                      % Delete N/S/E/W faces (Faces Tag: 1 2 3 4))                            
+    NtF_1 = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2).' Geometry.faces.nodes];      % [Face + Nodes]
+    id_faces = ismember(NtF_1(:,1),FtC_1(:,2));                                                            % Identify the T/B Faces in [Face + Nodes]
+    NtF_1 = NtF_1(id_faces,:);                                                                             % T/B Faces with their nodes
 
-    [X,Y] = ismember(F,FN3(:,1));                                                                   % Obtain Index and Location                                      
-    FN4 = FN3(Y(X),:);                                                                              
-    FN5 = reshape(FN4(:,2:5)',8,[])';                                                               % Reshape: Cells vs Nodes
-    FN5 = [FN5(:,4) FN5(:,3) FN5(:,1:2) FN5(:,8) FN5(:,7) FN5(:,5:6)];
-    FtC = accumarray(CF2(:,1),CF2(:,2),[],@(x){x});                                                 % Find Faces to Cells
-    FtC2 = padcat(FtC{:});                                                                          % Convert Cell Array to Matrix
-    FtC2 = FtC2';                                                                                   % Cells X Faces
-    
-    nf_min = min(diff(Geometry.cells.facePos));                                                     % min # of faces in cells
-    nf_max = max(diff(Geometry.cells.facePos));                                                     % max # of faces in cells
-    
-    Section2 = [(1:1:Geometry.cells.num)' FN5 Geometry.cells.centroids Geometry.cells.volumes FtC2]; % 8 (nodes number per cell + tag nodes)
-    
-    % SECTION 3: INTERNAL FACES (FACES CONNECTED TO CELLS)
-%     FN = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2) .' Geometry.faces.nodes]; % Face + Nodes
-%     
-%     NtF = accumarray(FN(:,1),FN(:,2),[],@(x){x});                                                   % Find Nodes to Faces                                           
-%     NtF2 = padcat(NtF{:});                                                                          % Convert Cell Array to Matrix
-%     NtF2 = NtF2';                                                                                   % Faces X Nodes
+    F = vec2mat(NtF_1(:,1),4);                                                                             % T/B Faces
+    N = vec2mat(NtF_1(:,2),4);                                                                             % T/B Nodes
+    NtF_2 = [F(:,1) N];                                                                                    % T/B Faces + Nodes
 
+    [X,Y] = ismember(FtC_1(:,2),NtF_2(:,1));                                                               % Obtain Index and Location                                      
+    NtF_2 = NtF_2(Y(X),:);                                                                              
+    NtC = reshape(NtF_2(:,2:5)',8,[])';                                                                    % Reshape: Cells vs Nodes
+    NtC = [NtC(:,4) NtC(:,3) NtC(:,1:2) NtC(:,8) NtC(:,7) NtC(:,5:6)];
+
+    % Faces to Cells
+    faces = Geometry.cells.faces(:,1);
+    pos   = Geometry.cells.facePos;
+    cells = 1:Geometry.cells.num ;
+    FtC_2 = get_cell_topo(faces, pos, cells);                                                              % c = cells
+    
+    % Cells to Cell
+    CtC_1 = [gridCellNo(Geometry) Geometry.faces.neighbors(Geometry.cells.faces(:,1),1) Geometry.faces.neighbors(Geometry.cells.faces(:,1),2)];
+    LI = CtC_1(:,1)==CtC_1(:,2); CtC_1(LI,2) = 0;
+    LI = CtC_1(:,1)==CtC_1(:,3); CtC_1(LI,3) = 0;
+    CtC_1 = [CtC_1(:,1) (CtC_1(:,2)+CtC_1(:,3))];
+    LI = (CtC_1(:,2) == 0);                                                                                % Delete Cells = 0: External Faces
+    CtC_1(LI,:) = []; 
+    
+    subs = CtC_1(:,1);
+    cpc = [1 ; accumarray(subs,1)];
+    cpc = cumsum(cpc);
+    
+    faces = CtC_1(:,2);
+    pos = cpc;
+    CtC_2 = get_cell_neighbors(faces, pos, cells);                                                         % c = cells
+    CtC_2 = sort(CtC_2,2);
+    
+    Section_2 = [(1:1:Geometry.cells.num)' NtC Geometry.cells.centroids Geometry.cells.volumes FtC_2 CtC_2];  % 8 (nodes number per cell + tag nodes)
+        
+    %% SECTION 3: INTERNAL FACES (FACES CONNECTED TO CELLS)
     nodes = Geometry.faces.nodes;
     pos   = Geometry.faces.nodePos;
     faces = 1:Geometry.faces.num ;
-    NtF2 = get_face_topo(nodes, pos, faces);                             % f = Faces
+    NtF_3 = get_face_topo(nodes, pos, faces);                                                             % f = Faces
     
-    NF = linspace(1, Geometry.faces.num, Geometry.faces.num)';                                      % Create Face Index Vector (Total Number of Faces)
-    
-    nn_min = min(diff(Geometry.faces.nodePos));                                                     % min # of nodes in faces
-    nn_max = max(diff(Geometry.faces.nodePos));                                                     % max # of nodes in faces
-    
+    NF = linspace(1, Geometry.faces.num, Geometry.faces.num)';                                            % Create Face Index Vector (Total Number of Faces)
+        
     % Assembly Matrix with Face Geometry Data
-    IF = [NF, Geometry.faces.neighbors, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals NtF2];
-    LI = (IF(:,2) == 0)|(IF(:,3) == 0);                                                             % Delete External Faces
-    IF(LI,:) = [];                                                                                  % Delete External Faces
+    IF = [NF, Geometry.faces.neighbors, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals NtF_3];
+    LI = (IF(:,2) == 0)|(IF(:,3) == 0);                                                                   % Delete External Faces
+    IF(LI,:) = [];                                                                                        % Delete External Faces
     % Create Centroid Vector: Face Centroid - Cell Centroid
-    c_vec = [Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,2),:), Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,3),:)];
+    c_vec = [(Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,2),:)) (Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,3),:))];
 
     % Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
-    IF2 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6) IF(:,11:end)];
+    Section_3 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6) IF(:,11:end)];
 
-    % SECTION 4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
+    %% SECTION 4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
     % Assembly Matrix with Face Geometry Data
-    EF = [NF, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals, Geometry.faces.neighbors NtF2];
-    LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                       % Delete Internal Faces
-    EF(LI,:) = [];                                                             % Delete Internal Faces
-    EF2 = [EF(:,1:8) (EF(:,9)+EF(:,10))];                                      % Delete Cell Neighboors  == 0
+    EF = [NF, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals, Geometry.faces.neighbors NtF_3];
+    LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                                                 % Delete Internal Faces
+    EF(LI,:) = [];                                                                                       % Delete Internal Faces
+    NC = EF(:,9)+ EF(:,10);                                                                              % Delete Cell Neighboors  == 0
 
     % External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
-    EF3 = [EF2 Geometry.faces.centroids(EF2(:,1),:) - Geometry.cells.centroids(EF2(:,9)) EF(:,11:end)];
+    Section_4 = [EF(:,1:8) NC (Geometry.faces.centroids(EF(:,1),:) - Geometry.cells.centroids(NC)) EF(:,11:end)];
     
     %% CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
     % POROSITY
     if sum(strcmp(fieldnames(grdecl),'PORO'))
-        poro = grdecl.PORO(Geometry.cells.indexMap);                                % SAIGUP Model | Norne Field
+        poro = grdecl.PORO(Geometry.cells.indexMap);                                                % SAIGUP Model | Norne Field
         poro_text = [Geometry.cells.indexMap poro];
     else
-        poro = load('Porosity.txt')';                                      % Johansen Formation
-        poro = poro(Geometry.cells.indexMap);                                     % Johansen Formation
+        poro = load('Porosity.txt')';                                                               % Johansen Formation
+        poro = poro(Geometry.cells.indexMap);                                                       % Johansen Formation
     end
     
     % PERMEABILITY
@@ -113,22 +114,76 @@ for G = 1 : length(Geometries)
     end
     perm = perm(Geometry.cells.indexMap,:);
     
-    perm = perm .* milli * darcy;                                              % Convert K values from to Darcy to Metric
+    perm = perm .* milli * darcy;                                                                   % Convert K values from to Darcy to Metric
     perm_txt = [Geometry.cells.indexMap perm];
     
-    rock = makeRock(Geometry, perm, poro);                                            % Create K Tensor
-    [K, i, j] = permTensor(rock, Geometry.griddim);                                   % Create K Tensor
-    K_text = [Geometry.cells.indexMap K];                                             % Create K Tensor
+    rock = makeRock(Geometry, perm, poro);                                                          % Create K Tensor
+    [K, i, j] = permTensor(rock, Geometry.griddim);                                                 % Create K Tensor
+    K_text = [Geometry.cells.indexMap K];                                                           % Create K Tensor
     
-    
-    disp( '******************* Writing the data into output text files *********************' );
     %% OUTOUT FILE 1: GRID GEOMETRY DATA
+    disp( '******************* Writing the data into output text files *********************' );
     OutputFileName = 'CornerPointGrid_DARSim_InputData';
     disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
     
     fid = fopen(strcat(Directory,'\',OutputFileName,'_',num2str(G),'.txt') , 'w+' );
-    fprintf(fid, '%% Node Locations for each one of the cells, Nx * Ny *Nz\n');
-    fprintf(fid, '%% Coordinates X,Y,Z of the eight nones for each one of the cells\n');
+    fprintf(fid, '%% *******************************************************\n');
+    fprintf(fid, '%% CORNER POINT GRID DATA FOR DARSIM 2 RESERVOIR SIMULATOR\n');
+    fprintf(fid, '%% *******************************************************\n');
+    fprintf(fid, '--------------------------------------------------------\n');
+    fprintf(fid, 'RESERVOIR_GRID_NX\n');
+    fprintf(fid, '%d\n', Geometry.cartDims(1));
+    fprintf(fid, '\n');
+    fprintf(fid, 'RESERVOIR_GRID_NY\n');
+    fprintf(fid, '%d\n', Geometry.cartDims(2));
+    fprintf(fid, '\n');
+    fprintf(fid, 'RESERVOIR_GRID_NZ\n');
+    fprintf(fid, '%d\n', Geometry.cartDims(3));
+    fprintf(fid, '--------------------------------------------------------\n');
+    fprintf(fid, 'TOTAL_CELLS\n');
+    fprintf(fid, '%d\n', Geometry.cartDims(1)*Geometry.cartDims(2)*Geometry.cartDims(3));
+    fprintf(fid, '\n');
+    fprintf(fid, 'ACTIVE_CELLS\n');
+    fprintf(fid, '%d\n', Geometry.cells.num);
+    fprintf(fid, '\n');
+    fprintf(fid, 'INACTIVE_CELLS\n');
+    fprintf(fid, '%d\n', Geometry.cartDims(1)*Geometry.cartDims(2)*Geometry.cartDims(3) - Geometry.cells.num);
+    fprintf(fid, '--------------------------------------------------------\n');
+    fprintf(fid, 'N_FACES\n');
+    fprintf(fid, '%d\n', Geometry.faces.num);
+    fprintf(fid, '\n');
+    fprintf(fid, 'N_INTERNAL_FACES\n');
+    fprintf(fid, '%d\n', size(Section_3,1));
+    fprintf(fid, '\n');
+    fprintf(fid, 'N_EXTERNAL_FACES\n');
+    fprintf(fid, '%d\n', size(Section_4,1));
+    fprintf(fid, '--------------------------------------------------------\n');
+    fprintf(fid, 'N_NODES\n');
+    fprintf(fid, '%d\n', Geometry.nodes.num);
+    fprintf(fid, '--------------------------------------------------------\n');
+    fprintf(fid, 'MAX_NUMBER_FACES_TO_CELLS\n');
+    fprintf(fid, '%d\n', size(FtC_2,2));
+    fprintf(fid, '\n');
+    fprintf(fid, 'MAX_NUMBER_CELLS_TO_CELLS\n');
+    fprintf(fid, '%d\n', size(CtC_2,2));
+    fprintf(fid, '\n');
+    fprintf(fid, 'MAX_NUMBER_NODES_TO_FACES\n');
+    fprintf(fid, '%d\n', size(NtF_3,2));
+    fprintf(fid, '--------------------------------------------------------\n');
+    fprintf(fid, '\n');
+    fprintf(fid, '%% Section 1: Nodes Coordinates\n');
+    fprintf(fid, '%% [Node Index] + [Nodes Coordinates (x;y;z)]\n');
+    fprintf(fid, '\n');
+    fprintf(fid, 'NODES_COORDINATES\n');
+    fprintf(fid,'%s %7s %16s %13s\n','Node No.  ','x','y','z');
+    for ii = 1: size(Section_1,1)
+        fprintf(fid,'%7d,    %6f , %6f , %6f\n', Section_1(ii,:)');
+    end
+    
+    fprintf(fid, '\n');
+    fprintf(fid, '----------------------------------------------------------------------------------------------------------\n');
+    fprintf(fid, '%% Section 2: Cell Data\n');
+    fprintf(fid, '%% [Cell Index] + [Cell Nodes] + [Cell Centroid(x;y;z)] + [Cell Volume] + [Faces to Cell] + [Cells to Cell]\n');
     fprintf(fid, '%% NW_T: Northwest Top Corner\n');
     fprintf(fid, '%% NE_T: Northeast Top Corner\n');
     fprintf(fid, '%% SW_T: Southwest Top Corner\n');
@@ -138,83 +193,68 @@ for G = 1 : length(Geometries)
     fprintf(fid, '%% SW_B: Southwest Bottom Corner\n');
     fprintf(fid, '%% SE_B: Southeast Bpttom Corner\n');
     fprintf(fid, '\n');
-    fprintf(fid, '%% The Grid Resolution of the Reservoir:\n');
-    fprintf(fid, 'RESERVOIR_GRID_NX\n');
-    fprintf(fid, '%d\n', Geometry.cartDims(1));
-    fprintf(fid, 'RESERVOIR_GRID_NY\n');
-    fprintf(fid, '%d\n', Geometry.cartDims(2));
-    fprintf(fid, 'RESERVOIR_GRID_NZ\n');
-    fprintf(fid, '%d\n', Geometry.cartDims(3));
-    fprintf(fid, 'ACTIVE_CELLS\n');
-    fprintf(fid, '%d\n', Geometry.cells.num);
-    fprintf(fid, 'N_INTERNAL_FACES\n');
-    fprintf(fid, '%d\n', size(IF2,1));
-    fprintf(fid, 'N_EXTERNAL_FACES\n');
-    fprintf(fid, '%d\n', size(EF,1));
-    fprintf(fid, 'N_NODES\n');
-    fprintf(fid, '%d\n', Geometry.nodes.num);
-    
-    fprintf(fid, '\n');
-    fprintf(fid, '%% Section 1: Nodes Coordinates\n');
-    fprintf(fid, 'NODES_COORDINATES\n');
-    fprintf(fid,'%s %7s %17s %17s\n','Node No.  ','x','y','z');
-    for ii = 1:size(Section1,1)
-        fprintf(fid,'%6d ,   %6f ,   %6f ,   %6f\n', Section1(ii,:)');
-    end
-    
-    fprintf(fid, '\n');
-    fprintf(fid, '%% Section 2: Grid Points Coordinates\n');
-    fprintf(fid, '%% [Nodes Coordinates (x;y;z)] + [Cell Centroid(x;y;z)] + [Cell Volume (m3)]\n');
     fprintf(fid, 'CELL_GEOMETRY\n');
-    fprintf(fid,'%s %6s %9s %9s %9s %9s %9s %9s %9s %33s %24s %17s\n','Cell No.  ',...
-                'SW_B','SE_B','NE_B','NW_B','SW_T','SE_T','NE_T','NW_T','Cell Centroid(x;y;z)','Cell Volume','Faces to Cell');
+    fprintf(fid,'%s %11s %6s %6s %6s %6s %6s %6s %6s %36s %29s %25s %154s\n','Cell No.  ',...
+                'NW_T','NE_T','SW_T','SE_T','NW_B','NE_B','SW_B','SE_B','Cell Centroid(x;y;z)','Cell Volume','Faces to Cell', 'Cells to Cell');
     
-    FormatSpec = "%7d, %8d, %8d, %8d, %8d, %8d, %8d, %8d, %8d,    %6.5f,%6.5f,%6.5f ,    %6.5f,    ";
-    for n = 1 : size(Section2,2) - 13
-        FormatSpec = strcat(FormatSpec,"%d,");
+    FormatSpec = "%7d    ,    %6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d    ,    %6.5f,%6.5f,%6.5f    ,    %12.5f    ,    ";
+    for n = 1 : size(Section_2,2) - 13 - size(CtC_2,2)
+        FormatSpec = strcat(FormatSpec,"%6d,");
     end
     FormatSpec = char(FormatSpec);
     FormatSpec(end)=[];
+    FormatSpec = strcat(FormatSpec,"    ,    ");
+    for n = 1 : size(Section_2,2) - 13 - size(FtC_2,2)
+        FormatSpec = strcat(FormatSpec,"%6d,");
+    end
+    FormatSpec = char(FormatSpec);
+    FormatSpec(end)=[];
+    
     FormatSpec = strcat(FormatSpec,'\n');
-    for ii = 1:size(Section2,1)
-        fprintf(fid,FormatSpec, Section2(ii,:)');
+    for ii = 1:size(Section_2,1)
+        fprintf(fid,FormatSpec, Section_2(ii,:)');
     end
    
-    fprintf(fid, '\n\n');
-    fprintf(fid, '%% Section 3: Faces Connected to Cells\n');
-    fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell 1] + [Centroid Vector 1(x,y,z)] + [Neighboring Cell 2] + [Centroid Vector 2(x,y,z)]\n');
+    fprintf(fid, '\n');
+    fprintf(fid, '-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n');
+    fprintf(fid, '%% Section 3: Internal Faces (shared with two cells)\n');
+    fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell 1] + [Centroid Vector 1(x,y,z)] + [Neighboring Cell 2] + [Centroid Vector 2(x,y,z)] + [Face Topology]\n');
+    fprintf(fid, '%% NC: Neighbor Cell\n');
     fprintf(fid, '\n');
     fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
-    fprintf(fid,'%s %13s %33s %41s %15s %35s %15s %32s %23s\n','Faces No.','Face Area',...
-                'Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)','Nodes to Faces');
+    fprintf(fid,'%s %18s %39s %47s %22s %33s %18s %33s %27s\n',...
+                'Face No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)','Face Topology');
     
-    FormatSpec = "%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , %13.6f,%12.6f,%8.6f , %6.0d , %12.6f,%12.6f,%11.6f , %6.0d , %12.6f,%12.6f,%11.6f,   ";
-    for n = 1 : size(IF2,2) - 16
-        FormatSpec = strcat(FormatSpec,"%d,");
+    FormatSpec = "%7.0d    ,    %12.6f    ,    %12.6f,%12.6f,%12.6f    ,   %12.6f,%12.6f,%12.6f    ,   %6.0d,%12.6f,%12.6f,%12.6f    ,   %6.0d,%12.6f,%12.6f,%12.6f    ,   ";
+    for n = 1 :size(Section_3,2) - 16
+        FormatSpec = strcat(FormatSpec,"%6d,");
     end
     FormatSpec = char(FormatSpec);
     FormatSpec(end)=[];
     FormatSpec = strcat(FormatSpec,'\n');
-    for ii = 1:size(IF2,1)
-        fprintf(fid,FormatSpec, IF2(ii,:)');
+    for ii = 1:size(Section_3,1)
+        fprintf(fid,FormatSpec, Section_3(ii,:)');
     end
     
-    fprintf(fid, '\n\n');
-    fprintf(fid, '%% Section 4: External Faces (At Boundaries | No Shared with Cells)\n');
-    fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell] + [Centroid Vector (x,y,z)]:\n');
+    fprintf(fid, '\n');
+    fprintf(fid, '------------------------------------------------------------------------------------------------------------------------------------------------\n');
+    fprintf(fid, '%% Section 4: External Faces (at boundaries | no shared with cells)\n');
+    fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell] + [Centroid Vector (x,y,z)] + [Face Topology]\n');
+    fprintf(fid, '%% NC: Neighbor Cell\n');
     fprintf(fid, '\n');
     fprintf(fid, 'EXTERNAL_FACE_GEOMETRY\n');
-    fprintf(fid,'%s %12s %34s %42s %15s %37s %28s\n','Faces No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)','Nodes to Faces');
+    fprintf(fid,'%s %18s %39s %47s %22s %33s %29s\n',...
+                'Face No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC','Centroid Vector(x,y,z)','Face Topology');
     
-    FormatSpec = "%8.0d , %13.6f , %11.6f,%11.6f,%11.6f , %13.6f,%12.6f,%8.6f , %6.0d , %12.6f,%12.6f,%11.6f,   ";
-    for n = 1 : size(EF3,2) - 12
-        FormatSpec = strcat(FormatSpec,"%d,");
+    FormatSpec = "%7.0d    ,    %12.6f    ,    %12.6f,%12.6f,%12.6f    ,   %12.6f,%12.6f,%12.6f    ,   %6.0d,%12.6f,%12.6f,%12.6f    ,   ";
+    for n = 1 :size(Section_4,2) - 12
+        FormatSpec = strcat(FormatSpec,"%6d,");
     end
     FormatSpec = char(FormatSpec);
     FormatSpec(end)=[];
     FormatSpec = strcat(FormatSpec,'\n');
-    for ii = 1:size(EF3,1)
-        fprintf(fid,FormatSpec, EF3(ii,:)');
+    for ii = 1:size(Section_4,1)
+        fprintf(fid,FormatSpec, Section_4(ii,:)');
     end
     fclose(fid);
     %% OUTPUT FILE 2: ROCK PROPERTIES DATA
@@ -278,7 +318,7 @@ for G = 1 : length(Geometries)
 end
 
 end
-%% --------------------------------------------------------------------------
+%--------------------------------------------------------------------------
 function [f, present] = get_face_topo(nodes, pos, faces)
    eIX = pos;
    nn  = double(diff([pos(faces), ...
@@ -306,4 +346,63 @@ function [f, present] = get_face_topo(nodes, pos, faces)
    f(isnan(f)) = tmp(isnan(f));
   
    f = f .';
+end
+
+% --------------------------------------------------------------------------
+function [c, present] = get_cell_topo(faces, pos, cells)
+   eIX = pos;
+   nn  = double(diff([pos(cells), ...
+                      pos(cells + 1)], [], 2));
+   fn  = double(faces(mcolon(eIX(cells), eIX(cells + 1) - 1), 1));
+
+   m   = numel(cells);
+   n   = max(nn);
+   c   = nan([n, m]);
+
+   present           = false([max(faces), 1]);
+   present(fn)       = true;
+
+   node_num          = zeros([max(faces), 1]);
+   node_num(present) = 1 : sum(double(present));
+
+   off = reshape((0 : m - 1) .* n, [], 1);
+
+   c(mcolon(off + 1, off + nn)) = node_num(fn);
+
+   tmp         = isfinite(c);
+   nnode       = sum(tmp,1);
+   ind         = sub2ind(size(c),nnode,1:size(c,2));
+   tmp         = repmat(c(ind),size(c,1),1);
+   c(isnan(c)) = tmp(isnan(c));
+  
+   c = c .';
+end
+%% --------------------------------------------------------------------------
+function [c, present] = get_cell_neighbors(faces, pos, cells)
+   eIX = pos;
+   nn  = double(diff([pos(cells), ...
+                      pos(cells + 1)], [], 2));
+   fn  = double(faces(mcolon(eIX(cells), eIX(cells + 1) - 1), 1));
+
+   m   = numel(cells);
+   n   = max(nn);
+   c   = nan([n, m]);
+
+   present           = false([max(faces), 1]);
+   present(fn)       = true;
+
+   node_num          = zeros([max(faces), 1]);
+   node_num(present) = 1 : sum(double(present));
+
+   off = reshape((0 : m - 1) .* n, [], 1);
+
+   c(mcolon(off + 1, off + nn)) = node_num(fn);
+
+   tmp         = isfinite(c);
+   nnode       = sum(tmp,1);
+   ind         = sub2ind(size(c),nnode,1:size(c,2));
+   tmp         = repmat(c(ind),size(c,1),1);
+   c(isnan(c)) = tmp(isnan(c));
+  
+   c = c .';
 end
