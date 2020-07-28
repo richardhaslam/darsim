@@ -453,6 +453,7 @@ classdef geothermal_singlephase_formulation < formulation
                 rho = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'rho_'); % useful for cross connections assembly
                 h = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'h_'); % useful for cross connections assembly
                 for c = 1:length(DiscretizationModel.CrossConnections)
+                    if isempty(DiscretizationModel.CrossConnections(c).Cells),  continue;  end
                     T_Geo = DiscretizationModel.CrossConnections(c).T_Geo;
                     T_Geo_Cond = DiscretizationModel.CrossConnections(c).T_Geo_Cond;
                     UpWind = DiscretizationModel.CrossConnections(c).UpWind;
