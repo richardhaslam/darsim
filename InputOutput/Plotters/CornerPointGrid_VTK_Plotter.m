@@ -66,6 +66,8 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             fprintf(fileID, '\n');
             
             fclose(fileID);
+            
+            obj.PlotInternalFaces(Reservoir, Grid);
         end
         function PlotInternalFaces(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
@@ -115,8 +117,6 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             end
 
             fclose(fileID);
-            
-            obj.PlotInternalFaces(Reservoir, Grid);
         end
     end
     methods (Access = private)
