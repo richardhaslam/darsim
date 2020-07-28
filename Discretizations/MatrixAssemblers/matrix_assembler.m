@@ -44,9 +44,9 @@ classdef matrix_assembler < handle
                     Mupz = reshape(Mupz, Nx, Ny, Nz);
                     
                     % Transmisibility Matrix
-                    Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-                    Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-                    Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
+                    Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:) .* Mupx(1:Nx-1,:,:);
+                    Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:) .* Mupy(:,1:Ny-1,:);
+                    Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz) .* Mupz(:,:,1:Nz-1);
                     Tph = obj.ReshapeCartesianTransmisibility(Nx, Ny, Nz, N, Tx, Ty, Tz);
                     
                     % Gravity Matrix
