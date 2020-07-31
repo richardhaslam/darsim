@@ -42,7 +42,7 @@ for G = 1 : length(Geometries)
     faces = Geometry.cells.faces(:,1);
     pos   = Geometry.cells.facePos;
     cells = 1:Geometry.cells.num ;
-    FtC_2 = get_cell_topo(faces, pos, cells);                                                              % c = cells
+    FtC_2 = ObtainFaceIndices(faces, pos, cells);                                                              % c = cells
     
     % Cells to Cell
     CtC_1 = [gridCellNo(Geometry) Geometry.faces.neighbors(Geometry.cells.faces(:,1),1) Geometry.faces.neighbors(Geometry.cells.faces(:,1),2)];
@@ -58,7 +58,7 @@ for G = 1 : length(Geometries)
     
     faces = CtC_1(:,2);
     pos = cpc;
-    CtC_2 = get_cell_neighbors(faces, pos, cells);                                                         % c = cells
+    CtC_2 = ObtainCellNeighbors(faces, pos, cells);                                                         % c = cells
     CtC_2 = sort(CtC_2,2);
     
     Section_2 = [(1:1:Geometry.cells.num)' NtC Geometry.cells.centroids Geometry.cells.volumes FtC_2 CtC_2];  % 8 (nodes number per cell + tag nodes)
@@ -67,7 +67,7 @@ for G = 1 : length(Geometries)
     nodes = Geometry.faces.nodes;
     pos   = Geometry.faces.nodePos;
     faces = 1:Geometry.faces.num ;
-    NtF_3 = get_face_topo(nodes, pos, faces);                                                             % f = Faces
+    NtF_3 = ObtainNodeIndices(nodes, pos, faces);                                                             % f = Faces
     
     NF = linspace(1, Geometry.faces.num, Geometry.faces.num)';                                            % Create Face Index Vector (Total Number of Faces)
         
@@ -195,8 +195,8 @@ for G = 1 : length(Geometries)
     fprintf(fid, '\n');
     fprintf(fid, 'CELL_GEOMETRY\n');
     fprintf(fid,'%s %11s %6s %6s %6s %6s %6s %6s %6s %36s %29s %25s %154s\n','Cell No.  ',...
-                'NW_T','NE_T','SW_T','SE_T','NW_B','NE_B','SW_B','SE_B','Cell Centroid(x;y;z)','Cell Volume','Faces to Cell', 'Cells to Cell');
-    
+                'SW_B','SE_B','NE_B','NW_B','SW_T','SE_T','NE_T','NW_T','Cell Centroid(x;y;z)','Cell Volume','Face Indices', 'Neighbor Indices');
+            
     FormatSpec = "%7d    ,    %6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d    ,    %6.5f,%6.5f,%6.5f    ,    %12.5f    ,    ";
     for n = 1 : size(Section_2,2) - 13 - size(CtC_2,2)
         FormatSpec = strcat(FormatSpec,"%6d,");
@@ -218,12 +218,12 @@ for G = 1 : length(Geometries)
     fprintf(fid, '\n');
     fprintf(fid, '-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n');
     fprintf(fid, '%% Section 3: Internal Faces (shared with two cells)\n');
-    fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell 1] + [Centroid Vector 1(x,y,z)] + [Neighboring Cell 2] + [Centroid Vector 2(x,y,z)] + [Face Topology]\n');
+    fprintf(fid, '%% [Face Index] + [Face Area] + [Face Centroid (x,y,z)] + [Face Normal(x,y,z)] + [Neighboring Cell 1] + [Centroid Vector 1(x,y,z)] + [Neighboring Cell 2] + [Centroid Vector 2(x,y,z)] + [Node Indices]\n');
     fprintf(fid, '%% NC: Neighbor Cell\n');
     fprintf(fid, '\n');
     fprintf(fid, 'INTERNAL_FACE_GEOMETRY\n');
     fprintf(fid,'%s %18s %39s %47s %22s %33s %18s %33s %27s\n',...
-                'Face No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)','Face Topology');
+                'Face No.','Face Area','Face Centroid(x;y;z)','Face Normal(x;y;z)','NC1','Centroid Vector1(x:y:z)','NC2','Centroid Vector2(x,y,z)','Node Indices');
     
     FormatSpec = "%7.0d    ,    %12.6f    ,    %12.6f,%12.6f,%12.6f    ,   %12.6f,%12.6f,%12.6f    ,   %6.0d,%12.6f,%12.6f,%12.6f    ,   %6.0d,%12.6f,%12.6f,%12.6f    ,   ";
     for n = 1 :size(Section_3,2) - 16
@@ -319,7 +319,7 @@ end
 
 end
 %--------------------------------------------------------------------------
-function [f, present] = get_face_topo(nodes, pos, faces)
+function [f, present] = ObtainNodeIndices(nodes, pos, faces)
    eIX = pos;
    nn  = double(diff([pos(faces), ...
                       pos(faces + 1)], [], 2));
@@ -338,18 +338,19 @@ function [f, present] = get_face_topo(nodes, pos, faces)
    off = reshape((0 : m - 1) .* n, [], 1);
 
    f(mcolon(off + 1, off + nn)) = node_num(fn);
-
-   tmp         = isfinite(f);
-   nnode       = sum(tmp,1);
-   ind         = sub2ind(size(f),nnode,1:size(f,2));
-   tmp         = repmat(f(ind),size(f,1),1);
-   f(isnan(f)) = tmp(isnan(f));
+   
+   % To replace the NaN with dummy values use these 5 lines below
+   %tmp         = isfinite(f);
+   %nnode       = sum(tmp,1);
+   %ind         = sub2ind(size(f),nnode,1:size(f,2));
+   %tmp         = repmat(f(ind),size(f,1),1);
+   %f(isnan(f)) = tmp(isnan(f));
   
    f = f .';
 end
 
 % --------------------------------------------------------------------------
-function [c, present] = get_cell_topo(faces, pos, cells)
+function [c, present] = ObtainFaceIndices(faces, pos, cells)
    eIX = pos;
    nn  = double(diff([pos(cells), ...
                       pos(cells + 1)], [], 2));
@@ -368,17 +369,18 @@ function [c, present] = get_cell_topo(faces, pos, cells)
    off = reshape((0 : m - 1) .* n, [], 1);
 
    c(mcolon(off + 1, off + nn)) = node_num(fn);
-
-   tmp         = isfinite(c);
-   nnode       = sum(tmp,1);
-   ind         = sub2ind(size(c),nnode,1:size(c,2));
-   tmp         = repmat(c(ind),size(c,1),1);
-   c(isnan(c)) = tmp(isnan(c));
+   
+   % To replace the NaN with dummy values use these 5 lines below
+   %tmp         = isfinite(c);
+   %nnode       = sum(tmp,1);
+   %ind         = sub2ind(size(c),nnode,1:size(c,2));
+   %tmp         = repmat(c(ind),size(c,1),1);
+   %c(isnan(c)) = tmp(isnan(c));
   
    c = c .';
 end
 %% --------------------------------------------------------------------------
-function [c, present] = get_cell_neighbors(faces, pos, cells)
+function [c, present] = ObtainCellNeighbors(faces, pos, cells)
    eIX = pos;
    nn  = double(diff([pos(cells), ...
                       pos(cells + 1)], [], 2));
@@ -398,11 +400,12 @@ function [c, present] = get_cell_neighbors(faces, pos, cells)
 
    c(mcolon(off + 1, off + nn)) = node_num(fn);
 
-   tmp         = isfinite(c);
-   nnode       = sum(tmp,1);
-   ind         = sub2ind(size(c),nnode,1:size(c,2));
-   tmp         = repmat(c(ind),size(c,1),1);
-   c(isnan(c)) = tmp(isnan(c));
+   % To replace the NaN with dummy values use these 5 lines below
+   %tmp         = isfinite(c);
+   %nnode       = sum(tmp,1);
+   %ind         = sub2ind(size(c),nnode,1:size(c,2));
+   %tmp         = repmat(c(ind),size(c,1),1);
+   %c(isnan(c)) = tmp(isnan(c));
   
    c = c .';
 end
