@@ -9,42 +9,6 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
         CornerPointGridData
     end
     methods
-        function Initialize(obj, ProductionSystem, Formulation)
-            obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);
-            obj.ReservoirGrid.AddGridCoordinates();
-            obj.ReservoirGrid.CorrectTransmissibilitiesForpEDFM();
-            % Perforated cells
-            obj.DefinePerforatedCells(ProductionSystem.Wells);
-            
-            % Total number of cells
-            obj.N = obj.ReservoirGrid.N;
-            
-            % Assign Depth
-            obj.ReservoirGrid.ComputeDepth(Formulation.GravityModel.alpha, ProductionSystem.Reservoir.Thickness);
-            
-            % Initialize fractures
-            if ProductionSystem.FracturesNetwork.Active
-                for f = 1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    obj.FracturesGrid.Grids(f).Initialize(ProductionSystem.FracturesNetwork.Fractures(f));
-                    obj.FracturesGrid.Grids(f).CorrectTransmissibilitiesForpEDFM();
-                end
-                % Total number of cells
-                obj.N = obj.N + sum(obj.FracturesGrid.N);
-                % Adding the harmonic permeabilities to CrossConnections
-                obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
-                % Adding the harmonic conductivities to CrossConnections
-                if ~isempty(ProductionSystem.Reservoir.K_Cond_eff)
-                    obj.AddHarmonicConductivities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
-                end
-            end
-            
-            % Merge the reservoir and all the fracture grids (if any) into one unified grid
-%             if ProductionSystem.FracturesNetwork.Active
-%                 obj.AddUnifiedGrid();
-%             else
-%                 obj.UnifiedGrid = obj.ReservoirGrid;
-%             end
-        end
         function AddUnifiedGrid(obj)
             CPGData = obj.ReservoirGrid.CornerPointGridData;
             CPGData.Nx = [ obj.ReservoirGrid.Nx ; [obj.FracturesGrid.Grids.Nx]' ];
