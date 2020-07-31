@@ -104,11 +104,13 @@ classdef polygon_DARSim < planeInfinite_DARSim
                     Geostatus.areCoplanar = 1;
                     
                     % Checking the intersections between each two edges of polygons
-                    for i = [1,2,3,4]
-                        intersectNr = 0;
-                        for j = [2,3,4,1]
-                            Line1 = lineSegment_DARSim(obj.Vertex(i,:)     ,obj.Vertex(j,:)     );
-                            Line2 = lineSegment_DARSim(Polygon.Vertex(i,:),Polygon.Vertex(j,:));
+                    Vertices1 = [     obj.Vertex ;     obj.Vertex(1,:) ];
+                    Vertices2 = [ Polygon.Vertex ; Polygon.Vertex(1,:) ];
+                    intersectNr = 0;
+                    for i = 1:obj.NumOfVertex
+                        Line1 = lineSegment_DARSim(Vertices1(i,:),Vertices1(i+1,:));
+                        for j = 1:Polygon.NumOfVertex
+                            Line2 = lineSegment_DARSim(Vertices2(i,:),Vertices2(i+1,:));
                             [lineGeostatus, lineIntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection(Line2, Epsilon);
                             if lineGeostatus.haveIntersect == 1
                                 Geostatus.haveIntersect = 1;
