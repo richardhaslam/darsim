@@ -56,12 +56,20 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
                 end
                 fprintf(fileID, '\n');
             end
-            
-            %ADD ADM ACTIVETime
+
+            % Add the "fractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
+            FracturedFlag = zeros(Grid.N,1);
+            if ~isempty(Grid.ListOfFracturedReservoirCells)
+                FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
+            end
+            obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
+            fprintf(fileID, '\n');
+
+            % Add ADM ACTIVETime
             obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
             fprintf(fileID, '\n');
             
-            %ADD ADM ACTIVEFine (coarse grids)
+            % Add ADM ACTIVEFine (coarse grids)
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             

@@ -54,6 +54,7 @@ classdef Discretization_model < handle
                 if ~isempty(ProductionSystem.Reservoir.K_Cond_eff)
                     obj.AddHarmonicConductivities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
                 end
+                obj.ReservoirGrid.ListOfFracturedReservoirCells = unique(vertcat(obj.CrossConnections.Cells));
             end
         end
         function DefinePerforatedCells(obj, Wells)
