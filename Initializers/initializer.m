@@ -58,8 +58,13 @@ classdef initializer < handle
             % 6. Compute initial Pc
             FluidModel.ComputePc(ProductionSystem.Reservoir.State);
             
-            % 7. Seismic velocities
-            FluidModel.ComputePwaveVelocity(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.bulkMod, ProductionSystem.Reservoir.shearMod)
+            % 6.5 Compute initial compressibility
+            FluidModel.ComputeFluidCompressibility(ProductionSystem.Reservoir.State)
+            
+            % 7. Moduli and Seismic velocities
+            FluidModel.ComputeSaturatedBulkModulus(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.bulkModDry, ...
+                ProductionSystem.Reservoir.bulkMod0, ProductionSystem.Reservoir.Por);
+            FluidModel.ComputePwaveVelocity(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.shearMod)
             FluidModel.ComputeSwaveVelocity(ProductionSystem.Reservoir.State, ProductionSystem.Reservoir.shearMod)
             
             % Output initial status:      

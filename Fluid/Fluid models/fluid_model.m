@@ -37,7 +37,7 @@ classdef fluid_model < handle
             for i=1:obj.NofPhases
                 Mob(:,i) = kr(:,i)/obj.Phases(i).mu;
             end
-        end
+        end        
         function ComputeFluidDensity(obj, State)
             % Compute the total density
             s = State.Properties('S_1');
@@ -51,6 +51,20 @@ classdef fluid_model < handle
             RhoFluid = State.Properties('rhoFluid');
             RhoFluid.Value = rhoFluid;
         end
+        function ComputeFluidCompressibility(obj, State)
+            C=0;
+            for i=1:obj.NofPhases % VOIGT averaging
+%                 % REUSS averaging
+%                 C = C + State.Properties(['S_', num2str(i)]).Value.*obj.Phases(i).cf;
+                % VOIGT averaging
+                C = C + (State.Properties(['S_', num2str(i)]).Value./obj.Phases(i).cf);
+            end
+            % VOIGT averaging
+            C = 1./C;
+            
+            Comp = State.Properties('C_total');
+            Comp.Value = C; 
+        end
         function ComputeTotalDensity(obj, State, phi, rhoRock)
             % Compute the total density
             obj.ComputeFluidDensity(State);
@@ -61,13 +75,25 @@ classdef fluid_model < handle
             
         end
         
-        function ComputePwaveVelocity(obj, State, bulkMod, shearMod)
+        function ComputeSaturatedBulkModulus(obj, State, bulkModDry, bulkMod0, phi)
+            
+            C = State.Properties('C_total');
+            
+            bulkModSat = bulkModDry + ((1-bulkModDry./bulkMod0).^2)./... 
+                ((phi./(1e-9./C.Value))+((1-phi)./bulkMod0)-(bulkModDry./(bulkMod0.^2)));
+            
+            Ksat = State.Properties('Ksat');
+            Ksat.Value = bulkModSat;
+        end
+        
+        function ComputePwaveVelocity(obj, State, shearMod)
             % Compute the total density
             obj.ComputeFluidDensity(State);
             cPwave = State.Properties('cPwave');
             rhoTotal = State.Properties('rhoTotal');
+            Ksat = State.Properties('Ksat');
             
-            cPwave.Value = sqrt((bulkMod.*1e9 + (4/3).*shearMod.*1e9)./rhoTotal.Value);
+            cPwave.Value = sqrt((Ksat.Value .*1e9 + (4/3).*shearMod.*1e9)./rhoTotal.Value);
             
         end
         

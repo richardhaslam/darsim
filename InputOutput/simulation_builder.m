@@ -520,7 +520,8 @@ classdef simulation_builder < handle
             nz = obj.SimulationInput.ReservoirProperties.Grid.N(3);
             Cpr = obj.SimulationInput.ReservoirProperties.SpecificHeat;
             RockDensity = obj.SimulationInput.ReservoirProperties.RockDensity;
-            BulkModulus = obj.SimulationInput.ReservoirProperties.BulkModulus;
+            BulkModulusDry = obj.SimulationInput.ReservoirProperties.DryBulkModulus;
+            BulkModulus0 = obj.SimulationInput.ReservoirProperties.MineralBulkModulus;
             ShearModulus = obj.SimulationInput.ReservoirProperties.ShearModulus;
             K = ones(nx*ny*nz, 3);
             switch obj.SimulationInput.ReservoirProperties.PermUnit
@@ -598,7 +599,8 @@ classdef simulation_builder < handle
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
             Reservoir.rhoRock = RockDensity;
-            Reservoir.bulkMod = BulkModulus;
+            Reservoir.bulkModDry = BulkModulusDry;
+            Reservoir.bulkMod0 = BulkModulus0;
             Reservoir.shearMod = ShearModulus;
             Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
             switch obj.SimulatorSettings.DiscretizationModel
@@ -756,7 +758,7 @@ classdef simulation_builder < handle
                         Phase.rho0 = obj.SimulationInput.FluidProperties.Density(i);
                         %Gets all viscosities [Pa sec]
                         Phase.mu = obj.SimulationInput.FluidProperties.mu(i);
-                        % Compressibility
+                        % Compressibility [1 / Pa]
                         Phase.cf = obj.SimulationInput.FluidProperties.Comp(i);
                         FluidModel.AddPhase(Phase, i);
                     end

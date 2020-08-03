@@ -34,6 +34,8 @@ methods
                 end
                 obj.Properties('Pc') = property(N, 1, 'scalar', false, 1e3, 1e6);
                 obj.Properties('rhoTotal') = property(N, 1, 'scalar', false, 1e3, 1e6);
+                obj.Properties('Ksat') = property(N, 1, 'scalar', false, 0, 100);
+                obj.Properties('C_total') = property(N, 1, 'scalar', false, 0, 1);
                 obj.Properties('cPwave') = property(N, 1, 'scalar', false, 1e3, 1e6);
                 obj.Properties('cSwave') = property(N, 1, 'scalar', false, 1e3, 1e6);
             case{'Geothermal_1T','Geothermal_2T'}

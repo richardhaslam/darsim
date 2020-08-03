@@ -262,11 +262,13 @@ classdef reader_darsim2 < reader
             temp = strfind(obj.InputMatrix, 'ELASTIC MODULI');
             index_mod = find(~cellfun('isempty', temp));
             if isempty(index_mod)
-                ReservoirProperties.BulkModulus = 16; % Default value if not defined [GPa]
+                ReservoirProperties.DryBulkModulus = 16; % Default value if not defined [GPa]
+                ReservoirProperties.MineralBulkModulus = 40; % Default value if not defined [GPa]
                 ReservoirProperties.ShearModulus = 2; % Default value if not defined [GPa]
             else
-                ReservoirProperties.BulkModulus = str2double(obj.InputMatrix{index_mod + 2});
-                ReservoirProperties.ShearModulus = str2double(obj.InputMatrix{index_mod + 4});
+                ReservoirProperties.DryBulkModulus = str2double(obj.InputMatrix{index_mod + 2});
+                ReservoirProperties.MineralBulkModulus = str2double(obj.InputMatrix{index_mod + 4});
+                ReservoirProperties.ShearModulus = str2double(obj.InputMatrix{index_mod + 6});
             end
             
         end
