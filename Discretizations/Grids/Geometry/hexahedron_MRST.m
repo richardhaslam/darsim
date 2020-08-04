@@ -24,7 +24,7 @@ classdef hexahedron_MRST < hexahedron_DARSim
             obj.Face = face;
         end
         %%
-        function [intersectCoordFinal, intersectCoordTemp , areCoplanar] = Obtain_Hexahedron_Polygon_Intersection(obj, Polygon, Epsilon)
+        function [intersectCoordFinal , areCoplanar] = Obtain_Hexahedron_Polygon_Intersection(obj, Polygon, Epsilon)
             % Initializing some variables
             doNotContinue       = 0;
             areCoplanar         = 0;
@@ -120,4 +120,3 @@ classdef hexahedron_MRST < hexahedron_DARSim
         end
     end
 end
-

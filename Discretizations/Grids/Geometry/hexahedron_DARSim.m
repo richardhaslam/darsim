@@ -90,7 +90,7 @@ classdef hexahedron_DARSim < polyhedron_DARSim
             AvgDistance = AvgDistance / sqrt( a^2 + b^2 + c^2 ) / (Refinement+1)^3 ;
         end
         %%
-        function [intersectCoordFinal, intersectCoordTemp , areCoplanar] = Obtain_Hexahedron_Tetragon_Intersection(obj, Tetragon, Epsilon)
+        function [intersectCoordFinal, areCoplanar] = Obtain_Hexahedron_Tetragon_Intersection(obj, Tetragon, Epsilon)
             % Initializing some variables
             doNotContinue       = 0;
             areCoplanar         = 0;
