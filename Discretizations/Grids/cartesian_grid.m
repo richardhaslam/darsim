@@ -151,8 +151,8 @@ classdef cartesian_grid < grid_darsim
             IT = reshape(permute(IT,[2 1 3]),obj.N,1);
             
             % Assembling the array for all the neighbors
-            Neighbours = [IW,IE,IS,IN,IB,IT];
-            obj.Neighbours = num2cell(Neighbours,2);
+            obj.Neighbours = [IW,IE,IS,IN,IB,IT];
+            obj.Neighbours = num2cell(obj.Neighbours,2);
             obj.Neighbours = cellfun(@(x) x(~isnan(x)),obj.Neighbours ,'UniformOutput' ,false);
         end
         function AddCoordinates(obj)
