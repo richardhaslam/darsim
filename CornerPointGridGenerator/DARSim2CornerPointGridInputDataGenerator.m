@@ -228,12 +228,52 @@ for G = 1 : length(Geometries)
     end
     fclose(fid);
     
-    %% SECTION 2: CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
-    %% SECTION 2.1: POROSITY
+    %% SECTION 2: VTK PLOTTER FILE GENERATOR
+    %% SECTION 2.1: NODE POINTS
+    Z = max(Geometry.nodes.coords(:,3)) - Geometry.nodes.coords(:,3);                        % Set Depth from shallow to deep 
+    Section_1_VTK = [Geometry.nodes.coords(:,1:2) Z];
+
+    %% SECTION 2.2: CELLS
+    NtC = NtC - 1;                                                             % VTK files start to count from 0 to N-1 
+    Section_2_VTK = [8 * ones(Geometry.cells.num,1) NtC];                                 % 8 (nodes number per cell + tag nodes)
+
+    %% SECTION 2.3: CELL TYPES
+    Section_3_VTK = 11 * ones(Geometry.cells.num,1);                                      % 12 is the VTK reference for Hexahedron
+    
+    %% OUTOUT FILE: CORNER GRID POINT DATA - VTK
+    OutputFileName = 'CornerPointGrid_DARSim_VTK_Plotter';
+    disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
+    fid = fopen(strcat(Directory,'\', OutputFileName, '_', num2str(G),'.vtk'), 'w+');
+    fprintf(fid, '# vtk DataFile Version 2.0\n');
+    fprintf(fid, 'DARSim2 Reservoir Simulator\n');
+    fprintf(fid, 'ASCII\n');
+    fprintf(fid, '\n');
+    fprintf(fid, 'DATASET UNSTRUCTURED_GRID\n');
+
+    fprintf(fid, ['POINTS ' num2str(Geometry.nodes.num) ' double\n']);
+    for ii = 1:size(Section_1_VTK,1)
+        fprintf(fid,'%f %f %f\n', Section_1_VTK(ii,:)');
+    end
+
+    fprintf(fid, '\n');
+    fprintf(fid, ['CELLS ' num2str(Geometry.cells.num) ' ' num2str(numel(Section_2_VTK)) '\n']);
+    for ii = 1:size(Section_2_VTK,1)
+        fprintf(fid,'%d %d %d %d %d %d %d %d %d\n', Section_2_VTK(ii,:)');
+    end
+
+    fprintf(fid, '\n');
+    fprintf(fid, ['CELL_TYPES ' num2str(Geometry.cells.num) '\n']);
+    for ii = 1:size(Section_3_VTK,1)
+        fprintf(fid,'%d\n', Section_3_VTK(ii,:)');
+    end
+    fclose(fid);
+    
+    %% SECTION 3: CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
+    %% SECTION 3.1: POROSITY
     poro = grdecl.PORO(Geometry.cells.indexMap);
     poro_text = [Geometry.cells.indexMap, poro];
 
-    %% SECTION 2.2: PERMEABILITY
+    %% SECTION 3.2: PERMEABILITY
     if ~strcmp(fieldnames(grdecl),'PERMY')
         grdecl.PERMY = grdecl.PERMX;
     end
@@ -246,7 +286,7 @@ for G = 1 : length(Geometries)
     perm = perm .* milli * darcy;
     perm_txt = [Geometry.cells.indexMap, perm];
     
-    %% SECTION 2.3: OUTPUT FILE 2 (ROCK PROPERTIES DATA)
+    %% SECTION 3.3: OUTPUT FILE 2 (ROCK PROPERTIES DATA)
     OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData';
     disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
     
@@ -298,47 +338,6 @@ for G = 1 : length(Geometries)
         end
     end
     fclose(fid);
-    
-    %% SECTION 3: VTK PLOTTER FILE GENERATOR
-    %% First Section: NODE POINTS
-    Z = max(Geometry.nodes.coords(:,3)) - Geometry.nodes.coords(:,3);                        % Set Depth from shallow to deep 
-    Section_1_VTK = [Geometry.nodes.coords(:,1:2) Z];
-
-    %% Second Section: CELLS
-    NtC = NtC - 1;                                                             % VTK files start to count from 0 to N-1 
-    Section_2_VTK = [8 * ones(Geometry.cells.num,1) NtC];                                 % 8 (nodes number per cell + tag nodes)
-
-    %% Third Section: CELL TYPES
-    Section_3_VTK = 11 * ones(Geometry.cells.num,1);                                      % 12 is the VTK reference for Hexahedron
-    
-    %% OUTOUT FILE: CORNER GRID POINT DATA - VTK
-    OutputFileName = 'CornerPointGrid_DARSim_VTK_Plotter';
-    disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
-    fid = fopen(strcat(Directory,'\', OutputFileName, '_', num2str(G),'.vtk'), 'w+');
-    fprintf(fid, '# vtk DataFile Version 2.0\n');
-    fprintf(fid, 'DARSim2 Reservoir Simulator\n');
-    fprintf(fid, 'ASCII\n');
-    fprintf(fid, '\n');
-    fprintf(fid, 'DATASET UNSTRUCTURED_GRID\n');
-
-    fprintf(fid, ['POINTS ' num2str(Geometry.nodes.num) ' double\n']);
-    for ii = 1:size(Section_1_VTK,1)
-        fprintf(fid,'%f %f %f\n', Section_1_VTK(ii,:)');
-    end
-
-    fprintf(fid, '\n');
-    fprintf(fid, ['CELLS ' num2str(Geometry.cells.num) ' ' num2str(numel(Section_2_VTK)) '\n']);
-    for ii = 1:size(Section_2_VTK,1)
-        fprintf(fid,'%d %d %d %d %d %d %d %d %d\n', Section_2_VTK(ii,:)');
-    end
-
-    fprintf(fid, '\n');
-    fprintf(fid, ['CELL_TYPES ' num2str(Geometry.cells.num) '\n']);
-    for ii = 1:size(Section_3_VTK,1)
-        fprintf(fid,'%d\n', Section_3_VTK(ii,:)');
-    end
-    fclose(fid);
-    
 end
 end
 %--------------------------------------------------------------------------
