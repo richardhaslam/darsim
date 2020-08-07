@@ -169,8 +169,10 @@ classdef VTK_Plotter < Plotter
             for i=1:N_var
                 if strcmp(Fracture.State.Properties(Names{i}).Type, 'scalar')
                     obj.PrintScalar2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
-                    fprintf(fileID, '\n');
+                else
+                    obj.PrintVector2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 end
+                fprintf(fileID, '\n');
             end
             fclose(fileID);
         end
