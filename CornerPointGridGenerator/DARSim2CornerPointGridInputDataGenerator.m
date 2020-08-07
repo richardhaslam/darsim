@@ -298,6 +298,9 @@ for G = 1 : length(Geometries)
         end
     end
     fclose(fid);
+    
+    %% SECTION 3: Generating the VTK Data
+    
 end
 
 end
