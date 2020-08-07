@@ -90,5 +90,16 @@ classdef lineInfinite_DARSim < handle
                 end
             end
         end
+        %%
+        function IsPointOnTheInfiniteLine = Is_Point_On_InfiniteLine(obj, Point, Epsilon)
+            t1 = ( Point(1) - obj.Eq.x0 ) / obj.Eq.a;
+            t2 = ( Point(2) - obj.Eq.y0 ) / obj.Eq.b;
+            t3 = ( Point(3) - obj.Eq.z0 ) / obj.Eq.c;
+            if abs(t1-t2)<Epsilon && abs(t1-t3)<Epsilon && abs(t2-t3)<Epsilon
+                IsPointOnTheInfiniteLine = 1;
+            else
+                IsPointOnTheInfiniteLine = 0;
+            end
+        end
     end
 end

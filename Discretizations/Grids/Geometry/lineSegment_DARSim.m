@@ -114,5 +114,14 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
                 end
             end
         end
+        %
+        function IsPointOnTheLineSegment = Is_Point_One_LineSegment(obj, Point, Epsilon)
+            IsPointOnTheInfiniteLine = obj.Is_Point_On_InfiniteLine(Point, Epsilon);
+            if IsPointOnTheInfiniteLine && dot( (obj.PointA - Point) , (obj.PointB - Point) ) < 0
+                IsPointOnTheLineSegment = 1;
+            else
+                IsPointOnTheLineSegment = 0;
+            end
+        end
     end
 end
