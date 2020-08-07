@@ -34,6 +34,11 @@ classdef convergence_checker_FS_geothermal < convergence_checker
             [ResidualNorm] = obj.NormCalculator.CalculateResidualNorm(residual, Nt, Formulation);
             [dp, dT] = obj.NormCalculator.CalculateSolutionNorm(delta, DiscretizationModel.N, State);
             
+            obj.ResidualNorm( imag(obj.ResidualNorm) ~= 0 ) = NaN;
+            %obj.RHSNorm     ( imag(obj.RHSNorm     ) ~= 0 ) = NaN;
+            dp              ( imag(dp              ) ~= 0 ) = NaN;
+            dT              ( imag(dT              ) ~= 0 ) = NaN;
+            
             converged = obj.CheckConvergenceCondition(iter,ResidualNorm,dp,dT);
 
         end
@@ -47,13 +52,18 @@ classdef convergence_checker_FS_geothermal < convergence_checker
             % check if it is stagnating
             stagnating = obj.Stagnating(ResidualNorm./obj.FirstResidualNorm);
             
-            % Check convergence
-            if ( ResidualNorm(1)/obj.FirstResidualNorm(1) < obj.ResidualTol(1) && dp < obj.SolutionTol(1) ) && ...
-               ( ResidualNorm(2)/obj.FirstResidualNorm(2) < obj.ResidualTol(2) && dT < obj.SolutionTol(2) )
+            %Check convergence
+            if ( (obj.ResidualNorm(iter,1) < obj.ResidualTol(1)) || (obj.ResidualNorm(iter,1)/obj.FirstResidualNorm(1) < obj.ResidualTol(1)) ) && ...
+               ( (obj.ResidualNorm(iter,2) < obj.ResidualTol(2)) || (obj.ResidualNorm(iter,2)/obj.FirstResidualNorm(2) < obj.ResidualTol(2)) ) && ...
+               ( dp < obj.SolutionTol(1) && dT < obj.SolutionTol(2) )
                 converged = 1;
-            elseif (dp < obj.SolutionTol(1)*1e-2) && (dT < obj.SolutionTol(2)*1e-2)
-                converged = 1;
-            elseif( isnan(ResidualNorm(1)) || isnan(ResidualNorm(2)) || stagnating || isnan(dp) || isnan(dT) || ~isreal([dp;dT]) )
+            elseif iter>5 && dp < obj.SolutionTol(1) && dT < obj.SolutionTol(2) && ...
+                   abs(obj.ResidualNorm(end-1,1) - obj.ResidualNorm(end-2,1)) < 1e-3 * obj.ResidualNorm(end-2,1) && ...
+                   abs(obj.ResidualNorm(end  ,1) - obj.ResidualNorm(end-1,1)) < 1e-3 * obj.ResidualNorm(end  ,1) && ...
+                   abs(obj.ResidualNorm(end-1,2) - obj.ResidualNorm(end-2,2)) < 1e-3 * obj.ResidualNorm(end-2,2) && ...
+                   abs(obj.ResidualNorm(end  ,2) - obj.ResidualNorm(end-1,2)) < 1e-3 * obj.ResidualNorm(end  ,2)
+               converged = 1;
+            elseif (isnan(obj.ResidualNorm(iter,1)) || isnan(obj.ResidualNorm(iter,2)) || stagnating || isnan(dp) || isnan(dT))
                 converged = -1;
             end
         end

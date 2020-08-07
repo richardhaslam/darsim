@@ -51,9 +51,9 @@ classdef Discretization_model < handle
                 % Adding the harmonic permeabilities to CrossConnections
                 obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
                 % Adding the harmonic conductivities to CrossConnections
-                if ~isempty(ProductionSystem.Reservoir.K_Cond_eff)
-                    obj.AddHarmonicConductivities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
-                end
+%                 if ~isempty(ProductionSystem.Reservoir.K_Cond_eff)
+%                     obj.AddHarmonicConductivities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
+%                 end
             end
         end
         function DefinePerforatedCells(obj, Wells)

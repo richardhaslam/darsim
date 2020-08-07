@@ -13,9 +13,13 @@ classdef initializer_MultiPhase < initializer
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started MultiPhase initialization');
-%             Hm = ProductionSystem.Reservoir.State.Properties('hTfluid');
-%             Hm.Value(1) = 0.25e6;
             
+%             Pm = ProductionSystem.Reservoir.State.Properties('P_2');
+%             Pm.Value(365) = 1.1e7;
+%             
+%             Hm = ProductionSystem.Reservoir.State.Properties('hTfluid');
+%             Hm.Value(365) = 0.2e6;
+
             % DO WE NEED TO TAKE INTO ACCOUNT THE INITIAL BOUNDARY CONDITIONS, I.E. THE HEAT FLUX INTO THE RESERVOIR ??
             
             %% This initializer gets the mixture enthalpy as input

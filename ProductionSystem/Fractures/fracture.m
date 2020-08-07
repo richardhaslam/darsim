@@ -36,9 +36,9 @@ classdef fracture < handle
             obj.K = k;
             obj.Por = por;
         end
-        function AddConductivity(obj, k_cond_rock, k_cond_fluid)
-            obj.K_Cond_rock = k_cond_rock;
-            obj.K_Cond_eff  = k_cond_fluid * obj.Por + k_cond_rock * (1-obj.Por) * ones(size(obj.K));
-        end
+%         function AddConductivity(obj, k_cond_rock, k_cond_fluid)
+%             obj.K_Cond_rock = k_cond_rock;
+%             obj.K_Cond_eff  = k_cond_fluid * obj.Por + k_cond_rock * (1-obj.Por) * ones(size(obj.K));
+%         end
     end
 end

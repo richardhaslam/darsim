@@ -13,6 +13,7 @@ classdef convergence_checker < handle
         FirstResidualNorm
         FirstResidual
         OldResidual
+        ResidualNorm
     end
     methods (Abstract)
         obj = Check(obj) 

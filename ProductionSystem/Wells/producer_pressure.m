@@ -80,13 +80,13 @@ classdef producer_pressure < producer
                 p = State.Properties(['P_',num2str(NofPhases)]).Value;
                 rho = State.Properties(['rho_',num2str(i)]).Value;
                 dQdh(:, i) = drhodh(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
-                    rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                             rho(obj.Cells)      .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
             end
         end
         
         %%
         % Heat Flux Derivatives
-        function dQhdp = ComputeWellHeatFluxDerivativeWithRespectToPressure(obj, State, K, Mob, dhdp, drhodp, dMobdp, NofPhases) % need perforated cell properties
+        function dQhdp = ComputeWellHeatFluxDerivativeWithRespectToPressure(obj, State, K, Mob, drhodp, dMobdp, NofPhases) % need perforated cell properties
             % Qh = rho * h * PI * K * Mob * (pWell - pCell);
             dQhdp = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
@@ -95,8 +95,7 @@ classdef producer_pressure < producer
                 h = State.Properties(['h_',num2str(i)]).Value;
                 dQhdp(:, i) = rho(obj.Cells)      .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (-1                  )  + ...
                               drhodp(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells))  + ...
-                              rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells))       + ...
-                              rho(obj.Cells) .* dhdp(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i) .* (obj.p - p(obj.Cells)) ;
+                              rho(obj.Cells) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells))        ;
             end
         end
 
@@ -121,8 +120,8 @@ classdef producer_pressure < producer
                 rho = State.Properties(['rho_',num2str(i)]).Value;
                 h = State.Properties(['h_',num2str(i)]).Value;
                 dQhdh(:, i) = drhodh(obj.Cells,i) .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...
-                              rho(obj.Cells)      .* 1            .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) + ...         
-                              rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells));
+                              rho(obj.Cells)    .* h(obj.Cells) .* obj.PI .* K(obj.Cells) .* dMobdh(obj.Cells,i) .* (obj.p - p(obj.Cells)) + ...
+                              rho(obj.Cells)      .* 1            .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) ;%+ ...         
             end
         end
 

@@ -9,9 +9,8 @@
 classdef therm_comp_Multiphase < phase
     % Here, you only place functions for phase properties
     properties
-        Pstepsize = 1e5;
-        Hstepsize = 1e4; % implement this
-        
+        TablePH
+
         % for the injection well properties
         Cp_std              % Specific Heat of Phase in standard condition
         uws = 420000;         % internal energy at saturation J/kg
@@ -19,125 +18,163 @@ classdef therm_comp_Multiphase < phase
         Psat = 1e5;         % P at saturation condition (assumed 1e5 Pa)
     end
     methods
-        function rho = GetDensity(obj, Pgrid, Hgrid, rhoTable, h, p)
-            rho = interp2(Hgrid, Pgrid, rhoTable, h, p, 'linear');
-%             rho = interp2(Hgrid, Pgrid, rhoTable, h, p, 'linear');
-%             OTHER OPTIONS: 'makima' (gives NaN values...), 'cubic'
+        function PhaseEnthalpy = ComputePhaseEnthalpy(obj, i, p)
+            if i == 1
+                PhaseEnthalpy = (7.30984e9 + 1.29239e2.*(p.*1e1) - 1.00333e-6.*(p.*1e1).^2 + 3.9881e-15.*(p.*1e1).^3 + ...
+                                 - 9.90697e15.*(p.*1e1).^-1 + 1.29267e22.*(p.*1e1).^-2 - 6.28359e27.*(p.*1e1).^-3).*1e-7 .*1e3;
+            elseif i == 2
+                PhaseEnthalpy = (2.82282e10 - 3.91952e5.*(p.*1e1).^-1 + 2.54342e21.*(p.*1e1).^-2 - 9.38879e-8.*(p.*1e1).^2).*1e-7 .*1e3;
+            end
         end
-        function S = GetSaturation(obj, Pgrid, Hgrid, STable, h, p)
-            S = interp2(Hgrid, Pgrid, STable, h, p, 'linear');
-        end 
-        function mu = GetViscosity(obj, Pgrid, Hgrid, muTable, h, p)
-            mu = interp2(Hgrid, Pgrid, muTable, h, p, 'linear');
+        function T = ComputeTemperature(obj, PhaseIndex, p, h)
+            % Compressed water region [K]
+            T(PhaseIndex == 1) = 273.15 - 2.41231 + 2.56222e-8.*(h(PhaseIndex == 1).*1e4) - 9.31415e-17.*(p(PhaseIndex == 1).*1e1).^2 - 2.2568e-19.*(h(PhaseIndex == 1).*1e4).^2;
+            % Twophase region
+            T(PhaseIndex == 2) = 273.15 - 2.41231 + 2.56222e-8.*(h(PhaseIndex == 2).*1e4) - 9.31415e-17.*(p(PhaseIndex == 2).*1e1).^2 - 2.2568e-19.*(h(PhaseIndex == 2).*1e4).^2;
+            % Superheated steam region
+            T(PhaseIndex == 3) = 273.15 - 374.669 + 4.79921e-6.*(p(PhaseIndex == 3).*1e1) - 6.33606e-15.*(p(PhaseIndex == 3).*1e1).^2 + ...
+                7.39386e-19.*(h(PhaseIndex == 3).*1e4).^2 - 3.3372e34.*(p(PhaseIndex == 3).*1e1).^-2.*(h(PhaseIndex == 3).*1e4).^-2 + ...
+                3.57154e19.*(p(PhaseIndex == 3).*1e1).^-3 - 1.1725e-37.*(p(PhaseIndex == 3).*1e1).*(h(PhaseIndex == 3).*1e4).^3 + ...
+                -2.26861e43.*(h(PhaseIndex == 3).*1e4).^-4;
+            T = T';
+        end        
+        function mu = ComputeViscosity(obj, i, PhaseIndex, T)
+            for k = 1:3
+                if i == 1
+                    mu(PhaseIndex == k) = (241.4 .* 10.^(247.8./((T(PhaseIndex == k)-273.15) + 133.15)) ) .* 1e-4 .* 1e-3;
+                elseif i == 2
+                    mu(PhaseIndex == k) = (0.407.*(T(PhaseIndex == k)-273.15) + 80.4) .* 1e-4 .* 1e-3;
+                end
+            end
+            mu = mu'; 
         end
-        function ThermCond = GetConductivity(obj, Pgrid, Hgrid, ThermCondTable, h, p)
-            ThermCond = interp2(Hgrid, Pgrid, ThermCondTable, h, p, 'linear');
+        function psat = ComputeSaturationPressure(obj, Status, PhaseIndex)
+            T = Status.Properties('T').Value;
+            % saturation pressure
+            theta(PhaseIndex == 2) = T(PhaseIndex == 2) + (-0.23855557567849 ./ (T(PhaseIndex == 2) - 0.65017534844798e3));
+            A(PhaseIndex == 2) = theta(PhaseIndex == 2).^2 + 0.11670521452767e4.*theta(PhaseIndex == 2) + -0.72421316703206e6;
+            B(PhaseIndex == 2) = -0.17073846940092e2.*theta(PhaseIndex == 2).^2 + 0.12020824702470e5.*theta(PhaseIndex == 2) + -0.32325550322333e7;
+            C(PhaseIndex == 2) = 0.14915108613530e2.*theta(PhaseIndex == 2).^2 + -0.48232657361591e4.*theta(PhaseIndex == 2) + 0.40511340542057e6;
+            % P = Psat [Pa]
+            psat(PhaseIndex == 2) = ( (2.*C(PhaseIndex == 2)) ./ (-1.*B(PhaseIndex == 2)+sqrt(B(PhaseIndex == 2).^2-4.*A(PhaseIndex == 2).*C(PhaseIndex == 2))) ).^4 .* 1e6;
         end
-        function PhaseEnthalpy = GetPhaseEnthalpy(obj, Ptable, PhaseEnthalpyTable, p)
-            PhaseEnthalpy = interp1(Ptable, PhaseEnthalpyTable' ,p); %transpose to get column vector; is due to sub2ind thingy
-        end
-
-        % Derivatives (directly from tables)
-        function drhodp = ComputeDrhoDp(obj, Pgrid, Hgrid, rhoTable, h, p)
-            [~,table_drhodp] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-            drhodp = interp2(Hgrid, Pgrid, table_drhodp, h, p, 'linear');
-        end
-        function drhodh = ComputeDrhoDh(obj, Pgrid, Hgrid, rhoTable, h, p)
-            [table_drhodh,~] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-            drhodh = interp2(Hgrid, Pgrid, table_drhodh, h, p, 'linear');
-        end
-        function drho_times_Sdp = ComputeDrho_times_SDp(obj, Pgrid, Hgrid, rho_times_STable, h, p)
-            [~,table_drho_times_Sdp] = gradient(rho_times_STable,obj.Hstepsize,obj.Pstepsize); 
-            drho_times_Sdp = interp2(Hgrid, Pgrid, table_drho_times_Sdp, h, p, 'linear');     
-        end
-        function drho_times_Sdh = ComputeDrho_times_SDh(obj, Pgrid, Hgrid, rho_times_STable, h, p) 
-            [table_drho_times_Sdh,~] = gradient(rho_times_STable,obj.Hstepsize,obj.Pstepsize); 
-            drho_times_Sdh = interp2(Hgrid, Pgrid, table_drho_times_Sdh, h, p, 'linear');
-        end
-        function drho_times_hdp = ComputeDrho_times_hDp(obj, Pgrid, Hgrid, rho_times_hTable, h, p)
-            [~,table_drho_times_hdp] = gradient(rho_times_hTable,obj.Hstepsize,obj.Pstepsize);
-            drho_times_hdp = interp2(Hgrid, Pgrid, table_drho_times_hdp, h, p, 'linear');
-        end
-        function drho_times_hdh = ComputeDrho_times_hDh(obj, Pgrid, Hgrid, rho_times_hTable, h, p)
-            [table_drho_times_hdh,~] = gradient(rho_times_hTable,obj.Hstepsize,obj.Pstepsize);
-            drho_times_hdh = interp2(Hgrid, Pgrid, table_drho_times_hdh, h, p, 'linear');
-        end
-        function drhoHSdp = ComputeDrhoHSDp(obj, Pgrid, Hgrid, rhoHSTable, h, p)
-            [~,table_drhoHSdp] = gradient(rhoHSTable,obj.Hstepsize,obj.Pstepsize);
-            drhoHSdp = interp2(Hgrid, Pgrid, table_drhoHSdp, h, p, 'linear');
-        end
-        function drhoHSdh = ComputeDrhoHSDh(obj, Pgrid, Hgrid, rhoHSTable, h, p)
-            [table_drhoHSdh,~] = gradient(rhoHSTable,obj.Hstepsize,obj.Pstepsize);
-            drhoHSdh = interp2(Hgrid, Pgrid, table_drhoHSdh, h, p, 'linear');
-        end
-        function dTdh = ComputeDTDh(obj, Pgrid, Hgrid, TTable, h, p)
-            [table_dTdh,~] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
-            dTdh = interp2(Hgrid, Pgrid, table_dTdh, h, p, 'linear');
-        end
-        function dTdp = ComputeDTDp(obj, Pgrid, Hgrid, TTable, h, p) 
-            [~,table_dTdp] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
-            dTdp = interp2(Hgrid, Pgrid, table_dTdp, h, p, 'linear');
+        function rho = ComputeDensities(obj, i, PhaseIndex, p, h)
+            for k = 1:3
+                if i == 1                    
+                    rho(PhaseIndex == k) = ( ...
+                        1.00207 + ...
+                        4.42607e-11.*(p(PhaseIndex == k).*1e1) + ...
+                        -5.47456e-12.*(h(PhaseIndex == k).*1e4) + ...
+                        5.02875e-21.*(h(PhaseIndex == k).*1e4).*(p(PhaseIndex == k).*1e1) + ...
+                        -1.24791e-21.*(h(PhaseIndex == k).*1e4).^2 ...
+                        ).*1e3;
+                elseif i == 2                    
+                    rho(PhaseIndex == k) = ( ...
+                        -2.26162e-5 + ...
+                        4.38441e-9.*(p(PhaseIndex == k).*1e1) + ...
+                        -1.79088e-19.*(p(PhaseIndex == k).*1e1).*(h(PhaseIndex == k).*1e4) + ...
+                        3.69276e-36.*(p(PhaseIndex == k).*1e1).^4 + ...
+                        5.17644e-41.*(p(PhaseIndex == k).*1e1).*(h(PhaseIndex == k).*1e4).^3 ...
+                        ).*1e3;
+                end
+                rho = rho';
+            end
         end
         
-        function dmudp = ComputeDmuDp(obj, Pgrid, Hgrid, muTable, h, p)
-            [~,table_dmudp] = gradient(muTable,obj.Hstepsize,obj.Pstepsize);
-            dmudp = interp2(Hgrid, Pgrid, table_dmudp, h, p, 'linear');
-        end       
-        function dmudh = ComputeDmuDh(obj, Pgrid, Hgrid, muTable, h, p)
-            [table_dmudh,~] = gradient(muTable,obj.Hstepsize,obj.Pstepsize);
-            dmudh = interp2(Hgrid, Pgrid, table_dmudh, h, p, 'linear');
+        % Derivatives (directly from tables)
+        function drhodp = ComputeDrhoDp(obj, i, PhaseIndex, p, h)
+            % Note that the derivative for two-phase region is implemented identical to single -phase regions; 
+            % when Psat has no derivative, the equation changes and this function should change as well !
+            for k = 1:3
+                if i == 1                    
+                    drhodp(PhaseIndex == k) = ( ...
+                        4.42607e-11 + ...
+                        5.02875e-21.*(h(PhaseIndex == k).*1e4) ...
+                        ).*1e3;
+                elseif i == 2                    
+                    drhodp(PhaseIndex == k) = ( ...
+                        4.38441e-9 + ...
+                        - 1.79088e-19.*(h(PhaseIndex == k).*1e4) + ...
+                        3.69276e-36.*4.*(p(PhaseIndex == k).*1e1).^3 + ...
+                        5.17644e-41.*(h(PhaseIndex == k).*1e4).^3 ...
+                        ).*1e3;
+                end
+%                 drhodp = drhodp';
+            end
         end
-        function dSdp = ComputeDSDp(obj, Pgrid, Hgrid, STable, h, p)
-            [~,table_dSdp] = gradient(STable,obj.Hstepsize,obj.Pstepsize);
-            dSdp = interp2(Hgrid, Pgrid, table_dSdp, h, p, 'linear');
+        function drhodh = ComputeDrhoDh(obj, i, PhaseIndex, p, h)
+            % Note that the derivative for two-phase region is implemented identical to single -phase regions; 
+            % when Psat has no derivative, the equation changes and this function should change as well !
+            for k = 1:3
+                if i == 1                    
+                    drhodh(PhaseIndex == k) = ( ...
+                        -5.47456e-12 + ...
+                        5.02875e-21.*(p(PhaseIndex == k).*1e1) + ...
+                        - 1.24791e-21.*2.*(h(PhaseIndex == k).*1e4) ...
+                        ).*1e3;
+                elseif i == 2                    
+                    drhodh(PhaseIndex == k) = ( ...
+                        -1.79088e-19.*(p(PhaseIndex == k).*1e1) + ...
+                        5.17644e-41.*(p(PhaseIndex == k).*1e1).*3.*(h(PhaseIndex == k).*1e4).^2 ...
+                        ).*1e3;
+                end
+%                 drhodh = drhodh';
+            end
         end
-        function dSdh = ComputeDSDh(obj, Pgrid, Hgrid, STable, h, p)
-            [table_dSdh,~] = gradient(STable,obj.Hstepsize,obj.Pstepsize);
-            dSdh = interp2(Hgrid, Pgrid, table_dSdh, h, p, 'linear');
+        function dTdp = ComputeDTDp(obj, PhaseIndex, p, h) 
+            % Compressed water region [K]
+            dTdp(PhaseIndex == 1) = -9.31415e-17.*2.*(p(PhaseIndex == 1).*1e1);
+            % Twophase region
+            dTdp(PhaseIndex == 2) = -9.31415e-17.*2.*(p(PhaseIndex == 2).*1e1);
+            % Superheated steam region
+            dTdp(PhaseIndex == 3) = 4.79921e-6 - 6.33606e-15.*2.*(p(PhaseIndex == 3).*1e1) + ...
+                                     3.3372e34.*(h(PhaseIndex == 3).*1e4).^-2.*(p(PhaseIndex == 3).*1e1).^-3 + ...
+                                     -3.57154e19.*3.*(p(PhaseIndex == 3).*1e1).^-4 - 1.1725e-37.*(h(PhaseIndex == 3).*1e4).^3;
+            dTdp = dTdp';
         end
-
+        function dTdh = ComputeDTDh(obj, PhaseIndex, p, h)
+            % Compressed water region [K]
+            dTdh(PhaseIndex == 1) = 2.56222e-8 - 2.2568e-19.*2.*(h(PhaseIndex == 1).*1e4);
+            % Twophase region
+            dTdh(PhaseIndex == 2) = 2.56222e-8 - 2.2568e-19.*2.*(h(PhaseIndex == 2).*1e4);
+            % Superheated steam region
+            dTdh(PhaseIndex == 3) = 7.39386e-19.*2.*(h(PhaseIndex == 3).*1e4) + ...
+                                     3.3372e34.*2.*(h(PhaseIndex == 3).*1e4).^-3.*(p(PhaseIndex == 3).*1e1).^-2 + ...
+                                     -1.1725e-37.*3.*(h(PhaseIndex == 3).*1e4).^2.*(p(PhaseIndex == 3).*1e1) + ...
+                                     2.26861e43.*4.*(h(PhaseIndex == 3).*1e4).^-5;
+            dTdh = dTdh';
+        end
+        
         % These depend on how we treat the conductive flux term
         function d2Td2p = ComputeD2TD2p(obj, Pgrid, Hgrid, TTable, h, p) 
-            [~,table_dTdp] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
-            [~,table_d2Td2p] = gradient(table_dTdp,obj.Hstepsize,obj.Pstepsize); 
-            d2Td2p = interp2(Hgrid, Pgrid, table_d2Td2p, h, p, 'linear');   
+            %   
         end
         function d2Td2h = ComputeD2TD2h(obj, Pgrid, Hgrid, TTable, h, p)
-            [table_dTdh,~] = gradient(TTable,obj.Hstepsize,obj.Pstepsize); 
-            [table_d2Td2h,~] = gradient(table_dTdh,obj.Hstepsize,obj.Pstepsize); 
-            d2Td2h = interp2(Hgrid, Pgrid, table_d2Td2h, h, p, 'linear'); 
+            % 
         end
         
-        % 2nd derivatives for inflexion point correction
-        function d2rhodp2 = ComputeD2rhoDp2(obj, Pgrid, Hgrid, rhoTable, h, p)
-            % 1st derivative
-            [~,table_drhodp] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-            % 2nd derivative
-            [~,table_d2rhodp2] = gradient(table_drhodp,obj.Hstepsize,obj.Pstepsize); % specify stepsize for pressure (make this generic)
-            d2rhodp2 = interp2(Hgrid, Pgrid, table_d2rhodp2, h, p, 'linear');
-        end
-        function d2rhodh2 = ComputeD2rhoDh2(obj, Pgrid, Hgrid, rhoTable, h, p)
-            % 1st derivative
-            [table_drhodh,~] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-            % 2nd derivative
-            [table_d2rhodh2,~] = gradient(table_drhodh,obj.Hstepsize,obj.Pstepsize); % specify stepsize for enthalpy (make this generic)
-            d2rhodh2 = interp2(Hgrid, Pgrid, table_d2rhodh2, h, p, 'linear');
-        end
-        function d2mudh2 = ComputeD2muDh2(obj, Pgrid, Hgrid, muTable, h, p)
-            [table_dmudh,~] = gradient(muTable,obj.Hstepsize,obj.Pstepsize); 
-            [table_d2mudh2,~] = gradient(table_dmudh,1); 
-            d2mudh2 = interp2(Hgrid, Pgrid, table_d2mudh2, h, p, 'linear');
-        end
+%         % 2nd derivatives for inflexion point correction
+%         function d2rhodp2 = ComputeD2rhoDp2(obj, Pgrid, Hgrid, rhoTable, h, p)
+%             % 1st derivative
+%             [~,table_drhodp] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
+%             % 2nd derivative
+%             [~,table_d2rhodp2] = gradient(table_drhodp,obj.Hstepsize,obj.Pstepsize); % specify stepsize for pressure (make this generic)
+%             d2rhodp2 = interp2(Hgrid, Pgrid, table_d2rhodp2, h, p, 'linear');
+%         end
+%         function d2rhodh2 = ComputeD2rhoDh2(obj, Pgrid, Hgrid, rhoTable, h, p)
+%             % 1st derivative
+%             [table_drhodh,~] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
+%             % 2nd derivative
+%             [table_d2rhodh2,~] = gradient(table_drhodh,obj.Hstepsize,obj.Pstepsize); % specify stepsize for enthalpy (make this generic)
+%             d2rhodh2 = interp2(Hgrid, Pgrid, table_d2rhodh2, h, p, 'linear');
+%         end
+%         function d2mudh2 = ComputeD2muDh2(obj, Pgrid, Hgrid, muTable, h, p)
+%             [table_dmudh,~] = gradient(muTable,obj.Hstepsize,obj.Pstepsize); 
+%             [table_d2mudh2,~] = gradient(table_dmudh,1); 
+%             d2mudh2 = interp2(Hgrid, Pgrid, table_d2mudh2, h, p, 'linear');
+%         end
         
-        function dhdp = ComputeDhDp(obj, Ptable, hTable, p)
-            table_dhdp = gradient(hTable,obj.Pstepsize);
-            dhdp = interp1(Ptable, table_dhdp, p);
-            
-%             dhdp = ((rho - p.*drhodp)./rho.^2);
 
-        end
-
-        
         % Injection properties; we are injecting only water, so it is
         % easier to use existing functions from Geothermal singlephase
         function rho = ComputeWaterDensity(obj, p, T)
@@ -154,7 +191,6 @@ classdef therm_comp_Multiphase < phase
             mu = A.*E;
         end
 
-        
         % Other
         function v = ComputeVelocity(obj, p, mu)
             % virtual call

@@ -71,6 +71,9 @@ classdef Geothermal_SinglePhase_formulation < formulation
             end
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
+            FluidModel.ComputeTableGrid();
+%             FluidModel.GetPTValues(ProductionSystem.Reservoir.State);
+
             %% 1. Geothermal Properties
             obj.Cp = FluidModel.Phases.Cp; % define Cp from simualtion builder
             obj.Kf = FluidModel.Phases.Kf; % define kf from simualtion builder

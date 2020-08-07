@@ -1,4 +1,3 @@
-
 % VTK Plotter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
@@ -21,7 +20,7 @@ classdef VTK_Plotter < Plotter
             obj.VTKindex = 1;
         end
         function PlotWells(obj, Inj, Prod, Grid)
-            %InJectors
+            %Injectors
             for i=1:length(Inj)
                 name = strcat(obj.FileName,num2str(i),'Inj','.vtk');
                 obj.WriteAWell(Inj(i), name, Grid);
@@ -68,7 +67,7 @@ classdef VTK_Plotter < Plotter
             %Write a VTK file for Reservoir
             fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
-            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            fprintf(fileID, 'DARSim2 Reservoir Simulator\n');
             if obj.isBinary
                 fprintf(fileID, 'BINARY\n');
             else
@@ -100,13 +99,25 @@ classdef VTK_Plotter < Plotter
             end
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
-            fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
+            fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
             fprintf(fileID, '\n');
-            obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
-            fprintf(fileID, '\n');
-            %ADD ADM coarse grids
+            
+            % Add the "fractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
+            FracturedFlag = zeros(Grid.N,1);
+%             if ~isempty(Grid.ListOfFracturedReservoirCells)
+%                 FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
+%             end
+%             obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
+%             fprintf(fileID, '\n');
+            
+            % Add ADM ACTIVEFine (coarse grids)
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
+            
+            % Add ADM ACTIVETime
+            obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
+            fprintf(fileID, '\n');
+
             % Print all existing variables
             N_var = double(Reservoir.State.Properties.Count);
             Names = Reservoir.State.Properties.keys;
@@ -118,11 +129,6 @@ classdef VTK_Plotter < Plotter
                 end
                 fprintf(fileID, '\n');
             end
-
-%             delta S
-%             delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
-%             obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
-%             fprintf(fileID, '\n');
             fclose(fileID);
         end
         function PlotFractureSolution(obj, Fracture, Grid, f)
@@ -130,18 +136,31 @@ classdef VTK_Plotter < Plotter
             fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
-            fprintf(fileID, 'BINARY\n');
+            
+            if obj.isBinary
+                fprintf(fileID, 'BINARY\n');
+            else
+            	fprintf(fileID, 'ASCII\n');
+            end
             fprintf(fileID, '\n');
+            
             fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
             fprintf(fileID, '\n');
+            
             fprintf(fileID, 'POINTS    %d   double\n', size(Grid.GridCoords,1) );
-            %fprintf(fileID, '%f %f %f\n' , Fracture.GridCoords'); 
-            fwrite(fileID, Grid.GridCoords', 'double', 'b');
+            if obj.isBinary
+                fwrite(fileID, Grid.GridCoords', 'double', 'b');
+            else
+                fprintf(fileID, '%f %f %f\n' , Grid.GridCoords'); 
+            end
+            fprintf(fileID, '\n');
+            
             fprintf(fileID, '\n');
             fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
             fprintf(fileID, '\n');
-            %ADD ADM coarse grids
+            
+            %Add ADM coarse grids
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             N_var = double(Fracture.State.Properties.Count);
@@ -150,8 +169,10 @@ classdef VTK_Plotter < Plotter
             for i=1:N_var
                 if strcmp(Fracture.State.Properties(Names{i}).Type, 'scalar')
                     obj.PrintScalar2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
-                    fprintf(fileID, '\n');
+                else
+                    obj.PrintVector2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
                 end
+                fprintf(fileID, '\n');
             end
             fclose(fileID);
         end
@@ -178,7 +199,27 @@ classdef VTK_Plotter < Plotter
             obj.PrintScalar2VTK(fileID, reshape(K(:,3), FractureGrid.N, 1), ' PERMZ');
             fprintf(fileID, '\n');
             fclose(fileID);
-        end   
+        end
+        function PlotPorosity(obj, ProductionSystem, DiscretizationModel)
+            obj.PlotReservoirPorosity(DiscretizationModel.ReservoirGrid, ProductionSystem.Reservoir.Por);
+            for f = 1 : length(ProductionSystem.FracturesNetwork.Fractures)
+                obj.PlotFracturePorosity(DiscretizationModel.FracturesGrid.Grids(f), ProductionSystem.FracturesNetwork.Fractures(f).Por, f);
+            end
+        end
+        function PlotReservoirPorosity(obj, ReservoirGrid, phi)
+            %Porosity
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'a');
+            obj.PrintScalar2VTK(fileID, reshape(phi, ReservoirGrid.N, 1), ' Porosity');
+            fprintf(fileID, '\n');
+            fclose(fileID);
+        end
+        function PlotFracturePorosity(obj, FractureGrid, phi, f)
+            %Permeability
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'a');
+            obj.PrintScalar2VTK(fileID, reshape(phi*ones(FractureGrid.N,1), FractureGrid.N, 1), ' Porosity');
+            fprintf(fileID, '\n');
+            fclose(fileID);
+        end
         function PlotBasisFunctions(obj,FineGrid, CoarseGrid, Prolp, Nf, Nc)
             obj.PlotReservoirBF(FineGrid(1), CoarseGrid(1,:), Prolp);
             for i=2:length(FineGrid)
@@ -465,23 +506,23 @@ classdef VTK_Plotter < Plotter
     methods (Access = private)
         function PrintScalar2VTK(obj, fileID, scalar, name)
             %Print a scalar in VTK format
-            fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('SCALARS  ', name,' float 1\n'));
+            fprintf(fileID, '\n');
+            fprintf(fileID, strcat('SCALARS  ', name,' double 1\n'));
             fprintf(fileID, 'LOOKUP_TABLE default\n');
             if obj.isBinary
-                fwrite(fileID, scalar','float', 'b');
+                fwrite(fileID, scalar', 'double', 'b');
             else
-            	fprintf(fileID,'%d ', scalar);
+            	fprintf(fileID,'%1.5e ', scalar);
             end
         end
         function PrintVector2VTK(obj, fileID, vector, name)
             %Print a vector in VTK format
-            fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('VECTORS  ', name,' float \n'));
+            fprintf(fileID, '\n');
+            fprintf(fileID, strcat('VECTORS  ', name,' double \n'));
             if obj.isBinary
-                fwrite(fileID, vector','float', 'b');
+                fwrite(fileID, vector','double', 'b');
             else
-            	fprintf(fileID,'%d ', vector);
+            	fprintf(fileID,'%1.5e ', vector);
             end
         end
     end

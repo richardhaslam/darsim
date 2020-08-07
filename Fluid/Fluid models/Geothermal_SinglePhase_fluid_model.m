@@ -20,8 +20,8 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
         
         Pgrid
         Tgrid
-        p
-        T
+%         p
+%         T
 
     end
     methods
@@ -63,94 +63,26 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
             end
         end
         
-                function ComputePhaseDensities(obj, Status)
-            % here you decide how to compute densities as function of P&T
-            rho = Status.Properties('rho_1'); 
-            rho.Value = obj.Phases(1).ComputeDensity(Status.Properties('P_1').Value, Status.Properties('T').Value);
-        end
+%         function ComputePhaseDensities(obj, Status)
+%             % here you decide how to compute densities as function of P&T
+%             rho = Status.Properties('rho_1'); 
+%             rho.Value = obj.Phases(1).ComputeDensity(Status.Properties('P_1').Value, Status.Properties('T').Value);
+%         end
         function AddPhaseConductivities(obj, Status)
             cond = Status.Properties('cond_1');
             cond.Value = obj.Phases(1).AddConductivity(Status.Properties('P_1').Value, Status.Properties('T').Value);
         end
-        function ComputePhaseEnthalpies(obj, Status)
-            % here you decide how to compute enthalpy as function of P&T
-            h = Status.Properties('h_1'); 
-            h.Value = obj.Phases(1).ComputeEnthalpy(Status.Properties('P_1').Value, Status.Properties('T').Value);
-        end
-        function ComputePhaseViscosities(obj, Status)
-            mu = Status.Properties('mu_1'); 
-            [mu.Value,~,~] = obj.Phases(1).ComputeViscosity(Status.Properties('T').Value);
-        end
-        function [dmudT,d2mudT2] = ComputeDmuDT(obj, Status)
-                [~,dmudT,d2mudT2] = obj.Phases.ComputeViscosity(Status.Properties('T').Value);
-        end
-        function Mob = ComputePhaseMobilities(obj, mu) 
-            Mob = 1./mu;
-        end
-        function dMobdp = ComputeDMobDp(obj,status)
-            % For now, mobility has no dependency on pressure.
-        end
-        function [dMobdT,d2MobdT2] = ComputeDMobdT(obj, Status) 
-            mu = Status.Properties('mu_1').Value;
-            [dmudT,d2mudT2] = obj.ComputeDmuDT(Status);
-            dMobdT = -dmudT./(mu.^2);
-            d2MobdT2 = (2.*dmudT.^2./mu.^3) - d2mudT2./mu.^2;
-        end
-        function drhodp = ComputeDrhoDp(obj, Status)
-            drhodp = obj.Phases.ComputeDrhoDp(Status.Properties('P_1').Value, Status.Properties('T').Value);
-        end
-        function [drhodT,d2rhodT2] = ComputeDrhoDT(obj, Status)
-            [drhodT,d2rhodT2] = obj.Phases.ComputeDrhoDT(Status.Properties('P_1').Value, Status.Properties('T').Value);
-        end
-        function dhdp = ComputeDhDp(obj, Status)
-            dhdp = obj.Phases.ComputeDhDp(Status.Properties('P_1').Value, Status.Properties('T').Value);
-        end
-        function [dhdT,d2hdT2] = ComputeDhDT(obj, Status)
-            [dhdT,d2hdT2] = obj.Phases.ComputeDhDT(Status.Properties('P_1').Value, Status.Properties('T').Value);
-        end
-
-
-%         function ComputeTableGrid(obj)
-%             [obj.Tgrid,obj.Pgrid] = meshgrid(obj.Ttable,obj.Ptable);
-%         end
-%         function GetPTValues(obj, Status)
-%             obj.p = Status.Properties('P_1').Value;
-%             obj.T = Status.Properties('T').Value;
-%         end
-%       
-%         % Linear interpolation
-%         function ComputePhaseDensities(obj, Status)
-%             for i=1:obj.NofPhases
-%                 rho = Status.Properties(['rho_', num2str(i)]);
-%                 rhoTable = obj.TablePT.('rho');
-%                 rho.Value = obj.Phases(i).ComputeDensity(obj.Pgrid, obj.Tgrid, rhoTable, obj.T, obj.p);
-%             end
-%         end
-%         function AddPhaseConductivities(obj, Status) 
-%             for i=1:obj.NofPhases
-%                 ThermCond = Status.Properties(['cond_',num2str(i)]);
-%                 ThermCondTable = obj.TablePT.('cond');
-%                 ThermCond.Value = obj.Phases(i).AddConductivity(obj.Pgrid, obj.Tgrid, ThermCondTable, obj.T, obj.p);
-%             end
-%         end
-%         function ComputePhaseViscosities(obj, Status)
-%             for i=1:obj.NofPhases
-%                 mu = Status.Properties(['mu_',num2str(i)]);
-%                 muTable = obj.TablePT.('mu');
-%                 mu.Value = obj.Phases(i).ComputeViscosity(obj.Pgrid, obj.Tgrid, muTable, obj.T, obj.p);
-%             end
-%         end
 %         function ComputePhaseEnthalpies(obj, Status)
 %             % here you decide how to compute enthalpy as function of P&T
-%             H = Status.Properties('h_1'); 
-%             PhaseEnthalpyTable = obj.TablePT.('h');
-%             H.Value = obj.Phases(1).ComputeEnthalpy(obj.Pgrid, obj.Tgrid, PhaseEnthalpyTable, obj.T, obj.p);
+%             h = Status.Properties('h_1'); 
+%             h.Value = obj.Phases(1).ComputeEnthalpy(Status.Properties('P_1').Value, Status.Properties('T').Value);
 %         end
-% 
-%         %%%
+%         function ComputePhaseViscosities(obj, Status)
+%             mu = Status.Properties('mu_1'); 
+%             [mu.Value,~,~] = obj.Phases(1).ComputeViscosity(Status.Properties('T').Value);
+%         end
 %         function [dmudT,d2mudT2] = ComputeDmuDT(obj, Status)
-%             muTable = obj.TablePT.('mu');
-%             [dmudT,d2mudT2] = obj.Phases(1).ComputeDmuDT(obj.Pgrid, obj.Tgrid, muTable, obj.T, obj.p);              
+%                 [~,dmudT,d2mudT2] = obj.Phases.ComputeViscosity(Status.Properties('T').Value);
 %         end
 %         function Mob = ComputePhaseMobilities(obj, mu) 
 %             Mob = 1./mu;
@@ -158,29 +90,117 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
 %         function dMobdp = ComputeDMobDp(obj,status)
 %             % For now, mobility has no dependency on pressure.
 %         end
-%         function [dMobdT,d2MobdT2] = ComputeDMobdT(obj, Status)
+%         function [dMobdT,d2MobdT2] = ComputeDMobdT(obj, Status) 
 %             mu = Status.Properties('mu_1').Value;
-%             muTable = obj.TablePT.('mu');
-%             [dmudT,d2mudT2] = obj.Phases(1).ComputeDmuDT(obj.Pgrid, obj.Tgrid, muTable, obj.T, obj.p);              
+%             [dmudT,d2mudT2] = obj.ComputeDmuDT(Status);
 %             dMobdT = -dmudT./(mu.^2);
 %             d2MobdT2 = (2.*dmudT.^2./mu.^3) - d2mudT2./mu.^2;
 %         end
 %         function drhodp = ComputeDrhoDp(obj, Status)
-%             rhoTable = obj.TablePT.('rho');
-%             drhodp = obj.Phases(1).ComputeDrhoDp(obj.Pgrid, obj.Tgrid, rhoTable, obj.T, obj.p);
+%             drhodp = obj.Phases.ComputeDrhoDp(Status.Properties('P_1').Value, Status.Properties('T').Value);
 %         end
 %         function [drhodT,d2rhodT2] = ComputeDrhoDT(obj, Status)
-%             rhoTable = obj.TablePT.('rho');
-%             [drhodT,d2rhodT2] = obj.Phases.ComputeDrhoDT(obj.Pgrid, obj.Tgrid, rhoTable, obj.T, obj.p);
-%         end       
-%         function dhdp = ComputeDhDp(obj, Status)
-%             PhaseEnthalpyTable = obj.TablePT.('h');
-%             dhdp = obj.Phases.ComputeDhDp(obj.Pgrid, obj.Tgrid, PhaseEnthalpyTable, obj.T, obj.p);
-%         end       
-%         function [dhdT,d2hdT2] = ComputeDhDT(obj, Status)
-%             PhaseEnthalpyTable = obj.TablePT.('h');
-%             [dhdT,d2hdT2] = obj.Phases.ComputeDhDT(obj.Pgrid, obj.Tgrid, PhaseEnthalpyTable, obj.T, obj.p);
+%             [drhodT,d2rhodT2] = obj.Phases.ComputeDrhoDT(Status.Properties('P_1').Value, Status.Properties('T').Value);
 %         end
+%         function dhdp = ComputeDhDp(obj, Status)
+%             dhdp = obj.Phases.ComputeDhDp(Status.Properties('P_1').Value, Status.Properties('T').Value);
+%         end
+%         function [dhdT,d2hdT2] = ComputeDhDT(obj, Status)
+%             [dhdT,d2hdT2] = obj.Phases.ComputeDhDT(Status.Properties('P_1').Value, Status.Properties('T').Value);
+%         end
+
+
+        function ComputeTableGrid(obj)
+            [obj.Tgrid,obj.Pgrid] = meshgrid(obj.Ttable,obj.Ptable);
+        end
+%         function GetPTValues(obj, Status)
+%             obj.p = Status.Properties('P_1').Value;
+%             obj.T = Status.Properties('T').Value;
+%         end
+      
+        % Linear interpolation
+        function ComputePhaseDensities(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            for i=1:obj.NofPhases
+                rho = Status.Properties(['rho_', num2str(i)]);
+                rhoTable = obj.TablePT.('rho');
+                rho.Value = obj.Phases(i).ComputeDensity(obj.Pgrid, obj.Tgrid, rhoTable, T, p);
+            end
+        end
+%         function AddPhaseConductivities(obj, Status) 
+%             p = Status.Properties('P_1').Value;
+%             T = Status.Properties('T').Value;
+%             for i=1:obj.NofPhases
+%                 ThermCond = Status.Properties(['cond_',num2str(i)]);
+%                 ThermCondTable = obj.TablePT.('cond');
+%                 ThermCond.Value = obj.Phases(i).AddConductivity(obj.Pgrid, obj.Tgrid, ThermCondTable, T, p);
+%             end
+%         end
+        function ComputePhaseViscosities(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            for i=1:obj.NofPhases
+                mu = Status.Properties(['mu_',num2str(i)]);
+                muTable = obj.TablePT.('mu');
+                mu.Value = obj.Phases(i).ComputeViscosity(obj.Pgrid, obj.Tgrid, muTable, T, p);
+            end
+        end
+        function ComputePhaseEnthalpies(obj, Status)
+            % here you decide how to compute enthalpy as function of P&T
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            H = Status.Properties('h_1'); 
+            PhaseEnthalpyTable = obj.TablePT.('h');
+            H.Value = obj.Phases(1).ComputeEnthalpy(obj.Pgrid, obj.Tgrid, PhaseEnthalpyTable, T, p);
+        end
+
+        %%%
+        function [dmudT,d2mudT2] = ComputeDmuDT(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            muTable = obj.TablePT.('mu');
+            [dmudT,d2mudT2] = obj.Phases(1).ComputeDmuDT(obj.Pgrid, obj.Tgrid, muTable, T, p);              
+        end
+        function Mob = ComputePhaseMobilities(obj, mu) 
+            Mob = 1./mu;
+        end
+        function dMobdp = ComputeDMobDp(obj,status)
+            % For now, mobility has no dependency on pressure.
+        end
+        function [dMobdT,d2MobdT2] = ComputeDMobdT(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            mu = Status.Properties('mu_1').Value;
+            muTable = obj.TablePT.('mu');
+            [dmudT,d2mudT2] = obj.Phases(1).ComputeDmuDT(obj.Pgrid, obj.Tgrid, muTable, T, p);              
+            dMobdT = -dmudT./(mu.^2);
+            d2MobdT2 = (2.*dmudT.^2./mu.^3) - d2mudT2./mu.^2;
+        end
+        function drhodp = ComputeDrhoDp(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            rhoTable = obj.TablePT.('rho');
+            drhodp = obj.Phases(1).ComputeDrhoDp(obj.Pgrid, obj.Tgrid, rhoTable, T, p);
+        end
+        function [drhodT,d2rhodT2] = ComputeDrhoDT(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            rhoTable = obj.TablePT.('rho');
+            [drhodT,d2rhodT2] = obj.Phases.ComputeDrhoDT(obj.Pgrid, obj.Tgrid, rhoTable, T, p);
+        end       
+        function dhdp = ComputeDhDp(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            PhaseEnthalpyTable = obj.TablePT.('h');
+            dhdp = obj.Phases.ComputeDhDp(obj.Pgrid, obj.Tgrid, PhaseEnthalpyTable, T, p);
+        end       
+        function [dhdT,d2hdT2] = ComputeDhDT(obj, Status)
+            p = Status.Properties('P_1').Value;
+            T = Status.Properties('T').Value;
+            PhaseEnthalpyTable = obj.TablePT.('h');
+            [dhdT,d2hdT2] = obj.Phases.ComputeDhDT(obj.Pgrid, obj.Tgrid, PhaseEnthalpyTable, T, p);
+        end
         
         
         function ComputeThermalConductivity(obj, Reservoir)

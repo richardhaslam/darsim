@@ -555,11 +555,8 @@ classdef simulation_builder < handle
             Reservoir.AddPermeabilityPorosity(K, phi);
             % Adding thermal conductivity to the reservoir (maybe find other place for this)
             switch obj.SimulatorSettings.Formulation
-%                 case {'Geothermal_SinglePhase'}
-%                     Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
                 case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                     Reservoir.K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
-                    % The effective thermal conductivity will be calculated later
             end
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
@@ -698,8 +695,9 @@ classdef simulation_builder < handle
                     Kz = Kx;
                     K = [Kx, Ky, Kz];
                     FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture
-                    if contains(obj.SimulatorSettings.Formulation,'Geothermal')
-                        FracturesNetwork.Fractures(f).AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
+                    switch obj.SimulatorSettings.Formulation
+                        case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                            FracturesNetwork.Fractures(f).K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
                     end
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
