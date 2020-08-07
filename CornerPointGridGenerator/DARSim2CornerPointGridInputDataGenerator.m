@@ -240,7 +240,7 @@ for G = 1 : length(Geometries)
     %% SECTION 2.3: CELL TYPES
     Section_3_VTK = 11 * ones(Geometry.cells.num,1);                                      % 12 is the VTK reference for Hexahedron
     
-    %% OUTOUT FILE: CORNER GRID POINT DATA - VTK
+    %% SECTION 2.4: CORNER POINT GRID VTK DATA
     OutputFileName = 'CornerPointGrid_DARSim_VTK_Plotter';
     disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
     fid = fopen(strcat(Directory,'\', OutputFileName, '_', num2str(G),'.vtk'), 'w+');
@@ -337,10 +337,7 @@ for G = 1 : length(Geometries)
             fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e\n', perm_txt(ii,:)');
         end
     end
-    fclose(fid);
-    
-    %% SECTION 3: Generating the VTK Data
-    
+    fclose(fid);    
 end
 end
 %--------------------------------------------------------------------------
