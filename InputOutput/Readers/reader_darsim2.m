@@ -517,8 +517,9 @@ classdef reader_darsim2 < reader
             index = find(~cellfun('isempty', temp));
             CornerPointGridData.Nz = str2double( obj.CornerPointGridMatrix{index+1} );
             
-            temp = strfind(obj.CornerPointGridMatrix, 'ACTIVE_CELLS');
-            index = find(~cellfun('isempty', temp));
+%             temp = strfind(obj.CornerPointGridMatrix, 'ACTIVE_CELLS');
+%             index = find(~cellfun('isempty', temp));
+            index = find(strcmp(obj.CornerPointGridMatrix, 'ACTIVE_CELLS'));
             if isempty(index)
                 error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
             end
