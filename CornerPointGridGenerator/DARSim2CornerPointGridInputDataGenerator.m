@@ -18,10 +18,10 @@ for G = 1 : length(Geometries)
         ACTNUM(Geometries(i).cells.indexMap)= 0;
     end
 
-    %% SECTION 1: CELLS NODES (X, Y, Z COORDINATES)
+    %% SECTION 1.1: CELLS NODES (X, Y, Z COORDINATES)
     Section_1 = [(1:1:Geometry.nodes.num)' Geometry.nodes.coords]; 
     
-    %% SECTION 2: CELLS NODES + CELLS CENTROIDS + CELL VOLUMES
+    %% SECTION 1.2: CELLS NODES + CELLS CENTROIDS + CELL VOLUMES
     FtC_1 = [gridCellNo(Geometry) Geometry.cells.faces];                                                   % Cell + Faces to Cell + Faces Tag
     LI = (FtC_1(:,3) == 1)|(FtC_1(:,3) == 2)|(FtC_1(:,3) == 3)|(FtC_1(:,3) == 4);                          % Logical Index: N/S/E/W faces(Faces Tag: 1 2 3 4)
     FtC_1(LI,:) = [];                                                                                      % Delete N/S/E/W faces (Faces Tag: 1 2 3 4))                            
@@ -63,7 +63,7 @@ for G = 1 : length(Geometries)
     
     Section_2 = [(1:1:Geometry.cells.num)' NtC Geometry.cells.centroids Geometry.cells.volumes FtC_2 CtC_2];  % 8 (nodes number per cell + tag nodes)
         
-    %% SECTION 3: INTERNAL FACES (FACES CONNECTED TO CELLS)
+    %% SECTION 1.3: INTERNAL FACES (FACES CONNECTED TO CELLS)
     nodes = Geometry.faces.nodes;
     pos   = Geometry.faces.nodePos;
     faces = 1:Geometry.faces.num ;
@@ -81,7 +81,7 @@ for G = 1 : length(Geometries)
     % Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
     Section_3 = [IF(:,1) IF(:,4:10) IF(:,2) c_vec(:,1:3) IF(:,3) c_vec(:,4:6) IF(:,11:end)];
 
-    %% SECTION 4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
+    %% SECTION 1.4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
     % Assembly Matrix with Face Geometry Data
     EF = [NF, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals, Geometry.faces.neighbors NtF_3];
     LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                                                 % Delete Internal Faces
@@ -90,38 +90,8 @@ for G = 1 : length(Geometries)
 
     % External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
     Section_4 = [EF(:,1:8) NC (Geometry.faces.centroids(EF(:,1),:) - Geometry.cells.centroids(NC)) EF(:,11:end)];
-    
-    %% CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
-    % POROSITY
-    if sum(strcmp(fieldnames(grdecl),'PORO'))
-        poro = grdecl.PORO(Geometry.cells.indexMap);                                                % SAIGUP Model | Norne Field
-        poro_text = [Geometry.cells.indexMap poro];
-    else
-        poro = load('Porosity.txt')';                                                               % Johansen Formation
-        poro = poro(Geometry.cells.indexMap);                                                       % Johansen Formation
-    end
-    
-    % PERMEABILITY
-    if sum(strcmp(fieldnames(grdecl),'PERMX')) % such as in "SAIGU"P and "NOrne"
-        if sum(strcmp(fieldnames(grdecl),'PERMZ'))
-            perm = [grdecl.PERMX, grdecl.PERMY, grdecl.PERMZ];
-        else
-            perm = bsxfun(@times, [1 1 1], grdecl.PERMX);
-        end
-    else % such as in "Johansen"
-        perm = load('Permeability.txt')';
-        perm = bsxfun(@times, [1 1 1], perm);
-    end
-    perm = perm(Geometry.cells.indexMap,:);
-    
-    perm = perm .* milli * darcy;                                                                   % Convert K values from to Darcy to Metric
-    perm_txt = [Geometry.cells.indexMap perm];
-    
-    rock = makeRock(Geometry, perm, poro);                                                          % Create K Tensor
-    [K, i, j] = permTensor(rock, Geometry.griddim);                                                 % Create K Tensor
-    K_text = [Geometry.cells.indexMap K];                                                           % Create K Tensor
-    
-    %% OUTOUT FILE 1: GRID GEOMETRY DATA
+
+    %% SECTION 1.5: OUTOUT FILE 1 (GRID GEOMETRY DATA)
     disp( '******************* Writing the data into output text files *********************' );
     OutputFileName = 'CornerPointGrid_DARSim_InputData';
     disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
@@ -257,7 +227,26 @@ for G = 1 : length(Geometries)
         fprintf(fid,FormatSpec, Section_4(ii,:)');
     end
     fclose(fid);
-    %% OUTPUT FILE 2: ROCK PROPERTIES DATA
+    
+    %% SECTION 2: CORNER POINT GRID ROCK PROPERTIES DATA: INPUT FILE GENERATION
+    %% SECTION 2.1: POROSITY
+    poro = grdecl.PORO(Geometry.cells.indexMap);
+    poro_text = [Geometry.cells.indexMap, poro];
+
+    %% SECTION 2.2: PERMEABILITY
+    if ~strcmp(fieldnames(grdecl),'PERMY')
+        grdecl.PERMY = grdecl.PERMX;
+    end
+    if ~strcmp(fieldnames(grdecl),'PERMZ')
+        grdecl.PERMZ = grdecl.PERMY;
+    end
+    perm = [grdecl.PERMX, grdecl.PERMY, grdecl.PERMZ];
+    perm = perm(Geometry.cells.indexMap,:);
+    % Convert K values from to Darcy to Metric (if not already in metric)
+    perm = perm .* milli * darcy;
+    perm_txt = [Geometry.cells.indexMap, perm];
+    
+    %% SECTION 2.3: OUTPUT FILE 2 (ROCK PROPERTIES DATA)
     OutputFileName = 'CornerPointGrid_DARSim_RockPropertiesData';
     disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
     
@@ -278,43 +267,37 @@ for G = 1 : length(Geometries)
     fprintf(fid, 'ACTIVE_CELLS\n');
     fprintf(fid, '%d\n', Geometry.cells.num);
     
-    fprintf(fid, '\n');
-    fprintf(fid, '%% Section 1: Porosity\n');
-    fprintf(fid, '%% [Cell Index] + [Porosity]\n');
-    fprintf(fid, '%% Units: Fraction\n');
-    fprintf(fid, 'POROSITY_DATA\n');
-    fprintf(fid,'%s %s\n', 'Cell No.  ','Porosity');
-    
-    for ii = 1:size(poro_text,1)
-        fprintf(fid,'%6.0d   ,  %.4f\n', poro_text(ii,:)');
+    % Writing the porosity data
+    if ~isempty(poro_text)
+        fprintf(fid, '\n');
+        fprintf(fid, '%% Section 1: Porosity\n');
+        fprintf(fid, '%% [Cell Index] + [Porosity]\n');
+        fprintf(fid, '%% Units: Fraction\n');
+        fprintf(fid, 'POROSITY_DATA\n');
+        fprintf(fid,'%s %s\n', 'Cell No.  ','Porosity');
+        for ii = 1:size(poro_text,1)
+            fprintf(fid,'%6.0d   ,  %.4f\n', poro_text(ii,:)');
+        end
     end
     
-    fprintf(fid, '\n');
-    fprintf(fid, '%% Section 2: Permeability\n');
-    fprintf(fid, '%% [Cell Index] + [Permeability (Kx, Ky, Kz)]\n');
-    fprintf(fid, '%% Permeability Unit (m2 or D or mD)\n');
-    fprintf(fid, 'PERMEABILITY_UNIT\n');
-    fprintf(fid, 'm2\n\n');
-    fprintf(fid, '%% Permeability Scale (Linear or Logarithmic)\n');
-    fprintf(fid, 'PERMEABILITY_SCALE\n');
-    fprintf(fid, 'Linear\n\n');
-    fprintf(fid, 'PERMEABILITY_DATA\n');
-    fprintf(fid,'%s %7s %10s %10s\n', 'Cell No.  ','Kx','Ky','Kz');
-    
-    for ii = 1:size(perm_txt,1)
-        fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e\n', perm_txt(ii,:)');
-    end
-    
-    fprintf(fid, '\n');
-    fprintf(fid, 'PERMEABILITY_TENSOR\n');
-    
-    fprintf(fid,'%s %8s %10s %10s %14s %10s %10s %14s %10s %10s\n', 'Cell No.  ','Kxx','Kxy','Kxz','Kyx','Kyy','Kyz','Kzx','Kzy','Kzz');
-    
-    for ii = 1:size(K_text,1)
-        fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e  ,  %.4e,%.4e,%.4e\n', K_text(ii,:)');
+    % Writing the permeability data
+    if ~isempty(perm_txt)
+        fprintf(fid, '\n');
+        fprintf(fid, '%% Section 2: Permeability\n');
+        fprintf(fid, '%% [Cell Index] + [Permeability (Kx, Ky, Kz)]\n');
+        fprintf(fid, '%% Permeability Unit (m2 or D or mD)\n');
+        fprintf(fid, 'PERMEABILITY_UNIT\n');
+        fprintf(fid, 'm2\n\n');
+        fprintf(fid, '%% Permeability Scale (Linear or Logarithmic)\n');
+        fprintf(fid, 'PERMEABILITY_SCALE\n');
+        fprintf(fid, 'Linear\n\n');
+        fprintf(fid, 'PERMEABILITY_DATA\n');
+        fprintf(fid,'%s %7s %10s %10s\n', 'Cell No.  ','Kx','Ky','Kz');
+        for ii = 1:size(perm_txt,1)
+            fprintf(fid,'%6.0d   ,  %.4e,%.4e,%.4e\n', perm_txt(ii,:)');
+        end
     end
     fclose(fid);
-    
 end
 
 end
