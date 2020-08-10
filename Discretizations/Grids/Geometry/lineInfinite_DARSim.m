@@ -91,11 +91,11 @@ classdef lineInfinite_DARSim < handle
             end
         end
         %%
-        function IsPointOnTheInfiniteLine = Is_Point_On_InfiniteLine(obj, Point, Epsilon)
-            t1 = ( Point(1) - obj.Eq.x0 ) / obj.Eq.a;
-            t2 = ( Point(2) - obj.Eq.y0 ) / obj.Eq.b;
-            t3 = ( Point(3) - obj.Eq.z0 ) / obj.Eq.c;
-            if abs(t1-t2)<Epsilon && abs(t1-t3)<Epsilon && abs(t2-t3)<Epsilon
+        function IsPointOnTheInfiniteLine = Is_Point_On_The_InfiniteLine(obj, Point, Epsilon)
+            % The point P lies on an infinite line (with P0 being a point defined on that line)
+            % only if the angle between the unit vector of the line and PP0 is zero or 180 degree.
+            % This means that if tge cross product of these two vectors is zero, the point is on the line.
+            if cross( Point - obj.PointA , obj.unitVec ) < Epsilon
                 IsPointOnTheInfiniteLine = 1;
             else
                 IsPointOnTheInfiniteLine = 0;

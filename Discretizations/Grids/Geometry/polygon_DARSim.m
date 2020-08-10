@@ -66,9 +66,9 @@ classdef polygon_DARSim < planeInfinite_DARSim
             [Geostatus, IntersectPoint] = obj.Obtain_PlaneInfinite_LineSegment_Intersection(LineSegment, Epsilon);
             
             if Geostatus.haveIntersect == 1 && ~isempty(IntersectPoint)
-                % 2. Now, we check if the intersection point lies inside the polygon and line segment
+                % 2. Now, we check if the intersection point lies inside the polygon and on the line segment
                 PointIsInsidePolygon = obj.Is_Point_Inside_Polygon(IntersectPoint , Epsilon);
-                PointIsOnTheLineSegment = LineSegment.Is_Point_One_LineSegment(IntersectPoint, Epsilon);
+                PointIsOnTheLineSegment = LineSegment.Is_Point_On_The_LineSegment(IntersectPoint, Epsilon);
                 
                 if PointIsOnTheLineSegment && PointIsInsidePolygon
                     % The information is already correctly reported with [Geostatus, intersectPoint].

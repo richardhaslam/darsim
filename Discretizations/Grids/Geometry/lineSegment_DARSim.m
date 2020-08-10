@@ -115,9 +115,13 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
             end
         end
         %
-        function IsPointOnTheLineSegment = Is_Point_One_LineSegment(obj, Point, Epsilon)
-            IsPointOnTheInfiniteLine = obj.Is_Point_On_InfiniteLine(Point, Epsilon);
-            if IsPointOnTheInfiniteLine && dot( (obj.PointA - Point) , (obj.PointB - Point) ) < 0
+        function IsPointOnTheLineSegment = Is_Point_On_The_LineSegment(obj, Point, Epsilon)
+            % Assuming the point P is on the infinite line, and points A and B being the start and 
+            % the end of the line segemnt AB, the angle between vectors PA and PB will be either :
+            % a) zero degree (point P lies outside of the line segment AB) wich makes the dot product positive, or
+            % b) 180 degree (point P lies insdie the line segment AB) which makes the dot product negative.
+            IsPointOnTheInfiniteLine = obj.Is_Point_On_The_InfiniteLine(Point, Epsilon);
+            if IsPointOnTheInfiniteLine && dot( (obj.PointA - Point) , (obj.PointB - Point) ) < Epsilon
                 IsPointOnTheLineSegment = 1;
             else
                 IsPointOnTheLineSegment = 0;

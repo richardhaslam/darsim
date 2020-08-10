@@ -98,13 +98,7 @@ classdef planeInfinite_DARSim < handle
             if Geostatus.haveIntersect == 1 && ~isempty(IntersectPoint)
                 % 2. Now, we check if the intersection point lies inside the line segment
                 % Point C is inside the line segment AB only if dot product of AC and BC is negative.
-                if dot( IntersectPoint-LineSegment.PointA , IntersectPoint-LineSegment.PointB ) <= 0
-                    PointIsInsideLineSegment = 1;
-                else
-                    PointIsInsideLineSegment = 0;
-                end
-                
-                if PointIsInsideLineSegment
+                if LineSegment.Is_Point_On_The_LineSegment(IntersectPoint, Epsilon)
                     % The information is already correctly reported with [Geostatus, intersectPoint].
                     % No further action is needed.
                 else
