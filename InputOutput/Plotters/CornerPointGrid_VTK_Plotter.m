@@ -64,6 +64,9 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             end
             obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
             fprintf(fileID, '\n');
+            
+            % Add the cell volume
+            obj.PrintScalar2VTK(fileID, Grid.Volume, ' Volume');
 
             % Add ADM ACTIVETime
             obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
@@ -75,7 +78,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             
             fclose(fileID);
             
-            obj.PlotInternalFaces(Reservoir, Grid);
+            %obj.PlotInternalFaces(Reservoir, Grid);
         end
         function PlotInternalFaces(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
