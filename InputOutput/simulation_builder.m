@@ -306,7 +306,7 @@ classdef simulation_builder < handle
             else
                 phi = obj.SimulationInput.ReservoirProperties.phi .* ones(N_ActiveCells, 1);
             end
-            if any(phi>=1) || any(phi<=0)
+            if any(phi>1) || any(phi<0)
                 error('In the porosity data, there are values out of the physical range. Please check the Input file!')
             end
             

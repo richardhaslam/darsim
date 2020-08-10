@@ -905,7 +905,7 @@ classdef reader_darsim2 < reader
                             ijk = strrep(ijk,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
                             ijk = strrep(ijk,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
                             ijk = strrep(ijk,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
-                            ijk = [str2num(ijk{1}), str2num(ijk{2}), str2num(ijk{3})];
+                            ijk = [str2double(ijk{1}), str2double(ijk{2}), str2double(ijk{3})];
                             Well.Coordinate.Value(p,:) = ijk;
                         end
                         if any(mod(Well.Coordinate.Value(:),1) ~= 0)
@@ -919,7 +919,7 @@ classdef reader_darsim2 < reader
                             xyz = strrep(xyz,'LX',num2str(SimulationInput.ReservoirProperties.size(1)));
                             xyz = strrep(xyz,'LY',num2str(SimulationInput.ReservoirProperties.size(2)));
                             xyz = strrep(xyz,'LZ',num2str(SimulationInput.ReservoirProperties.size(3)));
-                            xyz = [str2num(xyz{1}), str2num(xyz{2}), str2num(xyz{3})];
+                            xyz = [str2double(xyz{1}), str2double(xyz{2}), str2double(xyz{3})];
                             Well.Coordinate.Value(p,:) = xyz;
                         end
                     case('CELL_INDEX_LIST')
@@ -930,7 +930,7 @@ classdef reader_darsim2 < reader
                             IndexList = strrep(IndexList,'NX',num2str(SimulationInput.ReservoirProperties.Grid.N(1)));
                             IndexList = strrep(IndexList,'NY',num2str(SimulationInput.ReservoirProperties.Grid.N(2)));
                             IndexList = strrep(IndexList,'NZ',num2str(SimulationInput.ReservoirProperties.Grid.N(3)));
-                            IndexList = [str2num(IndexList{1}), str2num(IndexList{2}), str2num(IndexList{3})];
+                            IndexList = str2double(IndexList);
                             Well.Coordinate.Value = [ Well.Coordinate.Value, IndexList ];
                         end
                     otherwise
