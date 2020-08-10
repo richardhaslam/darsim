@@ -25,7 +25,7 @@ classdef Discretization_model < handle
             obj.FracturesGrid = fracturesgrid;
         end
         function AddCrossConnections(obj, crossconnections, Formulation)
-            obj.CrossConnections = crossconnections; 
+            obj.CrossConnections = crossconnections;
         end
         function Initialize(obj, ProductionSystem, Formulation)
             obj.ReservoirGrid.Initialize(ProductionSystem.Reservoir);

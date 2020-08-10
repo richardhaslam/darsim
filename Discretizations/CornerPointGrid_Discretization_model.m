@@ -230,9 +230,28 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                     SE_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SE_Bot_Corner(I) , : );
                     NE_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NE_Bot_Corner(I) , : );
                     
-                    Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                    if isempty(obj.CornerPointGridData.Cell.Faces{I})
+                        Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                    else
+                        for n = 1 : length(obj.CornerPointGridData.Cell.Faces{I})
+                            InterfaceFullIndex = obj.CornerPointGridData.Cell.Faces{I}(n);
+                            InterfaceIndex = find( obj.CornerPointGridData.Internal_Face.FullIndex == InterfaceFullIndex );
+                            if ~isempty(InterfaceIndex) % This is an internal face
+                                NodesIndex = unique( obj.CornerPointGridData.Internal_Face.Corners{InterfaceIndex} , 'stable' );
+                            else                        % This is an external face
+                                InterfaceIndex = find( obj.CornerPointGridData.External_Face.FullIndex == InterfaceFullIndex );
+                                NodesIndex = unique( obj.CornerPointGridData.External_Face.Corners{InterfaceIndex} , 'stable' );
+                            end
+                            Vertices = obj.CornerPointGridData.Nodes_XYZ_Coordinate( NodesIndex , : );
+                            n_vec = cross( Vertices(2,:)-Vertices(1,:) , Vertices(end,:)-Vertices(1,:) );
+                            Face(n,1) = polygon_DARSim( length(NodesIndex) , n_vec , mean(Vertices) );
+                            Face(n,1).AddVertices(Vertices);
+                            Face(n,1).Centroid = mean(Vertices);
+                        end
+                        Hexahedron = hexahedron_MRST(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                        Hexahedron.AddFaces(Face);
+                    end
                     Hexahedron.Centroid = obj.CornerPointGridData.Cell.Centroid(I,:);
-                    
                     Epsilon = 1e-10 * ( min(obj.ReservoirGrid.Volume) )^(1/3);
                     [Geostatus, IntersectPoints] = Hexahedron.Obtain_Polyhedron_LineSegment_Intersection(LineSegment, Epsilon);
                     
