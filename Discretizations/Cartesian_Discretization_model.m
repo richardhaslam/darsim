@@ -35,25 +35,25 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
             Centroids = obj.ReservoirGrid.Centroids;
             
             for p = 1:size(Well.Coordinate.Value,1) - 1
-                PointA = Well.Coordinate.Value(p  ,:)';
-                PointB = Well.Coordinate.Value(p+1,:)';
+                PointA = Well.Coordinate.Value(p  ,:);
+                PointB = Well.Coordinate.Value(p+1,:);
                 LineSegment = lineSegment_DARSim(PointA,PointB);
-                [ ~ , indList ] = min( vecnorm(LineSegment.PointM' - Centroids, 2,2) );
+                [ ~ , indList ] = min( vecnorm(LineSegment.PointM - Centroids, 2,2) );
                 Count = 1;
                 while Count <= length(indList)
                     I = indList(Count);
                     Count = Count+1;
-                    NW_Top = [ Centroids(I,1) - dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) + dz/2 ]';
-                    SW_Top = [ Centroids(I,1) - dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) + dz/2 ]';
-                    SE_Top = [ Centroids(I,1) + dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) + dz/2 ]';
-                    NE_Top = [ Centroids(I,1) + dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) + dz/2 ]';
-                    NW_Bot = [ Centroids(I,1) - dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) - dz/2 ]';
-                    SW_Bot = [ Centroids(I,1) - dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) - dz/2 ]';
-                    SE_Bot = [ Centroids(I,1) + dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) - dz/2 ]';
-                    NE_Bot = [ Centroids(I,1) + dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) - dz/2 ]';
+                    NW_Top = [ Centroids(I,1) - dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) + dz/2 ];
+                    SW_Top = [ Centroids(I,1) - dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) + dz/2 ];
+                    SE_Top = [ Centroids(I,1) + dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) + dz/2 ];
+                    NE_Top = [ Centroids(I,1) + dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) + dz/2 ];
+                    NW_Bot = [ Centroids(I,1) - dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) - dz/2 ];
+                    SW_Bot = [ Centroids(I,1) - dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) - dz/2 ];
+                    SE_Bot = [ Centroids(I,1) + dx/2 , Centroids(I,2) - dy/2 , Centroids(I,3) - dz/2 ];
+                    NE_Bot = [ Centroids(I,1) + dx/2 , Centroids(I,2) + dy/2 , Centroids(I,3) - dz/2 ];
                     
                     Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
-                    Hexahedron.Centroid = Centroids(I,:)';
+                    Hexahedron.Centroid = Centroids(I,:);
                     
                     Epsilon = 1e-10 * ( min(obj.ReservoirGrid.Volume) )^(1/3);
                     [Geostatus, IntersectPoints] = Hexahedron.Obtain_Polyhedron_LineSegment_Intersection(LineSegment,Epsilon);
