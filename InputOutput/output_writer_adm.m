@@ -11,8 +11,8 @@ classdef output_writer_adm < output_writer
         dynamicBF
     end
     methods
-        function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp)
-            obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_comp);
+        function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_previous_reports, n_comp)
+            obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_previous_reports, n_comp);
             obj.basisfunctions = false;
             obj.dynamicBF = false;
         end

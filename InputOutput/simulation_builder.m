@@ -36,9 +36,9 @@ classdef simulation_builder < handle
             
             %% Define Initialization procedure
             N = simulation.DiscretizationModel.ReservoirGrid.N;
-            VarValues = ones(N, length(obj.SimulationInput.Init));
-            for i=1:length(obj.SimulationInput.Init)
-                VarValues(:, i) = VarValues(:, i) * obj.SimulationInput.Init(i);
+            VarValues = ones(N, size(obj.SimulationInput.InitData,2));
+            for i=1:size(obj.SimulationInput.InitData,2)
+                VarValues(:, i) = VarValues(:, i) .* obj.SimulationInput.InitData(:,i);
             end        
             
             switch(simulation.FluidModel.name)
@@ -48,6 +48,7 @@ classdef simulation_builder < handle
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
+                    VarValues(:, 3) = 1 - VarValues(:, 2);  % 3rd column is S2 which is 1-S1
                     simulation.Initializer = initializer(VarNames, VarValues);
                 case('Geothermal_SinglePhase')
                     VarNames = {'P_1', 'T', 'S_1'};
@@ -321,7 +322,7 @@ classdef simulation_builder < handle
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
             Reservoir.Rho = RockDensity;
-            Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
+            Reservoir.P0 = obj.SimulationInput.InitData(:,1); % Initial Pressure of the Reservoir
             
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
@@ -392,7 +393,7 @@ classdef simulation_builder < handle
                         Injector = injector_pressure(PI, Coordinate, pressure, temperature, n_phases);
                     case('RATE')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
-                        p_init = obj.SimulationInput.Init(1);
+                        p_init = obj.SimulationInput.InitData(:,1);
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Injector = injector_rate(PI, Coordinate, rate, p_init, temperature, n_phases);
                 end
@@ -648,11 +649,11 @@ classdef simulation_builder < handle
         end
         function TimeDriver = BuildTimeDriver(obj)
             if obj.SimulatorSettings.LTSPlot == 1
-                TimeDriver = LTSPrint_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+                TimeDriver = LTSPrint_TimeLoop_Driver(obj.SimulatorSettings.Reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
                 % elseif obj.SimulatorSettings.ADT_SEQ == 1
-                %   TimeDriver = LTS_TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+                %   TimeDriver = LTS_TimeLoop_Driver(obj.SimulatorSettings.Reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             else
-                TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
+                TimeDriver = TimeLoop_Driver(obj.SimulatorSettings.Reports, obj.SimulationInput.TotalTime, obj.SimulatorSettings.MaxNumTimeSteps);
             end
             % Construct Coupling
             switch(obj.SimulatorSettings.CouplingType)
@@ -986,9 +987,9 @@ classdef simulation_builder < handle
                 case({'ParaView','VTK'})
                     switch obj.SimulationInput.ReservoirProperties.Discretization
                         case('CornerPointGrid')
-                            plotter = CornerPointGrid_VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
+                            plotter = CornerPointGrid_VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName,obj.SimulatorSettings.NumOfPreviousReports);
                         otherwise
-                            plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName);
+                            plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName,obj.SimulatorSettings.NumOfPreviousReports);
                     end
                     switch obj.SimulatorSettings.plotting.Format
                         case{'BINARY'}
@@ -1008,14 +1009,14 @@ classdef simulation_builder < handle
             switch(obj.SimulatorSettings.DiscretizationModel)
                 case ('ADM')
                     Writer = output_writer_adm(InputDirectory, obj.SimulationInput.ProblemName,...
-                        simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd, ...
-                        simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
-                        simulation.FluidModel.NofComp);
+                        simulation.ProductionSystem.Wells.NofInj,   simulation.ProductionSystem.Wells.NofProd, ...
+                        simulation.Summary.CouplingStats.NTimers,   simulation.Summary.CouplingStats.NStats,...
+                        obj.SimulatorSettings.NumOfPreviousReports, simulation.FluidModel.NofComp);
                 otherwise
                     Writer = output_writer_FS(InputDirectory, obj.SimulationInput.ProblemName,...
-                        simulation.ProductionSystem.Wells.NofInj, simulation.ProductionSystem.Wells.NofProd,...
-                        simulation.Summary.CouplingStats.NTimers, simulation.Summary.CouplingStats.NStats,...
-                        simulation.FluidModel.NofComponents);
+                        simulation.ProductionSystem.Wells.NofInj,   simulation.ProductionSystem.Wells.NofProd,...
+                        simulation.Summary.CouplingStats.NTimers,   simulation.Summary.CouplingStats.NStats,...
+                        obj.SimulatorSettings.NumOfPreviousReports, simulation.FluidModel.NofComponents);
             end
             Writer.AddPlotter(plotter);
         end

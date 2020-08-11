@@ -91,7 +91,8 @@ classdef TimeLoop_Driver < handle
                     disp(['Printing solution to file at  ' num2str((obj.Time)/(3600*24),4) ' days'])
                     disp(newline);
                     Writer.PlotSolution(ProductionSystem, DiscretizationModel);
-                    Writer.WriteSolutionOnFile(ProductionSystem, index);
+                    Writer.WriteSolutionOnFile(ProductionSystem);
+                    Writer.Index = Writer.Index + 1;
                     index = index + 1;
                 end
             end

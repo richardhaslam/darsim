@@ -14,11 +14,13 @@ classdef output_writer < handle
         FormatProd
         FormatStats
         FormatTimers
+        Index
     end
     methods
-        function obj = output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, ~)
+        function obj = output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_previous_reports, ~)
             obj.Directory = strcat(dir, '/Output/');
             obj.ProblemName = problem;
+            obj.Index = n_previous_reports;
             
             if ~exist(strcat(obj.Directory,'Solution/'), 'dir')
                 mkdir(obj.Directory,'Solution/');
@@ -66,9 +68,9 @@ classdef output_writer < handle
         function AddPlotter(obj, plotter)
             obj.Plotter = plotter;
         end
-        function WriteSolutionOnFile(obj, ProductionSystem, index)
+        function WriteSolutionOnFile(obj, ProductionSystem)
             cells = 1:length(ProductionSystem.Reservoir.State.Properties('P_1').Value);
-            fileID = fopen(strcat(obj.Directory, 'Solution/', obj.ProblemName,'_Sol',num2str(index),'.txt'),'w');
+            fileID = fopen(strcat(obj.Directory, 'Solution/', obj.ProblemName,'_Sol',num2str(obj.Index,'%04d'),'.txt'),'w');
 	    Names = ProductionSystem.Reservoir.State.Properties.keys;
             if ismember('Tf',Names) % Geothermal_2T
                 FormatSol_Geo = ['%10.0f', ' %10.5f', ' %10.5f', ' %10.5f', ' %10.5f\n'];

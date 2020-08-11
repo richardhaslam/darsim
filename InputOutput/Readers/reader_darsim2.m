@@ -99,7 +99,19 @@ classdef reader_darsim2 < reader
             if isempty(index)
                 error('The keyword "INIT" is missing. Please check the input file!\n');
             end
-            SimulationInput.Init = str2double(strsplit(char(obj.InputMatrix(index + 1))));
+            if contains(obj.InputMatrix(index + 1), 'INCLUDE')
+                SimulationInput.InitInclude = 1;
+                SimulationInput.InitFile = strcat(obj.Directory, '\', char(obj.InputMatrix(index+2)));
+                fprintf('\n---> Reading "Initial State" file ...');
+                SimulationInput.InitData = load(SimulationInput.InitFile);
+                SimulationInput.InitData(:,1) = [];  % We do not need the first column as it is just the index of the cells
+                SimulationInput.InitData(:,1) = SimulationInput.InitData(:,2) * 1e5;  % The stored data for pressure is in [Bar], we covert it to [Pa]
+                
+                fprintf(' ---> Completed.\n');
+            else
+                SimulationInput.InitInclude = 0;
+                SimulationInput.InitData = str2double(strsplit(char(obj.InputMatrix(index + 1))));
+            end
             
             % 6. Read wells info
             SimulationInput.WellsInfo = obj.ReadWellsInfo(SimulationInput);
@@ -981,11 +993,17 @@ classdef reader_darsim2 < reader
                 SimulatorSettings.MinMaxdt = [0.1, 30];
             end
             temp = strfind(obj.SettingsMatrix, '');
-            % 3. Number of reports --> report is written every
+            % 3.1 Number of reports --> report is written every
             % T_total/n_reports s; if 0 report at every dt
-            temp = strfind(obj.SettingsMatrix, 'REPORTS');
-            xv = find(~cellfun('isempty', temp));
-            SimulatorSettings.reports = str2double(obj.SettingsMatrix(xv+1));
+            index = find(strcmp(obj.SettingsMatrix, 'REPORTS'));
+            SimulatorSettings.Reports = str2double(obj.SettingsMatrix(index+1));
+            % 3.1 Number of previous reports so that the file indexing can continue from previous simulations
+            index = find(strcmp(obj.SettingsMatrix, 'NUM_PREVIOUS_REPORTS'));
+            if isempty(index)
+                SimulatorSettings.NumOfPreviousReports = 0;
+            else
+                SimulatorSettings.NumOfPreviousReports = str2double(obj.SettingsMatrix(index+1));
+            end
             % 4. Choose coupling
             temp = strfind(obj.SettingsMatrix, 'FIM'); 
             index = find(~cellfun('isempty', temp));

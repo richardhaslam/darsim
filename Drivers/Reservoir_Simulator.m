@@ -56,7 +56,7 @@ classdef Reservoir_Simulator < handle
             disp(['Maximum Allowed Time-steps: ', num2str(obj.Builder.SimulatorSettings.MaxNumTimeSteps) ]);
             disp(['Minimum Size of Time-step : ', num2str(obj.Builder.SimulatorSettings.MinMaxdt(1)) ]);
             disp(['Maximum Size of Time-step : ', num2str(obj.Builder.SimulatorSettings.MinMaxdt(2)) ]);
-            disp(['Number of Reports         : ', num2str(obj.Builder.SimulatorSettings.reports)     ]);
+            disp(['Number of Reports         : ', num2str(obj.Builder.SimulatorSettings.Reports)     ]);
             disp('---------------------------------------------------------');
         end
         function Run(obj)
@@ -65,7 +65,8 @@ classdef Reservoir_Simulator < handle
             % Plot initial state of the reservoir
             obj.Writer.PlotSolution(obj.Simulation.ProductionSystem, obj.Simulation.DiscretizationModel);
             % Write initial state on a file
-            obj.Writer.WriteSolutionOnFile(obj.Simulation.ProductionSystem, 0)
+            obj.Writer.WriteSolutionOnFile(obj.Simulation.ProductionSystem)
+            obj.Writer.Index = obj.Writer.Index + 1;
             % Plot Wells
             obj.Writer.Plotter.PlotWells(obj.Simulation.ProductionSystem.Wells.Inj, obj.Simulation.ProductionSystem.Wells.Prod, obj.Simulation.DiscretizationModel.ReservoirGrid);
 

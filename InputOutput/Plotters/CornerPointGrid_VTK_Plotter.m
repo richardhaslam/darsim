@@ -12,7 +12,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
         end
         function PlotReservoirSolution(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
-            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             if obj.isBinary
@@ -82,7 +82,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
         end
         function PlotInternalFaces(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
-            fileID = fopen(strcat(obj.FileName, '_Interfaces', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, '_Interfaces', num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             if obj.isBinary

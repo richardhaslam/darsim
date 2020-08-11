@@ -10,14 +10,14 @@ classdef VTK_Plotter < Plotter
         isBinary
     end
     methods
-        function obj = VTK_Plotter(Directory, Problem)
+        function obj = VTK_Plotter(Directory, Problem, NumOfPreviousReports)
             if ~exist(strcat(Directory,'/Output/VTK/'), 'dir')
                 mkdir(Directory,'/Output/VTK');
             else
                 delete(strcat(Directory,'/Output/VTK/*.vtk'));
             end
             obj.FileName = strcat(Directory, '/Output/VTK/', Problem);
-            obj.VTKindex = 1;
+            obj.VTKindex = NumOfPreviousReports;
         end
         function PlotWells(obj, Inj, Prod, Grid)
             %Injectors
@@ -65,7 +65,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotReservoirSolution(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
-            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim2 Reservoir Simulator\n');
             if obj.isBinary
@@ -133,7 +133,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotFractureSolution(obj, Fracture, Grid, f)
             %Write a VTK file for each
-            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%03d'), '_', num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             
@@ -184,7 +184,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotReservoirPermeability(obj, ReservoirGrid, K)
             %Permeability
-            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'a');
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex,'%04d'),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), ReservoirGrid.N, 1), ' PERMX');
             obj.PrintScalar2VTK(fileID, reshape(K(:,2), ReservoirGrid.N, 1), ' PERMY');
             obj.PrintScalar2VTK(fileID, reshape(K(:,3), ReservoirGrid.N, 1), ' PERMZ');
@@ -193,7 +193,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotFracturePermeability(obj, FractureGrid, K, f)
             %Permeability
-            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'a');
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex,'%04d'),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(K(:,1), FractureGrid.N, 1), ' PERMX');
             obj.PrintScalar2VTK(fileID, reshape(K(:,2), FractureGrid.N, 1), ' PERMY');
             obj.PrintScalar2VTK(fileID, reshape(K(:,3), FractureGrid.N, 1), ' PERMZ');
@@ -208,14 +208,14 @@ classdef VTK_Plotter < Plotter
         end
         function PlotReservoirPorosity(obj, ReservoirGrid, phi)
             %Porosity
-            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex),'.vtk'), 'a');
+            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex,'%04d'),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(phi, ReservoirGrid.N, 1), ' Porosity');
             fprintf(fileID, '\n');
             fclose(fileID);
         end
         function PlotFracturePorosity(obj, FractureGrid, phi, f)
             %Permeability
-            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex),'.vtk'), 'a');
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'), '_', num2str(obj.VTKindex,'%04d'),'.vtk'), 'a');
             obj.PrintScalar2VTK(fileID, reshape(phi*ones(FractureGrid.N,1), FractureGrid.N, 1), ' Porosity');
             fprintf(fileID, '\n');
             fclose(fileID);
@@ -361,7 +361,7 @@ classdef VTK_Plotter < Plotter
             end
         end
         function PlotDynamicBasisFunctions(obj, Grid, Prolp)
-            fileID = fopen(strcat(obj.FileName,'Dynamic_BF_', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName,'Dynamic_BF_', num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             fprintf(fileID, 'BINARY\n');
@@ -395,7 +395,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotSaturationInterpolator(obj, Grid, ProlS, Pdelta, Pdeltac)
             %Write a VTK file for Reservoir
-            fileID = fopen(strcat(obj.FileName,'SatInterp', num2str(obj.VTKindex),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName,'SatInterp', num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             %fprintf(fileID, 'ASCII\n');
@@ -448,7 +448,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotReservoirADMGrid(obj, CoarseGrid)
             for i=1:length(CoarseGrid)
-                fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'w');
+                fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
                 fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
                 fprintf(fileID, 'BINARY\n');
@@ -473,7 +473,7 @@ classdef VTK_Plotter < Plotter
             %Write a VTK file for each
             for i=1:length(CoarseGrid)
                 fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%02d'),...
-                    '_',num2str(i),'Level_',num2str(obj.VTKindex),'.vtk'), 'w');
+                    '_',num2str(i),'Level_',num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
                 fprintf(fileID, '# vtk DataFile Version 2.0\n');
                 fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
                 fprintf(fileID, 'BINARY\n');
@@ -494,7 +494,7 @@ classdef VTK_Plotter < Plotter
         end
         function PlotCoarsePermeability(obj, CoarseGrid, K_coarse)
             for i=1:length(CoarseGrid)
-                fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex),'.vtk'), 'a');
+                fileID = fopen(strcat(obj.FileName, num2str(i),'Level', num2str(obj.VTKindex,'%04d'),'.vtk'), 'a');
                 obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,1), CoarseGrid(i).N, 1), ' PERMX');
                 obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,2), CoarseGrid(i).N, 1), ' PERMY');
                 obj.PrintScalar2VTK(fileID, reshape(K_coarse{i+1}(:,3), CoarseGrid(i).N, 1), ' PERMZ');
