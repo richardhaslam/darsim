@@ -76,9 +76,21 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
             
+            % Add manual flag for R5 model
+            if Grid.N == 1276945
+                Flagged = zeros(Grid.N,1);
+                Cell_Indices = [959588;1029937;1033734;1193170;1266538];
+                Flagged(Cell_Indices)=1;
+                for n = 1 : length(Cell_Indices)
+                    Flagged( Grid.CornerPointGridData.Cell.Index_Neighbors{n} ) = 2;
+                end
+                obj.PrintScalar2VTK(fileID, Flagged, ' isFlagged');
+                fprintf(fileID, '\n');
+            end
+            
             fclose(fileID);
             
-            %obj.PlotInternalFaces(Reservoir, Grid);
+            obj.PlotInternalFaces(Reservoir, Grid);
         end
         function PlotInternalFaces(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
@@ -98,7 +110,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             fprintf(fileID, '\n');
             
             N_InternalFaces = Grid.CornerPointGridData.N_InternalFaces;
-            CellCorners = cell2mat( Grid.CornerPointGridData.Internal_Face.Corners );
+            CellCorners = cell2mat( Grid.CornerPointGridData.Internal_Face.Corners_RawData );
             N_NodePerFace = size(CellCorners,2);
             fprintf(fileID, ['CELLS ' num2str(N_InternalFaces) ' ' num2str(N_InternalFaces*(1+N_NodePerFace)) '\n']);
             

@@ -237,10 +237,10 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                             InterfaceFullIndex = obj.CornerPointGridData.Cell.Faces{I}(n);
                             InterfaceIndex = find( obj.CornerPointGridData.Internal_Face.FullIndex == InterfaceFullIndex );
                             if ~isempty(InterfaceIndex) % This is an internal face
-                                NodesIndex = unique( obj.CornerPointGridData.Internal_Face.Corners{InterfaceIndex} , 'stable' );
+                                NodesIndex = unique( obj.CornerPointGridData.Internal_Face.Corners_Cleaned{InterfaceIndex} , 'stable' );
                             else                        % This is an external face
                                 InterfaceIndex = find( obj.CornerPointGridData.External_Face.FullIndex == InterfaceFullIndex );
-                                NodesIndex = unique( obj.CornerPointGridData.External_Face.Corners{InterfaceIndex} , 'stable' );
+                                NodesIndex = unique( obj.CornerPointGridData.External_Face.Corners_Cleaned{InterfaceIndex} , 'stable' );
                             end
                             Vertices = obj.CornerPointGridData.Nodes_XYZ_Coordinate( NodesIndex , : );
                             n_vec = cross( Vertices(2,:)-Vertices(1,:) , Vertices(end,:)-Vertices(1,:) );

@@ -529,8 +529,6 @@ classdef reader_darsim2 < reader
             index = find(~cellfun('isempty', temp));
             CornerPointGridData.Nz = str2double( obj.CornerPointGridMatrix{index+1} );
             
-%             temp = strfind(obj.CornerPointGridMatrix, 'ACTIVE_CELLS');
-%             index = find(~cellfun('isempty', temp));
             index = find(strcmp(obj.CornerPointGridMatrix, 'ACTIVE_CELLS'));
             if isempty(index)
                 error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
@@ -592,21 +590,28 @@ classdef reader_darsim2 < reader
             Internal_Face.CellNeighbor1Vec = splitStr(:,10:12);
             Internal_Face.CellNeighbor2Index = splitStr(:,13);
             Internal_Face.CellNeighbor2Vec = splitStr(:,14:16);
-            Internal_Face.Corners = num2cell( splitStr(:,17:end) , 2);
+            Internal_Face.Corners_RawData = num2cell( splitStr(:,17:end) , 2);
+            Internal_Face.Corners_Cleaned = Internal_Face.Corners_RawData;
 
-            for i = 1 : length( Internal_Face.Corners )
-                % removing junk data from the corner lists
-                Internal_Face.Corners{i}( Internal_Face.Corners{i} == 0) = [];
-                Internal_Face.Corners{i}( isnan(Internal_Face.Corners{i}) ) = [];
-                
+            for i = 1 : length( Internal_Face.Corners_RawData )
+                % removing junk data from the corner lists for the cleaned version
+                Internal_Face.Corners_Cleaned{i}( Internal_Face.Corners_RawData{i} == 0) = [];
+                Internal_Face.Corners_Cleaned{i}( isnan(Internal_Face.Corners_RawData{i}) ) = [];
+
                 % ordering the corners clockwise
                 % (https://nl.mathworks.com/matlabcentral/answers/429265-how-to-order-vertices-of-a-flat-convex-polygon-in-3d-space-along-the-edge)
-                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( Internal_Face.Corners{i} , :);
+                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( Internal_Face.Corners_Cleaned{i} , :);
                 xyzc = mean(xyz,1);
                 P = xyz - xyzc;
                 [~,~,V] = svd(P,0);
                 [~,is] = sort(atan2(P*V(:,1),P*V(:,2)));
-                Internal_Face.Corners{i} = Internal_Face.Corners{i}(is);
+                Internal_Face.Corners_Cleaned{i} = Internal_Face.Corners_Cleaned{i}(is);
+                
+                % duplicating the last corner index to replce with NaN or zeros
+                N1 = length( Internal_Face.Corners_Cleaned{i} );
+                N2 = length( Internal_Face.Corners_RawData{i} );
+                Internal_Face.Corners_RawData{i} = [ Internal_Face.Corners_Cleaned{i} , ...
+                                                     Internal_Face.Corners_Cleaned{i}(end) * ones(1,N2-N1) ];
             end
             
             fprintf('Done!\n');
@@ -629,21 +634,28 @@ classdef reader_darsim2 < reader
             External_Face.Nvec = splitStr(:,6:8);
             External_Face.CellNeighborIndex = splitStr(:,9); % An external face has only one connection (to only one cell).
             External_Face.CellNeighborVec = splitStr(:,10:12);
-            External_Face.Corners = num2cell( splitStr(:,13:end) , 2);
+            External_Face.Corners_RawData = num2cell( splitStr(:,13:end) , 2);
+            External_Face.Corners_Cleaned = External_Face.Corners_RawData;
             
-            for i = 1 : length( External_Face.Corners )
-                % removing junk data from the corner lists
-                External_Face.Corners{i}( External_Face.Corners{i} == 0) = [];
-                External_Face.Corners{i}( isnan(External_Face.Corners{i}) ) = [];
+            for i = 1 : length( External_Face.Corners_RawData )
+                % removing junk data from the corner lists for the cleaned version
+                External_Face.Corners_Cleaned{i}( External_Face.Corners_RawData{i} == 0) = [];
+                External_Face.Corners_Cleaned{i}( isnan(External_Face.Corners_RawData{i}) ) = [];
                 
                 % ordering the corners clockwise
                 % (https://nl.mathworks.com/matlabcentral/answers/429265-how-to-order-vertices-of-a-flat-convex-polygon-in-3d-space-along-the-edge)
-                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( External_Face.Corners{i} , :);
+                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( External_Face.Corners_Cleaned{i} , :);
                 xyzc = mean(xyz,1);
                 P = xyz - xyzc;
                 [~,~,V] = svd(P,0);
                 [~,is] = sort(atan2(P*V(:,1),P*V(:,2)));
-                External_Face.Corners{i} = External_Face.Corners{i}(is);
+                External_Face.Corners_Cleaned{i} = External_Face.Corners_Cleaned{i}(is);
+                
+                % duplicating the last corner index to replce with NaN or zeros
+                N1 = length( External_Face.Corners_Cleaned{i} );
+                N2 = length( External_Face.Corners_RawData{i} );
+                External_Face.Corners_RawData{i} = [ External_Face.Corners_Cleaned{i} , ...
+                                                     External_Face.Corners_Cleaned{i}(end) * ones(1,N2-N1) ];
             end
             
             fprintf('Done!\n');
