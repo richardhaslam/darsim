@@ -105,7 +105,7 @@ classdef reader_darsim2 < reader
                 fprintf('\n---> Reading "Initial State" file ...');
                 SimulationInput.InitData = load(SimulationInput.InitFile);
                 SimulationInput.InitData(:,1) = [];  % We do not need the first column as it is just the index of the cells
-                SimulationInput.InitData(:,1) = SimulationInput.InitData(:,2) * 1e5;  % The stored data for pressure is in [Bar], we covert it to [Pa]
+                SimulationInput.InitData(:,1) = SimulationInput.InitData(:,1) * 1e5;  % The stored data for pressure is in [Bar], we covert it to [Pa]
                 
                 fprintf(' ---> Completed.\n');
             else
@@ -179,7 +179,7 @@ classdef reader_darsim2 < reader
                         load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
                     else
                         ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
-                        save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
+                        save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties','-v7.3');
                     end
 
                     ReservoirProperties.Grid.N(1) = ReservoirProperties.CornerPointGridData.Nx;
