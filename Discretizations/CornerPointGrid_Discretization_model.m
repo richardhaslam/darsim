@@ -231,7 +231,7 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                     NE_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NE_Bot_Corner(I) , : );
                     
                     if isempty(obj.CornerPointGridData.Cell.Faces{I})
-                        Hexahedron = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                        ReservoirCell = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
                     else
                         for n = 1 : length(obj.CornerPointGridData.Cell.Faces{I})
                             InterfaceFullIndex = obj.CornerPointGridData.Cell.Faces{I}(n);
@@ -248,27 +248,28 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                             Face(n,1).AddVertices(Vertices);
                             Face(n,1).Centroid = mean(Vertices);
                         end
-                        Hexahedron = hexahedron_MRST(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
-                        Hexahedron.AddFaces(Face);
+                        ReservoirCell = hexahedron_MRST(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
+                        ReservoirCell.AddFaces(Face);
                     end
-                    Hexahedron.Centroid = obj.CornerPointGridData.Cell.Centroid(I,:);
+                    ReservoirCell.Centroid = obj.CornerPointGridData.Cell.Centroid(I,:);
                     Epsilon = 1e-10 * ( min(obj.ReservoirGrid.Volume) )^(1/3);
-                    [Geostatus, IntersectPoints] = Hexahedron.Obtain_Polyhedron_LineSegment_Intersection(LineSegment, Epsilon);
+                    [Geostatus, IntersectPoints] = ReservoirCell.Obtain_Polyhedron_LineSegment_Intersection(LineSegment, Epsilon);
                     
-                    % Add the neighboring cells to the list for intersection check if it is the first try
-                    % but no intersection occurs, so another one must be checked
-                    if isempty(IntersectPoints) && Count == 2
+                    % If it is the first try and no intersection occurs between the well and
+                    % this reservoir cell, add the neighboring cells to the list for intersection check.
+                    if isempty(IntersectPoints)
+                        if Count == 2
+                            indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
+                            indList = union(indList, indNeighbors, 'stable');
+                        end
+                        continue;
+                    else
+                        % There was already an intersection between the well and this reservoir cell.
+                        % Therefore, add the neighboring cells to the list for intersection check
+                        % as the neighbors may intersect as well.
                         indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
                         indList = union(indList, indNeighbors, 'stable');
-                        continue;
                     end
-                    
-                    % Assigning the index of cell to the array
-                    if isempty(IntersectPoints) && Count > 2
-                        continue;
-                    end
-                    indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
-                    indList = union(indList, indNeighbors, 'stable');
                     
                     if Geostatus.haveIntersect
                         Well.Cells = [ Well.Cells ; I ];
