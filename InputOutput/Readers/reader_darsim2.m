@@ -151,35 +151,67 @@ classdef reader_darsim2 < reader
                 case('CornerPointGrid')
                     % Read the cornerpointgrid data input file
                     FileName = obj.InputMatrix{index+2};
-                    if isempty(FileName)
-                        FileName = 'CornerPointGrid_DARSim_InputData.txt';
-                    end
-                    CornerPointGridFile = strcat(obj.Directory, '/', FileName);
-                    if ~isfile(CornerPointGridFile)
-                        error('The Corner point grid input file "%s" does not exist!\n',FileName);
-                    end
-                    fileID = fopen(CornerPointGridFile, 'r');
-                    matrix = textscan(fileID, '%s', 'Delimiter', '\n');
-                    obj.CornerPointGridMatrix = matrix{1};
-                    fclose(fileID);
-                    
-                    % Read the cornerpointgrid rock properties data input file
-                    FileName = obj.InputMatrix{index+3};
-                    CornerPointGridRockPropertiesFile = strcat(obj.Directory, '/', FileName);
-                    if isfile(CornerPointGridRockPropertiesFile)
-                        fileID = fopen(CornerPointGridRockPropertiesFile, 'r');
-                        matrix = textscan(fileID, '%s', 'Delimiter', '\n');
-                        obj.CornerPointGridRockPropertiesMatrix = matrix{1};
-                        fclose(fileID);
+                    if isfile(FileName)
+                        CornerPointGridFile = FileName;
+                    elseif isfile(strcat(obj.Directory, '/', FileName))
+                        CornerPointGridFile = strcat(obj.Directory, '/', FileName);
+                    else
+                        error('There is no CornerPointGrid input file given in the main input file. Please specify it correctly in the main input file.');
                     end
                     
-                    % Check if the data has already been loaded and saved
+                    temp = strfind(obj.InputMatrix, 'INCLUDE_ROCK_PROPERTIES');
+                    index = find(~cellfun('isempty', temp));
+                    if ~isempty(index)
+                        includeCornerPointGridRockProperties = 1;
+                    else
+                        includeCornerPointGridRockProperties = 0;
+                    end
+                    
+                    % Check if the data has already been loaded and saved, otherwise read the CornerPointGrid input file
                     if isfile(strcat(obj.Directory, '/','CornerPointGridData.mat'))
                         fprintf('"CornerPointGridData.mat" file already exists. No need to load the CornerPointGrid data input file.\n');
+                        fprintf('---> Loading the "CornerPointGridData.mat" file ...');
                         load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
+                        fprintf('Done!\n');
                     else
-                        ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
+                        if contains(CornerPointGridFile,'.grdecl') && ~contains(CornerPointGridFile,'.txt')
+                            EclipseReader = reader_eclipse(CornerPointGridFile);
+                            ReservoirProperties.CornerPointGridData = EclipseReader.ReadGRDECL(1);
+                            if ~includeCornerPointGridRockProperties
+                                ReservoirProperties.CornerPointGridData = rmfield(ReservoirProperties.CornerPointGridData,{'Porosity','Permeability'});
+                            else
+                                ReservoirProperties.CornerPointGridData.PermUnit = 'm2';
+                                ReservoirProperties.CornerPointGridData.PermScale = 'Linear';
+                            end
+                        elseif contains(CornerPointGridFile,'.txt')
+                            fileID = fopen(CornerPointGridFile, 'r');
+                            matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                            obj.CornerPointGridMatrix = matrix{1};
+                            fclose(fileID);
+                            ReservoirProperties.CornerPointGridData = obj.ReadCornerPointGridData();
+                            
+                            % Read the cornerpointgrid rock properties data input file
+                            FileName = '';
+                            if ~isempty(index)
+                                FileName = obj.InputMatrix{index+1};
+                            end
+                            if isfile(FileName)
+                                CornerPointGridRockPropertiesFile = FileName;
+                            elseif isfile(strcat(obj.Directory, '/', FileName))
+                                CornerPointGridRockPropertiesFile = strcat(obj.Directory, '/', FileName);
+                            end
+                            if includeCornerPointGridRockProperties && isfile(CornerPointGridRockPropertiesFile)
+                                fileID = fopen(CornerPointGridRockPropertiesFile, 'r');
+                                matrix = textscan(fileID, '%s', 'Delimiter', '\n');
+                                obj.CornerPointGridRockPropertiesMatrix = matrix{1};
+                                fclose(fileID);
+                            end
+                        else
+                            error('The extension of CornerPointGrid input file is not support (must be txt or grdecl).');
+                        end
+                        fprintf('---> Saving the "CornerPointGridData.mat" file ...');
                         save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties','-v7.3');
+                        fprintf('Done!\n');
                     end
 
                     ReservoirProperties.Grid.N(1) = ReservoirProperties.CornerPointGridData.Nx;
@@ -507,56 +539,89 @@ classdef reader_darsim2 < reader
         end
         function CornerPointGridData = ReadCornerPointGridData(obj)
             fprintf('Reading the CornerPointGrid input file:\n');
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'RESERVOIR_GRID_NX');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NX" is missing. Please check the CornerPointGrid input file!\n');
             end
             CornerPointGridData.Nx = str2double( obj.CornerPointGridMatrix{index+1} );
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'RESERVOIR_GRID_NY');
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NY" is missing. Please check the CornerPointGrid input file!\n');
             end
             index = find(~cellfun('isempty', temp));
             CornerPointGridData.Ny = str2double( obj.CornerPointGridMatrix{index+1} );
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'RESERVOIR_GRID_NZ');
             if isempty(index)
                 error('The keyword "RESERVOIR_GRID_NZ" is missing. Please check the CornerPointGrid input file!\n');
             end
             index = find(~cellfun('isempty', temp));
             CornerPointGridData.Nz = str2double( obj.CornerPointGridMatrix{index+1} );
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             index = find(strcmp(obj.CornerPointGridMatrix, 'ACTIVE_CELLS'));
             if isempty(index)
                 error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
             end
             CornerPointGridData.N_ActiveCells = str2double( obj.CornerPointGridMatrix{index+1} );
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            index = find(strcmp(obj.CornerPointGridMatrix, 'INACTIVE_CELLS'));
+            if isempty(index)
+                error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.N_InctiveCells = str2double( obj.CornerPointGridMatrix{index+1} );
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            index = find(strcmp(obj.CornerPointGridMatrix, 'TOTAL_CELLS'));
+            if isempty(index)
+                error('The keyword "ACTIVE_CELLS" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.N_TotalCells = str2double( obj.CornerPointGridMatrix{index+1} );
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'N_INTERNAL_FACES');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "N_INTERNAL_FACES" is missing. Please check the CornerPointGrid input file!\n');
             end
             CornerPointGridData.N_InternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'N_EXTERNAL_FACES');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "N_EXTERNAL_FACES" is missing. Please check the CornerPointGrid input file!\n');
             end
             CornerPointGridData.N_ExternalFaces = str2double( obj.CornerPointGridMatrix{index+1} );
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'N_NODES');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "N_NODES" is missing. Please check the CornerPointGrid input file!\n');
             end
             CornerPointGridData.N_Nodes = str2double( obj.CornerPointGridMatrix{index+1} );
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            temp = strfind(obj.CornerPointGridMatrix, 'MAX_NUMBER_OF_FACES_PER_CELL');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "MAX_NUMBER_OF_FACES_PER_CELL" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.MaxNumFacesPerCell = str2double( obj.CornerPointGridMatrix{index+1} );
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            temp = strfind(obj.CornerPointGridMatrix, 'MAX_NUMBER_OF_NEIGHBORS_PER_CELL');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "MAX_NUMBER_OF_NEIGHBORS_PER_CELL" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.MaxNumNeighborsPerCell = str2double( obj.CornerPointGridMatrix{index+1} );
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            temp = strfind(obj.CornerPointGridMatrix, 'MAX_NUMBER_OF_NODES_PER_FACE');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "MAX_NUMBER_OF_NODES_PER_FACE" is missing. Please check the CornerPointGrid input file!\n');
+            end
+            CornerPointGridData.MaxNumVertxPerFace = str2double( obj.CornerPointGridMatrix{index+1} );
             
-            %%% Reading nodes
+            %%% Reading nodes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'NODES_COORDINATES');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -567,143 +632,86 @@ classdef reader_darsim2 < reader
             TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_Nodes-1);
             splitStr = regexp(TEMP, ',', 'split');
             splitStr = str2double( vertcat( splitStr{:} ) );
-            Nodes_XYZ_Coordinate = splitStr(:,2:4);
+            Nodes = splitStr(:,2:4);
             fprintf('Done!\n');
-            CornerPointGridData.Nodes_XYZ_Coordinate = Nodes_XYZ_Coordinate;
+            CornerPointGridData.Nodes = Nodes;
             
-            %%% Reading internal faces
+            %%% Reading cells %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
+            index = find(~cellfun('isempty', temp));
+            if isempty(index)
+                error('The keyword "CELL_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
+            end
+
+            mnf = CornerPointGridData.MaxNumFacesPerCell;
+            mnn = CornerPointGridData.MaxNumNeighborsPerCell;
+            fprintf('---> Reading Cells ... ');
+            TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1);
+            splitStr = regexp(TEMP, ',', 'split');
+            splitStr = str2double( vertcat( splitStr{:} ) );
+            Cell.Vertices = splitStr(:,2:9);
+            Cell.Centroid = splitStr(:,10:12);
+            Cell.Volume = splitStr(:,13);
+            Cell.Faces = num2cell( splitStr(:,14:14+mnf-1) , 2 );
+            Cell.Faces = cellfun( @(x) unique(x,'stable') , Cell.Faces , 'UniformOutput' , false);
+            Cell.N_Faces = cellfun( @length , Cell.Faces );
+            Cell.Neighbors = num2cell( splitStr(:,14+mnf:14+mnf+mnn-1) , 2 );
+            Cell.Neighbors = cellfun( @(x) unique(x,'stable') , Cell.Neighbors , 'UniformOutput' , false);
+            Cell.N_Neighbors =  cellfun( @length , Cell.Neighbors );
+            
+            fprintf('Done!\n');
+            CornerPointGridData.Cells = Cell;
+            
+            %%% Reading internal faces  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'INTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "INTERNAL_FACE_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
             end
             
+            mnv = CornerPointGridData.MaxNumVertxPerFace;
             fprintf('---> Reading Internal Faces ... ');
             TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_InternalFaces-1);
             splitStr = regexp(TEMP, ',', 'split');
             splitStr = str2double( vertcat( splitStr{:} ) );
-            Internal_Face.FullIndex = splitStr(:,1);
-            Internal_Face.Area = splitStr(:,2);
-            Internal_Face.Centroid = splitStr(:,3:5);
-            Internal_Face.Nvec = splitStr(:,6:8);
+            Internal_Face.FullIndex          = splitStr(:,1);
+            Internal_Face.Area               = splitStr(:,2);
+            Internal_Face.Centroid           = splitStr(:,3:5);
+            Internal_Face.Nvec               = splitStr(:,6:8);
             Internal_Face.CellNeighbor1Index = splitStr(:,9);
-            Internal_Face.CellNeighbor1Vec = splitStr(:,10:12);
+            Internal_Face.CellNeighbor1Vec   = splitStr(:,10:12);
             Internal_Face.CellNeighbor2Index = splitStr(:,13);
-            Internal_Face.CellNeighbor2Vec = splitStr(:,14:16);
-            Internal_Face.Corners_RawData = num2cell( splitStr(:,17:end) , 2);
-            Internal_Face.Corners_Cleaned = Internal_Face.Corners_RawData;
-
-            for i = 1 : length( Internal_Face.Corners_RawData )
-                % removing junk data from the corner lists for the cleaned version
-                Internal_Face.Corners_Cleaned{i}( Internal_Face.Corners_RawData{i} == 0) = [];
-                Internal_Face.Corners_Cleaned{i}( isnan(Internal_Face.Corners_RawData{i}) ) = [];
-
-                % ordering the corners clockwise
-                % (https://nl.mathworks.com/matlabcentral/answers/429265-how-to-order-vertices-of-a-flat-convex-polygon-in-3d-space-along-the-edge)
-                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( Internal_Face.Corners_Cleaned{i} , :);
-                xyzc = mean(xyz,1);
-                P = xyz - xyzc;
-                [~,~,V] = svd(P,0);
-                [~,is] = sort(atan2(P*V(:,1),P*V(:,2)));
-                Internal_Face.Corners_Cleaned{i} = Internal_Face.Corners_Cleaned{i}(is);
-                
-                % duplicating the last corner index to replce with NaN or zeros
-                N1 = length( Internal_Face.Corners_Cleaned{i} );
-                N2 = length( Internal_Face.Corners_RawData{i} );
-                Internal_Face.Corners_RawData{i} = [ Internal_Face.Corners_Cleaned{i} , ...
-                                                     Internal_Face.Corners_Cleaned{i}(end) * ones(1,N2-N1) ];
-            end
-            
+            Internal_Face.CellNeighbor2Vec   = splitStr(:,14:16);
+            Internal_Face.Vertices = num2cell( splitStr(:,17:17+mnv-1) , 2);
+            Internal_Face.Vertices = cellfun( @(x) unique(x,'stable') , Internal_Face.Vertices , 'UniformOutput' , false);
+            Internal_Face.N_Vertices = cellfun( @length , Internal_Face.Vertices );
             fprintf('Done!\n');
-            CornerPointGridData.Internal_Face = Internal_Face;
+            CornerPointGridData.Internal_Faces = Internal_Face;
             
-            %%% Reading external faces
+            %%% Reading external faces %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridMatrix, 'EXTERNAL_FACE_GEOMETRY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 error('The keyword "EXTERNAL_FACE_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
             end
             
+            mnv = CornerPointGridData.MaxNumVertxPerFace;
             fprintf('---> Reading External Faces ... ');
             TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_ExternalFaces-1);
             splitStr = regexp(TEMP, ',', 'split');
             splitStr = str2double( vertcat( splitStr{:} ) );
-            External_Face.FullIndex = splitStr(:,1);
-            External_Face.Area = splitStr(:,2);
-            External_Face.Centroid = splitStr(:,3:5);
-            External_Face.Nvec = splitStr(:,6:8);
-            External_Face.CellNeighborIndex = splitStr(:,9); % An external face has only one connection (to only one cell).
-            External_Face.CellNeighborVec = splitStr(:,10:12);
-            External_Face.Corners_RawData = num2cell( splitStr(:,13:end) , 2);
-            External_Face.Corners_Cleaned = External_Face.Corners_RawData;
-            
-            for i = 1 : length( External_Face.Corners_RawData )
-                % removing junk data from the corner lists for the cleaned version
-                External_Face.Corners_Cleaned{i}( External_Face.Corners_RawData{i} == 0) = [];
-                External_Face.Corners_Cleaned{i}( isnan(External_Face.Corners_RawData{i}) ) = [];
-                
-                % ordering the corners clockwise
-                % (https://nl.mathworks.com/matlabcentral/answers/429265-how-to-order-vertices-of-a-flat-convex-polygon-in-3d-space-along-the-edge)
-                xyz = CornerPointGridData.Nodes_XYZ_Coordinate( External_Face.Corners_Cleaned{i} , :);
-                xyzc = mean(xyz,1);
-                P = xyz - xyzc;
-                [~,~,V] = svd(P,0);
-                [~,is] = sort(atan2(P*V(:,1),P*V(:,2)));
-                External_Face.Corners_Cleaned{i} = External_Face.Corners_Cleaned{i}(is);
-                
-                % duplicating the last corner index to replce with NaN or zeros
-                N1 = length( External_Face.Corners_Cleaned{i} );
-                N2 = length( External_Face.Corners_RawData{i} );
-                External_Face.Corners_RawData{i} = [ External_Face.Corners_Cleaned{i} , ...
-                                                     External_Face.Corners_Cleaned{i}(end) * ones(1,N2-N1) ];
-            end
-            
+            External_Face.FullIndex         = splitStr(:,1);
+            External_Face.Area              = splitStr(:,2);
+            External_Face.Centroid          = splitStr(:,3:5);
+            External_Face.Nvec              = splitStr(:,6:8);
+            External_Face.CellNeighborIndex = splitStr(:,9);     % An external face has only one connection (to only one cell).
+            External_Face.CellNeighborVec   = splitStr(:,10:12);
+            External_Face.Vertices = num2cell( splitStr(:,13:13+mnv-1) , 2);
+            External_Face.Vertices = cellfun( @(x) unique(x,'stable') , External_Face.Vertices , 'UniformOutput' , false);
+            External_Face.N_Vertices = cellfun( @length , External_Face.Vertices );
             fprintf('Done!\n');
-            CornerPointGridData.External_Face = External_Face;
-            
-            %%% Reading cells
-            temp = strfind(obj.CornerPointGridMatrix, 'CELL_GEOMETRY');
-            index = find(~cellfun('isempty', temp));
-            if isempty(index)
-                error('The keyword "CELL_GEOMETRY" is missing. Please check the CornerPointGrid input file!\n');
-            end
-            
-            fprintf('---> Reading Cells ... ');
-            TEMP = obj.CornerPointGridMatrix(index+2:index+2+CornerPointGridData.N_ActiveCells-1);
-            splitStr = regexp(TEMP, ',', 'split');
-            splitStr = str2double( vertcat( splitStr{:} ) );
-            Cell.NW_Bot_Corner = splitStr(:,2);
-            Cell.NE_Bot_Corner = splitStr(:,3);
-            Cell.SW_Bot_Corner = splitStr(:,4);
-            Cell.SE_Bot_Corner = splitStr(:,5);
-            Cell.NW_Top_Corner = splitStr(:,6);
-            Cell.NE_Top_Corner = splitStr(:,7);
-            Cell.SW_Top_Corner = splitStr(:,8);
-            Cell.SE_Top_Corner = splitStr(:,9);
-            Cell.Centroid = splitStr(:,10:12);
-            Cell.Volume = splitStr(:,13);
-            Cell.Faces = num2cell( splitStr(:,14:end) , 2);
-            
-            % removing junk data from the face lists of the cells
-            for i = 1 : length( Cell.Faces )
-                Cell.Faces{i}( Cell.Faces{i} == 0) = [];
-                Cell.Faces{i}( isnan(Cell.Faces{i}) ) = [];
-            end
-            
-            % Obtaining the cell neighbors
-            Cell.N_Neighbors = zeros(CornerPointGridData.N_ActiveCells , 1);
-            Cell.Index_Neighbors = cell(CornerPointGridData.N_ActiveCells , 1);
-            for i = 1 : CornerPointGridData.N_ActiveCells
-                faceIndex = find(Internal_Face.CellNeighbor1Index==i);
-                neighborIndex = Internal_Face.CellNeighbor2Index(faceIndex);
-                faceIndex = find(Internal_Face.CellNeighbor2Index==i);
-                neighborIndex = [neighborIndex; Internal_Face.CellNeighbor1Index(faceIndex)];
-                Cell.N_Neighbors(i) = length(neighborIndex);
-                Cell.Index_Neighbors{i} = sort(neighborIndex);
-            end
-            fprintf('Done!\n');
-            CornerPointGridData.Cell = Cell;
-            
+            CornerPointGridData.External_Faces = External_Face;
+
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Reading the rock properties (porosity and permeability)
             if isempty(obj.CornerPointGridRockPropertiesMatrix)
@@ -747,6 +755,7 @@ classdef reader_darsim2 < reader
             	error('The number of ative cells of the CornerPointGrid rock properties input file does not match with CornerPointGrid data file!\n');
             end
             
+            %%% Reading porosity %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'POROSITY_DATA');
             index = find(~cellfun('isempty', temp));
             if ~isempty(index)
@@ -758,6 +767,7 @@ classdef reader_darsim2 < reader
                 fprintf('Done!\n');
             end
             
+            %%% Reading permeability %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(obj.CornerPointGridRockPropertiesMatrix, 'PERMEABILITY_DATA');
             index = find(~cellfun('isempty', temp));
             if ~isempty(index)
