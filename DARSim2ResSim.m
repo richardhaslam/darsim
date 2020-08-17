@@ -15,7 +15,7 @@
 % ImmDirectory = '../Input/ImmHomo/'
 % ImmFile = 'ImmHomo';
 % PermDir = '../Permeability/'
-function ResSimulator = DARSim2ResSim(Directory, File, PermDirectory)
+function ResSimulator = DARSim2ResSim(Directory, File)
 clc;
 
 % Make sure you are in the correct folder
@@ -51,7 +51,7 @@ disp(newline);
 
 %% Build objects
 % Build Simulator
-ResSimulator = Reservoir_Simulator(Directory, File, PermDirectory);
+ResSimulator = Reservoir_Simulator(Directory, File);
 % Read Input File
 ResSimulator.Reader.ReadInputFile(ResSimulator.Builder);
 % Build objects

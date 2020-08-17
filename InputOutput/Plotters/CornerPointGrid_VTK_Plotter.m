@@ -12,7 +12,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
         end
         function PlotReservoirSolution(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir
-            fileID = fopen(strcat(obj.FileName, num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
+            fileID = fopen(strcat(obj.FileName, '_Reservoir', num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
             fprintf(fileID, '# vtk DataFile Version 2.0\n');
             fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
             if obj.isBinary
@@ -54,7 +54,7 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             if ~isempty(Grid.ListOfFracturedReservoirCells)
                 FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
             end
-            obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
+            obj.PrintScalar2VTK(fileID, FracturedFlag, ' IsFractured');
             fprintf(fileID, '\n');
             
             % Add the cell volume

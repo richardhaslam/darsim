@@ -251,7 +251,7 @@ classdef geothermal_singlephase_formulation < formulation
                 case('corner_point_grid')
                     nc = Grid.N;
                     nf = length(Grid.Trans);
-                    C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+                    C = [ Grid.CornerPointGridData.Internal_Faces.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Faces.CellNeighbor2Index ];
                     D1 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)]; D1(D1==1)=0;
                     D2 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)];
                     UpwindPermutation1 = sparse([(1:nf)'; (1:nf)'], C, D1, nf, nc)';
@@ -338,7 +338,7 @@ classdef geothermal_singlephase_formulation < formulation
                 case('corner_point_grid')
                     nc = Grid.N;
                     nf = length(Grid.Trans);
-                    C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+                    C = [ Grid.CornerPointGridData.Internal_Faces.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Faces.CellNeighbor2Index ];
                     D1 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)]; D1(D1==1)=0;
                     D2 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)];
                     UpwindPermutation1 = sparse([(1:nf)'; (1:nf)'], C, D1, nf, nc)';
