@@ -175,7 +175,7 @@ classdef reader_darsim2 < reader
                         fprintf('Done!\n');
                     else
                         EclipseReader = reader_eclipse(CornerPointGridFile);
-                        if contains(CornerPointGridFile,'.grdecl') && ~contains(CornerPointGridFile,'.txt')
+                        if contains(CornerPointGridFile,'.grdecl','IgnoreCase',true) && ~contains(CornerPointGridFile,'.txt')
                             % Reading the grdecl file directly
                             ReservoirProperties.CornerPointGridData = EclipseReader.ReadGRDECL(1);
                             if ~includeCornerPointGridRockProperties

@@ -21,9 +21,13 @@ classdef reader_eclipse < handle
         end
         function CornerPointGridData = ReadGRDECL(obj,Index_List)
             % Read the ECLIPSE GRDECL file
+            fprintf('---> Reading GRDECL raw data ... ');
             grdecl_raw = readGRDECL(obj.File);
+            fprintf('Done!\n');
             % Process the GRDECL data
+            fprintf('---> Pocessing GRDECL raw data ... ');
             grdecl_processed = mprocessGRDECL(grdecl_raw, 'Verbose', true);
+            fprintf('Done!\n');
             
             % Some models have more than one disconnected formations. Use "length(Geometries)" as
             % the maximum counter for the following for-loop to process all of them.
