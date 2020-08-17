@@ -24,24 +24,16 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
             
             fprintf(fileID, ['POINTS ' num2str(Grid.CornerPointGridData.N_Nodes) ' double\n']);
-            fprintf(fileID, '%f %f %f\n',Grid.CornerPointGridData.Nodes_XYZ_Coordinate');
+            fprintf(fileID, '%f %f %f\n',Grid.CornerPointGridData.Nodes');
             fprintf(fileID, '\n');
             
             fprintf(fileID, ['CELLS ' num2str(Grid.N) ' ' num2str(Grid.N*(1+8)) '\n']);
-            CellCorners = [ Grid.CornerPointGridData.Cell.SW_Bot_Corner , ...
-                            Grid.CornerPointGridData.Cell.SE_Bot_Corner , ...
-                            Grid.CornerPointGridData.Cell.NE_Bot_Corner , ...
-                            Grid.CornerPointGridData.Cell.NW_Bot_Corner , ...
-                            Grid.CornerPointGridData.Cell.SW_Top_Corner , ...
-                            Grid.CornerPointGridData.Cell.SE_Top_Corner , ...
-                            Grid.CornerPointGridData.Cell.NE_Top_Corner , ...
-                            Grid.CornerPointGridData.Cell.NW_Top_Corner , ];
-            indMatrix = horzcat(8*ones(Grid.N,1) , CellCorners-1 );
+            indMatrix = horzcat(8*ones(Grid.N,1) , Grid.CornerPointGridData.Cells.Vertices-1 );
             fprintf(fileID, '%d %d %d %d %d %d %d %d %d\n',indMatrix');
             fprintf(fileID, '\n');
             
             fprintf(fileID, ['CELL_TYPES ' num2str(Grid.N) '\n']);
-            fprintf(fileID, '%d ', 12*ones(1,Grid.N));
+            fprintf(fileID, '%d ', 11*ones(1,Grid.N));
             fprintf(fileID, '\n\n');
             
             % Print all existing variables
@@ -106,18 +98,18 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
             
             fprintf(fileID, ['POINTS ' num2str(Grid.CornerPointGridData.N_Nodes) ' double\n']);
-            fprintf(fileID, '%f %f %f\n',Grid.CornerPointGridData.Nodes_XYZ_Coordinate');
+            fprintf(fileID, '%f %f %f\n',Grid.CornerPointGridData.Nodes');
             fprintf(fileID, '\n');
             
             N_InternalFaces = Grid.CornerPointGridData.N_InternalFaces;
-            CellCorners = cell2mat( Grid.CornerPointGridData.Internal_Face.Corners_RawData );
-            N_NodePerFace = size(CellCorners,2);
-            fprintf(fileID, ['CELLS ' num2str(N_InternalFaces) ' ' num2str(N_InternalFaces*(1+N_NodePerFace)) '\n']);
+            maxNumVertices = max(Grid.CornerPointGridData.Internal_Faces.N_Vertices);
+            FaceVertices = cell2mat( cellfun(@(x) [x ones(1,maxNumVertices-numel(x))*x(end)] , Grid.CornerPointGridData.Internal_Faces.Vertices , 'uni' , 0 ) );
+            fprintf(fileID, ['CELLS ' num2str(N_InternalFaces) ' ' num2str(N_InternalFaces*(1+maxNumVertices)) '\n']);
             
-            indMatrix = horzcat(N_NodePerFace*ones(N_InternalFaces,1) , CellCorners-1 );
+            indMatrix = horzcat(maxNumVertices*ones(N_InternalFaces,1) , FaceVertices-1 );
             
             FormatSpec =[];
-            for n = 1 : N_NodePerFace
+            for n = 1 : maxNumVertices
                 FormatSpec = strcat(FormatSpec,"%d ");
             end
             FormatSpec = char(FormatSpec);

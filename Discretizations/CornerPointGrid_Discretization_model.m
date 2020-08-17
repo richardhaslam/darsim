@@ -9,126 +9,6 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
         CornerPointGridData
     end
     methods
-        function AddUnifiedGrid(obj)
-            CPGData = obj.ReservoirGrid.CornerPointGridData;
-            CPGData.Nx = [ obj.ReservoirGrid.Nx ; [obj.FracturesGrid.Grids.Nx]' ];
-            CPGData.Ny = [ obj.ReservoirGrid.Ny ; [obj.FracturesGrid.Grids.Ny]' ];
-            CPGData.Nz = [ obj.ReservoirGrid.Nz ; [obj.FracturesGrid.Grids.Nz]' ];
-            
-            Nf = obj.FracturesGrid.N;
-            N_AllFaces_x = zeros( obj.FracturesGrid.Nfrac , 1);
-            N_AllFaces_y = zeros( obj.FracturesGrid.Nfrac , 1);
-            N_InternalFaces_x = zeros( obj.FracturesGrid.Nfrac , 1);
-            N_InternalFaces_y = zeros( obj.FracturesGrid.Nfrac , 1);
-            N_ExternalFaces_x = zeros( obj.FracturesGrid.Nfrac , 1);
-            N_ExternalFaces_y = zeros( obj.FracturesGrid.Nfrac , 1);
-
-            CPGData.N_ActiveCells = CPGData.N_ActiveCells + sum(Nf);
-
-            for f = 1 : obj.FracturesGrid.Nfrac
-                obj.FracturesGrid.Grids(f).Volume = obj.FracturesGrid.Grids(f).Volume .* ones(obj.FracturesGrid.Grids(f).N,1);
-                Grid = obj.FracturesGrid.Grids(f);
-                N_AllFaces_x(f) = length(Grid.Tx(:));
-                N_AllFaces_y(f) = length(Grid.Ty(:));
-                Internal_Tx = Grid.Tx( 2:Grid.Nx , 1:Grid.Ny );
-                Internal_Ty = Grid.Ty( 1:Grid.Nx , 2:Grid.Ny );
-                N_InternalFaces_x(f) = length(Internal_Tx(:));
-                N_InternalFaces_y(f) = length(Internal_Ty(:));
-                N_ExternalFaces_x(f) = N_AllFaces_x(f) - N_InternalFaces_x(f);
-                N_ExternalFaces_y(f) = N_AllFaces_y(f) - N_InternalFaces_y(f);
-            end
-            
-            CPGData.N_InternalFaces = CPGData.N_InternalFaces + sum(N_InternalFaces_x) + sum(N_InternalFaces_y);
-            CPGData.N_ExternalFaces = CPGData.N_ExternalFaces + sum(N_ExternalFaces_x) + sum(N_ExternalFaces_y);
-
-            Frac_Trans = cell(obj.FracturesGrid.Nfrac,1);
-            for f = 1 : obj.FracturesGrid.Nfrac
-                Grid = obj.FracturesGrid.Grids(f);
-                % Merging the cell data
-                for j = 1 : Grid.Ny
-                    for i = 1 : Grid.Nx
-                        CellInd = (j-1) * Grid.Nx + i;
-                        CornerInd_SW = (j-1) * (Grid.Nx+1) + i;
-                        CornerInd_SE = (j-1) * (Grid.Nx+1) + i+1;
-                        CornerInd_NW = (j  ) * (Grid.Nx+1) + i;
-                        CornerInd_NE = (j  ) * (Grid.Nx+1) + i+1;
-                        CPGData.Cell.SW_Top_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_SW , : );
-                        CPGData.Cell.SE_Top_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_SE , : );
-                        CPGData.Cell.NW_Top_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_NW , : );
-                        CPGData.Cell.NE_Top_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_NE , : );
-                        CPGData.Cell.SW_Bot_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_SW , : );
-                        CPGData.Cell.SE_Bot_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_SE , : );
-                        CPGData.Cell.NW_Bot_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_NW , : );
-                        CPGData.Cell.NE_Bot_Corner(   obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.GridCoords( CornerInd_NE , : );
-                        CPGData.Cell.Centroid(        obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.Centroids( CellInd , : );
-                        CPGData.Cell.Volume(          obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd , : ) = Grid.Volume( CellInd );
-                        CPGData.Cell.Index_Neighbors{ obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd     } = Grid.Neighbours{ CellInd } + obj.ReservoirGrid.N + sum(Nf(1:f-1));
-                        CPGData.Cell.N_Neighbors(     obj.ReservoirGrid.N + sum(Nf(1:f-1))+CellInd     ) = length( Grid.Neighbours{ CellInd } );
-                    end
-                end
-                
-                % Merging the internal Tx to the interfaces
-                for j = 1 : Grid.Ny
-                    for i = 1 : Grid.Nx-1
-                        InterfaceInd = (j-1) * (Grid.Nx-1) + i;
-                        CellNeighbor1Index = (j-1) * (Grid.Nx) + i;
-                        CellNeighbor2Index = (j-1) * (Grid.Nx) + i+1;
-                        
-                        Frac_Trans{f} = vertcat( Frac_Trans{f} , Grid.Tx(i+1,j) );
-                        
-                        CPGData.Internal_Face.Area = vertcat( CPGData.Internal_Face.Area , Grid.dy * Grid.dz );
-                        CPGData.Internal_Face.CellNeighbor1Index = vertcat( CPGData.Internal_Face.CellNeighbor1Index , CellNeighbor1Index + obj.ReservoirGrid.N + sum(Nf(1:f-1)) );
-                        CPGData.Internal_Face.CellNeighbor2Index = vertcat( CPGData.Internal_Face.CellNeighbor2Index , CellNeighbor2Index + obj.ReservoirGrid.N + sum(Nf(1:f-1)) );
-                    end
-                end
-                
-                % Merging the internal Ty to the interfaces
-                for i = 1 : Grid.Nx
-                    for j = 1 : Grid.Ny-1
-                        InterfaceInd = (i-1) * (Grid.Ny-1) + j;
-                        CellNeighbor1Index = (j-1) * (Grid.Nx) + i;
-                        CellNeighbor2Index = (j  ) * (Grid.Nx) + i;
-                        
-                        Frac_Trans{f} = vertcat( Frac_Trans{f} , Grid.Ty(i,j+1) );
-                        
-                        CPGData.Internal_Face.Area = vertcat( CPGData.Internal_Face.Area , Grid.dx * Grid.dz );
-                        CPGData.Internal_Face.CellNeighbor1Index = vertcat( CPGData.Internal_Face.CellNeighbor1Index , CellNeighbor1Index + obj.ReservoirGrid.N + sum(Nf(1:f-1)) );
-                        CPGData.Internal_Face.CellNeighbor2Index = vertcat( CPGData.Internal_Face.CellNeighbor2Index , CellNeighbor2Index + obj.ReservoirGrid.N + sum(Nf(1:f-1)) );
-                    end
-                end
-            end
-            
-            
-            % Creating the UnifiedGrid
-            TempProperties.Grid.N = [obj.ReservoirGrid.Nx ; obj.ReservoirGrid.Ny ; obj.ReservoirGrid.Nz];
-            TempProperties.CornerPointGridData = [];
-            TempProperties.Grid.N_ActiveCells = obj.ReservoirGrid.N;
-            TempProperties.CornerPointGridData.N_InternalFaces = length(obj.ReservoirGrid.Trans);
-            obj.UnifiedGrid = corner_point_grid(TempProperties);     
-            obj.UnifiedGrid.CornerPointGridData = CPGData;
-            obj.UnifiedGrid.Nx = CPGData.Nx;
-            obj.UnifiedGrid.Ny = CPGData.Ny;
-            obj.UnifiedGrid.Nz = CPGData.Nz;
-            obj.UnifiedGrid.N = sum(obj.UnifiedGrid.Nx .* obj.UnifiedGrid.Ny .* obj.UnifiedGrid.Nz);
-            obj.UnifiedGrid.Volume = [ obj.ReservoirGrid.Volume ; vertcat(obj.FracturesGrid.Grids.Volume) ];
-            obj.UnifiedGrid.Depth  = [ obj.ReservoirGrid.Depth  ; vertcat(obj.FracturesGrid.Grids.Depth ) ];
-            obj.UnifiedGrid.Neighbours = obj.UnifiedGrid.CornerPointGridData.Cell.Index_Neighbors;
-            obj.UnifiedGrid.Trans = [ obj.ReservoirGrid.Trans ; vertcat(Frac_Trans{:}) ];
-            
-            % Adding the non-neighboring CrosscConnections data to UnifiedGrid
-            for If1Local = 1 : length(obj.CrossConnections)
-                If1Global = obj.ReservoirGrid.N + If1Local;
-                Cells = obj.CrossConnections(If1Local).Cells;
-                T_Geo = obj.CrossConnections(If1Local).T_Geo;
-                
-                obj.UnifiedGrid.CornerPointGridData.N_InternalFaces = obj.UnifiedGrid.CornerPointGridData.N_InternalFaces + length(Cells);
-                obj.UnifiedGrid.CornerPointGridData.Internal_Face.CellNeighbor1Index = vertcat( obj.UnifiedGrid.CornerPointGridData.Internal_Face.CellNeighbor1Index , If1Global*ones(length(Cells),1) );
-                obj.UnifiedGrid.CornerPointGridData.Internal_Face.CellNeighbor2Index = vertcat( obj.UnifiedGrid.CornerPointGridData.Internal_Face.CellNeighbor2Index , Cells );
-                obj.UnifiedGrid.Trans = vertcat( obj.UnifiedGrid.Trans , T_Geo );
-            end
-            
-            obj.UnifiedGrid.ConstructConnectivityMatrix();
-        end
         function AddHarmonicPermeabilities(obj, Reservoir, Fractures)
             Nm = obj.ReservoirGrid.N;
             for If1Local = 1 : length(obj.CrossConnections)
@@ -216,33 +96,33 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                 PointB = Well.Coordinate.Value(p+1,:);
                 LineSegment = lineSegment_DARSim(PointA,PointB);
                 
-                [ ~ , indList ] = min( vecnorm(LineSegment.PointM - obj.CornerPointGridData.Cell.Centroid, 2,2) );
+                [ ~ , indList ] = min( vecnorm(LineSegment.PointM - obj.CornerPointGridData.Cells.Centroid, 2,2) );
                 Count = 1;
                 while Count <= length(indList)
                     I = indList(Count);
                     Count = Count+1;
-                    NW_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NW_Top_Corner(I) , : );
-                    SW_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SW_Top_Corner(I) , : );
-                    SE_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SE_Top_Corner(I) , : );
-                    NE_Top = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NE_Top_Corner(I) , : );
-                    NW_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NW_Bot_Corner(I) , : );
-                    SW_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SW_Bot_Corner(I) , : );
-                    SE_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.SE_Bot_Corner(I) , : );
-                    NE_Bot = obj.CornerPointGridData.Nodes_XYZ_Coordinate( obj.CornerPointGridData.Cell.NE_Bot_Corner(I) , : );
+                    NW_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,1) , : );
+                    SW_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,2) , : );
+                    SE_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,3) , : );
+                    NE_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,4) , : );
+                    NW_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,5) , : );
+                    SW_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,6) , : );
+                    SE_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,7) , : );
+                    NE_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,8) , : );
                     
-                    if isempty(obj.CornerPointGridData.Cell.Faces{I})
+                    if isempty(obj.CornerPointGridData.Cells.Faces{I})
                         ReservoirCell = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
                     else
-                        for n = 1 : length(obj.CornerPointGridData.Cell.Faces{I})
-                            InterfaceFullIndex = obj.CornerPointGridData.Cell.Faces{I}(n);
-                            InterfaceIndex = find( obj.CornerPointGridData.Internal_Face.FullIndex == InterfaceFullIndex );
+                        for n = 1 : length(obj.CornerPointGridData.Cells.Faces{I})
+                            InterfaceFullIndex = obj.CornerPointGridData.Cells.Faces{I}(n);
+                            InterfaceIndex = find( obj.CornerPointGridData.Internal_Faces.FullIndex == InterfaceFullIndex );
                             if ~isempty(InterfaceIndex) % This is an internal face
-                                NodesIndex = unique( obj.CornerPointGridData.Internal_Face.Corners_Cleaned{InterfaceIndex} , 'stable' );
+                                NodesIndex = unique( obj.CornerPointGridData.Internal_Faces.Vertices{InterfaceIndex} , 'stable' );
                             else                        % This is an external face
-                                InterfaceIndex = find( obj.CornerPointGridData.External_Face.FullIndex == InterfaceFullIndex );
-                                NodesIndex = unique( obj.CornerPointGridData.External_Face.Corners_Cleaned{InterfaceIndex} , 'stable' );
+                                InterfaceIndex = find( obj.CornerPointGridData.External_Faces.FullIndex == InterfaceFullIndex );
+                                NodesIndex = unique( obj.CornerPointGridData.External_Faces.Vertices{InterfaceIndex} , 'stable' );
                             end
-                            Vertices = obj.CornerPointGridData.Nodes_XYZ_Coordinate( NodesIndex , : );
+                            Vertices = obj.CornerPointGridData.Nodes( NodesIndex , : );
                             n_vec = cross( Vertices(2,:)-Vertices(1,:) , Vertices(end,:)-Vertices(1,:) );
                             Face(n,1) = polygon_DARSim( length(NodesIndex) , n_vec , mean(Vertices) );
                             Face(n,1).AddVertices(Vertices);
@@ -251,7 +131,7 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                         ReservoirCell = hexahedron_MRST(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);
                         ReservoirCell.AddFaces(Face);
                     end
-                    ReservoirCell.Centroid = obj.CornerPointGridData.Cell.Centroid(I,:);
+                    ReservoirCell.Centroid = obj.CornerPointGridData.Cells.Centroid(I,:);
                     Epsilon = 1e-10 * ( min(obj.ReservoirGrid.Volume) )^(1/3);
                     [Geostatus, IntersectPoints] = ReservoirCell.Obtain_Polyhedron_LineSegment_Intersection(LineSegment, Epsilon);
                     
@@ -259,7 +139,7 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                     % this reservoir cell, add the neighboring cells to the list for intersection check.
                     if isempty(IntersectPoints)
                         if Count == 2
-                            indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
+                            indNeighbors = obj.CornerPointGridData.Cells.Neighbors{I};
                             indList = union(indList, indNeighbors, 'stable');
                         end
                         continue;
@@ -267,7 +147,7 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                         % There was already an intersection between the well and this reservoir cell.
                         % Therefore, add the neighboring cells to the list for intersection check
                         % as the neighbors may intersect as well.
-                        indNeighbors = obj.CornerPointGridData.Cell.Index_Neighbors{I};
+                        indNeighbors = obj.CornerPointGridData.Cells.Neighbors{I};
                         indList = union(indList, indNeighbors, 'stable');
                     end
                     

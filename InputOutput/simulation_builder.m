@@ -362,7 +362,7 @@ classdef simulation_builder < handle
                 case('CartesianGrid')
                     GridVolume = dx*dy*dz * ones(N_ActiveCells,1);
                 case('CornerPointGrid')
-                    GridVolume = DiscretizationModel.CornerPointGridData.Cell.Volume;
+                    GridVolume = DiscretizationModel.CornerPointGridData.Cells.Volume;
                 otherwise
             end
             

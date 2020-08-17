@@ -15,8 +15,8 @@ classdef phase < matlab.mixin.Heterogeneous & handle
         function [Upwind, U] = UpWindAndRockFluxes(obj, Grid, P, RhoInt)
             switch class(Grid)
                 case('corner_point_grid')
-                    Neighbor1Index = Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index;
-                    Neighbor2Index = Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index;
+                    Neighbor1Index = Grid.CornerPointGridData.Internal_Faces.CellNeighbor1Index;
+                    Neighbor2Index = Grid.CornerPointGridData.Internal_Faces.CellNeighbor2Index;
                     
                     % Gravitational velocities
                     Ug = - ( Grid.Depth(Neighbor2Index) - Grid.Depth(Neighbor1Index) ) .* RhoInt;
@@ -27,8 +27,8 @@ classdef phase < matlab.mixin.Heterogeneous & handle
                     % Use velocity to build upwind operator
                     nc = Grid.N;
                     nf = length(Grid.Trans);
-                    C = (U>=0) .* Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index + ...
-                        (U< 0) .* Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index;
+                    C = (U>=0) .* Grid.CornerPointGridData.Internal_Faces.CellNeighbor1Index + ...
+                        (U< 0) .* Grid.CornerPointGridData.Internal_Faces.CellNeighbor2Index;
                     Upwind = sparse( (1:nf)', C , ones(nf,1) , nf , nc );
                     
                 case('cartesian_grid')

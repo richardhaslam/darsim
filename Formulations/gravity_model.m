@@ -40,8 +40,8 @@ classdef gravity_model < handle
                 case('corner_point_grid')
                     for i=1:n_phases
                         rho_g = obj.g * Status.Properties(['rho_', num2str(i)]).Value;
-                        rho_g_1 = rho_g( Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index );
-                        rho_g_2 = rho_g( Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index );
+                        rho_g_1 = rho_g( Grid.CornerPointGridData.Internal_Faces.CellNeighbor1Index );
+                        rho_g_2 = rho_g( Grid.CornerPointGridData.Internal_Faces.CellNeighbor2Index );
                         obj.RhoInt{i, f+1} = (rho_g_1 + rho_g_2) / 2;
                     end
                 case('cartesian_grid')

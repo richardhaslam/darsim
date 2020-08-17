@@ -170,7 +170,7 @@ classdef Immiscible_formulation < formulation
                 case('corner_point_grid')
                     nc = Grid.N;
                     nf = length(Grid.Trans);
-                    C = [ Grid.CornerPointGridData.Internal_Face.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Face.CellNeighbor2Index ];
+                    C = [ Grid.CornerPointGridData.Internal_Faces.CellNeighbor1Index , Grid.CornerPointGridData.Internal_Faces.CellNeighbor2Index ];
                     D1 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)]; D1(D1==1)=0;
                     D2 = [ -double(obj.U{ph,1+f}>=0)+double(obj.U{ph,1+f}<0)  , double(obj.U{ph,1+f}>=0)-double(obj.U{ph,1+f}<0)];
                     UpwindPermutation1 = sparse([(1:nf)'; (1:nf)'], C, D1, nf, nc)';
@@ -266,19 +266,21 @@ classdef Immiscible_formulation < formulation
                 %% Jacobian of the reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                [Jp, JS] = BuildMediumJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0, ph);
+                [Jp_res, JS_res] = BuildMediumJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0, ph);
                 
                 %% Jacobian of the fractures
+                Jp = [];  JS = [];
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Nf = DiscretizationModel.FracturesGrid.N;
                     Index.Start = DiscretizationModel.Index_Local_to_Global( Nm, f, 1     );
                     Index.End   = DiscretizationModel.Index_Local_to_Global( Nm, f, Nf(f) );
-                    [Jfp, JfS] = BuildMediumJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f, ph);
-                    Jp  = blkdiag(Jp, Jfp);
-                    JS  = blkdiag(JS, JfS);
+                    [Jp_frac, JS_frac] = BuildMediumJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f, ph);
+                    Jp  = blkdiag(Jp, Jp_frac);
+                    JS  = blkdiag(JS, JS_frac);
                 end
-                % Combine the Jacobian blocks
-                %Jphnoconn{ph} = horzcat(Jp, JS);
+                Jp  = blkdiag(Jp_res,Jp);
+                JS  = blkdiag(JS_res,JS);
+
                 %% ADD frac-matrix and frac-frac connections
                 for c = 1:length(DiscretizationModel.CrossConnections)
                     if isempty(DiscretizationModel.CrossConnections(c).Cells),  continue;  end
