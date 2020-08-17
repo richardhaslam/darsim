@@ -21,19 +21,35 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             	fprintf(fileID, 'ASCII\n');
             end
             fprintf(fileID, '\n');
+            %
             fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
-            
+            VTK_Nodes = Grid.CornerPointGridData.Nodes;
+            VTK_Nodes(:,3) = max(VTK_Nodes(:,3)) - VTK_Nodes(:,3);
             fprintf(fileID, ['POINTS ' num2str(Grid.CornerPointGridData.N_Nodes) ' double\n']);
-            fprintf(fileID, '%f %f %f\n',Grid.CornerPointGridData.Nodes');
+            if obj.isBinary
+                fwrite(fileID, VTK_Nodes','float', 'b');
+            else
+                fprintf(fileID, '%f %f %f\n',VTK_Nodes');
+            end
             fprintf(fileID, '\n');
-            
+            %
             fprintf(fileID, ['CELLS ' num2str(Grid.N) ' ' num2str(Grid.N*(1+8)) '\n']);
             indMatrix = horzcat(8*ones(Grid.N,1) , Grid.CornerPointGridData.Cells.Vertices-1 );
-            fprintf(fileID, '%d %d %d %d %d %d %d %d %d\n',indMatrix');
-            fprintf(fileID, '\n');
+            if obj.isBinary
+                fwrite(fileID, indMatrix','float', 'b');
+            else
+                fprintf(fileID, '%d %d %d %d %d %d %d %d %d\n', indMatrix');
+            end
             
+            fprintf(fileID, '\n');
+            %
             fprintf(fileID, ['CELL_TYPES ' num2str(Grid.N) '\n']);
-            fprintf(fileID, '%d ', 11*ones(1,Grid.N));
+            if obj.isBinary
+                fwrite(fileID, 11*ones(1,Grid.N),'float', 'b');
+            else
+                fprintf(fileID, '%d ', 11*ones(1,Grid.N));
+            end
+            
             fprintf(fileID, '\n\n');
             
             % Print all existing variables
@@ -49,17 +65,18 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
                 fprintf(fileID, '\n');
             end
 
-            % Add the "fractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
-            FracturedFlag = zeros(Grid.N,1);
-            if ~isempty(Grid.ListOfFracturedReservoirCells)
-                FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
-            end
-            obj.PrintScalar2VTK(fileID, FracturedFlag, ' IsFractured');
-            fprintf(fileID, '\n');
-            
+            % Add the "isfractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
+%             if ~isempty(Grid.ListOfFracturedReservoirCells)
+%                 FracturedFlag = zeros(Grid.N,1);
+%                 FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
+%                 obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
+%                 fprintf(fileID, '\n');
+%             end
+
             % Add the cell volume
             obj.PrintScalar2VTK(fileID, Grid.Volume, ' Volume');
-
+            fprintf(fileID, '\n');
+            
             % Add ADM ACTIVETime
             obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
             fprintf(fileID, '\n');
@@ -69,16 +86,16 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             fprintf(fileID, '\n');
             
             % Add manual flag for R5 model
-            if Grid.N == 1276945
-                Flagged = zeros(Grid.N,1);
-                Cell_Indices = [959588;1029937;1033734;1193170;1266538];
-                Flagged(Cell_Indices)=1;
-                for n = 1 : length(Cell_Indices)
-                    Flagged( Grid.CornerPointGridData.Cell.Index_Neighbors{n} ) = 2;
-                end
-                obj.PrintScalar2VTK(fileID, Flagged, ' isFlagged');
-                fprintf(fileID, '\n');
-            end
+%             if Grid.N == 1276945
+%                 Flagged = zeros(Grid.N,1);
+%                 Cell_Indices = [959588;1029937;1033734;1193170;1266538];
+%                 Flagged(Cell_Indices)=1;
+%                 for n = 1 : length(Cell_Indices)
+%                     Flagged( Grid.CornerPointGridData.Cells.Neighbors{n} ) = 2;
+%                 end
+%                 obj.PrintScalar2VTK(fileID, Flagged, ' isFlagged');
+%                 fprintf(fileID, '\n');
+%             end
             
             fclose(fileID);
             
@@ -132,29 +149,6 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             end
 
             fclose(fileID);
-        end
-    end
-    methods (Access = private)
-        function PrintScalar2VTK(obj, fileID, scalar, name)
-            %Print a scalar in VTK format
-            fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('SCALARS  ', name,' double 1\n'));
-            fprintf(fileID, 'LOOKUP_TABLE default\n');
-            if obj.isBinary
-                fwrite(fileID, scalar','double', 'b');
-            else
-            	fprintf(fileID,'%1.5e ', scalar);
-            end
-        end
-        function PrintVector2VTK(obj, fileID, vector, name)
-            %Print a vector in VTK format
-            fprintf(fileID, ' \n');
-            fprintf(fileID, strcat('VECTORS  ', name,' double \n'));
-            if obj.isBinary
-                fwrite(fileID, vector','double', 'b');
-            else
-            	fprintf(fileID,'%1.5e ', vector);
-            end
         end
     end
 end

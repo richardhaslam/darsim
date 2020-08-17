@@ -74,6 +74,7 @@ classdef VTK_Plotter < Plotter
             	fprintf(fileID, 'ASCII\n');
             end
             fprintf(fileID, '\n');
+            %
             fprintf(fileID, 'DATASET RECTILINEAR_GRID\n');
             fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, Grid.Nz+1);
             fprintf(fileID, '\n');
@@ -99,23 +100,17 @@ classdef VTK_Plotter < Plotter
             end
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
+            %
             fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
             fprintf(fileID, '\n');
             
-            % Add the "isfractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
-            FracturedFlag = zeros(Grid.N,1);
-            if ~isempty(Grid.ListOfFracturedReservoirCells)
-                FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
-            end 
-            fprintf(fileID, '\n');
-            fprintf(fileID, strcat('SCALARS isFractured double 1\n'));
-            fprintf(fileID, 'LOOKUP_TABLE default\n');
-            if obj.isBinary
-                fwrite(fileID, FracturedFlag', 'double', 'b');
-            else
-            	fprintf(fileID,'%1.5e ', FracturedFlag);
-            end
-            fprintf(fileID, '\n');
+            % Add the "fractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
+%             if ~isempty(Grid.ListOfFracturedReservoirCells)
+%                 FracturedFlag = zeros(Grid.N,1);
+%                 FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1e0;
+%                 obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
+%                 fprintf(fileID, '\n');
+%             end
             
             % Add ADM ACTIVEFine (coarse grids)
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
@@ -509,8 +504,6 @@ classdef VTK_Plotter < Plotter
                 fclose(fileID);
             end
         end
-    end
-    methods (Access = private)
         function PrintScalar2VTK(obj, fileID, scalar, name)
             %Print a scalar in VTK format
             fprintf(fileID, '\n');
