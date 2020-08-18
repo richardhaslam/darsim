@@ -55,6 +55,7 @@ classdef Discretization_model < handle
                     obj.AddHarmonicConductivities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
                 end
                 obj.ReservoirGrid.ListOfFracturedReservoirCells = unique(vertcat(obj.CrossConnections.Cells));
+                obj.ReservoirGrid.ListOfFracturedReservoirCells(obj.ReservoirGrid.ListOfFracturedReservoirCells>obj.ReservoirGrid.N)=[];
             end
         end
         function DefinePerforatedCells(obj, Wells)
@@ -62,11 +63,13 @@ classdef Discretization_model < handle
             Well_Type = 'injector';
             for w = 1:Wells.NofInj
                 obj.DefinePerforatedCellsForEachWell(Wells.Inj(w), Well_Type, w);
+                obj.ReservoirGrid.ListOfPerforatedCells = unique( vertcat(obj.ReservoirGrid.ListOfPerforatedCells,Wells.Inj(w).Cells) );
             end
             % Producers
             Well_Type = 'producer';
             for w = 1:Wells.NofProd
                 obj.DefinePerforatedCellsForEachWell(Wells.Prod(w), Well_Type, w);
+                obj.ReservoirGrid.ListOfPerforatedCells = unique( vertcat(obj.ReservoirGrid.ListOfPerforatedCells,Wells.Prod(w).Cells) );
             end
         end
         function DefinePerforatedCellsForEachWell(obj, Well, Well_Type, w)
