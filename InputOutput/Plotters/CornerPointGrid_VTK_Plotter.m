@@ -24,7 +24,8 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             %
             fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
             VTK_Nodes = Grid.CornerPointGridData.Nodes;
-            VTK_Nodes(:,3) = max(VTK_Nodes(:,3)) - VTK_Nodes(:,3);
+            obj.ReferenceDepth = max(VTK_Nodes(:,3));
+            VTK_Nodes(:,3) = obj.ReferenceDepth - VTK_Nodes(:,3);
             fprintf(fileID, ['POINTS ' num2str(Grid.CornerPointGridData.N_Nodes) ' double\n']);
             if obj.isBinary
                 fwrite(fileID, VTK_Nodes','float', 'b');
@@ -65,13 +66,21 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
                 fprintf(fileID, '\n');
             end
 
-            % Add the "isfractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
-%             if ~isempty(Grid.ListOfFracturedReservoirCells)
-%                 FracturedFlag = zeros(Grid.N,1);
-%                 FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
-%                 obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
-%                 fprintf(fileID, '\n');
-%             end
+            % Add the "isFractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
+            if ~isempty(Grid.ListOfFracturedReservoirCells)
+                isFractured = zeros(Grid.N,1);
+                isFractured(Grid.ListOfFracturedReservoirCells) = 1;
+                obj.PrintScalar2VTK(fileID, isFractured, ' isFractured');
+                fprintf(fileID, '\n');
+            end
+            
+            % Add the "isPerforated" flag for reservoir grid cells that are overlapped by a fracture (if any)
+            if ~isempty(Grid.ListOfPerforatedCells)
+                isPerforated = zeros(Grid.N,1);
+                isPerforated(Grid.ListOfPerforatedCells) = 1;
+                obj.PrintScalar2VTK(fileID, isPerforated, ' isPerforated');
+                fprintf(fileID, '\n');
+            end
 
             % Add the cell volume
             obj.PrintScalar2VTK(fileID, Grid.Volume, ' Volume');
@@ -114,8 +123,10 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             fprintf(fileID, '\n');
             fprintf(fileID, 'DATASET UNSTRUCTURED_GRID\n');
             
+            VTK_Nodes = Grid.CornerPointGridData.Nodes;
+            VTK_Nodes(:,3) = obj.ReferenceDepth - VTK_Nodes(:,3);
             fprintf(fileID, ['POINTS ' num2str(Grid.CornerPointGridData.N_Nodes) ' double\n']);
-            fprintf(fileID, '%f %f %f\n',Grid.CornerPointGridData.Nodes');
+            fprintf(fileID, '%f %f %f\n',VTK_Nodes');
             fprintf(fileID, '\n');
             
             N_InternalFaces = Grid.CornerPointGridData.N_InternalFaces;
@@ -148,6 +159,53 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
                 fprintf(fileID, '\n');
             end
 
+            fclose(fileID);
+        end
+        function PlotFractureSolution(obj, Fracture, Grid, f)
+            %Write a VTK file for each fracture
+            fileID = fopen(strcat(obj.FileName, '_Fracture', num2str(f,'%03d'), '_', num2str(obj.VTKindex,'%04d'),'.vtk'), 'w');
+            fprintf(fileID, '# vtk DataFile Version 2.0\n');
+            fprintf(fileID, 'DARSim 2 Reservoir Simulator\n');
+            
+            if obj.isBinary
+                fprintf(fileID, 'BINARY\n');
+            else
+            	fprintf(fileID, 'ASCII\n');
+            end
+            fprintf(fileID, '\n');
+            
+            fprintf(fileID, 'DATASET STRUCTURED_GRID\n');
+            fprintf(fileID, 'DIMENSIONS    %d   %d   %d\n', Grid.Nx+1, Grid.Ny+1, 1);
+            fprintf(fileID, '\n');
+            
+            VTK_Nodes = Grid.GridCoords;
+            VTK_Nodes(:,3) = obj.ReferenceDepth - VTK_Nodes(:,3);
+            fprintf(fileID, 'POINTS    %d   double\n', size(Grid.GridCoords,1) );
+            if obj.isBinary
+                fwrite(fileID, VTK_Nodes', 'double', 'b');
+            else
+                fprintf(fileID, '%f %f %f\n' , VTK_Nodes'); 
+            end
+            fprintf(fileID, '\n');
+            
+            fprintf(fileID, '\n');
+            fprintf(fileID, 'CELL_DATA %d\n', Grid.N);
+            fprintf(fileID, '\n');
+            
+            %Add ADM coarse grids
+            obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
+            fprintf(fileID, '\n');
+            N_var = double(Fracture.State.Properties.Count);
+            Names = Fracture.State.Properties.keys;
+            
+            for i=1:N_var
+                if strcmp(Fracture.State.Properties(Names{i}).Type, 'scalar')
+                    obj.PrintScalar2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
+                else
+                    obj.PrintVector2VTK(fileID, Fracture.State.Properties(Names{i}).Value, [' ',Names{i}]);
+                end
+                fprintf(fileID, '\n');
+            end
             fclose(fileID);
         end
     end

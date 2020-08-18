@@ -8,6 +8,7 @@ classdef VTK_Plotter < Plotter
     properties
         FileName
         isBinary
+        ReferenceDepth
     end
     methods
         function obj = VTK_Plotter(Directory, Problem, NumOfPreviousReports)
