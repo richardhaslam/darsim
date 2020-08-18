@@ -20,6 +20,7 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         GridCoords
         ActiveTime
         ListOfFracturedReservoirCells
+        ListOfPerforatedCells
     end
     methods
         function Initialise(obj, maxLevel)
