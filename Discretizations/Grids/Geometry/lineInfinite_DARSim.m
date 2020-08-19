@@ -101,5 +101,8 @@ classdef lineInfinite_DARSim < handle
                 IsPointOnTheInfiniteLine = 0;
             end
         end
+        %%
+        function Distance = Obtain_Distance_Point_from_InfiniteLine(obj, Point, Epsilon)
+        end
     end
 end
