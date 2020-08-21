@@ -15,6 +15,9 @@ classdef corner_point_grid < grid_darsim
         Nx
         Ny
         Nz
+        dx
+        dy
+        dz
         Volume
         ConnectivityMatrix
     end
@@ -34,6 +37,7 @@ classdef corner_point_grid < grid_darsim
         function Initialize(obj, Reservoir)
             obj.Volume = obj.CornerPointGridData.Cells.Volume;
             obj.Neighbours = obj.CornerPointGridData.Cells.Neighbors;
+            obj.AddGridCellSize;
             obj.ComputeRockTransmissibilities(Reservoir.K);
             if ~isempty(Reservoir.K_Cond_eff)
                 obj.ComputeRockHeatConductivities(Reservoir.K_Cond_eff)
@@ -72,6 +76,25 @@ classdef corner_point_grid < grid_darsim
         end
         function AddGridCoordinates(obj)
             obj.GridCoords = obj.CornerPointGridData.Cells.Vertices;
+        end
+        function AddGridCellSize(obj)
+            if sum(strcmp(fieldnames(obj.CornerPointGridData.Cells), 'dx'))
+                obj.dx = obj.CornerPointGridData.Cells.dx;
+                obj.dy = obj.CornerPointGridData.Cells.dy;
+                obj.dz = obj.CornerPointGridData.Cells.dz;
+            else
+                obj.dx = zeros(obj.CornerPointGridData.N_ActiveCells,1);
+                obj.dy = zeros(obj.CornerPointGridData.N_ActiveCells,1);
+                obj.dz = zeros(obj.CornerPointGridData.N_ActiveCells,1);
+                for i = 1 : obj.CornerPointGridData.N_ActiveCells
+                    obj.dx(i) = max( obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(i,:),1) ) - ...
+                                min( obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(i,:),1) );
+                    obj.dy(i) = max( obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(i,:),2) ) - ...
+                                min( obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(i,:),2) );
+                    obj.dz(i) = max( obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(i,:),3) ) - ...
+                                min( obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(i,:),3) );
+                end
+            end
         end
         function ComputeDepth(obj, alpha, Thickness)
             obj.Depth = max(obj.CornerPointGridData.Cells.Centroid(:,3)) - obj.CornerPointGridData.Cells.Centroid(:,3);
