@@ -114,7 +114,7 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
                 end
             end
         end
-        %
+        %%
         function IsPointOnTheLineSegment = Is_Point_On_The_LineSegment(obj, Point, Epsilon)
             % Assuming the point P is on the infinite line, and points A and B being the start and 
             % the end of the line segemnt AB, the angle between vectors PA and PB will be either :
@@ -126,6 +126,11 @@ classdef lineSegment_DARSim < lineInfinite_DARSim
             else
                 IsPointOnTheLineSegment = 0;
             end
+        end
+        %%
+        function Distance = Obtain_Distance_Point_from_LineSegment(obj, Points)
+            Distance = obj.Obtain_Distance_Point_from_InfiniteLine(Points);
+            Distance = min( [Distance , vecnorm(Points-obj.PointA,2,2) , vecnorm(Points-obj.PointB,2,2)] , [] , 2);
         end
     end
 end

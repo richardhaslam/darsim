@@ -102,7 +102,8 @@ classdef lineInfinite_DARSim < handle
             end
         end
         %%
-        function Distance = Obtain_Distance_Point_from_InfiniteLine(obj, Point, Epsilon)
+        function Distance = Obtain_Distance_Point_from_InfiniteLine(obj, Points)
+            Distance = vecnorm( cross(Points-obj.PointA , obj.unitVec.*ones(size(Points))) , 2 , 2 ) ./ vecnorm( obj.unitVec , 2 , 2 );
         end
     end
 end
