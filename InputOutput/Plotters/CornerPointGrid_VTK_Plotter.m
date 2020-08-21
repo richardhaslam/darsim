@@ -81,8 +81,12 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
                 obj.PrintScalar2VTK(fileID, isPerforated, ' isPerforated');
                 fprintf(fileID, '\n');
             end
+            
+            % Add the cell indices
+            obj.PrintScalar2VTK(fileID, [1:Grid.N]', ' Index');
+            fprintf(fileID, '\n');
 
-            % Add the cell volume
+            % Add the cell volumes
             obj.PrintScalar2VTK(fileID, Grid.Volume, ' Volume');
             fprintf(fileID, '\n');
             
