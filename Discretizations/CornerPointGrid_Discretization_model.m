@@ -95,8 +95,8 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                 PointA = Well.Coordinate.Value(p  ,:);
                 PointB = Well.Coordinate.Value(p+1,:);
                 LineSegment = lineSegment_DARSim(PointA,PointB);
-                
-                [ ~ , indList ] = min( vecnorm(LineSegment.PointM - obj.CornerPointGridData.Cells.Centroid, 2,2) );
+                Distance = LineSegment.Obtain_Distance_Point_from_LineSegment(obj.CornerPointGridData.Cells.Centroid);
+                indList = find( Distance < max([obj.ReservoirGrid.dx,obj.ReservoirGrid.dy,obj.ReservoirGrid.dz],[],2) );
                 Count = 1;
                 while Count <= length(indList)
                     I = indList(Count);
