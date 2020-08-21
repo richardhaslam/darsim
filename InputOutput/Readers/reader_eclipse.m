@@ -119,7 +119,7 @@ classdef reader_eclipse < handle
                 Cell.dx = zeros(size(Cell.Volume));
                 Cell.dy = zeros(size(Cell.Volume));
                 Cell.dz = zeros(size(Cell.Volume));
-                for i = 1 : obj.CornerPointGridData.N_ActiveCells
+                for i = 1 : size(Cell.Volume,1)
                     Cell.dx(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),1) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),1) );
                     Cell.dy(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),2) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),2) );
                     Cell.dz(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),3) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),3) );
