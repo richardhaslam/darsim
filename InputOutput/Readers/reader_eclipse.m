@@ -115,6 +115,16 @@ classdef reader_eclipse < handle
                 Cell.Neighbors   = num2cell(CtC_2,2);
                 Cell.Neighbors   = cellfun( @(x) unique(x,'stable') , Cell.Neighbors , 'UniformOutput' , false);
                 Cell.N_Neighbors =  cellfun( @length , Cell.Neighbors );
+                
+                Cell.dx = zeros(size(Cell.Volume));
+                Cell.dy = zeros(size(Cell.Volume));
+                Cell.dz = zeros(size(Cell.Volume));
+                for i = 1 : obj.CornerPointGridData.N_ActiveCells
+                    Cell.dx(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),1) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),1) );
+                    Cell.dy(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),2) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),2) );
+                    Cell.dz(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),3) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),3) );
+                end
+                
                 CornerPointGridData(n).Cells = Cell;
                 fprintf('Done!\n');
                 
@@ -208,7 +218,7 @@ classdef reader_eclipse < handle
             GeometryMatrix = textscan(fid, '%s', 'Delimiter', '\n');
             GeometryMatrix = GeometryMatrix{1};
             fclose(fid);
-            if nargin > 1
+            if nargin > 1 && ~isempty(CornerPointGridRockPropertiesFile)
                 fid = fopen(CornerPointGridRockPropertiesFile, 'r');
                 RockPropertiesMatrix = textscan(fid, '%s', 'Delimiter', '\n');
                 RockPropertiesMatrix = RockPropertiesMatrix{1};
@@ -337,6 +347,15 @@ classdef reader_eclipse < handle
             Cell.Neighbors = num2cell( splitStr(:,14+mnf:14+mnf+mnn-1) , 2 );
             Cell.Neighbors = cellfun( @(x) unique(x,'stable') , Cell.Neighbors , 'UniformOutput' , false);
             Cell.N_Neighbors =  cellfun( @length , Cell.Neighbors );
+            
+            Cell.dx = zeros(size(Cell.Volume));
+            Cell.dy = zeros(size(Cell.Volume));
+            Cell.dz = zeros(size(Cell.Volume));
+            for i = 1 : obj.CornerPointGridData.N_ActiveCells
+                Cell.dx(i) = max( CornerPointGridData.Nodes( Cell.Vertices(i,:),1) ) - min( CornerPointGridData.Nodes( Cell.Vertices(i,:),1) );
+                Cell.dy(i) = max( CornerPointGridData.Nodes( Cell.Vertices(i,:),2) ) - min( CornerPointGridData.Nodes( Cell.Vertices(i,:),2) );
+                Cell.dz(i) = max( CornerPointGridData.Nodes( Cell.Vertices(i,:),3) ) - min( CornerPointGridData.Nodes( Cell.Vertices(i,:),3) );
+            end
             
             fprintf('Done!\n');
             CornerPointGridData.Cells = Cell;
