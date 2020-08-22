@@ -43,17 +43,36 @@ classdef reader_eclipse < handle
             else
                 Index_List = 1;
             end
-            
+
             % Looping over the list of processed grdecl data (usually there will be only 1)
             CornerPointGridData(1:length(Index_List),1) = struct;
             for n = 1:length(Index_List)
                 G = Index_List(n);
                 CornerPointGridData(n).Index = G;
-                
+
+                % Remove the active cells of other geometries (if any) from the raw data (grdecl.ACTNUM)
+                ACTNUM = grdecl_raw.ACTNUM;
+                for i = [1:G-1,G+1:length(grdecl_processed)]
+                    ACTNUM(grdecl_processed(i).cells.indexMap)= 0;
+                end
+
                 % Compute geometry of cells: centroids, volumes, areas
                 fprintf('Pocessing Formation %d of the current ECLIPSE data:\n' , G);
-                CornerPointGridData(n) = obj.ComputeGeometry(grdecl_processed(G));
-                
+                Geometry = mcomputeGeometry(grdecl_processed(G));
+                temp = obj.ComputeGeometry(Geometry);
+                CornerPointGridData(n).Nx              = temp.Nx;
+                CornerPointGridData(n).Ny              = temp.Ny;
+                CornerPointGridData(n).Nz              = temp.Nz;
+                CornerPointGridData(n).N_TotalCells    = temp.N_TotalCells;
+                CornerPointGridData(n).N_ActiveCells   = temp.N_ActiveCells;
+                CornerPointGridData(n).N_Nodes         = temp.N_Nodes;
+                CornerPointGridData(n).N_InternalFaces = temp.N_InternalFaces;
+                CornerPointGridData(n).N_ExternalFaces = temp.N_ExternalFaces;
+                CornerPointGridData(n).Nodes           = temp.Nodes;
+                CornerPointGridData(n).Cells           = temp.Cells;
+                CornerPointGridData(n).Internal_Faces  = temp.Internal_Faces;
+                CornerPointGridData(n).External_Faces  = temp.External_Faces;
+
                 %% SECTION 2.1: Porosity Data
                 if any(strcmp(fieldnames(grdecl_raw),'PORO')) && ~isempty(grdecl_raw.PORO)
                     CornerPointGridData(n).Porosity = grdecl_raw.PORO(Geometry.cells.indexMap);
@@ -76,15 +95,7 @@ classdef reader_eclipse < handle
                 end
             end
         end
-        function CornerPointGridData = ComputeGeometry(ProcessedData);
-            Geometry = mcomputeGeometry(ProcessedData);
-            
-            % Remove the active cells of other geometries (if any) from the raw data (grdecl.ACTNUM)
-            ACTNUM = grdecl_raw.ACTNUM;
-            for i = [1:G-1,G+1:length(grdecl_processed)]
-                ACTNUM(grdecl_processed(i).cells.indexMap)= 0;
-            end
-            
+        function CornerPointGridData = ComputeGeometry(obj,Geometry)
             %% SECTION 1.1: CELLS NODES (X, Y, Z COORDINATES)
             fprintf('---> Pocessing Nodes ... ');
             CornerPointGridData.Nodes = Geometry.nodes.coords;

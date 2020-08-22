@@ -40,8 +40,9 @@ Nz = str2double(InputMatrix{index+3});
 %% CARTESIAN GRID GEOMETRY DATA: INPUT FILE GENERATION
 % SECTION 1: CELL DATA: NODES + CENTROIDS + VOLUMES
 cartGeometry = cartGrid([Nx, Ny, Nz], [Lx, Ly, Lz]);                                         % Create Cartesian Grid
+Geometry = mcomputeGeometry(cartGeometry);
 Reader = reader_eclipse(InputFile);
-CornerPointGridData = Reader.ComputeGeometry(cartGeometry);                                  % Compute Geomtery of the Cartesian Grid
+CornerPointGridData = Reader.ComputeGeometry(Geometry);                                  % Compute Geomtery of the Cartesian Grid
 
 %% SECTION 1: OUTPUT TXT FILE FOR GRID GEOMETRY DATA
     disp( '******************* Writing the data into output text files *********************' );
