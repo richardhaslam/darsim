@@ -179,7 +179,7 @@ for n = 1:length(CornerPointGridData)
     fclose(fid);
     
     %% SECTION 2: OUTPUT VTK FILE FOR PARAVIEW
-    OutputFileName = 'CornerPointGrid_DARSim_VTK_Plotter';
+    OutputFileName = 'CornerPointGrid_DARSim_VTK_Plot';
     disp(['Writing into file ', OutputFileName, ' #', num2str(G)]);
     fid = fopen(strcat(Directory,'\',OutputFileName,'_',FileName,'_',num2str(G),'.vtk') , 'w+' );
     fprintf(fid, '# vtk DataFile Version 2.0\n');

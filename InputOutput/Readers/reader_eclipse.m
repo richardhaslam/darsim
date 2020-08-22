@@ -52,146 +52,7 @@ classdef reader_eclipse < handle
                 
                 % Compute geometry of cells: centroids, volumes, areas
                 fprintf('Pocessing Formation %d of the current ECLIPSE data:\n' , G);
-                Geometry = mcomputeGeometry(grdecl_processed(G));
-
-                % Remove the active cells of other geometries (if any) from the raw data (grdecl.ACTNUM)
-                ACTNUM = grdecl_raw.ACTNUM;
-                for i = [1:G-1,G+1:length(grdecl_processed)]
-                    ACTNUM(grdecl_processed(i).cells.indexMap)= 0;
-                end
-                
-                %% SECTION 1.1: CELLS NODES (X, Y, Z COORDINATES)
-                fprintf('---> Pocessing Nodes ... ');
-                CornerPointGridData(n).Nodes = Geometry.nodes.coords;
-                fprintf('Done!\n');
-                
-                %% SECTION 1.2: CELLS NODES + CELLS CENTROIDS + CELL VOLUMES
-                FtC_1 = [gridCellNo(Geometry) Geometry.cells.faces];                                                   % Cell + Faces to Cell + Faces Tag
-                LI = (FtC_1(:,3) == 1)|(FtC_1(:,3) == 2)|(FtC_1(:,3) == 3)|(FtC_1(:,3) == 4);                          % Logical Index: N/S/E/W faces(Faces Tag: 1 2 3 4)
-                FtC_1(LI,:) = [];                                                                                      % Delete N/S/E/W faces (Faces Tag: 1 2 3 4))
-                NtF_1 = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2).' Geometry.faces.nodes];      % [Face + Nodes]
-                id_faces = ismember(NtF_1(:,1),FtC_1(:,2));                                                            % Identify the T/B Faces in [Face + Nodes]
-                NtF_1 = NtF_1(id_faces,:);                                                                             % T/B Faces with their nodes
-                
-                F = vec2mat(NtF_1(:,1),4);                                                                             % T/B Faces
-                N = vec2mat(NtF_1(:,2),4);                                                                             % T/B Nodes
-                NtF_2 = [F(:,1) N];                                                                                    % T/B Faces + Nodes
-                
-                [X,Y] = ismember(FtC_1(:,2),NtF_2(:,1));                                                               % Obtain Index and Location
-                NtF_2 = NtF_2(Y(X),:);
-                NtC = reshape(NtF_2(:,2:5)',8,[])';                                                                    % Reshape: Cells vs Nodes
-                NtC = [NtC(:,4) NtC(:,3) NtC(:,1:2) NtC(:,8) NtC(:,7) NtC(:,5:6)];
-                
-                % Faces to Cells
-                faces = Geometry.cells.faces(:,1);
-                pos   = Geometry.cells.facePos;
-                cells = 1:Geometry.cells.num ;
-                FtC_2 = obj.ObtainFaceIndices(faces, pos, cells);                                                              % c = cells
-                
-                % Cells to Cell
-                CtC_1 = [gridCellNo(Geometry) Geometry.faces.neighbors(Geometry.cells.faces(:,1),1) Geometry.faces.neighbors(Geometry.cells.faces(:,1),2)];
-                LI = CtC_1(:,1)==CtC_1(:,2); CtC_1(LI,2) = 0;
-                LI = CtC_1(:,1)==CtC_1(:,3); CtC_1(LI,3) = 0;
-                CtC_1 = [CtC_1(:,1) (CtC_1(:,2)+CtC_1(:,3))];
-                LI = (CtC_1(:,2) == 0);                                                                                % Delete Cells = 0: External Faces
-                CtC_1(LI,:) = [];
-                
-                subs = CtC_1(:,1);
-                cpc = [1 ; accumarray(subs,1)];
-                cpc = cumsum(cpc);
-                
-                faces = CtC_1(:,2);
-                pos = cpc;
-                CtC_2 = obj.ObtainCellNeighbors(faces, pos, cells);                                                         % c = cells
-                CtC_2 = sort(CtC_2,2);
-                
-                fprintf('---> Pocessing Cells ... ');
-                Cell.Vertices    = NtC;
-                Cell.Centroid    = Geometry.cells.centroids;
-                Cell.Volume      = Geometry.cells.volumes;
-                Cell.Faces       = num2cell(FtC_2,2);
-                Cell.Faces       = cellfun( @(x) unique(x,'stable') , Cell.Faces , 'UniformOutput' , false);
-                Cell.N_Faces     = cellfun( @length , Cell.Faces );
-                Cell.Neighbors   = num2cell(CtC_2,2);
-                Cell.Neighbors   = cellfun( @(x) unique(x,'stable') , Cell.Neighbors , 'UniformOutput' , false);
-                Cell.N_Neighbors =  cellfun( @length , Cell.Neighbors );
-                
-                Cell.dx = zeros(size(Cell.Volume));
-                Cell.dy = zeros(size(Cell.Volume));
-                Cell.dz = zeros(size(Cell.Volume));
-                for i = 1 : size(Cell.Volume,1)
-                    Cell.dx(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),1) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),1) );
-                    Cell.dy(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),2) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),2) );
-                    Cell.dz(i) = max( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),3) ) - min( CornerPointGridData(n).Nodes( Cell.Vertices(i,:),3) );
-                end
-                
-                CornerPointGridData(n).Cells = Cell;
-                fprintf('Done!\n');
-                
-                %% SECTION 1.3: INTERNAL FACES (FACES CONNECTED TO CELLS)
-                nodes = Geometry.faces.nodes;
-                pos   = Geometry.faces.nodePos;
-                faces = 1:Geometry.faces.num ;
-                NtF_3 = obj.ObtainNodeIndices(nodes, pos, faces);                                                             % f = Faces
-                
-                NF = linspace(1, Geometry.faces.num, Geometry.faces.num)';                                            % Create Face Index Vector (Total Number of Faces)
-                
-                % Assembly Matrix with Face Geometry Data
-                IF = [NF, Geometry.faces.neighbors, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals NtF_3];
-                LI = (IF(:,2) == 0)|(IF(:,3) == 0);                                                                   % Delete External Faces
-                IF(LI,:) = [];                                                                                        % Delete External Faces
-                % Create Centroid Vector: Face Centroid - Cell Centroid
-                c_vec = [(Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,2),:)) (Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,3),:))];
-                
-                % Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
-                fprintf('---> Pocessing Internal Faces ... ');
-                Internal_Face.FullIndex          = IF(:,1);
-                Internal_Face.Area               = IF(:,4);
-                Internal_Face.Centroid           = IF(:,5:7);
-                Internal_Face.Nvec               = IF(:,8:10);
-                Internal_Face.CellNeighbor1Index = IF(:,2);
-                Internal_Face.CellNeighbor1Vec   = c_vec(:,1:3);
-                Internal_Face.CellNeighbor2Index = IF(:,3);
-                Internal_Face.CellNeighbor2Vec   = c_vec(:,4:6);
-                Internal_Face.Vertices           = num2cell( IF(:,11:end) , 2 );
-                Internal_Face.Vertices           = cellfun( @(x) unique(x,'stable') , Internal_Face.Vertices , 'UniformOutput' , false);
-                Internal_Face.N_Vertices         = cellfun( @length , Internal_Face.Vertices );
-                CornerPointGridData(n).Internal_Faces = Internal_Face;
-                fprintf('Done!\n');
-                
-                %% SECTION 1.4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
-                % Assembly Matrix with Face Geometry Data
-                EF = [NF, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals, Geometry.faces.neighbors NtF_3];
-                LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                                                 % Delete Internal Faces
-                EF(LI,:) = [];                                                                                       % Delete Internal Faces
-                NC = EF(:,9)+ EF(:,10);                                                                              % Delete Cell Neighboors  == 0
-                
-                % External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
-                fprintf('---> Pocessing External Faces ... ');
-                External_Face.FullIndex         = EF(:,1);
-                External_Face.Area              = EF(:,2);
-                External_Face.Centroid          = EF(:,3:5);
-                External_Face.Nvec              = EF(:,6:8);
-                External_Face.CellNeighborIndex = NC;                   % An external face has only one connection (to only one cell).
-                External_Face.CellNeighborVec   = Geometry.faces.centroids(EF(:,1),:) - Geometry.cells.centroids(NC);
-                External_Face.Vertices          = num2cell( EF(:,11:end) , 2 );
-                External_Face.Vertices          = cellfun( @(x) unique(x,'stable') , External_Face.Vertices , 'UniformOutput' , false);
-                External_Face.N_Vertices        = cellfun( @length , External_Face.Vertices );
-                CornerPointGridData(n).External_Faces = External_Face;
-                fprintf('Done!\n');
-
-                % Adding extra statistical data
-                CornerPointGridData(n).Nx = Geometry.cartDims(1);
-                CornerPointGridData(n).Ny = Geometry.cartDims(2);
-                CornerPointGridData(n).Nz = Geometry.cartDims(3);
-                CornerPointGridData(n).N_TotalCells = prod(Geometry.cartDims);
-                CornerPointGridData(n).N_ActiveCells = Geometry.cells.num;
-                CornerPointGridData(n).N_InactiveCells = CornerPointGridData(n).N_TotalCells - CornerPointGridData(n).N_ActiveCells;
-                CornerPointGridData(n).N_TotalFaces = Geometry.faces.num;
-                CornerPointGridData(n).N_InternalFaces = length(CornerPointGridData(n).Internal_Faces.Area);
-                CornerPointGridData(n).N_ExternalFaces = length(CornerPointGridData(n).External_Faces.Area);
-                CornerPointGridData(n).N_Nodes = Geometry.nodes.num;
-                fprintf('\n');
+                CornerPointGridData(n) = obj.ComputeGeometry(grdecl_processed(G));
                 
                 %% SECTION 2.1: Porosity Data
                 if any(strcmp(fieldnames(grdecl_raw),'PORO')) && ~isempty(grdecl_raw.PORO)
@@ -214,6 +75,148 @@ classdef reader_eclipse < handle
                     CornerPointGridData(n).PermScale = 'Linear';
                 end
             end
+        end
+        function CornerPointGridData = ComputeGeometry(ProcessedData);
+            Geometry = mcomputeGeometry(ProcessedData);
+            
+            % Remove the active cells of other geometries (if any) from the raw data (grdecl.ACTNUM)
+            ACTNUM = grdecl_raw.ACTNUM;
+            for i = [1:G-1,G+1:length(grdecl_processed)]
+                ACTNUM(grdecl_processed(i).cells.indexMap)= 0;
+            end
+            
+            %% SECTION 1.1: CELLS NODES (X, Y, Z COORDINATES)
+            fprintf('---> Pocessing Nodes ... ');
+            CornerPointGridData.Nodes = Geometry.nodes.coords;
+            fprintf('Done!\n');
+            
+            %% SECTION 1.2: CELLS NODES + CELLS CENTROIDS + CELL VOLUMES
+            FtC_1 = [gridCellNo(Geometry) Geometry.cells.faces];                                                   % Cell + Faces to Cell + Faces Tag
+            LI = (FtC_1(:,3) == 1)|(FtC_1(:,3) == 2)|(FtC_1(:,3) == 3)|(FtC_1(:,3) == 4);                          % Logical Index: N/S/E/W faces(Faces Tag: 1 2 3 4)
+            FtC_1(LI,:) = [];                                                                                      % Delete N/S/E/W faces (Faces Tag: 1 2 3 4))
+            NtF_1 = [rldecode(1:Geometry.faces.num, diff(Geometry.faces.nodePos), 2).' Geometry.faces.nodes];      % [Face + Nodes]
+            id_faces = ismember(NtF_1(:,1),FtC_1(:,2));                                                            % Identify the T/B Faces in [Face + Nodes]
+            NtF_1 = NtF_1(id_faces,:);                                                                             % T/B Faces with their nodes
+            
+            F = vec2mat(NtF_1(:,1),4);                                                                             % T/B Faces
+            N = vec2mat(NtF_1(:,2),4);                                                                             % T/B Nodes
+            NtF_2 = [F(:,1) N];                                                                                    % T/B Faces + Nodes
+            
+            [X,Y] = ismember(FtC_1(:,2),NtF_2(:,1));                                                               % Obtain Index and Location
+            NtF_2 = NtF_2(Y(X),:);
+            NtC = reshape(NtF_2(:,2:5)',8,[])';                                                                    % Reshape: Cells vs Nodes
+            NtC = [NtC(:,4) NtC(:,3) NtC(:,1:2) NtC(:,8) NtC(:,7) NtC(:,5:6)];
+            
+            % Faces to Cells
+            faces = Geometry.cells.faces(:,1);
+            pos   = Geometry.cells.facePos;
+            cells = 1:Geometry.cells.num ;
+            FtC_2 = obj.ObtainFaceIndices(faces, pos, cells);                                                              % c = cells
+            
+            % Cells to Cell
+            CtC_1 = [gridCellNo(Geometry) Geometry.faces.neighbors(Geometry.cells.faces(:,1),1) Geometry.faces.neighbors(Geometry.cells.faces(:,1),2)];
+            LI = CtC_1(:,1)==CtC_1(:,2); CtC_1(LI,2) = 0;
+            LI = CtC_1(:,1)==CtC_1(:,3); CtC_1(LI,3) = 0;
+            CtC_1 = [CtC_1(:,1) (CtC_1(:,2)+CtC_1(:,3))];
+            LI = (CtC_1(:,2) == 0);                                                                                % Delete Cells = 0: External Faces
+            CtC_1(LI,:) = [];
+            
+            subs = CtC_1(:,1);
+            cpc = [1 ; accumarray(subs,1)];
+            cpc = cumsum(cpc);
+            
+            faces = CtC_1(:,2);
+            pos = cpc;
+            CtC_2 = obj.ObtainCellNeighbors(faces, pos, cells);                                                         % c = cells
+            CtC_2 = sort(CtC_2,2);
+            
+            fprintf('---> Pocessing Cells ... ');
+            Cell.Vertices    = NtC;
+            Cell.Centroid    = Geometry.cells.centroids;
+            Cell.Volume      = Geometry.cells.volumes;
+            Cell.Faces       = num2cell(FtC_2,2);
+            Cell.Faces       = cellfun( @(x) unique(x,'stable') , Cell.Faces , 'UniformOutput' , false);
+            Cell.N_Faces     = cellfun( @length , Cell.Faces );
+            Cell.Neighbors   = num2cell(CtC_2,2);
+            Cell.Neighbors   = cellfun( @(x) unique(x,'stable') , Cell.Neighbors , 'UniformOutput' , false);
+            Cell.N_Neighbors =  cellfun( @length , Cell.Neighbors );
+            
+            Cell.dx = zeros(size(Cell.Volume));
+            Cell.dy = zeros(size(Cell.Volume));
+            Cell.dz = zeros(size(Cell.Volume));
+            for i = 1 : size(Cell.Volume,1)
+                Cell.dx(i) = max( CornerPointGridData.Nodes( Cell.Vertices(i,:),1) ) - min( CornerPointGridData.Nodes( Cell.Vertices(i,:),1) );
+                Cell.dy(i) = max( CornerPointGridData.Nodes( Cell.Vertices(i,:),2) ) - min( CornerPointGridData.Nodes( Cell.Vertices(i,:),2) );
+                Cell.dz(i) = max( CornerPointGridData.Nodes( Cell.Vertices(i,:),3) ) - min( CornerPointGridData.Nodes( Cell.Vertices(i,:),3) );
+            end
+            
+            CornerPointGridData.Cells = Cell;
+            fprintf('Done!\n');
+            
+            %% SECTION 1.3: INTERNAL FACES (FACES CONNECTED TO CELLS)
+            nodes = Geometry.faces.nodes;
+            pos   = Geometry.faces.nodePos;
+            faces = 1:Geometry.faces.num ;
+            NtF_3 = obj.ObtainNodeIndices(nodes, pos, faces);                                                             % f = Faces
+            
+            NF = linspace(1, Geometry.faces.num, Geometry.faces.num)';                                            % Create Face Index Vector (Total Number of Faces)
+            
+            % Assembly Matrix with Face Geometry Data
+            IF = [NF, Geometry.faces.neighbors, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals NtF_3];
+            LI = (IF(:,2) == 0)|(IF(:,3) == 0);                                                                   % Delete External Faces
+            IF(LI,:) = [];                                                                                        % Delete External Faces
+            % Create Centroid Vector: Face Centroid - Cell Centroid
+            c_vec = [(Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,2),:)) (Geometry.faces.centroids(IF(:,1),:) - Geometry.cells.centroids(IF(:,3),:))];
+            
+            % Internal Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
+            fprintf('---> Pocessing Internal Faces ... ');
+            Internal_Face.FullIndex          = IF(:,1);
+            Internal_Face.Area               = IF(:,4);
+            Internal_Face.Centroid           = IF(:,5:7);
+            Internal_Face.Nvec               = IF(:,8:10);
+            Internal_Face.CellNeighbor1Index = IF(:,2);
+            Internal_Face.CellNeighbor1Vec   = c_vec(:,1:3);
+            Internal_Face.CellNeighbor2Index = IF(:,3);
+            Internal_Face.CellNeighbor2Vec   = c_vec(:,4:6);
+            Internal_Face.Vertices           = num2cell( IF(:,11:end) , 2 );
+            Internal_Face.Vertices           = cellfun( @(x) unique(x,'stable') , Internal_Face.Vertices , 'UniformOutput' , false);
+            Internal_Face.N_Vertices         = cellfun( @length , Internal_Face.Vertices );
+            CornerPointGridData.Internal_Faces = Internal_Face;
+            fprintf('Done!\n');
+            
+            %% SECTION 1.4: EXTERNAL FACES (FACES AT THE EXTERNAL BOUNDARIES OF THE GRID)
+            % Assembly Matrix with Face Geometry Data
+            EF = [NF, Geometry.faces.areas, Geometry.faces.centroids, Geometry.faces.normals, Geometry.faces.neighbors NtF_3];
+            LI = (EF(:,9) ~= 0)&(EF(:,10) ~= 0);                                                                 % Delete Internal Faces
+            EF(LI,:) = [];                                                                                       % Delete Internal Faces
+            NC = EF(:,9)+ EF(:,10);                                                                              % Delete Cell Neighboors  == 0
+            
+            % External Faces Data: Face Index + Face Area + Face Centroid + Face Normal + Cell Neighbor + Centroid Vector
+            fprintf('---> Pocessing External Faces ... ');
+            External_Face.FullIndex         = EF(:,1);
+            External_Face.Area              = EF(:,2);
+            External_Face.Centroid          = EF(:,3:5);
+            External_Face.Nvec              = EF(:,6:8);
+            External_Face.CellNeighborIndex = NC;                   % An external face has only one connection (to only one cell).
+            External_Face.CellNeighborVec   = Geometry.faces.centroids(EF(:,1),:) - Geometry.cells.centroids(NC);
+            External_Face.Vertices          = num2cell( EF(:,11:end) , 2 );
+            External_Face.Vertices          = cellfun( @(x) unique(x,'stable') , External_Face.Vertices , 'UniformOutput' , false);
+            External_Face.N_Vertices        = cellfun( @length , External_Face.Vertices );
+            CornerPointGridData.External_Faces = External_Face;
+            fprintf('Done!\n');
+            
+            % Adding extra statistical data
+            CornerPointGridData.Nx = Geometry.cartDims(1);
+            CornerPointGridData.Ny = Geometry.cartDims(2);
+            CornerPointGridData.Nz = Geometry.cartDims(3);
+            CornerPointGridData.N_TotalCells = prod(Geometry.cartDims);
+            CornerPointGridData.N_ActiveCells = Geometry.cells.num;
+            CornerPointGridData.N_InactiveCells = CornerPointGridData.N_TotalCells - CornerPointGridData.N_ActiveCells;
+            CornerPointGridData.N_TotalFaces = Geometry.faces.num;
+            CornerPointGridData.N_InternalFaces = length(CornerPointGridData.Internal_Faces.Area);
+            CornerPointGridData.N_ExternalFaces = length(CornerPointGridData.External_Faces.Area);
+            CornerPointGridData.N_Nodes = Geometry.nodes.num;
+            fprintf('\n');
         end
         function CornerPointGridData = ReadfromTXT(obj,CornerPointGridRockPropertiesFile)
             fid = fopen(obj.File, 'r');
