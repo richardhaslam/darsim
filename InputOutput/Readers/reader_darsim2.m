@@ -159,6 +159,7 @@ classdef reader_darsim2 < reader
                         error('The path to CornerPointGrid input file is not valid. Please specify it correctly in the main input file.');
                     end
                     
+                    % Check if the rock properties of CornerPointGrid model is set to be used or not
                     temp = strfind(obj.InputMatrix, 'INCLUDE_ROCK_PROPERTIES');
                     index = find(~cellfun('isempty', temp));
                     if ~isempty(index)
@@ -173,9 +174,7 @@ classdef reader_darsim2 < reader
                         fprintf('---> Loading the "CornerPointGridData.mat" file ...');
                         load(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties');
                         fprintf('Done!\n');
-                        
                     else
-                        
                         EclipseReader = reader_eclipse(CornerPointGridFile);
                         if contains(CornerPointGridFile,'.grdecl','IgnoreCase',true) && ~contains(CornerPointGridFile,'.txt')
                             % Reading the grdecl file directly
@@ -200,15 +199,13 @@ classdef reader_darsim2 < reader
                         fprintf('---> Saving the "CornerPointGridData.mat" file ...');
                         save(strcat(obj.Directory, '/','CornerPointGridData.mat'),'ReservoirProperties','-v7.3');
                         fprintf('Done!\n');
-                        
-                        if ~includeCornerPointGridRockProperties
-                            ReservoirProperties.CornerPointGridData = rmfield(ReservoirProperties.CornerPointGridData,{'Porosity','Permeability'});
-                        else
-                            ReservoirProperties.CornerPointGridData.PermUnit = 'm2';
-                            ReservoirProperties.CornerPointGridData.PermScale = 'Linear';
-                        end
                     end
-
+                    
+                    % Deleting the permeability data if simulation is set to be homogeneous
+                    if ~includeCornerPointGridRockProperties
+                        ReservoirProperties.CornerPointGridData = rmfield(ReservoirProperties.CornerPointGridData,{'Porosity','Permeability','PermUnit','PermScale'});
+                    end
+                    
                     ReservoirProperties.Grid.N(1) = ReservoirProperties.CornerPointGridData.Nx;
                     ReservoirProperties.Grid.N(2) = ReservoirProperties.CornerPointGridData.Ny;
                     ReservoirProperties.Grid.N(3) = ReservoirProperties.CornerPointGridData.Nz;
@@ -1043,6 +1040,14 @@ classdef reader_darsim2 < reader
             xv = find(~cellfun('isempty', temp));
             SimulatorSettings.plotting.Software = char(obj.SettingsMatrix(xv+1)); %Matlab or ParaView/VTK
             SimulatorSettings.plotting.Format = char(obj.SettingsMatrix(xv+2)); % ASCII or BINARY
+            
+            temp = strfind(obj.SettingsMatrix, 'PLOT_INTERFACES');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                SimulatorSettings.plotting.PlotInterfaces = 1;
+            else
+                SimulatorSettings.plotting.PlotInterfaces = 0;
+            end
         end
     end
 end

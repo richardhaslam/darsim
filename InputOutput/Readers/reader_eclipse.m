@@ -210,6 +210,8 @@ classdef reader_eclipse < handle
                     perm = perm(Geometry.cells.indexMap,:);
                     % Convert K values from to Darcy to Metric (if not already in metric)
                     CornerPointGridData(n).Permeability = perm .* milli * darcy;
+                    CornerPointGridData(n).PermUnit = 'm2';
+                    CornerPointGridData(n).PermScale = 'Linear';
                 end
             end
         end
