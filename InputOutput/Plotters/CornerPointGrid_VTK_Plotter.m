@@ -6,6 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
     properties
+        PlotInterfaces
     end
     methods
         function WriteAWell(obj, Well, name, Grid)
@@ -112,7 +113,9 @@ classdef CornerPointGrid_VTK_Plotter < VTK_Plotter
             
             fclose(fileID);
             
-            obj.PlotInternalFaces(Reservoir, Grid);
+            if obj.PlotInterfaces
+                obj.PlotInternalFaces(Reservoir, Grid);
+            end
         end
         function PlotInternalFaces(obj, Reservoir, Grid)
             %Write a VTK file for Reservoir

@@ -988,6 +988,7 @@ classdef simulation_builder < handle
                     switch obj.SimulationInput.ReservoirProperties.Discretization
                         case('CornerPointGrid')
                             plotter = CornerPointGrid_VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName,obj.SimulatorSettings.NumOfPreviousReports);
+                            plotter.PlotInterfaces = SimulatorSettings.plotting.PlotInterfaces;
                         otherwise
                             plotter = VTK_Plotter(InputDirectory, obj.SimulationInput.ProblemName,obj.SimulatorSettings.NumOfPreviousReports);
                     end
