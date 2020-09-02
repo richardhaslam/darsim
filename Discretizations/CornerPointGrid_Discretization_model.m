@@ -132,7 +132,7 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                         ReservoirCell.AddFaces(Face);
                     end
                     ReservoirCell.Centroid = obj.CornerPointGridData.Cells.Centroid(I,:);
-                    Epsilon = 1e-10 * ( min(obj.ReservoirGrid.Volume) )^(1/3);
+                    Epsilon = 1e-10 * min([obj.ReservoirGrid.dx,obj.ReservoirGrid.dy,obj.ReservoirGrid.dz]);
                     [Geostatus, IntersectPoints] = ReservoirCell.Obtain_Polyhedron_LineSegment_Intersection(LineSegment, Epsilon);
                     
                     % If it is the first try and no intersection occurs between the well and

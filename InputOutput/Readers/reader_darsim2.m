@@ -211,17 +211,9 @@ classdef reader_darsim2 < reader
                     ReservoirProperties.Grid.N(3) = ReservoirProperties.CornerPointGridData.Nz;
                     ReservoirProperties.Grid.N_ActiveCells = ReservoirProperties.CornerPointGridData.N_ActiveCells;
                     
-                    % For now temporarily, we get Lx,Ly,LZ of the reservoir
-                    % from the main input file. Soon, we will read this from
-                    % the CornerPointGrid data.
-                    temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
-                    index = find(~cellfun('isempty', temp));
-                    if isempty(index)
-                        error('The keyword "DIMENS" is missing. Please check the input file!\n');
-                    end
-                    ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
-                                                str2double(obj.InputMatrix{index+2});
-                                                str2double(obj.InputMatrix{index+3})];
+                    ReservoirProperties.size = [ReservoirProperties.CornerPointGridData.Lx;...
+                                                ReservoirProperties.CornerPointGridData.Ly;
+                                                ReservoirProperties.CornerPointGridData.Lz];
                     
                 case('CartesianGrid')
                     % Assume it is Cartesian

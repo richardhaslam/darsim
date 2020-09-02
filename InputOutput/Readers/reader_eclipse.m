@@ -60,6 +60,9 @@ classdef reader_eclipse < handle
                 fprintf('Pocessing Formation %d of the current ECLIPSE data:\n' , G);
                 Geometry = mcomputeGeometry(grdecl_processed(G));
                 temp = obj.ComputeGeometry(Geometry);
+                CornerPointGridData(n).Lx              = temp.Lx;
+                CornerPointGridData(n).Ly              = temp.Ly;
+                CornerPointGridData(n).Lz              = temp.Lz;
                 CornerPointGridData(n).Nx              = temp.Nx;
                 CornerPointGridData(n).Ny              = temp.Ny;
                 CornerPointGridData(n).Nz              = temp.Nz;
@@ -217,6 +220,9 @@ classdef reader_eclipse < handle
             fprintf('Done!\n');
             
             % Adding extra statistical data
+            CornerPointGridData.Lx = max(CornerPointGridData.Nodes(:,1)) - min(CornerPointGridData.Nodes(:,1));
+            CornerPointGridData.Ly = max(CornerPointGridData.Nodes(:,2)) - min(CornerPointGridData.Nodes(:,2));
+            CornerPointGridData.Lz = max(CornerPointGridData.Nodes(:,3)) - min(CornerPointGridData.Nodes(:,3));
             CornerPointGridData.Nx = Geometry.cartDims(1);
             CornerPointGridData.Ny = Geometry.cartDims(2);
             CornerPointGridData.Nz = Geometry.cartDims(3);
@@ -340,6 +346,11 @@ classdef reader_eclipse < handle
             Nodes = splitStr(:,2:4);
             fprintf('Done!\n');
             CornerPointGridData.Nodes = Nodes;
+            
+            %%% Adding the length scale %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            CornerPointGridData.Lx = max(CornerPointGridData.Nodes(:,1)) - min(CornerPointGridData.Nodes(:,1));
+            CornerPointGridData.Ly = max(CornerPointGridData.Nodes(:,2)) - min(CornerPointGridData.Nodes(:,2));
+            CornerPointGridData.Lz = max(CornerPointGridData.Nodes(:,3)) - min(CornerPointGridData.Nodes(:,3));
             
             %%% Reading cells %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             temp = strfind(GeometryMatrix, 'CELL_GEOMETRY');
