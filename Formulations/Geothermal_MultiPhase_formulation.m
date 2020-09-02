@@ -1,10 +1,10 @@
 % Geothermal MultiPhase formulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %DARSim 2 Reservoir Simulator
-%Author: Rhadityo
+%Author: Arjan Marelis
 %TU Delft
-%Created: 24 January 2018
-%Last modified: 24 January 2018
+%Created: 10-1-2020
+%Last modified: 10-8-2020
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Geothermal_MultiPhase_formulation < formulation
     properties
@@ -117,10 +117,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
             % updating the properties; if properties are not updated, there
             % is no point updating the derivatives
             
-            % THIS WORKS FOR FRACTURES, BUT RUINS CONVERGENCE WHEN NO FRACTURES ARE INVOLVED
-%             FluidModel.GetPhaseEnthalpies(ProductionSystem.Reservoir.State);
-%             FluidModel.GetPhaseIndex(ProductionSystem.Reservoir.State);
-
             % Derivatives with respect to Pressure
             obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State); 
             obj.dMobdp = FluidModel.ComputeDMobDp(ProductionSystem.Reservoir.State);    % re-evaluate
@@ -138,10 +134,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
             
             %% 3. Fractures Derivatives
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                % THIS WORKS FOR FRACTURES, BUT RUINS CONVERGENCE WHEN NO FRACTURES ARE INVOLVED
-%                 FluidModel.GetPhaseEnthalpies(ProductionSystem.FracturesNetwork.Fractures(f).State);
-%                 FluidModel.GetPhaseIndex(ProductionSystem.FracturesNetwork.Fractures(f).State);
-
                 obj.drhodp = [obj.drhodp;FluidModel.ComputeDrhoDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
                 obj.dMobdp = [obj.dMobdp;FluidModel.ComputeDMobDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];    % re-evaluate
                 obj.dTdp = [obj.dTdp;FluidModel.ComputeDTDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
@@ -381,9 +373,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
                  
             % Phase dependent derivatives
             % Initialize derivatives
-            Derivative_Accumulation_Fluid = zeros(N,1);
-            Transmissibility = zeros(N,1);
-            Derivative_Transmissibility = zeros(N,1);
+            Derivative_Accumulation_Fluid = sparse(N,N);
+            Transmissibility = sparse(N,N);
+            Derivative_Transmissibility = sparse(N,N);
 
             % Phase dependent derivatives
             for ph=1:obj.NofPhases % loop over all phases
@@ -434,9 +426,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
             
             % Phase dependent derivatives
             % Initialize derivatives
-            Derivative_Accumulation_Fluid = zeros(N,1);
-            Transmissibility = zeros(N,1);
-            Derivative_Transmissibility = zeros(N,1);
+            Derivative_Accumulation_Fluid = sparse(N,N);
+            Transmissibility = sparse(N,N);
+            Derivative_Transmissibility = sparse(N,N);
     
             for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
@@ -444,9 +436,15 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                 % Derivative of Fluid Accumulation
                 vec = (Grid.Volume/dt) .* ( ...
-                                            phi .* obj.drhodh(Index,ph) .* S + ...
-                                            phi .* rho                  .* obj.dSdh(Index,ph) ...
+                                            phi .* obj.drhodh(Index,ph) .* S ...
                                            );
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  The derivative of saturation should be excluded here !!!  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                           %%%  + phi .* rho                  .* obj.dSdh(Index,ph) ...
+                                           
+                                           % It can be included, but then the derivative of
+                                           % transmissibility is required to 'compensate'
+                                           
+                                           
                 Derivative_Accumulation_Fluid = Derivative_Accumulation_Fluid + spdiags(vec,0,N,N);
                 % *** we could use rhoT here, and take the Derivative_Accumulation_Fluid out of the phase loop ***
                 
@@ -518,15 +516,15 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
             % Phase dependent derivatives
             % Initialize derivatives
-            Derivative_Accumulation_Fluid = zeros(N,1);
-            Convective_Transmissibility = zeros(N,1);
-            Derivative_Convective_Transmissibility = zeros(N,1);
-            Conductive_Transmissibility = zeros(N,1);
-            Derivative_Conductive_Transmissibility = zeros(N,1);
+            Derivative_Accumulation_Fluid = sparse(N,N);
+            Convective_Transmissibility = sparse(N,N);
+            Derivative_Convective_Transmissibility = sparse(N,N);
+            Conductive_Transmissibility = sparse(N,N);
+%             Derivative_Conductive_Transmissibility = sparse(N,N);
             
             % Total Fluid Enthalpy 
-            hTfluid = Medium.State.Properties('hTfluid').Value;
-            P = Medium.State.Properties('P_2').Value;
+%             hTfluid = Medium.State.Properties('hTfluid').Value;
+%             P = Medium.State.Properties('P_2').Value;
             
             for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
@@ -577,29 +575,28 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Conductive_Transmissibility = Conductive_Transmissibility + obj.Tk{1,1+f} .* obj.dTdp(Index); 
             
             % (Derivative of Transmissibility Term) x (P_nu)
-            Derivative_Conductive_Transmissibility = Derivative_Conductive_Transmissibility ;%+ obj.Tk{1,1+f} .* obj.d2Td2p .* P;
+%             Derivative_Conductive_Transmissibility = Derivative_Conductive_Transmissibility ;%+ obj.Tk{1,1+f} .* obj.d2Td2p .* P;
             % should this P be delta(P)? Same as velocity?
 
             % construction of J_EB_P 
             J_EB_P = J_EB_P + Derivative_Accumulation_Rock + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
-                              Derivative_Convective_Transmissibility + Conductive_Transmissibility + Derivative_Conductive_Transmissibility;
+                              Derivative_Convective_Transmissibility + Conductive_Transmissibility;
 
                       
             %% J_EB_H Block
             % Derivative of Rock Energy Accumulation
-            vec = zeros(N,1); 
-            Derivative_Accumulation_Rock = spdiags(vec, 0, N, N);
-
+            
+            
             % Phase dependent derivatives
             % Initialize derivatives
-            Derivative_Accumulation_Fluid = zeros(N,1);
-            Convective_Transmissibility = zeros(N,1);
-            Derivative_Convective_Transmissibility = zeros(N,1);
-            Conductive_Transmissibility = zeros(N,1);
-            Derivative_Conductive_Transmissibility = zeros(N,1);
+            Derivative_Accumulation_Fluid = sparse(N,N);
+            Convective_Transmissibility = sparse(N,N);
+            Derivative_Convective_Transmissibility = sparse(N,N);
+            Conductive_Transmissibility = sparse(N,N);
+%             Derivative_Conductive_Transmissibility = sparse(N,N);
             
             % Total Fluid Enthalpy 
-            hTfluid = Medium.State.Properties('hTfluid').Value;
+%             hTfluid = Medium.State.Properties('hTfluid').Value;
             
             for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
@@ -647,16 +644,16 @@ classdef Geothermal_MultiPhase_formulation < formulation
                                 
             end % end of phase loop
                
-            % Derivative of Fluid Energy Convection Flux:
+            % Derivative of Fluid Energy Conduction Flux:
             % (Transmissibility Term) x (Derivative of P_nu)
             Conductive_Transmissibility = Conductive_Transmissibility + obj.Tk{1,1+f} .* obj.dTdh(Index); 
             
             % (Derivative of Transmissibility Term) x (P_nu)
-            Derivative_Conductive_Transmissibility = Derivative_Conductive_Transmissibility ;%+ obj.Tk{1,1+f} .* obj.d2Td2h .* hTfluid;
+%             Derivative_Conductive_Transmissibility = Derivative_Conductive_Transmissibility ;%+ obj.Tk{1,1+f} .* obj.d2Td2h .* hTfluid;
 
             % construction of J_EB_P 
-            J_EB_H = J_EB_H + Derivative_Accumulation_Rock + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
-                              Derivative_Convective_Transmissibility + Conductive_Transmissibility + Derivative_Conductive_Transmissibility;
+            J_EB_H = J_EB_H + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
+                              Derivative_Convective_Transmissibility + Conductive_Transmissibility;
                                         
             % Add Source Term to all Jacobian blocks
             % for now, we will consider an only 2-phase system for adding the wells to the jacobian
@@ -683,11 +680,13 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Index.Start = 1;
             Index.End = Nm;
             % Flow Jacobian blocks
-            [J_MB_P, J_MB_H] = BuildMediumFlowJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
+            [Jm_MB_P, Jm_MB_H] = BuildMediumFlowJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
             % Heat Jacobian blocks
-            [J_EB_P, J_EB_H] = BuildMediumHeatJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
+            [Jm_EB_P, Jm_EB_H] = BuildMediumHeatJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
             
             %% Jacobian of the fractures
+            J_MB_P = [];  J_MB_H = [];
+            J_EB_P = [];  J_EB_H = [];
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Nf = DiscretizationModel.FracturesGrid.N;
                 Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
@@ -701,6 +700,13 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 J_EB_P  = blkdiag(J_EB_P, Jf_EB_P);
                 J_EB_H  = blkdiag(J_EB_H, Jf_EB_H);
             end
+            % Adding the blocks of matrix Jacobian to the beginning of the
+            % FullJacobian
+            J_MB_P  = blkdiag(Jm_MB_P, J_MB_P);
+            J_MB_H  = blkdiag(Jm_MB_H, J_MB_H);
+            J_EB_P  = blkdiag(Jm_EB_P, J_EB_P);
+            J_EB_H  = blkdiag(Jm_EB_H, J_EB_H);
+            
             
             %% ADD frac-matrix and frac-frac connections in Jacobian blocks
             % Global variables
@@ -1146,34 +1152,39 @@ classdef Geothermal_MultiPhase_formulation < formulation
             % this is virtual call
         end
         function AverageMassOnCoarseBlocks(obj, ProductionSystem, FineGrid, FluidModel, ADMRest)
-            T = ProductionSystem.CreateGlobalSinglePhaseVariables(FineGrid, 'T'); % No phase index for this variable
-            rho = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'rho_');
+            hTfluid = ProductionSystem.CreateGlobalSinglePhaseVariables(FineGrid, 'hTfluid'); % No phase index for this variable
+%             rho = ProductionSystem.CreateGlobalVariables(FineGrid, obj.NofPhases, 'rho_');
             % Perform Average for ADM
-            T_rest = ADMRest * T;
-            rho_rest = ADMRest * rho;     
-            T_rho_rest = ADMRest * (T .* rho);  
-            Tav = ADMRest' * ( T_rest ./ sum(ADMRest, 2));
-            delta_T = Tav - T;
+            hTfluid_rest = ADMRest * hTfluid;
+%             rho_rest = ADMRest * rho;     
+%             hTfluid_rho_rest = ADMRest * (hTfluid .* rho);  
+            hTfluid_av = ADMRest' * ( hTfluid_rest ./ sum(ADMRest, 2));
+            delta_hTfluid = hTfluid_av - hTfluid;
                      
-            rho_av = ADMRest' * ( rho_rest ./ sum(ADMRest, 2));
-            delta_rho = rho_av - rho;
+%             rho_av = ADMRest' * ( rho_rest ./ sum(ADMRest, 2));
+%             delta_rho = rho_av - rho;
 
             % Updating the variables in reservoir
             Start=1;
             End = FineGrid(1).N;
-            T = ProductionSystem.Reservoir.State.Properties('T');
-            rho = ProductionSystem.Reservoir.State.Properties('rho_1');
-            T.update(delta_T(Start:End));
-            rho.update(delta_rho(Start:End));
+            hTfluid = ProductionSystem.Reservoir.State.Properties('hTfluid');
+            hTfluid.update(delta_hTfluid(Start:End));
+
+%             rho1 = ProductionSystem.Reservoir.State.Properties('rho_1');
+%             rho2 = ProductionSystem.Reservoir.State.Properties('rho_2');
+%             rho1.update(delta_rho(Start:End));
+%             rho2.update(delta_rho(Start:End));
             
             % Updating the variables in fractures
             for frac = 1:ProductionSystem.FracturesNetwork.NumOfFrac
                 Start = End + 1;
                 End = Start + FineGrid(frac+1).N - 1;
-                T = ProductionSystem.FracturesNetwork.Fractures(frac).State.Properties('T');
-                rho = ProductionSystem.FracturesNetwork.Fractures(frac).State.Properties('rho_1');
-                T.update(delta_T(Start:End));
-                rho.update(delta_rho(Start:End));
+                hTfluid = ProductionSystem.FracturesNetwork.Fractures(frac).State.Properties('hTfluid');
+%                 rho1 = ProductionSystem.FracturesNetwork.Fractures(frac).State.Properties('rho_1');
+%                 rho2 = ProductionSystem.FracturesNetwork.Fractures(frac).State.Properties('rho_2');
+                hTfluid.update(delta_hTfluid(Start:End));
+%                 rho1.update(delta_rho(Start:End));
+%                 rho2.update(delta_rho(Start:End));
             end
         end
         function CFL = ComputeCFLNumber(obj, ProductionSystem, DiscretizationModel, dt)

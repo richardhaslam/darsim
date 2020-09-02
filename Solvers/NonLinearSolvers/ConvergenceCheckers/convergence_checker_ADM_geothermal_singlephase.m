@@ -6,7 +6,7 @@
 %Created: 13 July 2016
 %Last modified: 2 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef convergence_checker_ADM_geothermal < convergence_checker_FS_geothermal
+classdef convergence_checker_ADM_geothermal_singlephase < convergence_checker_FS_geothermal_singlephase
     properties
         OperatorsAssembler
     end

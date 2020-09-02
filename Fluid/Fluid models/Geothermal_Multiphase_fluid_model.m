@@ -31,6 +31,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         function GetPhaseIndex(obj, Status)
             h = Status.Properties('hTfluid').Value;
             PhaseIndex = Status.Properties('PhaseStatus');
+%             temp = ones(length(h),1);
             temp = zeros(length(h),1);
             temp(h <= Status.Properties('h_1').Value) = 1; % in liquid phase
             temp(h > Status.Properties('h_1').Value & h < Status.Properties('h_2').Value) = 2; % in two phase
@@ -113,9 +114,9 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             CondEff = Medium.State.Properties('CondEff');
             CondEff.Value = (1 - Medium.Por) .* Medium.K_Cond_rock;
             for i=1:obj.NofPhases
-                cond = [0.35; 0.6];
+                cond = obj.Phases(i).AddConductivity();
                 S = Medium.State.Properties(['S_',num2str(i)]);
-                CondEff.Value = CondEff.Value + Medium.Por .* cond(i) .* S.Value;
+                CondEff.Value = CondEff.Value + Medium.Por .* cond .* S.Value;
             end
         end
         function ComputeRockEnthalpy(obj, Medium)
@@ -147,7 +148,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             for i=1:obj.NofPhases
                 % correct h for saturation enthalpy in case of two-phase
                 h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
-                drhodp(:,i) = obj.Phases(i).ComputeDrhoDp(i, PhaseIndex, h, p);
+                drhodp(:,i) = obj.Phases(i).ComputeDrhoDp(i, PhaseIndex, p, h);
             end
         end                     % MB
         function drhodh = ComputeDrhoDh(obj, Status)

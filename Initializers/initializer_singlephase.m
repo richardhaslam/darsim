@@ -30,7 +30,7 @@ classdef initializer_singlephase < initializer
 %             FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State); % call initial density
             switch FluidModel.name  
                 case {'Geothermal_SinglePhase'}
-                FluidModel.ComputeTableGrid();
+%                 FluidModel.ComputeTableGrid();
 %                 FluidModel.GetPTValues(ProductionSystem.Reservoir.State);
 
                 FluidModel.ComputePhaseEnthalpies(ProductionSystem.Reservoir.State); % call enthalpy

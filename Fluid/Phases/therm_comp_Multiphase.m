@@ -10,7 +10,8 @@ classdef therm_comp_Multiphase < phase
     % Here, you only place functions for phase properties
     properties
         TablePH
-
+        Kf
+        
         % for the injection well properties
         Cp_std              % Specific Heat of Phase in standard condition
         uws = 420000;         % internal energy at saturation J/kg
@@ -18,6 +19,9 @@ classdef therm_comp_Multiphase < phase
         Psat = 1e5;         % P at saturation condition (assumed 1e5 Pa)
     end
     methods
+        function cond = AddConductivity(obj)
+            cond = obj.Kf;
+        end
         function PhaseEnthalpy = ComputePhaseEnthalpy(obj, i, p)
             if i == 1
                 PhaseEnthalpy = (7.30984e9 + 1.29239e2.*(p.*1e1) - 1.00333e-6.*(p.*1e1).^2 + 3.9881e-15.*(p.*1e1).^3 + ...
@@ -57,6 +61,8 @@ classdef therm_comp_Multiphase < phase
             C(PhaseIndex == 2) = 0.14915108613530e2.*theta(PhaseIndex == 2).^2 + -0.48232657361591e4.*theta(PhaseIndex == 2) + 0.40511340542057e6;
             % P = Psat [Pa]
             psat(PhaseIndex == 2) = ( (2.*C(PhaseIndex == 2)) ./ (-1.*B(PhaseIndex == 2)+sqrt(B(PhaseIndex == 2).^2-4.*A(PhaseIndex == 2).*C(PhaseIndex == 2))) ).^4 .* 1e6;
+            % apply correction to size of psat for logical indexing of pressure values
+            psat(psat == 0) = [];
         end
         function rho = ComputeDensities(obj, i, PhaseIndex, p, h)
             for k = 1:3

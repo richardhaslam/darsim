@@ -47,7 +47,7 @@ methods
                 end
             case{'Geothermal_MultiPhase'}
                 %%% Add properties of geothermal MultiPhase
-                for i=1:FluidModel.NofPhases 
+                for i=1:FluidModel.NofPhases
                     obj.Properties(['P_', num2str(i)]) = property(N, 1, 'scalar', true, 1e7, 2e7);
                     obj.Properties(['S_', num2str(i)]) = property(N, 1, 'scalar', false, 0, 1);
                     obj.Properties(['rho_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);

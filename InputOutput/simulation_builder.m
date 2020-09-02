@@ -366,14 +366,14 @@ classdef simulation_builder < handle
                             prolongationbuilder = prolongation_builder_MSPressure(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
                             if ~obj.SimulationInput.FracturesProperties.Fractured
                                 switch obj.SimulatorSettings.Formulation
-                                    case {'Geothermal_SinglePhase'}
+                                    case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                                         prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
                                     otherwise
                                         prolongationbuilder.BFUpdater = bf_updater_ms();
                                 end
                             else % Fractured
                                 switch obj.SimulatorSettings.Formulation
-                                    case {'Geothermal_SinglePhase'}
+                                    case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                                         prolongationbuilder.BFUpdater = bf_updater_FAMS_geothermal();
                                     otherwise
                                         prolongationbuilder.BFUpdater = bf_updater_FAMS();
@@ -795,7 +795,7 @@ classdef simulation_builder < handle
                     % build the geothermal singlephase fluid model
                     FluidModel = Geothermal_SinglePhase_fluid_model();
                     
-                    FluidModel.TablePT = obj.SimulationInput.FluidProperties.TablePT;
+%                     FluidModel.TablePT = obj.SimulationInput.FluidProperties.TablePT;
 
                     Phase = therm_comp_phase();
                     FluidModel.AddPhase(Phase, 1);
@@ -818,32 +818,33 @@ classdef simulation_builder < handle
                     % build the geothermal multiphase fluid model
                     FluidModel = Geothermal_Multiphase_fluid_model(n_phases);
                     
-                    FluidModel.TablePH = obj.SimulationInput.FluidProperties.TablePH;
-                    
-                    % Compute thermodynamic table for grouped/total properties
-                    % Total density
-                    FluidModel.TablePH.rhoT = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 + ...
-                        FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
-                    % product of Density and Saturation for derivatives in Jacobian
-                    FluidModel.TablePH.rho_times_S_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1;
-                    FluidModel.TablePH.rho_times_S_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
-
-                    % Density times Phase Enthalpy
-                    % Note below that H_ is transposed to create column vector
-                    FluidModel.TablePH.rho_times_H_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.H_1'; 
-                    FluidModel.TablePH.rho_times_H_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.H_2';
-                     
-                    % Density times Phase Enthalpy times Saturation
-                    FluidModel.TablePH.rhoHS_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 .* ...
-                        FluidModel.TablePH.H_1';
-                    FluidModel.TablePH.rhoHS_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2 .* ...
-                        FluidModel.TablePH.H_2';
+%                     FluidModel.TablePH = obj.SimulationInput.FluidProperties.TablePH;
+%                     
+%                     % Compute thermodynamic table for grouped/total properties
+%                     % Total density
+%                     FluidModel.TablePH.rhoT = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 + ...
+%                         FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
+%                     % product of Density and Saturation for derivatives in Jacobian
+%                     FluidModel.TablePH.rho_times_S_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1;
+%                     FluidModel.TablePH.rho_times_S_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
+% 
+%                     % Density times Phase Enthalpy
+%                     % Note below that H_ is transposed to create column vector
+%                     FluidModel.TablePH.rho_times_H_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.H_1'; 
+%                     FluidModel.TablePH.rho_times_H_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.H_2';
+%                      
+%                     % Density times Phase Enthalpy times Saturation
+%                     FluidModel.TablePH.rhoHS_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 .* ...
+%                         FluidModel.TablePH.H_1';
+%                     FluidModel.TablePH.rhoHS_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2 .* ...
+%                         FluidModel.TablePH.H_2';
                     
                     % Add phases
                     for i = 1:FluidModel.NofPhases
                         Phase = therm_comp_Multiphase();
                         % we are only using cp_std in the injection wells
                         Phase.Cp_std = obj.SimulationInput.FluidProperties.SpecificHeat(i); % Specific Heat
+                        Phase.Kf = obj.SimulationInput.FluidProperties.FluidConductivity(i);   % Conductivity
                         FluidModel.AddPhase(Phase, i);
                     end
                     obj.SimulatorSettings.CouplingType = 'FIM';
@@ -938,8 +939,10 @@ classdef simulation_builder < handle
                         case ('ADM')
                             % Build a different convergence cheker and a proper LS for ADM
                             switch obj.SimulatorSettings.Formulation
-                                case ('Geothermal_SinglePhase')
-                                    ConvergenceChecker = convergence_checker_ADM_geothermal();
+                                case {'Geothermal_SinglePhase'}
+                                    ConvergenceChecker = convergence_checker_ADM_geothermal_singlephase();
+                                case {'Geothermal_MultiPhase'}
+                                    ConvergenceChecker = convergence_checker_ADM_geothermal_multiphase();
                                 otherwise
                                     ConvergenceChecker = convergence_checker_ADM();
                             end
@@ -958,9 +961,9 @@ classdef simulation_builder < handle
                                 case('Molar')
                                     ConvergenceChecker = convergence_checker_FS_molar();
                                 case ('Geothermal_SinglePhase')
-                                    ConvergenceChecker = convergence_checker_FS_geothermal();
+                                    ConvergenceChecker = convergence_checker_FS_geothermal_singlephase();
                                 case ('Geothermal_MultiPhase')
-                                    ConvergenceChecker = convergence_checker_FS_geothermal_MultiPhase();
+                                    ConvergenceChecker = convergence_checker_FS_geothermal_multiphase();
                                 otherwise
                                     ConvergenceChecker = convergence_checker_FS();
                             end
