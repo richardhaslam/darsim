@@ -238,9 +238,11 @@ classdef Immiscible_formulation < formulation
                 %% Jacobian of the reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                [Jp, JS] = BuildMediumJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0, ph);
+                [Jmp, JmS] = BuildMediumJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0, ph);
                 
                 %% Jacobian of the fractures
+                Jp = [];
+                JS = [];
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Nf = DiscretizationModel.FracturesGrid.N;
                     Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
@@ -249,6 +251,8 @@ classdef Immiscible_formulation < formulation
                     Jp  = blkdiag(Jp, Jfp);
                     JS  = blkdiag(JS, JfS);
                 end
+                Jp  = blkdiag(Jmp, Jp);
+                JS  = blkdiag(JmS, JS);
                 % Combine the Jacobian blocks
                 %Jphnoconn{ph} = horzcat(Jp, JS);
                 %% ADD frac-matrix and frac-frac connections
