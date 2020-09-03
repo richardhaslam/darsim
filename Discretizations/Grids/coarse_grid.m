@@ -20,7 +20,7 @@ classdef coarse_grid < grid_darsim
         hasCoarseNodes
     end
     methods
-        function obj = coarse_grid() 
+        function obj = coarse_grid()
         end
         function BuildCoarseGrid(obj, FineGrids, FullCF)            
             %% Construct a coarse Grid given all the coarsening ratios and FineGrids
@@ -37,6 +37,7 @@ classdef coarse_grid < grid_darsim
                 obj.Nz = max( (FineGrids(end).Nz-1)/CF(3)+1 , 1);
             end
             obj.N = obj.Nx*obj.Ny*obj.Nz;
+            obj.DualCoarseType = zeros(obj.N, 1);
             obj.DeltaS = zeros(obj.N, 1);
             
             %% Coordinates of the centres

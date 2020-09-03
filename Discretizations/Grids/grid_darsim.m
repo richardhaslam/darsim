@@ -16,6 +16,7 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         Verteces
         CoarseFactor
         CoarseLevel
+        DualCoarseType % The type of the fine cell in the dual coarse grid construction (1=vertx, 2=edge, 3=face, 4=interrior)
         GridCoords
         ActiveTime
         Neighbours = struct;
@@ -28,6 +29,7 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
             obj.Fathers = zeros(obj.N, maxLevel-currentLevel);
             obj.Verteces = zeros(obj.N, maxLevel-currentLevel);
             obj.CoarseFactor = zeros(obj.N, 3);
+            obj.DualCoarseType = zeros(obj.N, 1);
         end
         function CopyGridEntries(obj, Grid, Nc_global, level)
             obj.Fathers = [obj.Fathers; Grid.Fathers];

@@ -211,26 +211,32 @@ classdef bf_updater < handle
                                                     % internal point
                                                     iii0 = iii0 + 1;
                                                     P(iii0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 4;
                                                 elseif  (ix == 1 && jy == 1 && kz==1)
                                                     % node points
                                                     ivv0 = ivv0 + 1;
                                                     P(ivv0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 1;
                                                 elseif (ix == 1 && jy == 1 && (kz ~=1 || kz~=nzcf(m)))
                                                     % edge xy points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (ix == 1 && kz == 1 && (jy ~=1 || jy~=nycf(m)))
                                                     % edge xz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (jy == 1 && kz == 1 && (ix ~=1 || ix~=nxcf(m)))
                                                     % edge yz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 else
                                                     % face points
                                                     iff0 = iff0 + 1;
                                                     P(iff0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 3;
                                                 end
                                             end
                                         end
@@ -283,26 +289,32 @@ classdef bf_updater < handle
                                                     % internal point
                                                     iii0 = iii0 + 1;
                                                     P(iii0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 4;
                                                 elseif (ix == icen(m) && jy == jcen(m) && kz == kcen(m))
                                                     % node points
                                                     ivv0 = ivv0 + 1;
                                                     P(ivv0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 1;
                                                 elseif (ix == icen(m) && jy == jcen(m) && kz ~=kcen(m))
                                                     % edge xy points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (ix == icen(m) && kz == kcen(m) && jy ~= jcen(m))
                                                     % edge xz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (jy == jcen(m) && kz == kcen(m) && ix ~= icen(m))
                                                     % edge yz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 else
                                                     % face points
                                                     iff0 = iff0 + 1;
                                                     P(iff0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 3;
                                                 end
                                             end
                                         end

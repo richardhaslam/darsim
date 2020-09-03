@@ -87,13 +87,17 @@ classdef VTK_Plotter < Plotter
             fwrite(fileID,[0:Grid.dz:Grid.dz * Grid.Nz],'float','b');
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
+            
             fprintf(fileID, 'CELL_DATA   %d\n', Grid.N);
             fprintf(fileID, '\n');
+            
             obj.PrintScalar2VTK(fileID, Grid.ActiveTime, ' ACTIVETime');
             fprintf(fileID, '\n');
+            
             %ADD ADM coarse grids
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
+            
             % Print all existing variables
             N_var = double(Reservoir.State.Properties.Count);
             Names = Reservoir.State.Properties.keys;
@@ -105,11 +109,11 @@ classdef VTK_Plotter < Plotter
                 end
                 fprintf(fileID, '\n');
             end
-
-%             delta S
-%             delta = abs(Reservoir.State.Properties('S_1').Value - Reservoir.State_old.Properties('S_1').Value);
-%             obj.PrintScalar2VTK(fileID, delta, [' ','Delta_S']);
-%             fprintf(fileID, '\n');
+            
+            % Adding the fine cell type based on dual coarse grid construction
+            obj.PrintScalar2VTK(fileID, Grid.DualCoarseType, ' DualCoarseType');
+            fprintf(fileID, '\n');
+            
             fclose(fileID);
         end
         function PlotFractureSolution(obj, Fracture, Grid, f)
@@ -140,6 +144,11 @@ classdef VTK_Plotter < Plotter
                     fprintf(fileID, '\n');
                 end
             end
+            
+            % Adding the fine cell type based on dual coarse grid construction
+            obj.PrintScalar2VTK(fileID, Grid.DualCoarseType, ' DualCoarseType');
+            fprintf(fileID, '\n');
+            
             fclose(fileID);
         end
         function PlotPermeability(obj, ProductionSystem, DiscretizationModel)
@@ -418,6 +427,11 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active.*CoarseGrid(i).hasCoarseNodes, ' ActiveCoarse');
                 fprintf(fileID, '\n');
+                
+                % Adding the fine cell type based on dual coarse grid construction
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).DualCoarseType, ' DualCoarseType');
+                fprintf(fileID, '\n');
+                
                 % Delta_S
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).DeltaS, ' Delta_S');
                 fprintf(fileID, '\n');
@@ -444,6 +458,10 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active.*CoarseGrid(i).hasCoarseNodes, ' ActiveCoarse');
                 fprintf(fileID, '\n');
+                
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).DualCoarseType, ' DualCoarseType');
+                fprintf(fileID, '\n');
+                
                 fclose(fileID);
             end
         end
