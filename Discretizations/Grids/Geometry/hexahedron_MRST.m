@@ -63,7 +63,7 @@ classdef hexahedron_MRST < hexahedron_DARSim
                     continue;
                 end
                 
-                % Removing the Points that are not inside the tetragon
+                % Removing the Points that are not inside the polygon
                 isInside = Polygon.Is_Point_Inside_Polygon(intersectCoordTemp(nr,:), Epsilon);
                 if isInside == 0
                     intersectCoordTemp(nr,:) = [ NaN , NaN , NaN ];
