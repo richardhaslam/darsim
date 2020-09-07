@@ -8,21 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Geothermal_SinglePhase_fluid_model < fluid_model
     properties
-        TablePH
-        TablePT
-        Ptable = (10:1:200).*1e5;  %[Pa]
-        Ttable = (274:1:625);      %[K]
-
-        Pindex % The index of pressure value for lookup in the tables
-        Hindex % The index of enthalpy value for lookup in the tables
-        Pstepsize = 1e5;
-        Tstepsize = 1; % implement this
-        
-        Pgrid
-        Tgrid
-%         p
-%         T
-
     end
     methods
         function obj = Geothermal_SinglePhase_fluid_model()
@@ -52,10 +37,10 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
         end
         function AddPhaseConductivities(obj, Status)
             cond = Status.Properties('cond_1');
-            cond.Value = obj.Phases(1).AddConductivity(Status.Properties('P_1').Value, Status.Properties('T').Value);
+            cond.Value = obj.Phases(1).AddConductivity();
         end
         function ComputePhaseEnthalpies(obj, Status)
-            % here you decide how to compute enthalpy as function of P&T
+            % Here you decide how to compute enthalpy as function of P&T
             h = Status.Properties('h_1'); 
             h.Value = obj.Phases(1).ComputeEnthalpy(Status.Properties('P_1').Value, Status.Properties('T').Value);
         end
@@ -79,6 +64,16 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
             dMobdT = -dmudT./(mu.^2);
             d2MobdT2 = (2.*dmudT.^2./mu.^3) - d2mudT2./mu.^2;
         end
+        function ComputeThermalConductivity(obj, Medium)
+            % (1-phi)*C_r + phi*Sw*C_w + phi*Ss*C_s : vector
+            CondEff = Medium.State.Properties('CondEff');
+            CondEff.Value = (1 - Medium.Por) .* Medium.K_Cond_rock;
+            for i=1:obj.NofPhases
+                cond = obj.Phases(i).AddConductivity();
+                S = Medium.State.Properties(['S_',num2str(i)]);
+                CondEff.Value = CondEff.Value + Medium.Por .* cond .* S.Value;
+            end
+        end
         function drhodp = ComputeDrhoDp(obj, Status)
             drhodp = obj.Phases.ComputeDrhoDp(Status.Properties('P_1').Value, Status.Properties('T').Value);
         end
@@ -94,6 +89,5 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
         function v = ComputeVelocity(obj, Reservoir, mu)
 %             virtual call
         end
-
     end
 end

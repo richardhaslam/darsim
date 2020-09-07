@@ -34,10 +34,15 @@ classdef convergence_checker_ADM_geothermal_singlephase < convergence_checker_FS
             Residual_ADM = ADMRest * residual ./ sum(ADMRest, 2); % Restrict each residual and divide by number of cells in each coarse node
 
             % Compute Norms            
-            [ResidualNorm] = obj.NormCalculator.CalculateResidualNorm(Residual_ADM, Nt_ADM, Formulation);
+            [obj.ResidualNorm(iter,:)] = obj.NormCalculator.CalculateResidualNorm(Residual_ADM, Nt_ADM, Formulation);
             [dp, dT] = obj.NormCalculator.CalculateSolutionNorm(delta, Nt, State);
             
-            converged = obj.CheckConvergenceCondition(iter,ResidualNorm,dp,dT);
+            obj.ResidualNorm( imag(obj.ResidualNorm) ~= 0 ) = NaN;
+            %obj.RHSNorm     ( imag(obj.RHSNorm     ) ~= 0 ) = NaN;
+            dp              ( imag(dp              ) ~= 0 ) = NaN;
+            dT              ( imag(dT              ) ~= 0 ) = NaN;
+            
+            converged = obj.CheckConvergenceCondition(iter,dp,dT);
         end
     end
 end

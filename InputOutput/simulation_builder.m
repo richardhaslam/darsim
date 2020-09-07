@@ -794,10 +794,7 @@ classdef simulation_builder < handle
                 case{'Geothermal_SinglePhase'}
                     % build the geothermal singlephase fluid model
                     FluidModel = Geothermal_SinglePhase_fluid_model();
-                    
-%                     FluidModel.TablePT = obj.SimulationInput.FluidProperties.TablePT;
-
-                    Phase = therm_comp_phase();
+                    Phase = Geothermal_Singlephase_phase();
                     FluidModel.AddPhase(Phase, 1);
                     obj.SimulatorSettings.CouplingType = 'FIM';
                     %Gets all densities [kg/m^3]
@@ -817,31 +814,9 @@ classdef simulation_builder < handle
                 case{'Geothermal_MultiPhase'}
                     % build the geothermal multiphase fluid model
                     FluidModel = Geothermal_Multiphase_fluid_model(n_phases);
-                    
-%                     FluidModel.TablePH = obj.SimulationInput.FluidProperties.TablePH;
-%                     
-%                     % Compute thermodynamic table for grouped/total properties
-%                     % Total density
-%                     FluidModel.TablePH.rhoT = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 + ...
-%                         FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
-%                     % product of Density and Saturation for derivatives in Jacobian
-%                     FluidModel.TablePH.rho_times_S_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1;
-%                     FluidModel.TablePH.rho_times_S_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2;
-% 
-%                     % Density times Phase Enthalpy
-%                     % Note below that H_ is transposed to create column vector
-%                     FluidModel.TablePH.rho_times_H_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.H_1'; 
-%                     FluidModel.TablePH.rho_times_H_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.H_2';
-%                      
-%                     % Density times Phase Enthalpy times Saturation
-%                     FluidModel.TablePH.rhoHS_1 = FluidModel.TablePH.rho_1 .* FluidModel.TablePH.S_1 .* ...
-%                         FluidModel.TablePH.H_1';
-%                     FluidModel.TablePH.rhoHS_2 = FluidModel.TablePH.rho_2 .* FluidModel.TablePH.S_2 .* ...
-%                         FluidModel.TablePH.H_2';
-                    
                     % Add phases
                     for i = 1:FluidModel.NofPhases
-                        Phase = therm_comp_Multiphase();
+                        Phase = Geothermal_Multiphase_phase();
                         % we are only using cp_std in the injection wells
                         Phase.Cp_std = obj.SimulationInput.FluidProperties.SpecificHeat(i); % Specific Heat
                         Phase.Kf = obj.SimulationInput.FluidProperties.FluidConductivity(i);   % Conductivity

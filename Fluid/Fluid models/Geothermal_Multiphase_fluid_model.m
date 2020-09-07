@@ -8,8 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Geothermal_Multiphase_fluid_model < fluid_model
     properties
-        TablePH
-
         dSdh
     end
     methods
@@ -31,7 +29,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         function GetPhaseIndex(obj, Status)
             h = Status.Properties('hTfluid').Value;
             PhaseIndex = Status.Properties('PhaseStatus');
-%             temp = ones(length(h),1);
             temp = zeros(length(h),1);
             temp(h <= Status.Properties('h_1').Value) = 1; % in liquid phase
             temp(h > Status.Properties('h_1').Value & h < Status.Properties('h_2').Value) = 2; % in two phase
@@ -107,8 +104,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 end
             end
         end
-        
-        % Compute variables
+        %% Compute variables
         function ComputeThermalConductivity(obj, Medium)
             % (1-phi)*C_r + phi*Sw*C_w + phi*Ss*C_s : vector
             CondEff = Medium.State.Properties('CondEff');
@@ -133,8 +129,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             end
             Mob(isnan(Mob))=0;
         end
-        
-        % Derivatives for Jacobian MB and EB
+        %% Derivatives for Jacobian MB and EB
         function drhodp = ComputeDrhoDp(obj, Status)
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             p = Status.Properties('P_2').Value;
@@ -197,7 +192,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         function dSdp = ComputeDSDp(obj, Status)
             %
         end
-
         function dMobdp = ComputeDMobDp(obj,Status)
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;
@@ -231,39 +225,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             end  
             dMobdh(isnan(dMobdh))=0;
         end
-%         function dMobdh = ComputeDMobDh(obj,Status)
-%             dMobdh = zeros(length(obj.Hindex),obj.NofPhases);
-% 
-%             % Part 1
-%             rho_2Table = obj.TablePH.('rho_2');
-%             drho_2dh = obj.Phases(2).ComputeDrhoDh(obj.Pgrid, obj.Hgrid, rho_2Table, obj.h, obj.p);
-%             H_2 = Status.Properties('h_2').Value;
-%             rho_2 = Status.Properties('rho_2').Value;
-%             Part1 = drho_2dh .* H_2 - drho_2dh .* obj.h - rho_2 .* 1;
-%             
-%             % Part 2
-%             rho_1Table = obj.TablePH.('rho_1');
-%             drho_1dh = obj.Phases(2).ComputeDrhoDh(obj.Pgrid, obj.Hgrid, rho_1Table, obj.h, obj.p);
-%             rho_1 = Status.Properties('rho_1').Value;
-%             Part2 = 1 .* rho_1 + obj.h .* drho_1dh - 1 .* rho_2 - obj.h .* drho_2dh;
-%             
-%             % Part 3
-%             H_1 = Status.Properties('h_1').Value;
-%             Part3 = H_1 .* drho_1dh - H_2 .* drho_2dh;
-%             
-%             % chain rule (or quotient rule)
-%             A = Part1 .* ( obj.h .* (rho_1 - rho_2) - (H_1 .* rho_1 - H_2 .* rho_2) );
-%             B = rho_2 .* (H_2 - obj.h) .* ( Part2 - Part3 );
-%             C = ( obj.h .* (rho_1 - rho_2) - (H_1 .* rho_1 - H_2 .* rho_2) ).^2;
-%             
-%             dMobdh(:,1) = (A - B) ./ C;
-%             
-%             dMobdh(:,2) = -1 .* dMobdh(:,1);
-%             
-%             dMobdh(isnan(dMobdh))=0;
-%         end
-        
-        
         % These depend on how we treat the conductive flux
         function d2Td2p = ComputeD2TD2p(obj, Status)
             %
@@ -271,38 +232,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         function d2Td2h = ComputeD2TD2h(obj, Status)
             %
         end
-
-%         % 2nd derivatives for inflexion point correction/detection
-%         function d2rhod2h = ComputeD2rhoD2h(obj, Status)
-%             p = Status.Properties('P_2').Value;
-%             h = Status.Properties('hTfluid').Value;
-%             d2rhod2h = zeros(length(obj.Hindex),obj.NofPhases);
-%             for i=1:obj.NofPhases
-%                 rhoTable = obj.TablePH.(['rho_', num2str(i)]);
-%                 d2rhod2h(:,i) = obj.Phases(i).ComputeD2rhoD2h(obj.Pgrid, obj.Hgrid, rhoTable, h, p);
-%             end
-%         end
-%         function d2Mobdh2 = ComputeD2MobDh2(obj, Status)
-%             p = Status.Properties('P_2').Value;
-%             h = Status.Properties('hTfluid').Value;
-%             dmudh = zeros(length(obj.Hindex),obj.NofPhases);             
-%             d2mudh2 = zeros(length(obj.Hindex),obj.NofPhases); 
-%             d2Mobdh2 = zeros(length(obj.Hindex),obj.NofPhases);
-%             S1 = Status.Properties('S_1').Value; 
-%             kr = obj.RelPermModel.ComputeRelPerm(obj.Phases, S1);
-%             for i=1:obj.NofPhases
-%                 mu = Status.Properties(['mu_',num2str(i)]);
-%                 muTable = obj.TablePH.(['mu_', num2str(i)]);
-%                 dmudh(:,i) = obj.Phases(i).ComputeDmuDh(obj.Pgrid, obj.Hgrid, muTable, h, p);
-%                 d2mudh2(:,i) = obj.Phases(i).ComputeD2muDh2(obj.Pgrid, obj.Hgrid, muTable, h, p);
-%                 
-%                 d2Mobdh2(:,i) = -1 .* kr(:,i) .* ( d2mudh2(:,i) ./ mu.Value.^2 - 2 .* dmudh(:,i) ./ mu.Value.^3 );
-%             end  
-%             d2Mobdh2(isnan(d2Mobdh2))=0;
-%         end
-        
-
-
         % Other       
         function InitializeInjectors(obj, Inj)
             % Assuming saturation of injection phase is 1.0. We are assuming we are only injecting 1 phase, i.e. water
@@ -331,7 +260,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 Inj(i).Mob(:, 2:obj.NofPhases) = 0;            
             end
         end
-        
         function v = ComputeVelocity(obj, Reservoir, mu)
 %             virtual call
         end  

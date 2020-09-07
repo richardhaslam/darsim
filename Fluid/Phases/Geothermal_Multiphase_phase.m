@@ -6,15 +6,11 @@
 %Created: 21 January 2020
 %Last modified: 23 January 2020
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef therm_comp_Multiphase < phase
-    % Here, you only place functions for phase properties
+classdef Geothermal_Multiphase_phase < phase
     properties
-        TablePH
         Kf
-        
-        % for the injection well properties
         Cp_std              % Specific Heat of Phase in standard condition
-        uws = 420000;         % internal energy at saturation J/kg
+        uws = 420000;       % internal energy at saturation J/kg
         Tsat = 373;         % T at saturation condition (assumed constant 100 C)
         Psat = 1e5;         % P at saturation condition (assumed 1e5 Pa)
     end
@@ -86,8 +82,7 @@ classdef therm_comp_Multiphase < phase
                 rho = rho';
             end
         end
-        
-        % Derivatives (directly from tables)
+        %% Derivatives (directly from tables)
         function drhodp = ComputeDrhoDp(obj, i, PhaseIndex, p, h)
             % Note that the derivative for two-phase region is implemented identical to single -phase regions; 
             % when Psat has no derivative, the equation changes and this function should change as well !
@@ -105,7 +100,7 @@ classdef therm_comp_Multiphase < phase
                         5.17644e-41.*(h(PhaseIndex == k).*1e4).^3 ...
                         ).*1e3;
                 end
-%                 drhodp = drhodp';
+                %drhodp = drhodp';
             end
         end
         function drhodh = ComputeDrhoDh(obj, i, PhaseIndex, p, h)
@@ -124,7 +119,7 @@ classdef therm_comp_Multiphase < phase
                         5.17644e-41.*(p(PhaseIndex == k).*1e1).*3.*(h(PhaseIndex == k).*1e4).^2 ...
                         ).*1e3;
                 end
-%                 drhodh = drhodh';
+                %drhodh = drhodh';
             end
         end
         function dTdp = ComputeDTDp(obj, PhaseIndex, p, h) 
@@ -150,37 +145,13 @@ classdef therm_comp_Multiphase < phase
                                      2.26861e43.*4.*(h(PhaseIndex == 3).*1e4).^-5;
             dTdh = dTdh';
         end
-        
         % These depend on how we treat the conductive flux term
         function d2Td2p = ComputeD2TD2p(obj, Pgrid, Hgrid, TTable, h, p) 
-            %   
+            %
         end
         function d2Td2h = ComputeD2TD2h(obj, Pgrid, Hgrid, TTable, h, p)
-            % 
+            %
         end
-        
-%         % 2nd derivatives for inflexion point correction
-%         function d2rhodp2 = ComputeD2rhoDp2(obj, Pgrid, Hgrid, rhoTable, h, p)
-%             % 1st derivative
-%             [~,table_drhodp] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-%             % 2nd derivative
-%             [~,table_d2rhodp2] = gradient(table_drhodp,obj.Hstepsize,obj.Pstepsize); % specify stepsize for pressure (make this generic)
-%             d2rhodp2 = interp2(Hgrid, Pgrid, table_d2rhodp2, h, p, 'linear');
-%         end
-%         function d2rhodh2 = ComputeD2rhoDh2(obj, Pgrid, Hgrid, rhoTable, h, p)
-%             % 1st derivative
-%             [table_drhodh,~] = gradient(rhoTable,obj.Hstepsize,obj.Pstepsize); 
-%             % 2nd derivative
-%             [table_d2rhodh2,~] = gradient(table_drhodh,obj.Hstepsize,obj.Pstepsize); % specify stepsize for enthalpy (make this generic)
-%             d2rhodh2 = interp2(Hgrid, Pgrid, table_d2rhodh2, h, p, 'linear');
-%         end
-%         function d2mudh2 = ComputeD2muDh2(obj, Pgrid, Hgrid, muTable, h, p)
-%             [table_dmudh,~] = gradient(muTable,obj.Hstepsize,obj.Pstepsize); 
-%             [table_d2mudh2,~] = gradient(table_dmudh,1); 
-%             d2mudh2 = interp2(Hgrid, Pgrid, table_d2mudh2, h, p, 'linear');
-%         end
-        
-
         % Injection properties; we are injecting only water, so it is
         % easier to use existing functions from Geothermal singlephase
         function rho = ComputeWaterDensity(obj, p, T)
@@ -196,8 +167,6 @@ classdef therm_comp_Multiphase < phase
             A = 2.414e-5;   B = 247.8;  C = T-140;   D = B./C;   E = 10.^D;            
             mu = A.*E;
         end
-
-        % Other
         function v = ComputeVelocity(obj, p, mu)
             % virtual call
         end

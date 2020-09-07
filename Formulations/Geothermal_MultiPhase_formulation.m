@@ -58,16 +58,11 @@ classdef Geothermal_MultiPhase_formulation < formulation
              end
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
-            % 1. Computing properties
             obj.ComputeProperties(ProductionSystem, FluidModel);
-            
-            % 2. Reservoir Properties and Derivatives
             obj.ComputeDerivatives(ProductionSystem, FluidModel);
         end
         function ComputeProperties(obj, ProductionSystem, FluidModel)
-            %% 1. Geothermal Properties
-
-            %% 2. Reservoir Properties 
+            %% 1. Reservoir Properties 
             % Reservoir
             FluidModel.GetPhaseEnthalpies(ProductionSystem.Reservoir.State);
             FluidModel.GetPhaseIndex(ProductionSystem.Reservoir.State);
@@ -89,7 +84,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             % Update Pc [THIS GUY UPDATES P_1; Pfffff....]
             FluidModel.ComputePc(ProductionSystem.Reservoir.State);
             
-            %% 3. Fractures Properties
+            %% 2. Fractures Properties
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 FluidModel.GetPhaseEnthalpies(ProductionSystem.FracturesNetwork.Fractures(f).State);
                 FluidModel.GetPhaseIndex(ProductionSystem.FracturesNetwork.Fractures(f).State);
@@ -676,38 +671,36 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Fractures = ProductionSystem.FracturesNetwork.Fractures;
             Wells = ProductionSystem.Wells;
             
+            J_MB_P = [];  J_MB_H = [];
+            J_EB_P = [];  J_EB_H = [];
             %% Jacobian of the reservoir
             Index.Start = 1;
             Index.End = Nm;
             % Flow Jacobian blocks
-            [Jm_MB_P, Jm_MB_H] = BuildMediumFlowJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
+            [J_MB_P_Reservoir, J_MB_H_Reservoir] = BuildMediumFlowJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
             % Heat Jacobian blocks
-            [Jm_EB_P, Jm_EB_H] = BuildMediumHeatJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
+            [J_EB_P_Reservoir, J_EB_H_Reservoir] = BuildMediumHeatJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0); % 0 = reservoir
             
             %% Jacobian of the fractures
-            J_MB_P = [];  J_MB_H = [];
-            J_EB_P = [];  J_EB_H = [];
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Nf = DiscretizationModel.FracturesGrid.N;
                 Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
                 Index.End = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, Nf(f));
                 % Flow Jacobian Block
-                [Jf_MB_P, Jf_MB_H] = BuildMediumFlowJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f);
-                J_MB_P  = blkdiag(J_MB_P, Jf_MB_P);
-                J_MB_H  = blkdiag(J_MB_H, Jf_MB_H);
+                [J_MB_P_Fractures, J_MB_H_Fractures] = BuildMediumFlowJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f);
+                J_MB_P  = blkdiag(J_MB_P, J_MB_P_Fractures);
+                J_MB_H  = blkdiag(J_MB_H, J_MB_H_Fractures);
                 % Heat Jacobian Block
-                [Jf_EB_P, Jf_EB_H] = BuildMediumHeatJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f);
-                J_EB_P  = blkdiag(J_EB_P, Jf_EB_P);
-                J_EB_H  = blkdiag(J_EB_H, Jf_EB_H);
+                [J_EB_P_Fractures, J_EB_H_Fractures] = BuildMediumHeatJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f);
+                J_EB_P  = blkdiag(J_EB_P, J_EB_P_Fractures);
+                J_EB_H  = blkdiag(J_EB_H, J_EB_H_Fractures);
             end
-            % Adding the blocks of matrix Jacobian to the beginning of the
-            % FullJacobian
-            J_MB_P  = blkdiag(Jm_MB_P, J_MB_P);
-            J_MB_H  = blkdiag(Jm_MB_H, J_MB_H);
-            J_EB_P  = blkdiag(Jm_EB_P, J_EB_P);
-            J_EB_H  = blkdiag(Jm_EB_H, J_EB_H);
-            
-            
+            % Adding the blocks of matrix Jacobian to the beginning of the FullJacobian
+            J_MB_P  = blkdiag(J_MB_P_Reservoir, J_MB_P);
+            J_MB_H  = blkdiag(J_MB_H_Reservoir, J_MB_H);
+            J_EB_P  = blkdiag(J_EB_P_Reservoir, J_EB_P);
+            J_EB_H  = blkdiag(J_EB_H_Reservoir, J_EB_H);
+
             %% ADD frac-matrix and frac-frac connections in Jacobian blocks
             % Global variables
             if ProductionSystem.FracturesNetwork.Active
@@ -851,10 +844,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
             obj.ComputeProperties(ProductionSystem, FluidModel)            
             % 7. Update wells
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
-            
-%             fprintf('Norm CPR = %1.5e \n', norm(R_MB) );
-%             fprintf('Norm Delta P = %1.5e \n', norm(deltaP./max(Pm.Value)) );
-
         end
         function ConstrainedEnthalpyResidual(obj, FluidModel, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute source terms
