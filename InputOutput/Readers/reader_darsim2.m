@@ -384,7 +384,7 @@ classdef reader_darsim2 < reader
                 end
                 if contains(obj.InputMatrix(index - 1), 'INCLUDE')
                     ReservoirProperties.PorosityInclude = 1;
-                    ReservoirProperties.PorosityFile = strcat(obj.Directory, '/', char(obj.InputMatrix(index + 1)));
+                    ReservoirProperties.PorosityFile = strcat(char(obj.InputMatrix(index+1)));
                 else
                     ReservoirProperties.PorosityInclude = 0;
                     ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
