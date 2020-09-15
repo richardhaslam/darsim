@@ -584,9 +584,6 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'HYPERBOLIC_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.ADMSettings.HInterpolator = char(obj.SettingsMatrix(x+1));
-                temp = strfind(obj.SettingsMatrix, 'ROCK_TEMPERATURE_INTERPOLATOR');
-                x = find(~cellfun('isempty', temp));
-                SimulatorSettings.ADMSettings.TrInterpolator = char(obj.SettingsMatrix(x+1));
 
                 if isempty(SimulatorSettings.ADMSettings.maxLevel(1)) || isempty(SimulatorSettings.ADMSettings.Coarsening(1,:,:)) || isempty(SimulatorSettings.ADMSettings.key) || isempty(SimulatorSettings.ADMSettings.tol) || isempty(SimulatorSettings.ADMSettings.PInterpolator)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
@@ -658,7 +655,7 @@ classdef reader_darsim2 < reader
                 end
             end
             
-           %% Multilevel Multiscale settings
+            %% Multilevel Multiscale settings
             temp = strfind(obj.SettingsMatrix, 'MMs');
             mms = find(~cellfun('isempty', temp));
             if str2double(obj.SettingsMatrix(mms + 1)) == 1
@@ -678,6 +675,10 @@ classdef reader_darsim2 < reader
                 for L = 1:SimulatorSettings.MMsSettings.maxLevel(1)
                     SimulatorSettings.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
+                
+                temp = strfind(obj.SettingsMatrix, 'PRESSURE_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                SimulatorSettings.MMsSettings.PInterpolator = char(obj.SettingsMatrix(x+1));
                 
                 % If you write any of these keywords in the input file the
                 % options will be active (thus default values are 0)
@@ -725,9 +726,9 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_REGION_OF_INFLUENCE_CUT');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.ADMSettings.BF_alpha = 0;
+                    SimulatorSettings.MMsSettings.BF_alpha = 0;
                 else
-                    SimulatorSettings.ADMSettings.BF_alpha = str2double(obj.SettingsMatrix(Index+1));
+                    SimulatorSettings.MMsSettings.BF_alpha = str2double(obj.SettingsMatrix(Index+1));
                 end
                 
                 % MMs settings in fractures

@@ -86,7 +86,7 @@ classdef simulation_builder < handle
             end
         end
         function Discretization = BuildDiscretization(obj, FractureMatrix)
-            %% 1. Create fine-scale grids
+            %% 1. Create fine-scale gridsPInterpolator
             % 1a. Reservoir Grid
             ReservoirGrid = cartesian_grid(obj.SimulationInput.ReservoirProperties.Grid.N);
             Nm = ReservoirGrid.N;

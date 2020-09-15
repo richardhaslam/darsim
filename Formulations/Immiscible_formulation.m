@@ -647,7 +647,7 @@ classdef Immiscible_formulation < formulation
             Nm = DiscretizationModel.ReservoirGrid.N;
             % Global variables
             if ProductionSystem.FracturesNetwork.Active
-                FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+                FineGrid = [DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids];
             else
                 FineGrid = DiscretizationModel.ReservoirGrid;
             end
