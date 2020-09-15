@@ -9,24 +9,20 @@
 classdef Geothermal_MultiPhase_formulation < formulation
     properties
         MatrixAssembler
-        
         dMobdp
-%         dSdp
+        %dSdp
         dTdp
-%         d2Td2p
-        
+        %d2Td2p
         drhodh
         dMobdh
         dSdh
-%         d2rhodh2
-%         d2Mobdh2
+        %d2rhodh2
+        %d2Mobdh2
         dTdh
-%         d2Td2h
-        
-%         Kf % fluid thermal conductivity
+        %d2Td2h
+        %Kf % fluid thermal conductivity
         Tk % transmisibility of rock conductivity
         Th % transmisibility of rho .* h
-        
         Thph
         Ghph
     end
@@ -64,14 +60,13 @@ classdef Geothermal_MultiPhase_formulation < formulation
         function ComputeProperties(obj, ProductionSystem, FluidModel)
             %% 1. Reservoir Properties 
             % Reservoir
-            FluidModel.GetPhaseEnthalpies(ProductionSystem.Reservoir.State);
+            FluidModel.ComputePhaseEnthalpies(ProductionSystem.Reservoir.State);
             FluidModel.GetPhaseIndex(ProductionSystem.Reservoir.State);
-            
-            FluidModel.GetTemperature(ProductionSystem.Reservoir.State);
-            FluidModel.GetPhaseViscosities(ProductionSystem.Reservoir.State); 
-            FluidModel.GetPhaseDensities(ProductionSystem.Reservoir.State); 
+            FluidModel.ComputeTemperature(ProductionSystem.Reservoir.State);
+            FluidModel.ComputePhaseViscosities(ProductionSystem.Reservoir.State); 
+            FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State); 
             FluidModel.ComputePhaseSaturations(ProductionSystem.Reservoir.State); 
-            FluidModel.correctEnthalpy(ProductionSystem.Reservoir.State);
+            FluidModel.CorrectEnthalpy(ProductionSystem.Reservoir.State);
             
             % Compute enthalpy of rock
             FluidModel.ComputeRockEnthalpy(ProductionSystem.Reservoir);
@@ -86,14 +81,13 @@ classdef Geothermal_MultiPhase_formulation < formulation
             
             %% 2. Fractures Properties
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                FluidModel.GetPhaseEnthalpies(ProductionSystem.FracturesNetwork.Fractures(f).State);
+                FluidModel.ComputePhaseEnthalpies(ProductionSystem.FracturesNetwork.Fractures(f).State);
                 FluidModel.GetPhaseIndex(ProductionSystem.FracturesNetwork.Fractures(f).State);
-                
-                FluidModel.GetTemperature(ProductionSystem.FracturesNetwork.Fractures(f).State);
-                FluidModel.GetPhaseViscosities(ProductionSystem.FracturesNetwork.Fractures(f).State);
-                FluidModel.GetPhaseDensities(ProductionSystem.FracturesNetwork.Fractures(f).State);
+                FluidModel.ComputeTemperature(ProductionSystem.FracturesNetwork.Fractures(f).State);
+                FluidModel.ComputePhaseViscosities(ProductionSystem.FracturesNetwork.Fractures(f).State);
+                FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(f).State);
                 FluidModel.ComputePhaseSaturations(ProductionSystem.FracturesNetwork.Fractures(f).State);
-                FluidModel.correctEnthalpy(ProductionSystem.FracturesNetwork.Fractures(f).State);
+                FluidModel.CorrectEnthalpy(ProductionSystem.FracturesNetwork.Fractures(f).State);
                 
                 % Compute enthalpy of rock
                 FluidModel.ComputeRockEnthalpy(ProductionSystem.FracturesNetwork.Fractures(f));
@@ -108,23 +102,19 @@ classdef Geothermal_MultiPhase_formulation < formulation
             end
         end
         function ComputeDerivatives(obj, ProductionSystem, FluidModel)
-            % Pressure and Enthalpy indices for tables are updated when
-            % updating the properties; if properties are not updated, there
-            % is no point updating the derivatives
-            
             % Derivatives with respect to Pressure
             obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State); 
             obj.dMobdp = FluidModel.ComputeDMobDp(ProductionSystem.Reservoir.State);    % re-evaluate
-%             obj.dSdp = FluidModel.ComputeDSDp(ProductionSystem.Reservoir.State);
+            %obj.dSdp = FluidModel.ComputeDSDp(ProductionSystem.Reservoir.State);
             obj.dTdp = FluidModel.ComputeDTDp(ProductionSystem.Reservoir.State);
-%             obj.d2Td2p = FluidModel.ComputeD2TD2p(ProductionSystem.Reservoir.State);
+            %obj.d2Td2p = FluidModel.ComputeD2TD2p(ProductionSystem.Reservoir.State);
             
             % Derivatives with respect to Enthalpy
             obj.drhodh = FluidModel.ComputeDrhoDh(ProductionSystem.Reservoir.State); 
             obj.dMobdh = FluidModel.ComputeDMobDh(ProductionSystem.Reservoir.State);   % re-evaluate
             obj.dSdh = FluidModel.ComputeDSDh(ProductionSystem.Reservoir.State);
             obj.dTdh = FluidModel.ComputeDTDh(ProductionSystem.Reservoir.State);
-%             obj.d2Td2h = FluidModel.ComputeD2TD2h(ProductionSystem.Reservoir.State);
+            %obj.d2Td2h = FluidModel.ComputeD2TD2h(ProductionSystem.Reservoir.State);
             
             
             %% 3. Fractures Derivatives
@@ -445,7 +435,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 
                 % Derivative of Fluid Mass Convection Flux:
                 % (Transmissibility Term) x (Derivative of P_nu)
-                Transmissibility = Transmissibility + 0;
+                %Transmissibility = Transmissibility + 0;
 
                 % (Derivative of Transmissibility Term) x (P_nu)
                 dMupx = obj.UpWind{ph,1+f}.x * ( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) + ...
@@ -610,7 +600,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                 % Derivative of Fluid Energy Convection Flux:
                 % (Transmissibility Term) x (Derivative of P_nu)
-                Convective_Transmissibility = Convective_Transmissibility + 0;
+                %Convective_Transmissibility = Convective_Transmissibility + 0;
 
                 % (Derivative of Transmissibility Term) x (P_nu)
                 dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) .* h + ...
@@ -854,7 +844,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Nm = DiscretizationModel.ReservoirGrid.N;
             Nt = DiscretizationModel.N;
             % Compute conductive tranmissibility
-%             obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid );
             obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid , ProductionSystem.Reservoir.State );
             
             for ph=1:obj.NofPhases

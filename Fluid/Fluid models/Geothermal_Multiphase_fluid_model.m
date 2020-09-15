@@ -18,7 +18,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         function Flash(obj, Status)
             % Virtual call            
         end       
-        function GetPhaseEnthalpies(obj, Status)
+        function ComputePhaseEnthalpies(obj, Status)
             % due to including capillary pressure functions, P_2 is initialized
             p = Status.Properties('P_2').Value;
             for i=1:obj.NofPhases
@@ -35,7 +35,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             temp(h >= Status.Properties('h_2').Value) = 3; % in vapor phase
             PhaseIndex.Value = temp;
         end         
-        function GetTemperature(obj, Status)
+        function ComputeTemperature(obj, Status)
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;
@@ -44,7 +44,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             T = Status.Properties('T');
             T.Value = obj.Phases(1).ComputeTemperature(PhaseIndex, p, h);
         end
-        function GetPhaseViscosities(obj, Status)
+        function ComputePhaseViscosities(obj, Status)
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             T = Status.Properties('T').Value;
             for i=1:obj.NofPhases
@@ -52,7 +52,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 mu.Value = obj.Phases(i).ComputeViscosity(i, PhaseIndex, T);
             end
         end
-        function GetPhaseDensities(obj, Status)
+        function ComputePhaseDensities(obj, Status)
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;            
@@ -89,7 +89,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             S2.Value(PhaseIndex == 2) = 1 - S1.Value(PhaseIndex == 2);
             S2.Value(PhaseIndex == 3) = 1;   
         end   
-        function correctEnthalpy(obj, Status)
+        function CorrectEnthalpy(obj, Status)
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             MixtureEnthalpy = Status.Properties('hTfluid');
             % correct phase enthalpies per phase (phase enthalpy is correct for two-phase region)
