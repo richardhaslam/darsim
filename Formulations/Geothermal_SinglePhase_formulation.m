@@ -74,13 +74,13 @@ classdef Geothermal_SinglePhase_formulation < formulation
             %% 0. Geothermal Properties
             obj.Cp = FluidModel.Phases.Cp; % define Cp from simualtion builder
             obj.Kf = FluidModel.Phases.Kf; % define kf from simualtion builder
-            %% 1. Reservoir
+            %% 1. Reservoir Properties
             FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
             FluidModel.ComputePhaseViscosities(ProductionSystem.Reservoir.State);
             FluidModel.ComputePhaseEnthalpies(ProductionSystem.Reservoir.State);
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State);
             FluidModel.ComputeThermalConductivity(ProductionSystem.Reservoir)
-            %% 2. Fractures
+            %% 2. Fractures Properties
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 FluidModel.ComputePhaseDensities(ProductionSystem.FracturesNetwork.Fractures(f).State);
                 FluidModel.ComputePhaseViscosities(ProductionSystem.FracturesNetwork.Fractures(f).State);
@@ -117,12 +117,12 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 obj.d2MobdT2 = [obj.d2MobdT2; d2MobdT2_f];
             end
         end
-        function Residual_MB = BuildMediumFlowResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, phase)
+        function Residual_MB = BuildMediumFlowResidual(obj, Medium, Grid, dt, State0, Index, qw, qf, f, ph)
             % Create local variables
-            rho_old = State0.Properties(['rho_', num2str(phase)]).Value(Index.Start:Index.End);
-            P_old = State0.Properties(['P_', num2str(phase)]).Value(Index.Start:Index.End); % P at previous time step
-            P_new = Medium.State.Properties(['P_', num2str(phase)]).Value;
-            rho_new = Medium.State.Properties(['rho_', num2str(phase)]).Value;
+            rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
+            P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End); % P at previous time step
+            P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
+            rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
             depth = Grid.Depth;
             Medium.ComputePorosity(P_old);
             pv_old = Medium.Por*Grid.Volume;
@@ -134,19 +134,19 @@ classdef Geothermal_SinglePhase_formulation < formulation
 
             % RESIDUAL
             Residual_MB  = Accumulation ...
-                + obj.Tph{phase, 1+f} * P_new...
-                - obj.Gph{phase, 1+f} * depth...
-                - qw(Index.Start:Index.End, phase)...
-                - qf(Index.Start:Index.End, phase);
+                + obj.Tph{ph, 1+f} * P_new...
+                - obj.Gph{ph, 1+f} * depth...
+                - qw(Index.Start:Index.End, ph)...
+                - qf(Index.Start:Index.End, ph);
         end
-        function Residual_EB = BuildMediumHeatResidual(obj, Medium, Grid, dt, State0, Index, qhw, qhf, RTf, f, phase)
+        function Residual_EB = BuildMediumHeatResidual(obj, Medium, Grid, dt, State0, Index, qhw, qhf, RTf, f, ph)
             % Create local variables
-            rho_old = State0.Properties(['rho_', num2str(phase)]).Value(Index.Start:Index.End);
-            P_old = State0.Properties(['P_', num2str(phase)]).Value(Index.Start:Index.End); % P at previous time step
-            P_new = Medium.State.Properties(['P_', num2str(phase)]).Value;
+            rho_old = State0.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
+            P_old = State0.Properties(['P_', num2str(ph)]).Value(Index.Start:Index.End); % P at previous time step
+            P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;
             T_old = State0.Properties('T').Value(Index.Start:Index.End); % T at previous time step
             T_new = Medium.State.Properties('T').Value;
-            rho_new = Medium.State.Properties(['rho_', num2str(phase)]).Value;
+            rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
             Rho_rock = Medium.Rho;
             depth = Grid.Depth;
             
@@ -165,12 +165,12 @@ classdef Geothermal_SinglePhase_formulation < formulation
             
             % RESIDUAL
             Residual_EB  = Accumulation ...
-                + obj.Thph{phase, 1+f} * P_new ...
-                - obj.Ghph{phase, 1+f} * depth ...
-                + obj.Tk{phase, 1+f} * T_new ...
-                - qhw(Index.Start:Index.End, phase)...
-                - qhf(Index.Start:Index.End, phase)...
-                - RTf(Index.Start:Index.End, phase);
+                + obj.Thph{ph, 1+f} * P_new ...
+                - obj.Ghph{ph, 1+f} * depth ...
+                + obj.Tk{ph, 1+f} * T_new ...
+                - qhw(Index.Start:Index.End, ph)...
+                - qhf(Index.Start:Index.End, ph)...
+                - RTf(Index.Start:Index.End, ph);
         end
         function ResidualFull = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute source terms
@@ -196,20 +196,20 @@ classdef Geothermal_SinglePhase_formulation < formulation
             %% Computing Transmissibilities for reservoir
             Index.Start = 1;
             Index.End = Nm;
-            for phase=1:obj.NofPhases
+            for ph=1:obj.NofPhases
                 % Compute mass flow transmissibility and gravity
-                [obj.Tph{phase, 1}, obj.Gph{phase, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                [obj.Tph{ph, 1}, obj.Gph{ph, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
-                    obj.UpWind{phase, 1}, obj.Mob(1:Nm, phase), ...
-                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(phase)]).Value, ...
-                    obj.GravityModel.RhoInt{phase, 1} );
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
                 % Compute heat convection transmissibility and gravity
-                [obj.Thph{phase, 1}, obj.Ghph{phase, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
+                [obj.Thph{ph, 1}, obj.Ghph{ph, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
-                    obj.UpWind{phase, 1}, obj.Mob(1:Nm, phase), ...
-                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(phase)]).Value, ...
-                    ProductionSystem.Reservoir.State.Properties(['h_',num2str(phase)]).Value, ...
-                    obj.GravityModel.RhoInt{phase, 1} );
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    ProductionSystem.Reservoir.State.Properties(['h_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
             end
             % Compute heat conduction transmissibility
             obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid , ProductionSystem.Reservoir.State );
@@ -218,38 +218,38 @@ classdef Geothermal_SinglePhase_formulation < formulation
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Index.Start = Index.End+1;
                 Index.End = Index.Start + Nf(f) - 1;
-                for phase=1:obj.NofPhases
+                for ph=1:obj.NofPhases
                     % Compute mass flow transmissibility and gravity
-                    [obj.Tph{phase, 1+f}, obj.Gph{phase, 1+f}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                    [obj.Tph{ph, 1+f}, obj.Gph{ph, 1+f}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
                         DiscretizationModel.FracturesGrid.Grids(f), ...
-                        obj.UpWind{phase, 1+f}, obj.Mob(Index.Start:Index.End, phase), ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(phase)]).Value, ...
-                        obj.GravityModel.RhoInt{phase, 1+f} );
+                        obj.UpWind{ph, 1+f}, obj.Mob(Index.Start:Index.End, ph), ...
+                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(ph)]).Value, ...
+                        obj.GravityModel.RhoInt{ph, 1+f} );
                     % Compute heat convection transmissibility and gravity
-                    [obj.Thph{phase, 1+f}, obj.Ghph{phase, 1+f}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
+                    [obj.Thph{ph, 1+f}, obj.Ghph{ph, 1+f}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                         DiscretizationModel.FracturesGrid.Grids(f), ...
-                        obj.UpWind{phase, 1+f}, obj.Mob(Index.Start:Index.End, phase), ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(phase)]).Value, ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['h_',num2str(phase)]).Value, ...
-                        obj.GravityModel.RhoInt{phase, 1+f} );
+                        obj.UpWind{ph, 1+f}, obj.Mob(Index.Start:Index.End, ph), ...
+                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(ph)]).Value, ...
+                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['h_',num2str(ph)]).Value, ...
+                        obj.GravityModel.RhoInt{ph, 1+f} );
                 end
                 % Compute heat conduction transmissibility
                 obj.Tk{1,1+f} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.FracturesGrid.Grids(f) , ProductionSystem.FracturesNetwork.Fractures(f).State );
             end
             
             %% Computing Residuals
-            for phase=1:obj.NofPhases
+            for ph=1:obj.NofPhases
                 %% Mass Balance Residual
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                Residual_MB_Reservoir = BuildMediumFlowResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, Qw, Qf, 0, phase);
-                ResidualFull((phase-1)*Nt + Index.Start: (phase-1)*Nt + Index.End) = Residual_MB_Reservoir;
+                Residual_MB_Reservoir = BuildMediumFlowResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, Qw, Qf, 0, ph);
+                ResidualFull((ph-1)*Nt + Index.Start: (ph-1)*Nt + Index.End) = Residual_MB_Reservoir;
                 % Fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Index.Start = Index.End+1;
                     Index.End = Index.Start + Nf(f) - 1;
-                    Residual_MB_Fractures = BuildMediumFlowResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index, Qw, Qf, f, phase);
+                    Residual_MB_Fractures = BuildMediumFlowResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index, Qw, Qf, f, ph);
                     ResidualFull(Index.Start:Index.End) = Residual_MB_Fractures;
                 end
                 
@@ -259,7 +259,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 Index.End = Index.Start + Nm - 1;
                 Index_r.Start = 1;
                 Index_r.End = Nm;
-                Residual_EB_Reservoir = BuildMediumHeatResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index_r, Qhw, Qhf, RTf, 0, phase);
+                Residual_EB_Reservoir = BuildMediumHeatResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index_r, Qhw, Qhf, RTf, 0, ph);
                 ResidualFull(Index.Start: Index.End) = Residual_EB_Reservoir;
                 % Fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
@@ -267,7 +267,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     Index.End = Index.Start + Nf(f) - 1;
                     Index_r.Start = Index_r.End + 1;
                     Index_r.End = Index_r.Start + Nf(f) - 1;
-                    Residual_EB_Fractures = BuildMediumHeatResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index_r, Qhw, Qhf, RTf, f, phase);
+                    Residual_EB_Fractures = BuildMediumHeatResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index_r, Qhw, Qhf, RTf, f, ph);
                     ResidualFull(Index.Start:Index.End) = Residual_EB_Fractures; 
                 end
             end
@@ -411,9 +411,9 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 %% Jacobian of the reservoir 
                 Index.Start = 1;
                 Index.End = Nm;
-                % Flow Jacobian blocks
+                % Mass Balance Jacobian blocks
                 [J_MB_P_Reservoir, J_MB_T_Reservoir] = BuildMediumFlowJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0, ph); % 0 = reservoir
-                % Heat Jacobian blocks
+                % Energy Balance Jacobian blocks
                 [J_EB_P_Reservoir, J_EB_T_Reservoir] = BuildMediumHeatJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0, ph); % 0 = reservoir
                 
                 %% Jacobian of the fractures
@@ -421,11 +421,11 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     Nf = DiscretizationModel.FracturesGrid.N;
                     Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
                     Index.End = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, Nf(f));
-                    % Flow Jacobian Block
+                    % Mass Balance Jacobian blocks
                     [J_MB_P_Fractures, J_MB_T_Fractures] = BuildMediumFlowJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f, ph);
                     J_MB_P  = blkdiag(J_MB_P, J_MB_P_Fractures);
                     J_MB_T  = blkdiag(J_MB_T, J_MB_T_Fractures);
-                    % Heat Jacobian Block
+                    % Energy Balance Jacobian blocks
                     [J_EB_P_Fractures, J_EB_T_Fractures] = BuildMediumHeatJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f, ph);
                     J_EB_P  = blkdiag(J_EB_P, J_EB_P_Fractures);
                     J_EB_T  = blkdiag(J_EB_T, J_EB_T_Fractures);
@@ -455,14 +455,14 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     i = c + Nm;
                     j = DiscretizationModel.CrossConnections(c).Cells;
                     
-                    %% J_PP Coupling
+                    %% J_MB_P Coupling
                     J_MB_P_1_conn = - T_Geo .*  UpWind(:, ph) .* obj.Mob(j, ph) .* ( rho(j,ph) + obj.drhodp(j, ph) .* ( P(j,ph) - P(i,ph) ) );
                     J_MB_P_2_conn = - T_Geo .* ~UpWind(:, ph) .* obj.Mob(i, ph) .* ( rho(i,ph) + obj.drhodp(i, ph) .* ( P(j,ph) - P(i,ph) ) );
                     J_MB_P_conn  = J_MB_P_1_conn + J_MB_P_2_conn;
                     
                     % frac - mat or frac1 - frac2
                     if sum(J_MB_P(i, j))~=0 || sum(J_MB_P(j, i))~=0
-                        error('J_PP(i, j) or J_PP(j, i) is not zero!');
+                        error('J_MB_P(i, j) or J_MB_P(j, i) is not zero!');
                     end
                     J_MB_P(i, j) = J_MB_P_conn;
                     J_MB_P(i, i) = J_MB_P(i, i) - sum(J_MB_P_conn);
@@ -470,13 +470,13 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     J_MB_P(j, i) = J_MB_P_conn';
                     J_MB_P(sub2ind([Nt, Nt], j, j)) = J_MB_P(sub2ind([Nt, Nt], j, j)) - J_MB_P_conn;
                     
-                    %% J_PT Coupling
+                    %% J_MB_T Coupling
                     J_MB_T_1_conn = - T_Geo .*  UpWind(:, ph) .* (P(j, ph) - P(i, ph)).* ( rho(j, ph) .* obj.dMobdT(j, ph) + obj.Mob(j, ph) .* obj.drhodT(j, ph) );
                     J_MB_T_2_conn = - T_Geo .* ~UpWind(:, ph) .* (P(j, ph) - P(i, ph)).* ( rho(i, ph) .* obj.dMobdT(i, ph) + obj.Mob(i, ph) .* obj.drhodT(i, ph) );
                     
                     % frac - mat or frac1 - frac2
                     if sum(J_MB_T(i, j))~=0 || sum(J_MB_T(j, i))~=0
-                        error('J_PT(i, j) or J_PT(j, i) is not zero!');
+                        error('J_MB_T(i, j) or J_MB_T(j, i) is not zero!');
                     end
                     J_MB_T(i, j) = J_MB_T_1_conn;
                     J_MB_T(i, i) = J_MB_T(i, i) + sum(J_MB_T_2_conn);
@@ -485,7 +485,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     % diag of mat or frac2
                     J_MB_T(sub2ind([Nt, Nt], j, j)) = J_MB_T(sub2ind([Nt, Nt], j, j)) - J_MB_T_1_conn;
                     
-                    %% J_TP Coupling
+                    %% J_EB_P Coupling
                     J_EB_P_1_conn = - T_Geo .*  UpWind(:, ph) .* obj.Mob(j, ph) .* ( (P(j, ph) - P(i, ph)) .* (rho(j, ph) .* obj.dhdp(j, ph) + h(j, ph) .* obj.drhodp(j, ph)) ...
                         + rho(j, ph) .* h(j, ph) );
                     J_EB_P_2_conn = - T_Geo .* ~UpWind(:, ph) .* obj.Mob(i, ph) .* ( (P(j, ph) - P(i, ph)) .* (rho(i, ph) .* obj.dhdp(i, ph) + h(i, ph) .* obj.drhodp(i, ph)) ...
@@ -493,7 +493,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     J_EB_P_conn = J_EB_P_1_conn + J_EB_P_2_conn;
                     % frac - mat or frac1 - frac2
                     if sum(J_EB_P(i, j))~=0 || sum(J_EB_P(j, i))~=0
-                        error('J_TP(i, j) or J_TP(j, i) is not zero!');
+                        error('J_EB_P(i, j) or J_EB_P(j, i) is not zero!');
                     end
                     J_EB_P(i, j) = J_EB_P_conn;
                     J_EB_P(i, i) = J_EB_P(i, i) - sum(J_EB_P_conn);
@@ -502,14 +502,14 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     % diag of mat or frac2
                     J_EB_P(sub2ind([Nt, Nt], j, j)) = J_EB_P(sub2ind([Nt, Nt], j, j)) - J_EB_P_conn;
                     
-                    %% J_TT Coupling
+                    %% J_EB_T Coupling
                     J_EB_T_1_conn = - T_Geo .*  UpWind(:, ph) .* ( (P(j, ph) - P(i, ph)) .* ( obj.dMobdT(j, ph) .* rho(j, ph) .* h(j, ph) + obj.Mob(j, ph) .* obj.drhodT(j, ph) .* h(j, ph) ...
-                        + obj.Mob(j, ph) .* rho(j, ph) .* obj.dhdT(j, ph) ) ); - T_Geo_Cond .*  UpWind(:, ph);
+                        + obj.Mob(j, ph) .* rho(j, ph) .* obj.dhdT(j, ph) ) );
                     J_EB_T_2_conn = - T_Geo .* ~UpWind(:, ph) .* ( (P(j, ph) - P(i, ph)) .* ( obj.dMobdT(i, ph) .* rho(i, ph) .* h(i, ph) + obj.Mob(i, ph) .* obj.drhodT(i, ph) .* h(i, ph) ...
-                        + obj.Mob(i, ph) .* rho(i, ph) .* obj.dhdT(i, ph) ) ); - T_Geo_Cond .*  UpWind(:, ph);
+                        + obj.Mob(i, ph) .* rho(i, ph) .* obj.dhdT(i, ph) ) );
                     % frac - mat or frac1 - frac2
                     if sum(J_EB_T(i, j))~=0 || sum(J_EB_T(j, i))~=0
-                        error('J_TT(i, j) or J_TT(j, i) is not zero!');
+                        error('J_EB_T(i, j) or J_EB_T(j, i) is not zero!');
                     end
                     J_EB_T(i, j) = J_EB_T_1_conn';
                     J_EB_T(i, i) = J_EB_T(i, i) + sum(J_EB_T_2_conn);
@@ -543,26 +543,26 @@ classdef Geothermal_SinglePhase_formulation < formulation
             %% Computing Transmissibilities for reservoir
             Index.Start = 1;
             Index.End = Nm;
-            for phase=1:obj.NofPhases
+            for ph=1:obj.NofPhases
                 % Compute mass flow transmissibility and gravity
-                [obj.Tph{phase, 1}, obj.Gph{phase, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                [obj.Tph{ph, 1}, obj.Gph{ph, 1}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
-                    obj.UpWind{phase, 1}, obj.Mob(1:Nm, phase), ...
-                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(phase)]).Value, ...
-                    obj.GravityModel.RhoInt{phase, 1} );
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
             end
             
             %% Computing Transmissibilities for fractures
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Index.Start = Index.End+1;
                 Index.End = Index.Start + Nf(f) - 1;
-                for phase=1:obj.NofPhases
+                for ph=1:obj.NofPhases
                     % Compute mass flow transmissibility and gravity
-                    [obj.Tph{phase, 1+f}, obj.Gph{phase, 1+f}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
+                    [obj.Tph{ph, 1+f}, obj.Gph{ph, 1+f}] = obj.MatrixAssembler.TransmissibilityMatrix( ...
                         DiscretizationModel.FracturesGrid.Grids(f), ...
-                        obj.UpWind{phase, 1+f}, obj.Mob(Index.Start:Index.End, phase), ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(phase)]).Value, ...
-                        obj.GravityModel.RhoInt{phase, 1+f} );
+                        obj.UpWind{ph, 1+f}, obj.Mob(Index.Start:Index.End, ph), ...
+                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(ph)]).Value, ...
+                        obj.GravityModel.RhoInt{ph, 1+f} );
                 end
             end
             
@@ -696,14 +696,14 @@ classdef Geothermal_SinglePhase_formulation < formulation
             %% Computing Transmissibilities for reservoir
             Index.Start = 1;
             Index.End = Nm;
-            for phase=1:obj.NofPhases
+            for ph=1:obj.NofPhases
                 % Compute heat convection transmissibility and gravity
-                [obj.Thph{phase, 1}, obj.Ghph{phase, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
+                [obj.Thph{ph, 1}, obj.Ghph{ph, 1}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                     DiscretizationModel.ReservoirGrid, ...
-                    obj.UpWind{phase, 1}, obj.Mob(1:Nm, phase), ...
-                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(phase)]).Value, ...
-                    ProductionSystem.Reservoir.State.Properties(['h_',num2str(phase)]).Value, ...
-                    obj.GravityModel.RhoInt{phase, 1} );
+                    obj.UpWind{ph, 1}, obj.Mob(1:Nm, ph), ...
+                    ProductionSystem.Reservoir.State.Properties(['rho_',num2str(ph)]).Value, ...
+                    ProductionSystem.Reservoir.State.Properties(['h_',num2str(ph)]).Value, ...
+                    obj.GravityModel.RhoInt{ph, 1} );
             end
             % Compute heat conduction transmissibility
             obj.Tk{1,1} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.ReservoirGrid , ProductionSystem.Reservoir.State );
@@ -712,14 +712,14 @@ classdef Geothermal_SinglePhase_formulation < formulation
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Index.Start = Index.End+1;
                 Index.End = Index.Start + Nf(f) - 1;
-                for phase=1:obj.NofPhases
+                for ph=1:obj.NofPhases
                     % Compute heat convection transmissibility and gravity
-                    [obj.Thph{phase, 1+f}, obj.Ghph{phase, 1+f}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
+                    [obj.Thph{ph, 1+f}, obj.Ghph{ph, 1+f}] = obj.MatrixAssembler.ConvectiveHeatTransmissibilityMatrix( ...
                         DiscretizationModel.FracturesGrid.Grids(f), ...
-                        obj.UpWind{phase, 1+f}, obj.Mob(Index.Start:Index.End, phase), ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(phase)]).Value, ...
-                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['h_',num2str(phase)]).Value, ...
-                        obj.GravityModel.RhoInt{phase, 1+f} );
+                        obj.UpWind{ph, 1+f}, obj.Mob(Index.Start:Index.End, ph), ...
+                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['rho_',num2str(ph)]).Value, ...
+                        ProductionSystem.FracturesNetwork.Fractures(f).State.Properties(['h_',num2str(ph)]).Value, ...
+                        obj.GravityModel.RhoInt{ph, 1+f} );
                 end
                 % Compute heat conduction transmissibility
                 obj.Tk{1,1+f} = obj.MatrixAssembler.ConductiveHeatTransmissibilityMatrix( DiscretizationModel.FracturesGrid.Grids(f) , ProductionSystem.FracturesNetwork.Fractures(f).State );
