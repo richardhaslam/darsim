@@ -51,7 +51,7 @@ classdef output_writer < handle
             
             %Format for Stats
             obj.FormatStats = '%10.0f';
-            for i = 2:n_stats +1
+            for i = 2:n_stats
                 obj.FormatStats = [obj.FormatStats, ' %10.0f'];
             end
             obj.FormatStats = [obj.FormatStats, ' %10.2f\n'];
@@ -69,7 +69,7 @@ classdef output_writer < handle
         function WriteSolutionOnFile(obj, ProductionSystem, index)
             cells = 1:length(ProductionSystem.Reservoir.State.Properties('P_1').Value);
             fileID = fopen(strcat(obj.Directory, 'Solution/', obj.ProblemName,'_Sol',num2str(index),'.txt'),'w');
-	    Names = ProductionSystem.Reservoir.State.Properties.keys;
+	        Names = ProductionSystem.Reservoir.State.Properties.keys;
             if ismember('T',Names) % Geothermal
                 FormatSol_Geo = ['%10.0f', ' %10.5f', ' %10.5f', ' %10.5f\n'];
                 fprintf(fileID, FormatSol_Geo, [cells', ...
@@ -121,7 +121,7 @@ classdef output_writer < handle
                 case('FIM')
                     %Stats
                     fileID = fopen(strcat(obj.Directory,'SolverStats.txt'),'w');
-                    fprintf(fileID, '%10s %10s %10s %10.0s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
+                    fprintf(fileID, '%10s %10s %10s %10s\n', 'Timestep', 'Chops', 'Iterations', 'CFL');
                     fprintf(fileID, obj.FormatStats, CouplingStats.StatsMatrix(Ndt));
                     fclose(fileID);
                     %Timers
