@@ -871,6 +871,10 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
             %% Solve for deltaP
             deltaP = J_MB_P\(-Residual_MB);
+            if sum(isnan(deltaP))
+                % if the solution makes no sense, skip this step
+                return;
+            end
                         
             %% Update the states and properties
             % Reservoir Pressure
@@ -1008,6 +1012,11 @@ classdef Geothermal_MultiPhase_formulation < formulation
             
             % Solve for deltaH
             deltaH = J_EB_H\(-Residual_EB);
+            
+            if sum(isnan(deltaH))
+                % if the solution makes no sense, skip this step
+                return;
+            end
             
             %% Update the states and properties
             % Reservoir enthalpy
