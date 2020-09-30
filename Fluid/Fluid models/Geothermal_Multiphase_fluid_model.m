@@ -245,15 +245,12 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                     Inj(i).rho(:, 1)= obj.Phases(1).ComputeWaterDensity(Inj(i).p, Inj(i).T);
                     mu = obj.Phases(1).ComputeWaterViscosity(Inj(i).T);
                 elseif strcmp(Inj(i).BC_Formulation, 'Enthalpy')
-%                     Inj(i).T = obj.Phases(1).ComputeTemperature(PhaseIndex, Inj(i).p, Inj(i).h(:,1));
-                    Inj(i).T = 273.15 - 2.41231 + 2.56222e-8.*(Inj(i).h(:,1).*1e4) + ...
-                               -9.31415e-17.*(Inj(i).p.*1e1).^2 - 2.2568e-19.*(Inj(i).h(:,1).*1e4).^2;
-                           
-                    Inj(i).rho(:, 1) = ( 1.00207 + 4.42607e-11.*(Inj(i).p.*1e1) - 5.47456e-12.*(Inj(i).h(:,1).*1e4) + ...
-                        5.02875e-21.*(Inj(i).h(:,1).*1e4).*(Inj(i).p.*1e1) - 1.24791e-21.*(Inj(i).h(:,1).*1e4).^2 ).*1e3;
-                    mu = (241.4 .* 10.^(247.8./((Inj(i).T - 273.15) + 133.15)) ) .* 1e-4 .* 1e-3;
+                    PhaseIndex = 1; % the phase index "1" refers to water phase
+                    Inj(i).T = obj.Phases(1).ComputeWaterTemperature(Inj(i).p, Inj(i).h(:,1));
+                    Inj(i).rho(:, 1) = obj.Phases(1).ComputeDensities(1, PhaseIndex, Inj(i).p, Inj(i).h(:,1)); % the "1" is for water phase
+                    mu = obj.Phases(1).ComputeViscosity(1, PhaseIndex, Inj(i).T);
                 end
-                    
+                
                 Inj(i).h(:, 2:obj.NofPhases) = 0;
                 Inj(i).rho(:, 2:obj.NofPhases) = 0; 
                 Inj(i).Mob(:, 1) = 1/mu; % injecting only water means rel.perm of water is 1.0 

@@ -61,6 +61,7 @@ classdef Geothermal_Multiphase_phase < phase
             psat(psat == 0) = [];
         end
         function rho = ComputeDensities(obj, i, PhaseIndex, p, h)
+            % The index "i" is "1" for water and "2" for steam.
             for k = 1:3
                 if i == 1                    
                     rho(PhaseIndex == k) = ( ...
@@ -161,7 +162,18 @@ classdef Geothermal_Multiphase_phase < phase
         end
         function h = ComputeWaterEnthalpy(obj, p, T)
             rho = obj.ComputeWaterDensity(p, T);
-            h = obj.uws + obj.Cp_std*(T-obj.Tsat)+p./rho;
+            h = obj.uws   +    obj.Cp_std*(T-obj.Tsat)  +   p./rho;
+%             A = -2.41231;
+%             B = 2.5622e-8;
+%             C = -9.31415e-17;
+%             D = -2.2568e-19;
+%             h = ( - B + sqrt( B^2 - 4*D*(A+C*(p.*1e1).^2-(T+273.15)) ) ) / (2*D*1e4);
+        end
+        function T = ComputeWaterTemperature(obj, p, h)
+            i = 1; % the "i=1" is for water phase
+            PhaseIndex = 1; % the phase index "1" refers to water phase
+            rho = obj.ComputeDensities(i, PhaseIndex, p, h);
+            T = ( (h - obj.uws - p./rho) / obj.Cp_std ) + obj.Tsat;
         end
         function mu = ComputeWaterViscosity(obj, T)
             A = 2.414e-5;   B = 247.8;  C = T-140;   D = B./C;   E = 10.^D;            
