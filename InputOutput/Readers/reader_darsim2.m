@@ -74,12 +74,10 @@ classdef reader_darsim2 < reader
             
             % 4. Read fluid properties
             SimulationInput.FluidProperties = obj.ReadFluidProperties();
-                                  
+
             % 5. Initial conditions
-            temp = strfind(obj.InputMatrix, 'INIT');
-            index = find(~cellfun('isempty', temp));
-            SimulationInput.Init = str2double(strsplit(char(obj.InputMatrix(index + 1))));
-            
+            SimulationInput.InitialConditions = obj.ReadInitialConditions();
+
             % 6. Read wells info
             SimulationInput.WellsInfo = obj.ReadWellsInfo(SimulationInput);
             
@@ -356,43 +354,47 @@ classdef reader_darsim2 < reader
 %                 end
 %             end
         end
-%         function TablePH = PH_ReadTables(obj)
-%             % Read thermodynamic property tables; 1 = Water, 2 = Steam
-%             TablePH.rho_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamDensity.txt'));
-%             TablePH.rho_2 = TablePH.rho_2(1:10:end,1:10:end);
-% %             TablePH.U_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamInternalEnergy.txt'));
-%             TablePH.S_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamSaturation.txt'));
-%             TablePH.S_2 = TablePH.S_2(1:10:end,1:10:end);
-%             TablePH.mu_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamViscosity.txt'));
-%             TablePH.mu_2 = TablePH.mu_2(1:10:end,1:10:end);
-%             TablePH.cond_2 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_SteamConductivity.txt'));
-%             TablePH.cond_2 = TablePH.cond_2(1:10:end,1:10:end);
-%             TablePH.H_2 = dlmread(strcat(obj.Directory,'\Tables\HEOS_Table_SteamDewpoint.txt')); % row vector
-%             TablePH.H_2 = TablePH.H_2(1:10:end);
-%             
-%             TablePH.rho_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterDensity.txt'));
-%             TablePH.rho_1 = TablePH.rho_1(1:10:end,1:10:end);
-% %             TablePH.U_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterInternalEnergy.txt'));
-%             TablePH.S_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterSaturation.txt'));
-%             TablePH.S_1 = TablePH.S_1(1:10:end,1:10:end);
-%             TablePH.mu_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterViscosity.txt'));
-%             TablePH.mu_1 = TablePH.mu_1(1:10:end,1:10:end);
-%             TablePH.cond_1 = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_WaterConductivity.txt'));
-%             TablePH.cond_1 = TablePH.cond_1(1:10:end,1:10:end);
-%             TablePH.H_1 = dlmread(strcat(obj.Directory,'\Tables\HEOS_Table_WaterBubblepoint.txt')); % row vector
-%             TablePH.H_1 = TablePH.H_1(1:10:end);
-%             
-%             TablePH.Temperature = readmatrix(strcat(obj.Directory,'\Tables\HEOS_Table_Temperature.txt'));
-%             TablePH.Temperature = TablePH.Temperature(1:10:end,1:10:end);            
-%         end
-%         function TablePT = PT_ReadTables(obj)
-%             % Temperature tables test
-%             TablePT.rho = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterDensity.txt'));
-%             TablePT.cond = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterConductivity.txt'));
-%             TablePT.h = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterEnthalpy.txt'));
-%             TablePT.mu = readmatrix(strcat(obj.Directory,'\Tables\PT_Test_WaterViscosity.txt'));    
-%         end
-
+        function InitialConditions = ReadInitialConditions(obj)
+            temp = strfind(obj.InputMatrix, 'INITIAL_PRESSURE');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                InitialConditions.Pressure = str2double(char(obj.InputMatrix(index + 1)));
+            else
+                InitialConditions.Pressure = Nan;
+            end
+            
+            temp = strfind(obj.InputMatrix, 'INITIAL_TEMPERATURE');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                InitialConditions.Temperature = str2double(char(obj.InputMatrix(index + 1)));
+            else
+                InitialConditions.Temperature = Nan;
+            end
+            
+            temp = strfind(obj.InputMatrix, 'INITIAL_ENTHALPY');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                InitialConditions.Enthalpy = str2double(char(obj.InputMatrix(index + 1)));
+            else
+                InitialConditions.Enthalpy = Nan;
+            end
+            
+            temp = strfind(obj.InputMatrix, 'INITIAL_SATURATION_1');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                InitialConditions.Saturation_1 = str2double(char(obj.InputMatrix(index + 1)));
+            else
+                InitialConditions.Saturation_1 = Nan;
+            end
+            
+            temp = strfind(obj.InputMatrix, 'INITIAL_SATURATION_2');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                InitialConditions.Saturation_2 = str2double(char(obj.InputMatrix(index + 1)));
+            else
+                InitialConditions.Saturation_2 = Nan;
+            end
+        end
         function WellsInfo = ReadWellsInfo(obj, SimulationInput)
             %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
             temp = regexp(obj.InputMatrix, 'INJ', 'match');
