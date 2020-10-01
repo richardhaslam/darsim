@@ -43,6 +43,7 @@ methods
                     obj.Properties(['mu_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
                     obj.Properties(['cond_', num2str(i)]) = property(N, 1, 'scalar', true, 0, 2000);
                     obj.Properties('CondEff') = property(N, 1, 'scalar', true, 0, 2000); 
+                    obj.Properties('hTfluid') = property(N, 1, 'scalar', true, 0, 2000); %total fluid enthalpy
                     obj.Properties('T') = property(N, 1, 'scalar', true, 0, 2000);
                 end
             case{'Geothermal_MultiPhase'}

@@ -58,7 +58,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             obj.ComputeDerivatives(ProductionSystem, FluidModel);
         end
         function ComputeProperties(obj, ProductionSystem, FluidModel)
-            %% 1. Reservoir Properties 
+            %% 1. Reservoir Properties
             FluidModel.ComputePhaseEnthalpies(ProductionSystem.Reservoir.State);
             FluidModel.GetPhaseIndex(ProductionSystem.Reservoir.State);
             FluidModel.ComputeTemperature(ProductionSystem.Reservoir.State);
@@ -416,15 +416,10 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                 % Derivative of Fluid Accumulation
                 vec = (Grid.Volume/dt) .* ( ...
-                                            phi .* obj.drhodh(Index,ph) .* S ...
+                                            phi .* obj.drhodh(Index,ph) .* S + ...
+                                            phi .* rho                  .* obj.dSdh(Index,ph) ...
                                            );
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  The derivative of saturation should be excluded here !!!  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                           %%%  + phi .* rho                  .* obj.dSdh(Index,ph) ...
-                                           
-                                           % It can be included, but then the derivative of
-                                           % transmissibility is required to 'compensate'
-                                           
-                                           
+                
                 Derivative_Accumulation_Fluid = Derivative_Accumulation_Fluid + spdiags(vec,0,N,N);
                 % *** we could use rhoT here, and take the Derivative_Accumulation_Fluid out of the phase loop ***
                 
@@ -503,8 +498,6 @@ classdef Geothermal_MultiPhase_formulation < formulation
 %             Derivative_Conductive_Transmissibility = sparse(N,N);
             
             % Total Fluid Enthalpy 
-%             hTfluid = Medium.State.Properties('hTfluid').Value;
-%             P = Medium.State.Properties('P_2').Value;
             
             for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
@@ -513,13 +506,11 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                 % Derivative of Fluid Energy Accumulation
                 vec = (Grid.Volume/dt) .* ( ...
-                                            dphidp .* rho              .* S              .* h + ... % should be phase enthalpy h
-                                            phi    .* obj.drhodp(Index,ph) .* S              .* h   ...
-                                           );
+                                            dphidp .* rho                  .* S                  .* h + ... % should be phase enthalpy h
+                                            phi    .* obj.drhodp(Index,ph) .* S                  .* h );%+ ...
+                                            %phi    .* rho                  .* obj.dSdp(Index,ph) .* h ...
+                                           %);
 
-%                                             phi    .* rho              .* obj.dSdp(Index,ph) .* h ...
-
-                
                 Derivative_Accumulation_Fluid = Derivative_Accumulation_Fluid + spdiags(vec,0,N,N);
 
                 % Derivative of Fluid Energy Convection Flux:

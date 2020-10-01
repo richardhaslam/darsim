@@ -37,33 +37,40 @@ classdef simulation_builder < handle
             %% Define Initialization procedure
             % Get total number of grid cells
             N = simulation.DiscretizationModel.ReservoirGrid.N;
-            % Pre-allocate vector that stores initial values in all grid cells
-            VarValues = ones(N, length(obj.SimulationInput.Init));
-            % Fill pre-allocated vectors with actual initial values using for-loop
-            for i=1:length(obj.SimulationInput.Init)
-                VarValues(:, i) = VarValues(:, i) * obj.SimulationInput.Init(i);
-            end
             % Select FluidModel based on FluidModel keyword
             switch(simulation.FluidModel.name)
                 case('SinglePhase')
                     VarNames = {'P_1', 'S_1'};
-                    VarValues(:, 2) = 1;
+                    VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
+                                  ones(N,1).*1                                                ];
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
+                    VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure     , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Saturation_1 , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Saturation_2   ];
                     simulation.Initializer = initializer(VarNames, VarValues);
-                case("Geothermal_SinglePhase")
-                    VarNames = {'P_1', 'T', 'S_1'};
-                    VarValues(:, 3) = 1;
-                    VarValues(:, 2) = obj.SimulationInput.ReservoirProperties.Temperature;
+                case('Geothermal_SinglePhase')
+                    VarNames = {'P_1', 'hTfluid', 'T', 'S_1'};
+                    VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure    , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Enthalpy    , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Temperature , ...
+                                  ones(N,1).*1                                                   ];
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
-                case("Geothermal_MultiPhase")
-                    VarNames = {'P_2','hTfluid'}; 
-                    % VarValues are values from input file under INIT keyword
+                case('Geothermal_MultiPhase')
+                    VarNames = {'P_2', 'hTfluid', 'T'}; 
+                    VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Enthalpy , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Temperature];
                     simulation.Initializer = initializer_MultiPhase(VarNames, VarValues);
-                otherwise
+                case('Compositional')
                     VarNames = {'P_2', 'z_1', 'z_2'};
+                    VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Composition_1 , ...
+                                  ones(N,1).*obj.SimulationInput.InitialConditions.Composition_2];
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                otherwise
+                    error('The fluid model keyword given in the input file is not valid. Please choose from the following options: SinglePhase,Immiscible,Geothermal_SinglePhase,Geothermal_MultiPhase,Compositional');
             end
         end 
         function Discretization = BuildDiscretization(obj, FractureMatrix)
@@ -561,7 +568,7 @@ classdef simulation_builder < handle
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
             Reservoir.Rho = RockDensity;
-            Reservoir.P0 = obj.SimulationInput.Init(1); % Initial Pressure of the Reservoir
+            Reservoir.P0 = obj.SimulationInput.InitialConditions.Pressure; % Initial Pressure of the Reservoir
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
                     % This is for DLGR type ADM: it reads coarse permeabilities
@@ -633,7 +640,7 @@ classdef simulation_builder < handle
                         Injector.BC_Formulation = BC_Formulation;
                     case('rate')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
-                        p_init = obj.SimulationInput.Init(1);
+                        p_init = obj.SimulationInput.InitialConditions.Pressure;
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Injector = injector_rate(PI, coord, rate, p_init, Temperature, n_phases);
                 end

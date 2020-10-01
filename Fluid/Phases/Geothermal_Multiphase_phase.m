@@ -161,13 +161,12 @@ classdef Geothermal_Multiphase_phase < phase
             rho = rhofs.*(1+cw.*(p-obj.Psat));
         end
         function h = ComputeWaterEnthalpy(obj, p, T)
-            rho = obj.ComputeWaterDensity(p, T);
-            h = obj.uws   +    obj.Cp_std*(T-obj.Tsat)  +   p./rho;
-%             A = -2.41231;
-%             B = 2.5622e-8;
-%             C = -9.31415e-17;
-%             D = -2.2568e-19;
-%             h = ( - B + sqrt( B^2 - 4*D*(A+C*(p.*1e1).^2-(T+273.15)) ) ) / (2*D*1e4);
+            A = -2.41231;
+            B = 2.5622e-8;
+            C = -9.31415e-17;
+            D = -2.2568e-19;
+            % This is the re-ordered formula from the "ComputeTemperature" function above in this class.
+            h = ( - B + sqrt( B^2 - 4*D*(A+C*(p.*1e1).^2-(T-273.15)) ) ) / (2*D*1e4);
         end
         function T = ComputeWaterTemperature(obj, p, h)
             i = 1; % the "i=1" is for water phase

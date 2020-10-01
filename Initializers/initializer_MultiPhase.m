@@ -13,6 +13,14 @@ classdef initializer_MultiPhase < initializer
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started MultiPhase initialization');
+            
+            if isnan(ProductionSystem.Reservoir.State.Properties('hTfluid').Value)
+                P = ProductionSystem.Reservoir.State.Properties('P_2').Value;
+                T = ProductionSystem.Reservoir.State.Properties('T').Value;
+                H = ProductionSystem.Reservoir.State.Properties('hTfluid');
+                H.Value = FluidModel.Phases(1).ComputeWaterEnthalpy(P, T);
+            end
+            
             Formulation.ComputeProperties(ProductionSystem, FluidModel);
             
             % Output initial status:
