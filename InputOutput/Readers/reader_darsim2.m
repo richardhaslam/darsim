@@ -823,6 +823,8 @@ classdef reader_darsim2 < reader
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.ADMSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
                 SimulatorSettings.ADMSettings.maxLevel(1) = str2double(obj.SettingsMatrix(x+1));
+                SimulatorSettings.ADMSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.ADMSettings.CoarseningSwitch(1) = 1;
                 SimulatorSettings.ADMSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NrOfFrac, 3, SimulatorSettings.ADMSettings.maxLevel(1) );
                 temp = strfind(obj.SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
@@ -838,6 +840,10 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'TOLERANCE');
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.ADMSettings.tol = str2double(obj.SettingsMatrix(x+1));
+                SimulatorSettings.ADMSettings.Coupling = char(obj.SettingsMatrix(x+2));
+                if ~strcmp(SimulatorSettings.ADMSettings.Coupling,'COUPLED') && ~strcmp(SimulatorSettings.ADMSettings.Coupling,'DECOUPLED')
+                    SimulatorSettings.ADMSettings.Coupling = 'DECOUPLED';
+                end
                 for L = 1:SimulatorSettings.ADMSettings.maxLevel(1)
                     SimulatorSettings.ADMSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
@@ -847,9 +853,6 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'HYPERBOLIC_INTERPOLATOR');
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.ADMSettings.HInterpolator = char(obj.SettingsMatrix(x+1));
-                temp = strfind(obj.SettingsMatrix, 'ROCK_TEMPERATURE_INTERPOLATOR');
-                x = find(~cellfun('isempty', temp));
-                SimulatorSettings.ADMSettings.TrInterpolator = char(obj.SettingsMatrix(x+1));
 
                 if isempty(SimulatorSettings.ADMSettings.maxLevel(1)) || isempty(SimulatorSettings.ADMSettings.Coarsening(1,:,:)) || isempty(SimulatorSettings.ADMSettings.key) || isempty(SimulatorSettings.ADMSettings.tol) || isempty(SimulatorSettings.ADMSettings.PInterpolator)
                     error('DARSIM2 ERROR: Missing ADM settings! Povide LEVELS, COARSENING_CRITERION, COARSENING_RATIOS, TOLERANCE, PRESSURE_INTERPOLATOR');
@@ -875,7 +878,7 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.ADMSettings.BF_MaxContrast = 1e2;
+                    SimulatorSettings.ADMSettings.BF_MaxContrast = inf;
                 else
                     SimulatorSettings.ADMSettings.BF_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
@@ -884,9 +887,18 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = 1e1;
+                    SimulatorSettings.ADMSettings.pEDFM_MaxContrast = inf;
                 else
                     SimulatorSettings.ADMSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
+                end
+                
+                % Correction of basis functions region of influence by cutting the values less than alpha  
+                temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_REGION_OF_INFLUENCE_CUT');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.ADMSettings.BF_alpha = 0;
+                else
+                    SimulatorSettings.ADMSettings.BF_alpha = str2double(obj.SettingsMatrix(Index+1));
                 end
                 
                 % ADM settings in the fractures
@@ -899,11 +911,8 @@ classdef reader_darsim2 < reader
                         ADM_temp = regexprep(frac_info_split{9},' ' ,'');
                         ADM_temp = strsplit(ADM_temp, { '[' , ',' , ']' });
                         ADM_temp = [ str2double(ADM_temp(2)) , str2double(ADM_temp(3)) , str2double(ADM_temp(4)) , str2double(ADM_temp(5)) ];
-                        if ADM_temp(1)
-                            SimulatorSettings.ADMSettings.maxLevel(1+f) = ADM_temp(2);
-                        else
-                            SimulatorSettings.ADMSettings.maxLevel(1+f) = 0;
-                        end
+                        SimulatorSettings.ADMSettings.CoarseningSwitch(1+f) = ADM_temp(1);
+                        SimulatorSettings.ADMSettings.maxLevel(1+f) = ADM_temp(2);
                         for L = 1:SimulatorSettings.ADMSettings.maxLevel(1)
                             if L <= SimulatorSettings.ADMSettings.maxLevel(1+f)
                                 SimulatorSettings.ADMSettings.Coarsening(1+f,:,L) = [ADM_temp(3), ADM_temp(4), 1].^L;
@@ -915,7 +924,7 @@ classdef reader_darsim2 < reader
                 end
             end
             
-           %% Multilevel Multiscale settings
+            %% Multilevel Multiscale settings
             temp = strfind(obj.SettingsMatrix, 'MMs');
             mms = find(~cellfun('isempty', temp));
             if str2double(obj.SettingsMatrix(mms + 1)) == 1
@@ -924,6 +933,8 @@ classdef reader_darsim2 < reader
                 x = find(~cellfun('isempty', temp));
                 SimulatorSettings.MMsSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
                 SimulatorSettings.MMsSettings.maxLevel(1) = str2double(obj.SettingsMatrix(x+1));
+                SimulatorSettings.MMsSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.MMsSettings.CoarseningSwitch(1) = 1;
                 SimulatorSettings.MMsSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NrOfFrac, 3, SimulatorSettings.MMsSettings.maxLevel(1) );
                 temp = strfind(obj.SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
@@ -933,6 +944,10 @@ classdef reader_darsim2 < reader
                 for L = 1:SimulatorSettings.MMsSettings.maxLevel(1)
                     SimulatorSettings.MMsSettings.Coarsening(1,:,L) = [cx, cy, cz].^L; %Coarsening Factors: Cx1, Cy1; Cx2, Cy2; ...; Cxn, Cyn;
                 end
+                
+                temp = strfind(obj.SettingsMatrix, 'PRESSURE_INTERPOLATOR');
+                x = find(~cellfun('isempty', temp));
+                SimulatorSettings.MMsSettings.PInterpolator = char(obj.SettingsMatrix(x+1));
                 
                 % If you write any of these keywords in the input file the
                 % options will be active (thus default values are 0)
@@ -962,7 +977,7 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.MMsSettings.BF_MaxContrast = 1e2;
+                    SimulatorSettings.MMsSettings.BF_MaxContrast = inf;
                 else
                     SimulatorSettings.MMsSettings.BF_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
                 end
@@ -971,9 +986,18 @@ classdef reader_darsim2 < reader
                 temp = strfind(obj.SettingsMatrix, 'pEDFM_MAX_CONTRAST');
                 Index = find(~cellfun('isempty', temp));
                 if isempty(Index)
-                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = 1e1;
+                    SimulatorSettings.MMsSettings.pEDFM_MaxContrast = inf;
                 else
                     SimulatorSettings.MMsSettings.pEDFM_MaxContrast = str2double(obj.SettingsMatrix(Index+1));
+                end
+                
+                % Correction of basis functions region of influence by cutting the values less than alpha  
+                temp = strfind(obj.SettingsMatrix, 'BASIS_FUNCTION_REGION_OF_INFLUENCE_CUT');
+                Index = find(~cellfun('isempty', temp));
+                if isempty(Index)
+                    SimulatorSettings.MMsSettings.BF_alpha = 0;
+                else
+                    SimulatorSettings.MMsSettings.BF_alpha = str2double(obj.SettingsMatrix(Index+1));
                 end
                 
                 % MMs settings in fractures
@@ -986,11 +1010,8 @@ classdef reader_darsim2 < reader
                         MMs_temp = regexprep(frac_info_split{9},' ' ,'');
                         MMs_temp = strsplit(MMs_temp, { '[' , ',' , ']' });
                         MMs_temp = [ str2double(MMs_temp(2)) , str2double(MMs_temp(3)) , str2double(MMs_temp(4)) , str2double(MMs_temp(5)) ];
-                        if MMs_temp(1)
-                            SimulatorSettings.MMsSettings.maxLevel(1+f) = MMs_temp(2);
-                        else
-                            SimulatorSettings.MMsSettings.maxLevel(1+f) = 0;
-                        end
+                        SimulatorSettings.MMsSettings.CoarseningSwitch(1+f) = MMs_temp(1);
+                        SimulatorSettings.MMsSettings.maxLevel(1+f) = MMs_temp(2);
                         for L = 1:SimulatorSettings.MMsSettings.maxLevel(1)
                             if L <= SimulatorSettings.MMsSettings.maxLevel(1+f)
                                 SimulatorSettings.MMsSettings.Coarsening(1+f,:,L) = [MMs_temp(3), MMs_temp(4), 1].^L;
@@ -1022,14 +1043,13 @@ classdef reader_darsim2 < reader
                 SimulatorSettings.LTSPlot = 0;
             end
             
-
-            
             %% %%% Stop criterion
             SimulatorSettings.StopCriterion = 'MAX TIME'; % Decide up to when you want to run the simulation
             
             %% %%%%%%%%%%%OPTIONS%%%%%%%%%%%%%%%%
             temp = strfind(obj.SettingsMatrix, 'OUTPUT');
             xv = find(~cellfun('isempty', temp));
+            
             SimulatorSettings.plotting.Software = char(obj.SettingsMatrix(xv+1)); %Matlab or ParaView/VTK
             SimulatorSettings.plotting.Format = char(obj.SettingsMatrix(xv+2)); % ASCII or BINARY
             
@@ -1039,6 +1059,14 @@ classdef reader_darsim2 < reader
                 SimulatorSettings.plotting.PlotInterfaces = 1;
             else
                 SimulatorSettings.plotting.PlotInterfaces = 0;
+            end
+            
+            temp = strfind(obj.SettingsMatrix, 'PLOT_BASIS_FUNCTIONS');
+            xv = find(~cellfun('isempty', temp));
+            if ~isempty(xv)
+                SimulatorSettings.PlotBasisFunctions = true;
+            else
+                SimulatorSettings.PlotBasisFunctions = false;
             end
         end
     end

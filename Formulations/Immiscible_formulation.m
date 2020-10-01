@@ -165,7 +165,6 @@ classdef Immiscible_formulation < formulation
             % BUILD FIM JACOBIAN BLOCK BY BLOCK
             % 1.a Pressure Block
             Jp = obj.Tph{ph,1+f};
-            
             switch class(Grid)
                 case('corner_point_grid')
                     nc = Grid.N;
@@ -253,7 +252,7 @@ classdef Immiscible_formulation < formulation
             Wells = ProductionSystem.Wells;
             % Global variables
             if ProductionSystem.FracturesNetwork.Active
-                FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+                FineGrid = [DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids];
             else
                 FineGrid = DiscretizationModel.ReservoirGrid;
             end
@@ -266,6 +265,7 @@ classdef Immiscible_formulation < formulation
                 %% Jacobian of the reservoir
                 Index.Start = 1;
                 Index.End = Nm;
+
                 [Jp_res, JS_res] = BuildMediumJacobian(obj, Reservoir, Wells, DiscretizationModel.ReservoirGrid, dt, Index, 0, ph);
                 
                 %% Jacobian of the fractures
@@ -278,6 +278,7 @@ classdef Immiscible_formulation < formulation
                     Jp  = blkdiag(Jp, Jp_frac);
                     JS  = blkdiag(JS, JS_frac);
                 end
+                
                 Jp  = blkdiag(Jp_res,Jp);
                 JS  = blkdiag(JS_res,JS);
 
@@ -406,8 +407,8 @@ classdef Immiscible_formulation < formulation
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
             Nm = DiscretizationModel.ReservoirGrid.N;
             % Global variables
-            P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
-            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
+            P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
             for ph=1:obj.NofPhases
                 % fill in qf
                 for c=1:length(DiscretizationModel.CrossConnections)
@@ -671,7 +672,7 @@ classdef Immiscible_formulation < formulation
             Nm = DiscretizationModel.ReservoirGrid.N;
             % Global variables
             if ProductionSystem.FracturesNetwork.Active
-                FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+                FineGrid = [DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids];
             else
                 FineGrid = DiscretizationModel.ReservoirGrid;
             end

@@ -11,34 +11,40 @@ classdef grid_darsim < matlab.mixin.Heterogeneous & handle
         N
         Depth
         Active
-        Neighbours
+        Neighbours = struct;
+        NonNeighbours = struct;
         Fathers
-        Children
-        GrandChildren
+        Children = {}
         Verteces
         CoarseFactor
+        CoarseLevel
+        DualCoarseType % The type of the fine cell in the dual coarse grid construction (1=vertx, 2=edge, 3=face, 4=interrior)
         GridCoords
         ActiveTime
         ListOfFracturedReservoirCells
         ListOfPerforatedCells
     end
     methods
-        function Initialise(obj, maxLevel)
+        function Initialise(obj, currentLevel, maxLevel)
             % They can be very heterogeneous so I use cell arrays
-            obj.Fathers = zeros(obj.N, maxLevel);
-            obj.Children = cell(obj.N, 1);
-            obj.GrandChildren = cell(obj.N, 1);
-            obj.Verteces = zeros(obj.N, maxLevel);
-            obj.CoarseFactor = zeros(obj.N, 3);            
+            obj.Children = cell(obj.N, currentLevel);
+            obj.Fathers = zeros(obj.N, maxLevel-currentLevel);
+            obj.Verteces = zeros(obj.N, maxLevel-currentLevel);
+            obj.CoarseFactor = zeros(obj.N, 3);
+            obj.DualCoarseType = zeros(obj.N, 1);
         end
         function CopyGridEntries(obj, Grid, Nc_global, level)
+            obj.Fathers = [obj.Fathers; Grid.Fathers];
+            obj.Children
             for c = 1:Grid.N
-                obj.Fathers(c + Nc_global(level), :) = Grid.Fathers(c, :) + Nc_global(2:end);
+                if ~isempty(Grid.Fathers)
+                    obj.Fathers(c + Nc_global(2+level), :) = Grid.Fathers(c, :) + Nc_global(2+level:end);
+                end
                 obj.Children{c + Nc_global(level)} = Grid.Children{c,:} + Nc_global(level);
-                obj.GrandChildren{c + Nc_global(level)} = Grid.GrandChildren{c,:} + Nc_global(1);
-                
-                obj.Verteces(c + Nc_global(level), :) = Grid.Verteces(c,:);
-                obj.CoarseFactor(c + Nc_global(level), :) = Grid.CoarseFactor;
+                if ~isempty(Grid.Verteces)
+                    obj.Verteces(c + Nc_global(level), :) = Grid.Verteces(c,:);
+                    obj.CoarseFactor(c + Nc_global(level), :) = Grid.CoarseFactor;
+                end
             end
         end
     end

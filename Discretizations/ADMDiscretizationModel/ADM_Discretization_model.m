@@ -28,19 +28,23 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         function InitializeMapping(obj, ProductionSystem, FluidModel)
             fprintf('Algebraic Dynamic Multilevel (ADM) method run with %d levels and tolerance %s%s = %f\n', ...
                  obj.maxLevel(1), char(916), obj.ADMGridSelector.key, obj.ADMGridSelector.tol);
+            if length(obj.Nf) > 1 % which means there are fractures
+                if obj.ADMGridSelector.isCoupled
+                    fprintf('ADM grid selection strategy is coupled.\n');
+                else
+                    fprintf('ADM grid selection strategy is decoupled.\n');
+                end
+            end
             % Construct Coarse Grids
             disp(char(2));
             disp('Constructing coarse grids');
             obj.ConstructCoarseGrids(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
             obj.FlagPerforatedCoarseCells(ProductionSystem.Wells.Inj, ProductionSystem.Wells.Prod);
-
-            % Modifying permeabilities to limit contrast for computation of coupled basis functions
-%             [Km_Original, Kf_Original] = obj.ModifyPermeabilityContrasts(ProductionSystem);  I do not need this anymore
             
             % Assigning obj.FineGrid and obj.Nf
             if ProductionSystem.FracturesNetwork.Active
                 obj.Nf = [obj.ReservoirGrid.N; obj.FracturesGrid.N];
-                obj.FineGrid = [obj.ReservoirGrid, obj.FracturesGrid.Grids];
+                obj.FineGrid = [obj.ReservoirGrid; obj.FracturesGrid.Grids];
 
                 % Adding the harmonic permeabilities to CrossConnections
                 obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
@@ -61,10 +65,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 obj.OperatorsHandler.ProlongationBuilders(i).BuildStaticOperators(ProductionSystem, FluidModel, obj.FineGrid, obj.CrossConnections, ...
                     obj.maxLevel, obj.CoarseGrid);
             end
-            
-            % Resetting the permeabilities of matrix and fractures
-%             obj.ResetPermeabilityContrasts(ProductionSystem, Km_Original, Kf_Original); I do not need this anymore
-            
+
             disp('Static operators - end')
             timer = toc(start);
             disp(['Static operators construction took ', num2str(timer)])
@@ -77,7 +78,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             Nc1 = obj.CoarseGrid(1,1).N;
             if obj.maxLevel(1) > 1
                for i = 1:Nc1
-                   if obj.CoarseGrid(1,2).Wells{obj.CoarseGrid(1,1).Fathers(i, 2)} == 1
+                   if obj.CoarseGrid(1,2).Wells{obj.CoarseGrid(1,1).Fathers(i, 1)} == 1
                        obj.ADMGridSelector.NoWellsCoarseCells(i) = 0;
                    end
                end
@@ -96,8 +97,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 for x = 1:obj.maxLevel(1)
                     for j =1:length(I)
                         for c = 1 : obj.CoarseGrid(1,x).N
-                            % [r, ~] = find([obj.CoarseGrid(1,x).GrandChildren{c,:}] == I(j)); % Only in reservoir for now
-                            if any(obj.CoarseGrid(1,x).GrandChildren{c,:} == I(j))
+                            if any(obj.CoarseGrid(1,x).Children{c,end} == I(j))
                                 obj.CoarseGrid(1,x).Wells{c} = 1;
                             end
                         end
@@ -109,8 +109,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
                 for x = 1:obj.maxLevel(1)
                     for j=1:length(P)
                         for c = 1 : obj.CoarseGrid(1,x).N
-                            % [r, ~] = find([obj.CoarseGrid(1,x).GrandChildren{c,:}] == P(j));
-                            if any(obj.CoarseGrid(1,x).GrandChildren{c,:} == P(j))
+                            if any(obj.CoarseGrid(1,x).Children{c,end} == P(j))
                                 obj.CoarseGrid(1,x).Wells{c} = 1;
                             end
                         end
@@ -121,28 +120,62 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         function ConstructGlobalGrids(obj)
             %% Create grids based on global ordering
             [n_media, n_levels] = size(obj.CoarseGrid);
-           
-            % 1. Initialise global grids
-            Nc_global = zeros(n_media, n_levels);
-            obj.GlobalGrids(1).N = sum([obj.FineGrid.N]);
-            obj.GlobalGrids(1).Initialise(n_levels);
+            
+            %% 1. Matrix of cumulative grid numbers per each media for finesclae and all coarse levels
+            Nc_global = zeros(n_media, n_levels+1);
             for m=1:n_media
-                Nc_global(m, 1) = sum([obj.FineGrid(1:m-1).N]);
-            end
-            for x = 1:n_levels
-                obj.GlobalGrids(x+1).N = sum([obj.CoarseGrid(:, x).N]);
-                obj.GlobalGrids(x+1).Initialise(n_levels);
-                for m=1:n_media
-                    Nc_global(m, x+1) = sum([obj.CoarseGrid(1:m-1, x).N]);    
+                Nc_global(m,1) = sum([obj.FineGrid(1:m).N]);
+                for L = 1:n_levels
+                    Nc_global(m,L+1) = sum([obj.CoarseGrid(1:m,L).N]); 
                 end
             end
             
-            for m=1:n_media
-                % Global Fine Grid
-                obj.GlobalGrids(1).CopyGridEntries(obj.FineGrid(m), Nc_global(m, :), 1);
-                % Global Coarse Grid
-                for i=1:n_levels
-                    obj.GlobalGrids(i+1).CopyGridEntries(obj.CoarseGrid(m, i), Nc_global(m, :), i+1);
+            %% 2. GlobalGrids at fine scale
+            obj.GlobalGrids(1).N = sum([obj.FineGrid.N]);
+            obj.GlobalGrids(1).Children = cell(obj.GlobalGrids(1).N,1); % at finescale there is no children!
+            obj.GlobalGrids(1).Verteces = vertcat(obj.FineGrid(:).Verteces); % This only contains information (zero and one) to check which finescale cell is vertex for higher coarsening levels
+            obj.GlobalGrids(1).CoarseFactor = vertcat(obj.FineGrid(:).CoarseFactor);
+            obj.GlobalGrids(1).CoarseLevel = 1;
+            % 2.1 Fathers
+            for x = 1:n_levels - 0
+                % 2.1.1 Fathers for the first medium (reservoir)
+                Father_Temp = obj.FineGrid(1).Fathers(:,x);
+                % 2.1.2 Fathers for the rest of the media (fractures)
+                for m = 2:n_media
+                    Father_Temp = vertcat(Father_Temp, obj.FineGrid(m).Fathers(:,x) + Nc_global(m-1,x+1));
+                end
+                obj.GlobalGrids(1).Fathers(:,x) = Father_Temp;
+            end
+            
+            %% 3. GlobalGrids at coarse scales
+            for L = 1:n_levels
+                obj.GlobalGrids(L+1).N = sum([obj.CoarseGrid(:,L).N]);
+                obj.GlobalGrids(L+1).Verteces = vertcat(obj.CoarseGrid(:,L).Verteces); % This only contains information (zero and one) to check which coarsescale cell is vertex for higher coarsening levels
+                obj.GlobalGrids(L+1).CoarseFactor = vertcat(obj.CoarseGrid(:,L).CoarseFactor);
+                obj.GlobalGrids(L+1).CoarseLevel = L;
+                % 3.1 Fathers
+                for x = 1:n_levels - L
+                    % 3.1.1 Fathers for the first medium (reservoir)
+                    Father_Temp = obj.CoarseGrid(1,L).Fathers(:,x);
+                    % 3.1.2 Fathers for the rest of the media (fractures)
+                    for m = 2:n_media
+                        if ~isempty(obj.CoarseGrid(m,L).Fathers)
+                            Father_Temp = vertcat(Father_Temp, obj.CoarseGrid(m,L).Fathers(:,x) + Nc_global(m-1,x+2));
+                        end
+                    end
+                    obj.GlobalGrids(L+1).Fathers(:,x) = Father_Temp;
+                end
+                % 3.2 Children
+                for x = 1:L
+                    % 3.2.1 Children for the first medium (reservoir)
+                    Children_Temp = obj.CoarseGrid(1,L).Children(:,x);
+                    % 3.2.2 Children for the rest of the media (fractures)
+                    for m = 2:n_media
+                        if ~isempty(obj.CoarseGrid(m,L).Children)
+                            Children_Temp = vertcat(Children_Temp, cellfun(@(a) a+Nc_global(m-1,L-x+1) , obj.CoarseGrid(m,L).Children(:,x),'un',0) );
+                        end
+                    end
+                    obj.GlobalGrids(L+1).Children(:,x) = Children_Temp;
                 end
             end
         end
@@ -155,10 +188,6 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrid, obj.CoarseGrid, ProductionSystem);
             
             % Build ADM R and P operators
-            if any(strcmp(ProductionSystem.Reservoir.State.Properties.keys,'Tr'))
-                obj.ExtractReservoirADMGrid;
-                obj.OperatorsHandler.BuildReservoirADMRestriction(obj.ADMGrid_Reservoir, obj.ReservoirGrid)
-            end
             obj.OperatorsHandler.BuildADMOperators(obj.GlobalGrids, obj.ADMGrid);
         end
         function SelectADMGridCoarse(obj, ProductionSystem, Residual)
@@ -170,36 +199,7 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
             obj.OperatorsHandler.UpdateProlongationOperators(obj.FineGrid, obj.CoarseGrid, ProductionSystem);
             
             % Build ADM R and P operators
-            if any(strcmp(ProductionSystem.Reservoir.State.Properties.keys,'Tr'))
-                obj.ExtractReservoirADMGrid;
-                obj.OperatorsHandler.BuildReservoirADMRestriction(obj.ADMGrid_Reservoir, obj.ReservoirGrid)
-            end
             obj.OperatorsHandler.BuildADMOperators(obj.GlobalGrids, obj.ADMGrid);
-        end
-        function ExtractReservoirADMGrid(obj)
-            % Remove the fractures from ADMGrid to be used for RockTemperature Prolongation
-            obj.ADMGrid_Reservoir = adm_grid();
-            obj.ADMGrid_Reservoir.N = obj.ADMGrid.N(1,:);
-            obj.ADMGrid_Reservoir.Ntot = sum(obj.ADMGrid_Reservoir.N);
-            obj.ADMGrid_Reservoir.MaxLevel = obj.ADMGrid.MaxLevel;
-            obj.ADMGrid_Reservoir.level = zeros(obj.ADMGrid_Reservoir.Ntot,1);
-            obj.ADMGrid_Reservoir.CellIndex = zeros(obj.ADMGrid_Reservoir.Ntot,1);
-            obj.ADMGrid_Reservoir.Children = cell(obj.ADMGrid_Reservoir.Ntot,1);
-            obj.ADMGrid_Reservoir.GrandChildren = cell(obj.ADMGrid_Reservoir.Ntot,1);
-            for level = 0 : length(obj.ADMGrid_Reservoir.N)-1
-                IndexResStrart  = sum(obj.ADMGrid_Reservoir.N(1:level  )) + 1;
-                IndexResEnd     = sum(obj.ADMGrid_Reservoir.N(1:level+1));
-                IndexFullStrart = sum(sum(obj.ADMGrid.N(:,1:level))) + 1 ;
-                IndexFullEnd    = sum(sum(obj.ADMGrid.N(:,1:level))) + obj.ADMGrid.N(1,level+1);
-                obj.ADMGrid_Reservoir.level        ( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.level        ( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.CellIndex    ( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.CellIndex    ( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.Fathers      ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.Fathers      ( IndexFullStrart : IndexFullEnd , : );
-                obj.ADMGrid_Reservoir.Children     ( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.Children     ( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.GrandChildren( IndexResStrart : IndexResEnd , 1 ) = obj.ADMGrid.GrandChildren( IndexFullStrart : IndexFullEnd , 1 );
-                obj.ADMGrid_Reservoir.Verteces     ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.Verteces     ( IndexFullStrart : IndexFullEnd , : );
-                obj.ADMGrid_Reservoir.CoarseFactor ( IndexResStrart : IndexResEnd , : ) = obj.ADMGrid.CoarseFactor ( IndexFullStrart : IndexFullEnd , : );
-
-            end    
         end
         function [R, P] = AssembleFullOperators(obj)
             [R, P] = obj.OperatorsHandler.AssembleFullOperators();

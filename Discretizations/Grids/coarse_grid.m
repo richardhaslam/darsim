@@ -17,102 +17,108 @@ classdef coarse_grid < grid_darsim
         Wells
         DeltaS
         Vertex_On_Corner
+        hasCoarseNodes
     end
     methods
-        function obj = coarse_grid() 
+        function obj = coarse_grid()
         end
-        function BuildCoarseGrid(obj, FineGrid)            
-            %% Construct a coarse Grid given coarsening ratio and FineGrid
+        function BuildCoarseGrid(obj, FineGrids, FullCF)            
+            %% Construct a coarse Grid given all the coarsening ratios and FineGrids
+            FullCF(1,:,2:end+1) = FullCF(1,:,1:end);
+            FullCF(1,:,1) = [1,1,1];
+            CF = FullCF(:,:,end)./FullCF(:,:,end-1);
             if ~obj.Vertex_On_Corner
-                obj.Nx = FineGrid.Nx/obj.CoarseFactor(1);
-                obj.Ny = FineGrid.Ny/obj.CoarseFactor(2);
-                obj.Nz = FineGrid.Nz/obj.CoarseFactor(3);
+                obj.Nx = FineGrids(end).Nx/CF(1);
+                obj.Ny = FineGrids(end).Ny/CF(2);
+                obj.Nz = FineGrids(end).Nz/CF(3);
             else
-                obj.Nx = max( (FineGrid.Nx-1)/obj.CoarseFactor(1)+1 , 1);
-                obj.Ny = max( (FineGrid.Ny-1)/obj.CoarseFactor(2)+1 , 1);
-                obj.Nz = max( (FineGrid.Nz-1)/obj.CoarseFactor(3)+1 , 1);
+                obj.Nx = max( (FineGrids(end).Nx-1)/CF(1)+1 , 1);
+                obj.Ny = max( (FineGrids(end).Ny-1)/CF(2)+1 , 1);
+                obj.Nz = max( (FineGrids(end).Nz-1)/CF(3)+1 , 1);
             end
             obj.N = obj.Nx*obj.Ny*obj.Nz;
+            obj.DualCoarseType = zeros(obj.N, 1);
             obj.DeltaS = zeros(obj.N, 1);
             
-            % Coordinates of the centres
-            obj.I = ones(obj.N, 2);
-            obj.J = ones(obj.N, 2);
-            obj.K = ones(obj.N, 2);
+            %% Coordinates of the centres
+            obj.I = ones(obj.N, 1+length(FineGrids));
+            obj.J = ones(obj.N, 1+length(FineGrids));
+            obj.K = ones(obj.N, 1+length(FineGrids));
             
-            if ~obj.Vertex_On_Corner
-                JindecesF = ceil(obj.CoarseFactor(2)/2):obj.CoarseFactor(2):FineGrid.Ny;
-            else
-                JindecesF = 1:obj.CoarseFactor(2):FineGrid.Ny;
-            end
-            JindecesC = 1:1:obj.Ny;
-            for k = 1:obj.Nz
-                for i=1:obj.Ny
-                    a = obj.Nx*(i-1) + (k-1)*obj.Nx*obj.Ny + 1;
-                    if ~obj.Vertex_On_Corner
-                        obj.I(a:a+obj.Nx-1, 2) = ceil(obj.CoarseFactor(1)/2):obj.CoarseFactor(1):FineGrid.Nx;
-                    else
-                        obj.I(a:a+obj.Nx-1, 2) = 1:obj.CoarseFactor(1):FineGrid.Nx;
+            for L = 1:length(FineGrids)
+                FineGrid = FineGrids(end-L+1);
+                CF = FullCF(:,:,end)./FullCF(:,:,end-L);
+                if ~obj.Vertex_On_Corner
+                    JindecesF = ceil(CF(2)/2):CF(2):FineGrid.Ny;
+                else
+                    JindecesF = 1:CF(2):FineGrid.Ny;
+                end
+                JindecesC = 1:1:obj.Ny;
+                for k = 1:obj.Nz
+                    for i=1:obj.Ny
+                        a = obj.Nx*(i-1) + (k-1)*obj.Nx*obj.Ny + 1;
+                        if ~obj.Vertex_On_Corner
+                            obj.I(a:a+obj.Nx-1, 1+L) = ceil(CF(1)/2):CF(1):FineGrid.Nx;
+                        else
+                            obj.I(a:a+obj.Nx-1, 1+L) = 1:CF(1):FineGrid.Nx;
+                        end
+                        obj.J(a:a+obj.Nx-1, 1+L) = JindecesF(i)*ones(obj.Nx,1);
+                        obj.I(a:a+obj.Nx-1, 1) = 1:1:obj.Nx;
+                        obj.J(a:a+obj.Nx-1, 1) = JindecesC(i)*ones(obj.Nx, 1);
                     end
-                    obj.J(a:a+obj.Nx-1, 2) = JindecesF(i)*ones(obj.Nx,1);
-                    obj.I(a:a+obj.Nx-1, 1) = 1:1:obj.Nx;
-                    obj.J(a:a+obj.Nx-1, 1) = JindecesC(i)*ones(obj.Nx, 1);
+                end
+                if ~obj.Vertex_On_Corner
+                    KindecesC = ceil(CF(3)/2):CF(3):FineGrid.Nz;
+                else
+                    KindecesC = 1:CF(3):FineGrid.Nz;
+                end
+                for i=1:obj.Nz
+                    obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny, 1+L) = KindecesC(i) * ones(obj.Nx*obj.Ny, 1);
+                    obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny, 1) = i*ones(obj.Nx*obj.Ny, 1);
                 end
             end
-            if ~obj.Vertex_On_Corner
-                KindecesC = ceil(obj.CoarseFactor(3)/2):obj.CoarseFactor(3):FineGrid.Nz;
-            else
-                KindecesC = 1:obj.CoarseFactor(3):FineGrid.Nz;
-            end
-            for i=1:obj.Nz
-                obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny, 2) = KindecesC(i) * ones(obj.Nx*obj.Ny, 1);
-                obj.K((i-1)*obj.Nx*obj.Ny+1:i*obj.Nx*obj.Ny, 1) = i*ones(obj.Nx*obj.Ny, 1);
-            end
 
+            %% Initializing "Active", "Fathers" and "Wells" data
             obj.Active = zeros(obj.N, 1);
             obj.Wells = cell(obj.N, 1);
             obj.Fathers = zeros(obj.N, 1);
             
-            if obj.Nz == 1 && obj.Ny == 1
-                obj.AssignNeighbours1D();
-            elseif obj.Nz == 1 && obj.Ny > 1
-                obj.AssignNeighbours2D();
-            else
-                obj.AssignNeighbours();
-            end
-            obj.AddGridCoordinates(FineGrid);
+            %% Assigning neighbors
+            obj.AssignNeighbours();
+            
+            %% Adding the coordinates of the grids (for purpose of visualizations)
+            CF = FullCF(:,:,end)./FullCF(:,:,end-1);
+            obj.AddGridCoordinates(FineGrids(end),CF); 
         end
-        function AddGridCoordinates(obj, FineGrid)
+        function AddGridCoordinates(obj, FineGrid, CF)
             % Computes coordinates of corners of the coarse grid
             if ~isempty(FineGrid.GridCoords)
                 if ~obj.Vertex_On_Corner
                     kList = 1 : obj.Nz+1;
                     jList = 1 : obj.Ny+1;
                 else
-                    kList = [0, ceil(obj.CoarseFactor(3)/2) + obj.CoarseFactor(3)*(0:obj.Nz-2), FineGrid.Nz] + 1;
-                    jList = [0, ceil(obj.CoarseFactor(2)/2) + obj.CoarseFactor(2)*(0:obj.Ny-2), FineGrid.Ny] + 1;
+                    kList = [0, ceil(CF(3)/2) + CF(3)*(0:obj.Nz-2), FineGrid.Nz] + 1;
+                    jList = [0, ceil(CF(2)/2) + CF(2)*(0:obj.Ny-2), FineGrid.Ny] + 1;
                 end
-                
-                
+
                 ThreeDim = (size(FineGrid.GridCoords,1) == (FineGrid.Nx+1)*(FineGrid.Ny+1)*(FineGrid.Nz+1));
                 if ~ThreeDim
                     kLoopNum = 1;
                 else
                     kLoopNum = length(kList);
                 end
-                
-                
+
                 for m = 1 : kLoopNum
                     k = kList(m);
                     for n = 1 : length(jList)
                         j = jList(n);
                         if ~obj.Vertex_On_Corner
-                            fs_index = obj.CoarseFactor(3)*(FineGrid.Ny+1)*(FineGrid.Nx+1)*(k-1) + ...
-                                       obj.CoarseFactor(2)*(FineGrid.Nx+1)*(j-1) + ...
-                                      (obj.CoarseFactor(1)*(0:obj.Nx) ) + 1;
+                            fs_index = CF(3)*(FineGrid.Ny+1)*(FineGrid.Nx+1)*(k-1) + ...
+                                       CF(2)*(FineGrid.Nx+1)*(j-1) + ...
+                                      (CF(1)*(0:obj.Nx) ) + 1;
                         else
                             fs_index = (k-1)*(FineGrid.Nx+1)*(FineGrid.Ny+1) + (j-1)*(FineGrid.Nx+1) + ...
-                                       [0, ceil(obj.CoarseFactor(1)/2) + obj.CoarseFactor(1)*(0:obj.Nx-2), FineGrid.Nx] + 1;
+                                       [0, ceil(CF(1)/2) + CF(1)*(0:obj.Nx-2), FineGrid.Nx] + 1;
                         end
                         
                         Start = (m-1)*(obj.Nx+1)*(obj.Ny+1) + (n-1)*(obj.Nx+1) + 1 ;
@@ -123,285 +129,51 @@ classdef coarse_grid < grid_darsim
             end
         end
         function AssignNeighbours(obj)
-            % Lets do the 8 corners separetely
-            % 1
-            i = 1;
-            j = 1;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 2.
-            i = obj.Nx;
-            j = 1;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 3.
-            i = 1;
-            j = obj.Ny;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 4.
-            i = obj.Nx;
-            j = obj.Ny;
-            for k=1:obj.Nz
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if k == 1
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                elseif k == obj.Nz
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 5
-            j = 1;
-            k = 1;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 6
-            j = obj.Ny;
-            k = 1;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 7
-            j = 1;
-            k = obj.Nz;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
-            % 8
-            j = obj.Ny;
-            k = obj.Nz;
-            for i=1:obj.Nx
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if i==1
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                elseif i==obj.Nx
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
+            % West Neighbors
+            [i,j,k] = meshgrid( 0:obj.Nx-1 , 1:obj.Ny , 1:obj.Nz );  i(i<1) = nan;
+            IW = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IW = reshape(permute(IW,[2 1 3]),obj.N,1);
             
-            % 9
-            i = 1;
-            k = 1;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 10
-            i = obj.Nx;
-            k = 1;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g+obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            % 11
-            i = 1;
-            k = obj.Nz;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
-            % 12
-            i = obj.Nx;
-            k = obj.Nz;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                if j==1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx, g-obj.Nx*obj.Ny];
-                elseif j==obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g-obj.Nx*obj.Ny];
-                else
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
-
-            % Let's do the faces first
-            i = 1;
-            for k=2:obj.Nz-1
-                for j=2:obj.Ny-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            i = obj.Nx;
-            for k=2:obj.Nz-1
-                for j=2:obj.Ny-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g + obj.Nx*obj.Ny];
-                end
-            end
-            j = 1;
-            for k=2:obj.Nz-1
-                for i=2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            j = obj.Ny;
-            for k=2:obj.Nz-1
-                for i = 2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                end
-            end
-            k = 1;
-            for j=2:obj.Ny-1
-                for i=2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g+obj.Nx*obj.Ny];
-                end
-            end
-            k = obj.Nz;
-            for j=2:obj.Ny-1
-                for i = 2:obj.Nx-1
-                    g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny];
-                end
-            end
+            % East Neighbors
+            [i,j,k] = meshgrid( 2:obj.Nx+1 , 1:obj.Ny , 1:obj.Nz );  i(i>obj.Nx) = nan;
+            IE = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IE = reshape(permute(IE,[2 1 3]),obj.N,1);
             
+            % South Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 0:obj.Ny-1 , 1:obj.Nz );  j(j<1) = nan;
+            IS = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IS = reshape(permute(IS,[2 1 3]),obj.N,1);
             
-            % All inner cells (easy ones)
-            for k = 2:obj.Nz-1
-                for i = 2:obj.Nx-1
-                    for j=2:obj.Ny-1
-                        g = i + (j-1)*obj.Nx + (k-1)*obj.Nx*obj.Ny;
-                        obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx, g-obj.Nx*obj.Ny, g+obj.Nx*obj.Ny];
-                    end
-                end
-            end
-        end
-        function AssignNeighbours2D(obj)
-            i = 1;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx;
-                if j~=1 && j~= obj.Ny
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx, g+obj.Nx];
-                elseif j == 1
-                    obj.Neighbours(g).indexes = [g+1, g+obj.Nx];
-                elseif j == obj.Ny
-                    obj.Neighbours(g).indexes = [g+1, g-obj.Nx];
-                end
-            end
-            i = obj.Nx;
-            for j=1:obj.Ny
-                g = i + (j-1)*obj.Nx;
-                if j~=1 && j~=obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx, g+obj.Nx];
-                elseif j == 1
-                    obj.Neighbours(g).indexes = [g-1, g+obj.Nx];
-                elseif j == obj.Ny
-                    obj.Neighbours(g).indexes = [g-1, g-obj.Nx];
-                end
-            end
-            j = 1;
-            for i=2:obj.Nx-1
-                g = i + (j-1)*obj.Nx;
-                obj.Neighbours(g).indexes = [g-1, g+1, g+obj.Nx];
-            end
-            j = obj.Ny;
-            for i = 2:obj.Nx-1
-                g = i + (j-1)*obj.Nx;
-                obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx];
-            end
+            % North Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 2:obj.Ny+1 , 1:obj.Nz );  j(j>obj.Ny) = nan;
+            IN = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IN = reshape(permute(IN,[2 1 3]),obj.N,1);
             
-            for i = 2:obj.Nx-1
-                for j=2:obj.Ny-1
-                    g = i + (j-1)*obj.Nx;
-                    obj.Neighbours(g).indexes = [g-1, g+1, g-obj.Nx, g+obj.Nx];
-                end
-            end
-        end
-        function AssignNeighbours1D(obj)
-            i = 1;
-            g = i;
-            obj.Neighbours(g).indexes = g+1;
-            i = obj.Nx;
-            g = i;
-            obj.Neighbours(g).indexes = g-1;
-            for i = 2:obj.Nx-1
-                g = i;
-                obj.Neighbours(g).indexes = [g-1, g+1];
-            end  
+            % Bottom Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 0:obj.Nz-1 );  k(k<1) = nan;
+            IB = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IB = reshape(permute(IB,[2 1 3]),obj.N,1);
+            
+            % Top Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 2:obj.Nz+1 );  k(k>obj.Nz) = nan;
+            IT = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IT = reshape(permute(IT,[2 1 3]),obj.N,1);
+            
+            % Assembling the array for all the neighbors
+            Neighbours = [IW,IE,IS,IN,IB,IT];
+            obj.Neighbours = num2cell(Neighbours,2);
+            obj.Neighbours = cellfun(@(x) x(~isnan(x)),obj.Neighbours ,'UniformOutput' ,false);
         end
         function AddWells(obj, Inj, Prod)
             for c = 1:obj.N
                 Well_Index = [];
                 for w = 1:length(Inj)
-                    if ~isempty(intersect( Inj(w).Cells , obj.Children{c,:}      )) || ... 
-                       ~isempty(intersect( Inj(w).Cells , obj.GrandChildren{c,:} ))
+                    if ~isempty(intersect( Inj(w).Cells , [obj.Children{c,:}] ))
                         Well_Index = [Well_Index; w];
                     end
                 end
                 for w = length(Inj)+1 : length(Inj)+length(Prod)
-                    if ~isempty(intersect( Prod(w-length(Inj)).Cells , obj.Children{c,:}      )) || ...
-                       ~isempty(intersect( Prod(w-length(Inj)).Cells , obj.GrandChildren{c,:} ))
+                    if ~isempty(intersect( Prod(w-length(Inj)).Cells , [obj.Children{c,:}] ))
                         Well_Index = [Well_Index; w];
                     end
                 end

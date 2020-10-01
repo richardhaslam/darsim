@@ -106,12 +106,12 @@ classdef VTK_Plotter < Plotter
             fprintf(fileID, '\n');
             
             % Add the "fractured" flag for reservoir grid cells that are overlapped by a fracture (if any)
-%             if ~isempty(Grid.ListOfFracturedReservoirCells)
-%                 FracturedFlag = zeros(Grid.N,1);
-%                 FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1e0;
-%                 obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
-%                 fprintf(fileID, '\n');
-%             end
+            if ~isempty(Grid.ListOfFracturedReservoirCells)
+                FracturedFlag = zeros(Grid.N,1);
+                FracturedFlag(Grid.ListOfFracturedReservoirCells) = 1;
+                obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
+                fprintf(fileID, '\n');
+            end
             
             % Add ADM ACTIVEFine (coarse grids)
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
@@ -132,6 +132,11 @@ classdef VTK_Plotter < Plotter
                 end
                 fprintf(fileID, '\n');
             end
+            
+            % Adding the fine cell type based on dual coarse grid construction
+            obj.PrintScalar2VTK(fileID, Grid.DualCoarseType, ' DualCoarseType');
+            fprintf(fileID, '\n');
+            
             fclose(fileID);
         end
         function PlotFractureSolution(obj, Fracture, Grid, f)
@@ -177,6 +182,11 @@ classdef VTK_Plotter < Plotter
                 end
                 fprintf(fileID, '\n');
             end
+            
+            % Adding the fine cell type based on dual coarse grid construction
+            obj.PrintScalar2VTK(fileID, Grid.DualCoarseType, ' DualCoarseType');
+            fprintf(fileID, '\n');
+            
             fclose(fileID);
         end
         function PlotPermeability(obj, ProductionSystem, DiscretizationModel)
@@ -224,6 +234,11 @@ classdef VTK_Plotter < Plotter
             fclose(fileID);
         end
         function PlotBasisFunctions(obj,FineGrid, CoarseGrid, Prolp, Nf, Nc)
+            for m = 1 : size(Nc,1)
+                for L = 1 : size(Nc,2)
+                    Nc(m,L) = Nc(m,L) * CoarseGrid(m,L).hasCoarseNodes;
+                end
+            end
             obj.PlotReservoirBF(FineGrid(1), CoarseGrid(1,:), Prolp);
             for i=2:length(FineGrid)
                 obj.PlotFractureBF(FineGrid(i), CoarseGrid(i,:), Prolp, sum(Nf(1:i-1)), Nc, i);
@@ -257,12 +272,12 @@ classdef VTK_Plotter < Plotter
             [~, n_columns] = size(Prolp{1});
             % Matrix basis functions in the matrix
             for j = 1:CoarseGrid(1).N
-                obj.PrintScalar2VTK(fileID, full(Prolp{1}(1:Grid.N,j)),strcat(' BF',num2str(j)));
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(1:Grid.N,j)),strcat(' BF',num2str(j,'%03d')));
                 fprintf(fileID, '\n');
             end
             % Fracture basis functions in the matrix
             for j = CoarseGrid(1).N+1:n_columns
-                obj.PrintScalar2VTK(fileID, full(Prolp{1}(1:Grid.N, j)), strcat(' Frac_BF',num2str(j)));
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(1:Grid.N, j)), strcat(' Frac_BF',num2str(j,'%03d')));
                 fprintf(fileID, '\n');
             end
             
@@ -294,12 +309,12 @@ classdef VTK_Plotter < Plotter
                 [~, n_columns] = size(Prolp{i});
                 % Matrix basis functions in the matrix
                 for j = 1:CoarseGrid(i).N
-                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(1:CoarseGrid(i-1).N, j)), strcat(' BF',num2str(j)));
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(1:CoarseGrid(i-1).N, j)), strcat(' BF',num2str(j,'%03d')));
                     fprintf(fileID, '\n');
                 end
                 % Fracture basis functions in the matrix
                 for j = CoarseGrid(i).N+1:n_columns
-                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(1:CoarseGrid(i-1).N, j)), strcat(' Frac_BF',num2str(j)));
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(1:CoarseGrid(i-1).N, j)), strcat(' Frac_BF',num2str(j,'%03d')));
                     fprintf(fileID, '\n');
                 end
                 fclose(fileID);
@@ -325,13 +340,15 @@ classdef VTK_Plotter < Plotter
             [~, n_columns] = size(Prolp{1});
             % Matrix basis functions in the fracture f
             for j = 1:Nc(1,1)
-                obj.PrintScalar2VTK(fileID, full(Prolp{1}(Nf+1:Nf+Grid.N,j)),strcat(' BF',num2str(j)));
+                obj.PrintScalar2VTK(fileID, full(Prolp{1}(Nf+1:Nf+Grid.N,j)),strcat(' BF',num2str(j,'%03d')));
                 fprintf(fileID, '\n');
             end
-            % Fractures basis functions in the fracture 
-            for j = Nc(1,1)+1:n_columns
-                obj.PrintScalar2VTK(fileID, full(Prolp{1}(Nf+1:Nf+Grid.N, j)), strcat(' Frac_BF',num2str(j)));
-                fprintf(fileID, '\n');
+            % Fractures basis functions in the fracture
+            if CoarseGrid(1).hasCoarseNodes
+                for j = Nc(1,1)+1:n_columns
+                    obj.PrintScalar2VTK(fileID, full(Prolp{1}(Nf+1:Nf+Grid.N, j)), strcat(' Frac_BF',num2str(j,'%03d')));
+                    fprintf(fileID, '\n');
+                end
             end
             fclose(fileID);
             %% 2. Levels > 1
@@ -352,13 +369,15 @@ classdef VTK_Plotter < Plotter
                 [~, n_columns] = size(Prolp{i});
                 % Matrix basis functions in the fracture f
                 for j = 1:Nc(1,i)
-                    obj.PrintScalar2VTK(fileID, full(Prolp{i}( sum(Nc(1:f-1, i-1))+1:sum(Nc(1:f-1, i-1)) + CoarseGrid(i-1).N, j) ), strcat(' BF',num2str(j)));
+                    obj.PrintScalar2VTK(fileID, full(Prolp{i}( sum(Nc(1:f-1, i-1))+1:sum(Nc(1:f-1, i-1)) + CoarseGrid(i-1).N*CoarseGrid(i-1).hasCoarseNodes, j) ), strcat(' BF',num2str(j,'%03d')));
                     fprintf(fileID, '\n');
                 end
                 % Fracture basis functions in the fracture f
-                for j = Nc(1,i)+1:n_columns
-                    obj.PrintScalar2VTK(fileID, full(Prolp{i}(sum(Nc(1:f-1, i-1))+1:sum(Nc(1:f-1, i-1)) + CoarseGrid(i-1).N, j)), strcat(' Frac_BF',num2str(j)));
-                    fprintf(fileID, '\n');
+                if CoarseGrid(i).hasCoarseNodes
+                    for j = Nc(1,i)+1:n_columns
+                        obj.PrintScalar2VTK(fileID, full(Prolp{i}(sum(Nc(1:f-1, i-1))+1:sum(Nc(1:f-1, i-1)) + CoarseGrid(i-1).N, j)), strcat(' Frac_BF',num2str(j,'%03d')));
+                        fprintf(fileID, '\n');
+                    end
                 end
                 fclose(fileID);
             end
@@ -464,8 +483,13 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA   %d\n', CoarseGrid(i).N);
-                obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active.*CoarseGrid(i).hasCoarseNodes, ' ActiveCoarse');
                 fprintf(fileID, '\n');
+                
+                % Adding the fine cell type based on dual coarse grid construction
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).DualCoarseType, ' DualCoarseType');
+                fprintf(fileID, '\n');
+                
                 % Delta_S
                 obj.PrintScalar2VTK(fileID, CoarseGrid(i).DeltaS, ' Delta_S');
                 fprintf(fileID, '\n');
@@ -490,8 +514,12 @@ classdef VTK_Plotter < Plotter
                 fprintf(fileID, '\n');
                 fprintf(fileID, 'CELL_DATA %d\n', CoarseGrid(i).N);
                 fprintf(fileID, '\n');
-                obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active, ' ActiveCoarse');
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).Active.*CoarseGrid(i).hasCoarseNodes, ' ActiveCoarse');
                 fprintf(fileID, '\n');
+                
+                obj.PrintScalar2VTK(fileID, CoarseGrid(i).DualCoarseType, ' DualCoarseType');
+                fprintf(fileID, '\n');
+                
                 fclose(fileID);
             end
         end

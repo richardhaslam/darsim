@@ -12,6 +12,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
         BFUpdater
         Dimensions
         ADMmap
+        alpha % This is a factor used to cut the basis functions lower than this value and reduce the region of influence
     end
     methods
         function obj = prolongation_builder_MSPressure(n, cf)
@@ -37,15 +38,19 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             if isprop(obj.BFUpdater,'BFtype')
                 fprintf(char(strcat({'The Basis Functions are '},obj.BFUpdater.BFtype,'.\n')));
             end
-            %Build static restriction operator (FV)
+            
+            %% Level 1
+            % Build static restriction operator (FV)
             disp('Building Pressure Restriction 1');
             start1 = tic;
             obj.R{1} = obj.MsRestriction(FineGrid, CoarseGrid(:,1));
-            % Build Prolongation operator
+            % Build Prolongation operator1
             disp('Building Pressure Prolongation 1');
             [obj.P{1}, obj.C{1}] = obj.BFUpdater.MsProlongation(FineGrid, CoarseGrid(:,1), obj.Dimensions);
-            % Build tpfa coarse system of level 1 (with MsFE)
+            % Build the TPFA coarse system (with MsFE)
             obj.BFUpdater.UpdatePressureMatrix(obj.P{1}, CoarseGrid(:, 1));
+            
+            %% Level 2+
             for x = 2:maxLevel(1)
                 % Build static restriction operator (FV)
                 disp(['Building Pressure Restriction ', num2str(x)]);
@@ -53,9 +58,15 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 % Build Prolongation operator
                 disp(['Building Pressure Prolongation ', num2str(x)]);
                 [obj.P{x}, obj.C{x}] = obj.BFUpdater.MsProlongation(CoarseGrid(:, x-1), CoarseGrid(:, x), obj.Dimensions);
-                %Build tpfa coarse system of level x (with MsFE)
+                %Build TPFA coarse system of (with MsFE)
                 obj.BFUpdater.UpdatePressureMatrix(obj.P{x}, CoarseGrid(:, x));
             end
+            
+            %% Correcting the region of influence of basis functions by cutting the values less than alpha
+            if obj.alpha > 0
+                obj.CorrectTheBasisFunctionsRegionOfInfluence(maxLevel);
+            end
+            
             StaticOperators = toc(start1);
             disp(['Pressure static operators built in: ', num2str(StaticOperators), ' s']);
         end
@@ -73,7 +84,7 @@ classdef prolongation_builder_MSPressure < prolongation_builder
                 ADMProlp = Prolp * ADMProlp;
             end
             
-            % Last prolongation is different coz I use fine-scale ordering
+            % Last prolongation is different as I use fine-scale ordering
             Prolp = obj.LastProlongation(ADMGrid, GlobalGrids(1));
             
             % Multiply by previous objects
@@ -1131,5 +1142,26 @@ classdef prolongation_builder_MSPressure < prolongation_builder
             end % End of loop over the wells
             Residual = A * deltaP_w - q_w;
         end % End of StaticMultilevelPressureGuess
+        function CorrectTheBasisFunctionsRegionOfInfluence(obj,maxLevel)
+            for L = 1:maxLevel(1)
+                for c = 1:size(obj.P{L},2)
+                    BF = obj.P{L}(:,c);
+                    BF_Sum_Previous = sum(BF);
+                    
+                    BF(BF<obj.alpha) = 0;
+                    BF_Sum_New = sum(BF);
+                    
+                    Diff = BF_Sum_Previous - BF_Sum_New;
+                    weightList = 1 - BF;
+                    weightList(weightList==1)=0;
+                    if sum(weightList)>0
+                        weightList = weightList / sum(weightList);
+                    end
+                    
+                    obj.P{L}(:,c) = BF + Diff * weightList;
+                end
+                obj.P{L} = obj.P{L}./sum(obj.P{L},2);
+            end
+        end
     end
 end

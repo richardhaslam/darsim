@@ -64,8 +64,8 @@ classdef cartesian_grid < grid_darsim
                 obj.ComputeRockHeatConductivities(Reservoir.K_Cond_eff);
             end
             obj.CoarseFactor = [1, 1, 1];
+            obj.DualCoarseType = zeros(obj.N, 1);
             obj.Children = cell(obj.N, 1);
-            obj.GrandChildren = cell(obj.N, 1);
             obj.AddCoordinates();
             obj.Depth = zeros(obj.N, 1);
         end
@@ -119,42 +119,6 @@ classdef cartesian_grid < grid_darsim
             obj.THy(:,2:obj.Ny,:) = obj.Ay./obj.dy.*KHy(:,2:obj.Ny,:);
             obj.THz(:,:,2:obj.Nz) = obj.Az./obj.dz.*KHz(:,:,2:obj.Nz);
         end
-        function AssignNeighbours(obj)
-            % West Neighbors
-            [i,j,k] = meshgrid( 0:obj.Nx-1 , 1:obj.Ny , 1:obj.Nz );  i(i<1) = nan;
-            IW = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
-            IW = reshape(permute(IW,[2 1 3]),obj.N,1);
-            
-            % East Neighbors
-            [i,j,k] = meshgrid( 2:obj.Nx+1 , 1:obj.Ny , 1:obj.Nz );  i(i>obj.Nx) = nan;
-            IE = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
-            IE = reshape(permute(IE,[2 1 3]),obj.N,1);
-            
-            % South Neighbors
-            [i,j,k] = meshgrid( 1:obj.Nx , 0:obj.Ny-1 , 1:obj.Nz );  j(j<1) = nan;
-            IS = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
-            IS = reshape(permute(IS,[2 1 3]),obj.N,1);
-            
-            % North Neighbors
-            [i,j,k] = meshgrid( 1:obj.Nx , 2:obj.Ny+1 , 1:obj.Nz );  j(j>obj.Ny) = nan;
-            IN = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
-            IN = reshape(permute(IN,[2 1 3]),obj.N,1);
-            
-            % Bottom Neighbors
-            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 0:obj.Nz-1 );  k(k<1) = nan;
-            IB = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
-            IB = reshape(permute(IB,[2 1 3]),obj.N,1);
-            
-            % Top Neighbors
-            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 2:obj.Nz+1 );  k(k>obj.Nz) = nan;
-            IT = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
-            IT = reshape(permute(IT,[2 1 3]),obj.N,1);
-            
-            % Assembling the array for all the neighbors
-            obj.Neighbours = [IW,IE,IS,IN,IB,IT];
-            obj.Neighbours = num2cell(obj.Neighbours,2);
-            obj.Neighbours = cellfun(@(x) x(~isnan(x)),obj.Neighbours ,'UniformOutput' ,false);
-        end
         function AddCoordinates(obj)
             % Add I, J coordinates to Grid
             obj.I = ones(obj.N, 1);
@@ -195,6 +159,42 @@ classdef cartesian_grid < grid_darsim
             y_centres = (obj.J - 1/2) * obj.dy;
             z_centres = (obj.K - 1/2) * obj.dz;
             obj.Depth = Thickness - z_centres;
+        end
+        function AssignNeighbours(obj)
+            % West Neighbors
+            [i,j,k] = meshgrid( 0:obj.Nx-1 , 1:obj.Ny , 1:obj.Nz );  i(i<1) = nan;
+            IW = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IW = reshape(permute(IW,[2 1 3]),obj.N,1);
+            
+            % East Neighbors
+            [i,j,k] = meshgrid( 2:obj.Nx+1 , 1:obj.Ny , 1:obj.Nz );  i(i>obj.Nx) = nan;
+            IE = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IE = reshape(permute(IE,[2 1 3]),obj.N,1);
+            
+            % South Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 0:obj.Ny-1 , 1:obj.Nz );  j(j<1) = nan;
+            IS = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IS = reshape(permute(IS,[2 1 3]),obj.N,1);
+            
+            % North Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 2:obj.Ny+1 , 1:obj.Nz );  j(j>obj.Ny) = nan;
+            IN = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IN = reshape(permute(IN,[2 1 3]),obj.N,1);
+            
+            % Bottom Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 0:obj.Nz-1 );  k(k<1) = nan;
+            IB = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IB = reshape(permute(IB,[2 1 3]),obj.N,1);
+            
+            % Top Neighbors
+            [i,j,k] = meshgrid( 1:obj.Nx , 1:obj.Ny , 2:obj.Nz+1 );  k(k>obj.Nz) = nan;
+            IT = (k-1).*obj.Nx.*obj.Ny + (j-1).*obj.Nx + i;
+            IT = reshape(permute(IT,[2 1 3]),obj.N,1);
+            
+            % Assembling the array for all the neighbors
+            obj.Neighbours = [IW,IE,IS,IN,IB,IT];
+            obj.Neighbours = num2cell(obj.Neighbours,2);
+            obj.Neighbours = cellfun(@(x) x(~isnan(x)),obj.Neighbours ,'UniformOutput' ,false);
         end
     end
 end

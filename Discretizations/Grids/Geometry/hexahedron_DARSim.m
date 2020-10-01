@@ -186,4 +186,3 @@ classdef hexahedron_DARSim < polyhedron_DARSim
         end
     end
 end
-

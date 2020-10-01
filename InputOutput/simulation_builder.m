@@ -76,8 +76,7 @@ classdef simulation_builder < handle
             if obj.SimulationInput.FracturesProperties.isFractured
                 [FracturesGrid, CrossConnections] = obj.ScanFracturesData(FractureMatrix, ReservoirGrid);
             end
-            
-    
+
             %% 2. Define your discretization Model (choose between FS and ADM)
             switch (obj.SimulatorSettings.DiscretizationModel)
                 case('ADM')
@@ -114,6 +113,7 @@ classdef simulation_builder < handle
                                prolongationbuilder.BFUpdater.MaxContrast = ADMSettings.BF_MaxContrast;
                             end
                             prolongationbuilder.BFUpdater.pEDFM_MaxContrast = ADMSettings.pEDFM_MaxContrast;
+                            prolongationbuilder.alpha = ADMSettings.BF_alpha;
                     end
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                     
@@ -152,7 +152,14 @@ classdef simulation_builder < handle
                         case('residual')
                             gridselector = adm_grid_selector_residual(ADMSettings.tol);
                     end
+                    if strcmp(ADMSettings.Coupling,'COUPLED')
+                        gridselector.isCoupled = 1;
+                    else
+                        gridselector.isCoupled = 0;
+                    end
+                        
                     Discretization = ADM_Discretization_model(ADMSettings.maxLevel, ADMSettings.Coarsening);
+                    Discretization.CoarseningSwitch = ADMSettings.CoarseningSwitch;
                     Discretization.AddADMGridSelector(gridselector);
                     Discretization.AddOperatorsHandler(operatorshandler);
                 case ('MMs')
@@ -168,9 +175,14 @@ classdef simulation_builder < handle
                         prolongationbuilder.BFUpdater.BFtype = MMsSettings.BFtype;
                     end
                     % Reduce contrast for BF computation to remove peaks
-                    prolongationbuilder.BFUpdater.MaxContrast = 10^-2;
-                    prolongationbuilder.BFUpdater.MaxContrast = MMsSettings.BF_MaxContrast;
+                    if strcmp(MMsSettings.PInterpolator, 'Homogeneous')
+                        prolongationbuilder.BFUpdater.MaxContrast = 1;
+                    else
+                        prolongationbuilder.BFUpdater.MaxContrast = MMsSettings.BF_MaxContrast;
+                    end
                     prolongationbuilder.BFUpdater.pEDFM_MaxContrast = MMsSettings.pEDFM_MaxContrast;
+                    prolongationbuilder.alpha = MMsSettings.BF_alpha;
+                    
                     if MMsSettings.CorrectionFunctions
                         prolongationbuilder.BFUpdater.CorrectionFunctions = true;
                     end
@@ -179,6 +191,7 @@ classdef simulation_builder < handle
                     operatorshandler.AddProlongationBuilder(prolongationbuilder, 1);
                     % Static Multiscale for flow solver
                     Discretization = Multiscale_Discretization_model(MMsSettings.maxLevel, MMsSettings.Coarsening);
+                    Discretization.CoarseningSwitch = MMsSettings.CoarseningSwitch;
                     Discretization.AddOperatorsHandler(operatorshandler);
                 case('FS')
                     % Fine-scale discretization model
@@ -1013,6 +1026,11 @@ classdef simulation_builder < handle
                         simulation.ProductionSystem.Wells.NofInj,   simulation.ProductionSystem.Wells.NofProd, ...
                         simulation.Summary.CouplingStats.NTimers,   simulation.Summary.CouplingStats.NStats,...
                         obj.SimulatorSettings.NumOfPreviousReports, simulation.FluidModel.NofComp);
+                    if obj.SimulatorSettings.PlotBasisFunctions
+                        Writer.PlotBasisFunctions = true;
+                    else
+                        Writer.PlotBasisFunctions = false;
+                    end
                 otherwise
                     Writer = output_writer_FS(InputDirectory, obj.SimulationInput.ProblemName,...
                         simulation.ProductionSystem.Wells.NofInj,   simulation.ProductionSystem.Wells.NofProd,...

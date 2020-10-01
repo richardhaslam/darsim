@@ -32,16 +32,12 @@ classdef bf_updater < handle
                     Mvv = speye(Nv,Nv);
                     % 1D
                     Edges = -slvblk(Mee, Mev);
-                    
+                    % Prolongation Operator
                     MsP = [Edges;...
                            Mvv];
+                    % Correction functions operator
                     MsC = [];
                     
-                    
-                    
-%                     Mee_inv = Mee^-1;
-%                     MsP = [-Mee_inv*Men;...
-%                         speye(Nn,Nn)];                    
                 case (2)
                     % 3. Define face-x (ff,fe,fv) blocks
                     Mff = tildeA(Ni+1:Ni+Nf, Ni+1:Ni+Nf); 
@@ -55,27 +51,13 @@ classdef bf_updater < handle
                     % 6. Compute inverse of (ii), (ff) and (ee) blocks
                     Edges = -slvblk(Mee, Mev);
                     Faces = -slvblk(Mff, Mfe * Edges + Mfv);
-                    
-                    % Prolongation Operator
+                    % 7. Obtaining Prolongation
                     MsP = [Faces;...
                            Edges;...
                            Mvv];
-                    
-                    % Correction functions operator
+                    % 8. Correction functions operator
                     MsC = [];
-%                     Mff_inv = slvblk(Mff, speye(Nf));
-%                     Mee_inv = slvblk(Mee, speye(Ne));
-%                     MsC = [Mff_inv        -Mff_inv*Mfe*Mee_inv      sparse(Nf,Nv);        ...
-%                           sparse(Ne,Nf)               Mee_inv       sparse(Ne,Nv);        ...
-%                           sparse(Nv,Nf)         sparse(Nv,Ne)       sparse(Nv,Nv)];
                     
-%                     Mff_inv = Mff^-1;
-%                     Mee_inv = Mee^-1;
-%                     
-%                     MsP = [Mff_inv*(Mfe*Mee_inv*Men);...
-%                         -Mee_inv*Men;...
-%                         speye(Nn,Nn)];
-
                 case(3)
                     % 2. Define interior-x (ii,if,ie,iv) blocks
                     Mii = tildeA(1:Ni, 1:Ni);
@@ -102,19 +84,8 @@ classdef bf_updater < handle
                            Mvv     ];
                     % 8. Correction functions
                     MsC = [];
-% Old version was slower
-%                     start2 = tic;
-%                     Mii_inv = Mii^-1;
-%                     Mff_inv = Mff^-1;                   
-%                     Mee_inv = Mee^-1;                    
-%                     MsP = [-Mii_inv*(Mif*Mff_inv*Mfe*Mee_inv*Men);...                    
-%                         Mff_inv*(Mfe*Mee_inv*Men);...                    
-%                         -Mee_inv*Men;...                    
-%                         speye(Nn,Nn)];
-%                     time2 =toc(start2)
             end
         end
-        %% Permutation Matrix
         function [P, nii, nff, nee, nvv] = PermutationMatrix(obj, FineGrid, CoarseGrid, cf)
             % The ordering is done based on the dual coarse scale internal data
             %
@@ -141,18 +112,25 @@ classdef bf_updater < handle
             %
             %     iyc = 2 ixc =1                       iyc = 2   ixc =2
             
-            %% 0. Define local variables 
-            nxf = vertcat(FineGrid(1:end).Nx);
-            nyf = vertcat(FineGrid(1:end).Ny);
-            nzf = vertcat(FineGrid(1:end).Nz);
-            nf  = vertcat(FineGrid(1:end).N );
+            %% 0. Define local variables
+            nxf = vertcat(FineGrid.Nx);
+            nyf = vertcat(FineGrid.Ny);
+            nzf = vertcat(FineGrid.Nz);
+            nf  = vertcat(FineGrid.N );
+            if FineGrid(1).CoarseLevel > 0
+                nxf( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+                nyf( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+                nzf( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+                nf ( [FineGrid.hasCoarseNodes] == 0 ) = 0;
+            end
+            
             nxcf = cf(:,1);
             nycf = cf(:,2);
             nzcf = cf(:,3);
- 
-            nxc = vertcat(CoarseGrid(1:end).Nx);
-            nyc = vertcat(CoarseGrid(1:end).Ny);
-            nzc = vertcat(CoarseGrid(1:end).Nz);
+            
+            nxc = vertcat(CoarseGrid.Nx);  nxc( [CoarseGrid.hasCoarseNodes] == 0 ) = 0;
+            nyc = vertcat(CoarseGrid.Ny);  nyc( [CoarseGrid.hasCoarseNodes] == 0 ) = 0;
+            nzc = vertcat(CoarseGrid.Nz);  nzc( [CoarseGrid.hasCoarseNodes] == 0 ) = 0;
             
             %% 1. Define number of cells of each block
             if ~CoarseGrid(1).Vertex_On_Corner
@@ -175,14 +153,22 @@ classdef bf_updater < handle
 
             for m=1:length(FineGrid)
                 % faces
-                nff = nff + (nxcf(m)-1)*(nycf(m)-1)*nxc_hybrid(m)*nyc_hybrid(m)*nzc(m) + ...
-                            (nycf(m)-1)*(nzcf(m)-1)*nyc_hybrid(m)*nzc_hybrid(m)*nxc(m) + ...
-                            (nxcf(m)-1)*(nzcf(m)-1)*nxc_hybrid(m)*nzc_hybrid(m)*nyc(m);
+                if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny > 1
+                    nff = nff + nf(m);
+                else
+                    nff = nff + (nxcf(m)-1)*(nycf(m)-1)*nxc_hybrid(m)*nyc_hybrid(m)*nzc(m) + ...
+                              (nycf(m)-1)*(nzcf(m)-1)*nyc_hybrid(m)*nzc_hybrid(m)*nxc(m) + ...
+                              (nxcf(m)-1)*(nzcf(m)-1)*nxc_hybrid(m)*nzc_hybrid(m)*nyc(m);
+                end
                         
                 % edges
-                nee = nee + (nxcf(m)-1)*nxc_hybrid(m)*nyc(m)*nzc(m) + ...
-                            (nycf(m)-1)*nyc_hybrid(m)*nxc(m)*nzc(m) + ...
-                            (nzcf(m)-1)*nzc_hybrid(m)*nxc(m)*nyc(m);
+                if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny == 1
+                    nee = nee + nf(m);
+                else
+                    nee = nee + (nxcf(m)-1)*nxc_hybrid(m)*nyc(m)*nzc(m) + ...
+                                (nycf(m)-1)*nyc_hybrid(m)*nxc(m)*nzc(m) + ...
+                                (nzcf(m)-1)*nzc_hybrid(m)*nxc(m)*nyc(m);
+                end
                         
                 % verteces
                 nvv = nvv + nxc(m)*nyc(m)*nzc(m);
@@ -197,7 +183,7 @@ classdef bf_updater < handle
             ivv0 = nii + nff + nee;
             
             if ~CoarseGrid(1).Vertex_On_Corner
-                % If the coarse grids are constructed normally (no coarse
+                %% If the coarse grids are constructed normally (no coarse
                 % nodes on the corners)
                 nxd = nxc + 1;
                 nyd = nyc + 1;
@@ -225,26 +211,32 @@ classdef bf_updater < handle
                                                     % internal point
                                                     iii0 = iii0 + 1;
                                                     P(iii0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 4;
                                                 elseif  (ix == 1 && jy == 1 && kz==1)
                                                     % node points
                                                     ivv0 = ivv0 + 1;
                                                     P(ivv0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 1;
                                                 elseif (ix == 1 && jy == 1 && (kz ~=1 || kz~=nzcf(m)))
                                                     % edge xy points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (ix == 1 && kz == 1 && (jy ~=1 || jy~=nycf(m)))
                                                     % edge xz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (jy == 1 && kz == 1 && (ix ~=1 || ix~=nxcf(m)))
                                                     % edge yz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 else
                                                     % face points
                                                     iff0 = iff0 + 1;
                                                     P(iff0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 3;
                                                 end
                                             end
                                         end
@@ -253,9 +245,27 @@ classdef bf_updater < handle
                             end
                         end
                     end
+                    % In case there are no coarse node in this media, all
+                    % the cells are faces (if 2D) or edges (if 1D)
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny > 1
+                        for j = 1 : nyf(m)
+                            for i = 1 : nxf(m)
+                                ijk = sum(nf(1:m-1)) + (j-1) * FineGrid(m).Ny + i;
+                                iff0 = iff0 + 1;
+                                P(iff0, ijk) = 1;
+                            end
+                        end
+                    end
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny == 1
+                        for i = 1 : nxf(m)
+                            ijk = sum(nf(1:m-1)) + i;
+                            iee0 = iee0 + 1;
+                            P(iee0, ijk) = 1;
+                        end
+                    end
                 end
             else
-                % If the coarse nodes are on the corners
+                %% If the coarse nodes are on the corners
                 icen = ceil(nxcf/2);
                 jcen = ceil(nycf/2);
                 kcen = ceil(nzcf/2);
@@ -279,32 +289,56 @@ classdef bf_updater < handle
                                                     % internal point
                                                     iii0 = iii0 + 1;
                                                     P(iii0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 4;
                                                 elseif (ix == icen(m) && jy == jcen(m) && kz == kcen(m))
                                                     % node points
                                                     ivv0 = ivv0 + 1;
                                                     P(ivv0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 1;
                                                 elseif (ix == icen(m) && jy == jcen(m) && kz ~=kcen(m))
                                                     % edge xy points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (ix == icen(m) && kz == kcen(m) && jy ~= jcen(m))
                                                     % edge xz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 elseif (jy == jcen(m) && kz == kcen(m) && ix ~= icen(m))
                                                     % edge yz points
                                                     iee0 = iee0 + 1;
                                                     P(iee0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 2;
                                                 else
                                                     % face points
                                                     iff0 = iff0 + 1;
                                                     P(iff0, ijk) = 1;
+                                                    FineGrid(m).DualCoarseType( ijk - sum(nf(1:m-1)) ) = 3;
                                                 end
                                             end
                                         end
                                     end
                                 end
                             end
+                        end
+                    end
+                    % In case there are no coarse node in this media, all
+                    % the cells are faces (if 2D) or edges (if 1D)
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny > 1
+                        for j = 1 : nyf(m)
+                            for i = 1 : nxf(m)
+                                ijk = sum(nf(1:m-1)) + (j-1) * nyf(m) + i;
+                                iff0 = iff0 + 1;
+                                P(iff0, ijk) = 1;
+                            end
+                        end
+                    end
+                    if CoarseGrid(m).hasCoarseNodes == 0 && FineGrid(m).Ny == 1
+                        for i = 1 : nxf(m)
+                            ijk = sum(nf(1:m-1)) + i;
+                            iee0 = iee0 + 1;
+                            P(iee0, ijk) = 1;
                         end
                     end
                 end
