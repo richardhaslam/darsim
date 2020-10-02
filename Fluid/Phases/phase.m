@@ -59,8 +59,4 @@ classdef phase < matlab.mixin.Heterogeneous & handle
             A.z = spdiags(DiagVecs, DiagIndx, N, N);
         end
     end
-    methods (Abstract)
-        obj = ComputeDensity(obj);
-        obj = ComputeDrhoDp(obj);
-    end
 end

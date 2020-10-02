@@ -17,23 +17,10 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
         function SinglePhase = Flash(obj, Status)
             SinglePhase (:) = 1;
         end
-        function InitializeInjectors(obj, Inj)
-            for i=1:length(Inj)
-                Inj(i).z = 1;
-                Inj(i).x = [1 0];
-                Inj(i).S = 1;
-                for ph=1:obj.NofPhases
-                    Inj(i).rho(:, ph)= obj.Phases(ph).ComputeDensity(Inj(i).p, Inj(i).T);
-                    Inj(i).h(:, ph)= obj.Phases(ph).ComputeEnthalpy(Inj(i).p, Inj(i).T);
-                    mu = obj.Phases(ph).ComputeViscosity(Inj(i).T);   
-                end
-                Inj(i).Mob = 1/mu;   
-            end
-        end
         function ComputePhaseDensities(obj, Status)
             % here you decide how to compute densities as function of P&T
             rho = Status.Properties('rho_1'); 
-            rho.Value = obj.Phases(1).ComputeDensity(Status.Properties('P_1').Value, Status.Properties('T').Value);
+            rho.Value = obj.Phases(1).ComputeDensityBasedOnTemperature(Status.Properties('P_1').Value, Status.Properties('T').Value);
         end
         function AddPhaseConductivities(obj, Status)
             cond = Status.Properties('cond_1');
@@ -85,6 +72,26 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
         end
         function [dhdT,d2hdT2] = ComputeDhDT(obj, Status)
             [dhdT,d2hdT2] = obj.Phases.ComputeDhDT(Status.Properties('P_1').Value, Status.Properties('T').Value);
+        end
+        function InitializeInjectors(obj, Inj)
+            for i=1:length(Inj)
+                Inj(i).z = 1;
+                Inj(i).x = [1 0];
+                Inj(i).S = 1;
+                
+                if strcmp(Inj(i).BC_Formulation, 'Temperature')
+                    Inj(i).h(:, 1) = obj.Phases(1).ComputeWaterEnthalpy(Inj(i).p, Inj(i).T);
+                    Inj(i).rho(:, 1)= obj.Phases(1).ComputeWaterDensity(Inj(i).p, Inj(i).T);
+                    mu = obj.Phases(1).ComputeWaterViscosity(Inj(i).T);
+                elseif strcmp(Inj(i).BC_Formulation, 'Enthalpy')
+                    PhaseIndex = 1; % the phase index "1" refers to water phase
+                    Inj(i).T = obj.Phases(1).ComputeWaterTemperature(Inj(i).p, Inj(i).h(:,1));
+                    Inj(i).rho(:, 1) = obj.Phases(1).ComputeDensityBasedOnEnthalpy(1, PhaseIndex, Inj(i).p, Inj(i).h(:,1)); % the "1" is for water phase
+                    mu = obj.Phases(1).ComputeWaterViscosity(Inj(i).T);
+                end
+                
+                Inj(i).Mob = 1/mu;
+            end
         end
         function v = ComputeVelocity(obj, Reservoir, mu)
 %             virtual call

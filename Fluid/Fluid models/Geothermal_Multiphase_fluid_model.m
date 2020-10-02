@@ -66,7 +66,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
                 % compute density 
                 rho = Status.Properties(['rho_', num2str(i)]);
-                rho.Value = obj.Phases(i).ComputeDensities(i, PhaseIndex, p, h);
+                rho.Value = obj.Phases(i).ComputeDensity(i, PhaseIndex, p, h);
             end
         end        
         function ComputePhaseSaturations(obj, Status)
@@ -237,7 +237,6 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             % Assuming saturation of injection phase is 1.0. We are assuming we are only injecting 1 phase, i.e. water
             for i=1:length(Inj)
                 Inj(i).z = 1;
-%                 Inj(i).S = 1;
                 Inj(i).Mob = zeros(length(Inj(i).p),obj.NofPhases);
                 
                 if strcmp(Inj(i).BC_Formulation, 'Temperature')
@@ -247,7 +246,7 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
                 elseif strcmp(Inj(i).BC_Formulation, 'Enthalpy')
                     PhaseIndex = 1; % the phase index "1" refers to water phase
                     Inj(i).T = obj.Phases(1).ComputeWaterTemperature(Inj(i).p, Inj(i).h(:,1));
-                    Inj(i).rho(:, 1) = obj.Phases(1).ComputeDensities(1, PhaseIndex, Inj(i).p, Inj(i).h(:,1)); % the "1" is for water phase
+                    Inj(i).rho(:, 1) = obj.Phases(1).ComputeDensity(1, PhaseIndex, Inj(i).p, Inj(i).h(:,1)); % the "1" is for water phase
                     mu = obj.Phases(1).ComputeViscosity(1, PhaseIndex, Inj(i).T);
                 end
                 

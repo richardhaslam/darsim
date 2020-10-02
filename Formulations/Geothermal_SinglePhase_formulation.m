@@ -22,7 +22,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
         dMobdT
         d2MobdT2
         dMobdp
-        Cp % fluid specific heat
+        Cp_std % fluid specific heat
         Kf % fluid conductivity
     end
     methods
@@ -72,8 +72,8 @@ classdef Geothermal_SinglePhase_formulation < formulation
         end
         function ComputeProperties(obj, ProductionSystem, FluidModel)
             %% 0. Geothermal Properties
-            obj.Cp = FluidModel.Phases.Cp; % define Cp from simualtion builder
-            obj.Kf = FluidModel.Phases.Kf; % define kf from simualtion builder
+            obj.Cp_std = FluidModel.Phases.Cp_std; % define Cp from simualtion builder
+            obj.Kf     = FluidModel.Phases.Kf; % define kf from simualtion builder
             %% 1. Reservoir Properties
             FluidModel.ComputePhaseDensities(ProductionSystem.Reservoir.State);
             FluidModel.ComputePhaseViscosities(ProductionSystem.Reservoir.State);
@@ -159,8 +159,8 @@ classdef Geothermal_SinglePhase_formulation < formulation
             mv_new = (1 - Medium.Por) * Grid.Volume; % New rock volume
             
             % Accumulation Term
-            U_eff_old = ( rho_old .* obj.Cp .* pv_old + Rho_rock .* Medium.Cpr .* mv_old ) .* T_old;
-            U_eff_new = ( rho_new .* obj.Cp .* pv_new + Rho_rock .* Medium.Cpr .* mv_new ) .* T_new;
+            U_eff_old = ( rho_old .* obj.Cp_std .* pv_old + Rho_rock .* Medium.Cpr .* mv_old ) .* T_old;
+            U_eff_new = ( rho_new .* obj.Cp_std .* pv_new + Rho_rock .* Medium.Cpr .* mv_new ) .* T_new;
             Accumulation = (U_eff_new - U_eff_old)/dt;
             
             % RESIDUAL
@@ -360,7 +360,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
             vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
             vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-            acc = (Grid.Volume/dt) .* ( obj.Cp.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
+            acc = (Grid.Volume/dt) .* ( obj.Cp_std.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
             
             DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
@@ -380,7 +380,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             vecY2 = max(reshape(obj.U{ph,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
             vecZ1 = min(reshape(obj.U{ph,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
             vecZ2 = max(reshape(obj.U{ph,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-            acc = (Grid.Volume/dt) .* ( obj.Cp .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
+            acc = (Grid.Volume/dt) .* ( obj.Cp_std .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
             
             DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
             DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];

@@ -4,15 +4,15 @@
 %Author: Matteo Cusini
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef initializer_MultiPhase < initializer
+classdef Geothermal_MultiPhase_initializer < initializer
     properties
     end
     methods
-        function obj = initializer_MultiPhase(names, values)
+        function obj = Geothermal_MultiPhase_initializer(names, values)
             obj@initializer(names, values);
         end
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
-            disp('Started MultiPhase initialization');
+            disp('Started multiphase geothermal initialization (P-H)');
             
             if isnan(ProductionSystem.Reservoir.State.Properties('hTfluid').Value)
                 P = ProductionSystem.Reservoir.State.Properties('P_2').Value;
@@ -27,10 +27,11 @@ classdef initializer_MultiPhase < initializer
             disp('Initial conditions:')
             
             % Initial status for reservoir:
-            disp(['Pressure:' num2str(max(ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5)), ' bar']);
-            disp(['Enthalpy:']);
-            disp(['Saturation: ', num2str(1), ' (Single Phase)']); % saturation of water and steam
-            disp(['Temperature: ', num2str(ProductionSystem.Reservoir.Temp)]);
+            disp(['Pressure:         ', num2str(max(ProductionSystem.Reservoir.State.Properties('P_1').Value/1e5)), ' [bar]' ]);
+            disp(['Enthalpy:         ', num2str(max(ProductionSystem.Reservoir.State.Properties('hTfluid').Value)), ' [J/Kg]']);
+            disp(['Temperature:      ', num2str(max(ProductionSystem.Reservoir.State.Properties('T').Value      )), ' [K]'   ]);
+            disp(['Water Saturation: ', num2str(max(ProductionSystem.Reservoir.State.Properties('S_1').Value    ))           ]);
+            disp(['Steam Saturation: ', num2str(max(ProductionSystem.Reservoir.State.Properties('S_2').Value    ))           ]);
             disp('---------------------------------------------------------');
             
             disp(newline);

@@ -60,7 +60,7 @@ classdef Geothermal_Multiphase_phase < phase
             % apply correction to size of psat for logical indexing of pressure values
             psat(psat == 0) = [];
         end
-        function rho = ComputeDensities(obj, i, PhaseIndex, p, h)
+        function rho = ComputeDensity(obj, i, PhaseIndex, p, h)
             % The index "i" is "1" for water and "2" for steam.
             for k = 1:3
                 if i == 1                    
@@ -171,7 +171,7 @@ classdef Geothermal_Multiphase_phase < phase
         function T = ComputeWaterTemperature(obj, p, h)
             i = 1; % the "i=1" is for water phase
             PhaseIndex = 1; % the phase index "1" refers to water phase
-            rho = obj.ComputeDensities(i, PhaseIndex, p, h);
+            rho = obj.ComputeDensity(i, PhaseIndex, p, h);
             T = ( (h - obj.uws - p./rho) / obj.Cp_std ) + obj.Tsat;
         end
         function mu = ComputeWaterViscosity(obj, T)
@@ -181,9 +181,5 @@ classdef Geothermal_Multiphase_phase < phase
         function v = ComputeVelocity(obj, p, mu)
             % virtual call
         end
-        function obj = ComputeDensity(obj)
-            % virtual call
-        end
-        
     end
 end

@@ -56,13 +56,13 @@ classdef simulation_builder < handle
                                   ones(N,1).*obj.SimulationInput.InitialConditions.Enthalpy    , ...
                                   ones(N,1).*obj.SimulationInput.InitialConditions.Temperature , ...
                                   ones(N,1).*1                                                   ];
-                    simulation.Initializer = initializer_singlephase(VarNames, VarValues);
+                    simulation.Initializer = Geothermal_SinglePhase_initializer(VarNames, VarValues);
                 case('Geothermal_MultiPhase')
                     VarNames = {'P_2', 'hTfluid', 'T'}; 
                     VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
                                   ones(N,1).*obj.SimulationInput.InitialConditions.Enthalpy , ...
                                   ones(N,1).*obj.SimulationInput.InitialConditions.Temperature];
-                    simulation.Initializer = initializer_MultiPhase(VarNames, VarValues);
+                    simulation.Initializer = Geothermal_MultiPhase_initializer(VarNames, VarValues);
                 case('Compositional')
                     VarNames = {'P_2', 'z_1', 'z_2'};
                     VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
@@ -813,7 +813,7 @@ classdef simulation_builder < handle
                     % Conductivity
                     Phase.Kf = obj.SimulationInput.FluidProperties.FluidConductivity;
                     % Specific Heat
-                    Phase.Cp = obj.SimulationInput.FluidProperties.SpecificHeat;
+                    Phase.Cp_std = obj.SimulationInput.FluidProperties.SpecificHeat;
                     FluidModel.AddPhase(Phase, 1);
                     if Phase.cf0 == 0
                         obj.incompressible = 1;
