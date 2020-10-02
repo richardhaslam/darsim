@@ -36,7 +36,7 @@ classdef simulation_builder < handle
             
             %% Define Initialization procedure
             % Get total number of grid cells
-            N = simulation.DiscretizationModel.ReservoirGrid.N;
+            N = simulation.DiscretizationModel.N;
             % Select FluidModel based on FluidModel keyword
             switch(simulation.FluidModel.name)
                 case('SinglePhase')
@@ -470,9 +470,11 @@ classdef simulation_builder < handle
             
             %% 3. Add Grids to the Discretization Model
             Discretization.AddReservoirGrid(ReservoirGrid);
+            Discretization.N = Discretization.ReservoirGrid.N;
             if obj.SimulationInput.FracturesProperties.Fractured
                 Discretization.AddFracturesGrid(FracturesGrid);
                 Discretization.AddCrossConnections(CrossConnections);
+                Discretization.N = Discretization.N + sum(Discretization.FracturesGrid.N);
             end
         end
         function ProductionSystem = BuildProductionSystem (obj, FractureMatrix, FracturesGrid)
