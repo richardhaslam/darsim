@@ -119,10 +119,8 @@ classdef Geothermal_Singlephase_phase < phase
             h = ( - B + sqrt( B^2 - 4*D*(A+C*(p.*1e1).^2-(T-273.15)) ) ) / (2*D*1e4);
         end
         function T = ComputeWaterTemperature(obj, p, h)
-            i = 1; % the "i=1" is for water phase
-            PhaseIndex = 1; % the phase index "1" refers to water phase
-            rho = obj.ComputeDensityBasedOnEnthalpy(i, PhaseIndex, p, h);
-            T = ( (h - obj.uws - p./rho) / obj.Cp_std ) + obj.Tsat;
+            % This correlation is taken from the function that calculates the temperature in the class "Geothermal_Multiphase_phase".
+            T = 273.15 - 2.41231 + 2.56222e-8.*(h.*1e4) - 9.31415e-17.*(p.*1e1).^2 - 2.2568e-19.*(h.*1e4).^2;
         end
         function mu = ComputeWaterViscosity(obj, T)
             A = 2.414e-5;   B = 247.8;  C = T-140;   D = B./C;   E = 10.^D;            

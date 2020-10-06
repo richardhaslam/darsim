@@ -14,6 +14,11 @@ classdef Geothermal_MultiPhase_initializer < initializer
         function ComputeInitialState(obj, ProductionSystem, FluidModel, Formulation, DiscretizationModel)
             disp('Started multiphase geothermal initialization (P-H)');
             
+            if any(isnan(ProductionSystem.Reservoir.State.Properties('hTfluid').Value)) && ...
+               any(isnan(ProductionSystem.Reservoir.State.Properties('T'      ).Value))
+                error('Both enthalpy and temperature cannot be unknown. Specify an input value for at least one of them.');
+            end
+            
             if isnan(ProductionSystem.Reservoir.State.Properties('hTfluid').Value)
                 P = ProductionSystem.Reservoir.State.Properties('P_2').Value;
                 T = ProductionSystem.Reservoir.State.Properties('T').Value;
@@ -37,7 +42,7 @@ classdef Geothermal_MultiPhase_initializer < initializer
                     T.Value = FluidModel.Phases(1).ComputeWaterTemperature(P, H);
                 end
             else
-                error('Both enthalpy and temperature cannot be unknown. Specify an input value for at least one of them.');
+                error('Both enthalpy and temperature cannot be known. Specify an input value for only one of them (while keeping the other one "nan").');
             end
             
             Formulation.ComputeProperties(ProductionSystem, FluidModel);

@@ -117,10 +117,10 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
         end
         function ComputeRockEnthalpy(obj, Medium)
             Hr = Medium.State.Properties('hRock');
-            Hr.Value = Medium.Cpr .* Medium.State.Properties('T').Value;            
+            Hr.Value = Medium.Cpr .* Medium.State.Properties('T').Value;
         end
         function Mob = ComputePhaseMobilities(obj, Status)
-            S1 = Status.Properties('S_1').Value; 
+            S1 = Status.Properties('S_1').Value;
             Mob = zeros(length(S1), obj.NofPhases);
             kr = obj.RelPermModel.ComputeRelPerm(obj.Phases, S1);
             for i=1:obj.NofPhases

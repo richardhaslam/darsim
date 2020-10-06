@@ -37,7 +37,7 @@ classdef Geothermal_Multiphase_phase < phase
                 3.57154e19.*(p(PhaseIndex == 3).*1e1).^-3 - 1.1725e-37.*(p(PhaseIndex == 3).*1e1).*(h(PhaseIndex == 3).*1e4).^3 + ...
                 -2.26861e43.*(h(PhaseIndex == 3).*1e4).^-4;
             T = T';
-        end        
+        end
         function mu = ComputeViscosity(obj, i, PhaseIndex, T)
             for k = 1:3
                 if i == 1
@@ -169,10 +169,8 @@ classdef Geothermal_Multiphase_phase < phase
             h = ( - B + sqrt( B^2 - 4*D*(A+C*(p.*1e1).^2-(T-273.15)) ) ) / (2*D*1e4);
         end
         function T = ComputeWaterTemperature(obj, p, h)
-            i = 1; % the "i=1" is for water phase
             PhaseIndex = 1; % the phase index "1" refers to water phase
-            rho = obj.ComputeDensity(i, PhaseIndex, p, h);
-            T = ( (h - obj.uws - p./rho) / obj.Cp_std ) + obj.Tsat;
+            T = obj.ComputeTemperature(PhaseIndex, p, h);
         end
         function mu = ComputeWaterViscosity(obj, T)
             A = 2.414e-5;   B = 247.8;  C = T-140;   D = B./C;   E = 10.^D;            
