@@ -360,7 +360,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 InitialConditions.Pressure = str2double(char(obj.InputMatrix(index + 1)));
             else
-                InitialConditions.Pressure = Nan;
+                InitialConditions.Pressure = nan;
             end
             
             temp = strfind(obj.InputMatrix, 'INITIAL_TEMPERATURE');
@@ -368,7 +368,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 InitialConditions.Temperature = str2double(char(obj.InputMatrix(index + 1)));
             else
-                InitialConditions.Temperature = Nan;
+                InitialConditions.Temperature = nan;
             end
             
             temp = strfind(obj.InputMatrix, 'INITIAL_ENTHALPY');
@@ -376,7 +376,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 InitialConditions.Enthalpy = str2double(char(obj.InputMatrix(index + 1)));
             else
-                InitialConditions.Enthalpy = Nan;
+                InitialConditions.Enthalpy = nan;
             end
             
             temp = strfind(obj.InputMatrix, 'INITIAL_SATURATION_1');
@@ -384,7 +384,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 InitialConditions.Saturation_1 = str2double(char(obj.InputMatrix(index + 1)));
             else
-                InitialConditions.Saturation_1 = Nan;
+                InitialConditions.Saturation_1 = nan;
             end
             
             temp = strfind(obj.InputMatrix, 'INITIAL_SATURATION_2');
@@ -392,7 +392,7 @@ classdef reader_darsim2 < reader
             if ~isempty(index)
                 InitialConditions.Saturation_2 = str2double(char(obj.InputMatrix(index + 1)));
             else
-                InitialConditions.Saturation_2 = Nan;
+                InitialConditions.Saturation_2 = nan;
             end
         end
         function WellsInfo = ReadWellsInfo(obj, SimulationInput)

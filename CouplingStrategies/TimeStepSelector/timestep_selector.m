@@ -92,9 +92,9 @@ classdef timestep_selector < handle
             end
         end
         function Update(obj, dt, itCount, chops)
-            if itCount <= 20 && chops < 1
+            if itCount <= 45 && chops < 1
                obj.NextDt = 2*dt;
-            elseif itCount > 23 || chops > 1
+            elseif itCount > 50 || chops > 1
                obj.NextDt = dt/2;
             else
                obj.NextDt = dt;

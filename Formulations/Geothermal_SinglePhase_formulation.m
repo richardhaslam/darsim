@@ -971,7 +971,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 b = Prod(i).Cells;                
                 dQdp = Prod(i).ComputeWellMassFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dMobdp, obj.NofPhases); 
                 dQdT = Prod(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.dMobdT, obj.drhodT, obj.NofPhases);
-                dQhdp = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dMobdp, obj.NofPhases); 
+                dQhdp = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dhdp, obj.dMobdp, obj.NofPhases); 
                 dQhdT = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.dMobdT, obj.drhodT, obj.dhdT, obj.NofPhases);
                 for j=1:length(b)
                     % add derivative of prod well to Jpp & JpT
