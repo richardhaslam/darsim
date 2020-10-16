@@ -9,10 +9,12 @@
 classdef Geothermal_MultiPhase_formulation < formulation
     properties
         MatrixAssembler
+        dhpdp
         dMobdp
-        %dSdp
+        dSdp
         dTdp
         %d2Td2p
+        dhpdh
         drhodh
         dMobdh
         dSdh
@@ -95,34 +97,38 @@ classdef Geothermal_MultiPhase_formulation < formulation
         function ComputeDerivatives(obj, ProductionSystem, FluidModel)
             %% 1. Reservoir Derivatives
             %%% Derivatives with respect to Pressure
+            obj.dhpdp  = FluidModel.ComputeDhpDp(ProductionSystem.Reservoir.State);
             obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State); 
-            obj.dMobdp = FluidModel.ComputeDMobDp(ProductionSystem.Reservoir.State);    % re-evaluate
-            %obj.dSdp  = FluidModel.ComputeDSDp(ProductionSystem.Reservoir.State);
             obj.dTdp   = FluidModel.ComputeDTDp(ProductionSystem.Reservoir.State);
+            obj.dSdp  = FluidModel.ComputeDSDp(ProductionSystem.Reservoir.State);
+            obj.dMobdp = FluidModel.ComputeDMobDp(ProductionSystem.Reservoir.State);    % re-evaluate
             %obj.d2Td2p = FluidModel.ComputeD2TD2p(ProductionSystem.Reservoir.State);
             
             %%% Derivatives with respect to Enthalpy
+            obj.dhpdh  = FluidModel.ComputeDhpDh(ProductionSystem.Reservoir.State);
             obj.drhodh = FluidModel.ComputeDrhoDh(ProductionSystem.Reservoir.State); 
-            obj.dMobdh = FluidModel.ComputeDMobDh(ProductionSystem.Reservoir.State);   % re-evaluate
-            obj.dSdh   = FluidModel.ComputeDSDh(ProductionSystem.Reservoir.State);
             obj.dTdh   = FluidModel.ComputeDTDh(ProductionSystem.Reservoir.State);
+            obj.dSdh   = FluidModel.ComputeDSDh(ProductionSystem.Reservoir.State);
+            obj.dMobdh = FluidModel.ComputeDMobDh(ProductionSystem.Reservoir.State);   % re-evaluate
             %obj.d2Td2h = FluidModel.ComputeD2TD2h(ProductionSystem.Reservoir.State);
             
             
             %% 2. Fractures Derivatives
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 %%% Derivatives with respect to Pressure
+                obj.dhpdp  = [obj.dhpdp; FluidModel.ComputeDhpDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
                 obj.drhodp = [obj.drhodp; FluidModel.ComputeDrhoDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
-                obj.dMobdp = [obj.dMobdp; FluidModel.ComputeDMobDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];    % re-evaluate
-                %obj.dSdp  = [obj.dSdp  ; FluidModel.ComputeDSDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
                 obj.dTdp   = [obj.dTdp  ; FluidModel.ComputeDTDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
+                obj.dSdp  = [obj.dSdp  ; FluidModel.ComputeDSDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];
+                obj.dMobdp = [obj.dMobdp; FluidModel.ComputeDMobDp(ProductionSystem.FracturesNetwork.Fractures(f).State)];    % re-evaluate
                 %obj.d2Td2p = [obj.d2Td2p; FluidModel.ComputeD2TD2p(ProductionSystem.FracturesNetwork.Fractures(f).State)];
                 
                 %%% Derivatives with respect to Enthalpy
+                obj.dhpdh  = [obj.dhpdh; FluidModel.ComputeDhpDh(ProductionSystem.FracturesNetwork.Fractures(f).State)];
                 obj.drhodh = [obj.drhodh; FluidModel.ComputeDrhoDh(ProductionSystem.FracturesNetwork.Fractures(f).State)];
-                obj.dMobdh = [obj.dMobdh; FluidModel.ComputeDMobDh(ProductionSystem.FracturesNetwork.Fractures(f).State)];   % re-evaluate
-                obj.dSdh   = [obj.dSdh;   FluidModel.ComputeDSDh(ProductionSystem.FracturesNetwork.Fractures(f).State)];
                 obj.dTdh   = [obj.dTdh;   FluidModel.ComputeDTDh(ProductionSystem.FracturesNetwork.Fractures(f).State)];
+                obj.dSdh   = [obj.dSdh;   FluidModel.ComputeDSDh(ProductionSystem.FracturesNetwork.Fractures(f).State)];
+                obj.dMobdh = [obj.dMobdh; FluidModel.ComputeDMobDh(ProductionSystem.FracturesNetwork.Fractures(f).State)];   % re-evaluate
                 %obj.d2Td2h = [obj.d2Td2h; FluidModel.ComputeD2TD2h(ProductionSystem.FracturesNetwork.Fractures(f).State)];
             end
         end
@@ -208,6 +214,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
             for ph=1:obj.NofPhases % Loop over the phases
                 h_old   = State0.Properties(['h_',num2str(ph)]).Value(Index);
+%                 hTfluid_old = State0.Properties(['h_',num2str(ph)]).Value(Index);
                 rho_old = State0.Properties(['rho_',num2str(ph)]).Value(Index);
                 S_old   = State0.Properties(['S_',num2str(ph)]).Value(Index);
                 
@@ -367,7 +374,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 % Derivative of Fluid Accumulation
                 vec = (Grid.Volume/dt) .* ( ...
                                             dphidp .* rho                  .* S + ...
-                                            phi    .* obj.drhodp(Index,ph) .* S ...
+                                            phi    .* obj.drhodp(Index,ph) .* S + ...
+                                            phi    .* rho                  .* obj.dSdp(Index, ph) ...
                                            );
                 
                 Derivative_Accumulation_Fluid = Derivative_Accumulation_Fluid + spdiags(vec, 0, N, N);
@@ -481,12 +489,15 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Medium.ComputeDerPorosity(Medium.State.Properties('P_2').Value);
             dphidp = Medium.DPor;
             
+            % Energy accumulation in rock
+            T = Medium.State.Properties('T').Value;
+            rhoRock = Medium.Rho;
+            Cpr = Medium.Cpr;
+
             %% J_EB_P Block
             % Derivative of Rock Energy Accumulation
-            hRock = Medium.State.Properties('hRock').Value; 
-            rhoRock = Medium.Rho;
-            
-            vec = (Grid.Volume/dt) .* (-1) .* dphidp .* rhoRock .* hRock; 
+            vec = (Grid.Volume/dt) .* ( (-1) .* dphidp .* rhoRock .* Cpr .* T + ...
+                                        (1 - phi) .* rhoRock .* Cpr .* obj.dTdp(Index) ); 
             Derivative_Accumulation_Rock = spdiags(vec, 0, N, N);
 
             % Phase dependent derivatives
@@ -502,14 +513,15 @@ classdef Geothermal_MultiPhase_formulation < formulation
             for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
                 h = Medium.State.Properties(['h_',num2str(ph)]).Value;
+                hTfluid = Medium.State.Properties('hTfluid').Value;
                 S = Medium.State.Properties(['S_',num2str(ph)]).Value;
 
                 % Derivative of Fluid Energy Accumulation
                 vec = (Grid.Volume/dt) .* ( ...
-                                            dphidp .* rho                  .* S                  .* h + ... % should be phase enthalpy h
-                                            phi    .* obj.drhodp(Index,ph) .* S                  .* h );%+ ...
-                                            %phi    .* rho                  .* obj.dSdp(Index,ph) .* h ...
-                                           %);
+                                            dphidp .* rho                  .* S                  .* hTfluid + ... 
+                                            phi    .* obj.drhodp(Index,ph) .* S                  .* hTfluid + ...
+                                            phi    .* rho                  .* obj.dSdp(Index,ph) .* hTfluid ...
+                                           );
 
                 Derivative_Accumulation_Fluid = Derivative_Accumulation_Fluid + spdiags(vec,0,N,N);
 
@@ -519,11 +531,17 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                 % (Derivative of Transmissibility Term) x (P_nu)
                 dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h + ...
-                                               obj.dMobdp(Index, ph) .* rho                   .* h  );   % ADD DhDp AS h IS FUNCTION OF Pressure...??                                               
+                                               obj.dMobdp(Index, ph) .* rho                   .* h + ...
+                                               obj.Mob(Index, ph)    .* rho                   .* obj.dhpdp(Index, ph) ...
+                                              );                                                
                 dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h + ...
-                                               obj.dMobdp(Index, ph) .* rho                   .* h  );
+                                               obj.dMobdp(Index, ph) .* rho                   .* h + ...
+                                               obj.Mob(Index, ph)    .* rho                   .* obj.dhpdp(Index, ph) ...
+                                              );
                 dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index, ph)    .* obj.drhodp(Index, ph) .* h + ...
-                                               obj.dMobdp(Index, ph) .* rho                   .* h  );
+                                               obj.dMobdp(Index, ph) .* rho                   .* h + ...
+                                               obj.Mob(Index, ph)    .* rho                   .* obj.dhpdp(Index, ph) ...
+                                              );
                 
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -556,8 +574,9 @@ classdef Geothermal_MultiPhase_formulation < formulation
                       
             %% J_EB_H Block
             % Derivative of Rock Energy Accumulation
-            
-            
+            vec = (Grid.Volume/dt) .* ( (1 - phi) .* rhoRock .* Cpr .* obj.dTdh(Index) ); 
+            Derivative_Accumulation_Rock = spdiags(vec, 0, N, N);
+
             % Phase dependent derivatives
             % Initialize derivatives
             Derivative_Accumulation_Fluid = sparse(N,N);
@@ -567,7 +586,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
 %             Derivative_Conductive_Transmissibility = sparse(N,N);
             
             % Total Fluid Enthalpy 
-%             hTfluid = Medium.State.Properties('hTfluid').Value;
+            hTfluid = Medium.State.Properties('hTfluid').Value;
             
             for ph=1:obj.NofPhases % loop over all phases
                 rho = Medium.State.Properties(['rho_', num2str(ph)]).Value;
@@ -576,8 +595,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
 
                 % Derivative of Fluid Energy Accumulation
                 vec = (Grid.Volume/dt) .* ( ...
-                                            phi .* obj.drhodh(Index,ph) .* S              .* h + ...
-                                            phi .* rho              .* obj.dSdh(Index,ph) .* h + ...
+                                            phi .* obj.drhodh(Index,ph) .* S              .* hTfluid + ...
+                                            phi .* rho              .* obj.dSdh(Index,ph) .* hTfluid + ...
                                             phi .* rho              .* S                  .* 1 ... 
                                           );           
                 % *** This is the part where phi*rho*S was added to the accumulation term TWICE ***
@@ -591,13 +610,16 @@ classdef Geothermal_MultiPhase_formulation < formulation
                 % (Derivative of Transmissibility Term) x (P_nu)
                 dMupx = obj.UpWind{ph,1+f}.x*( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) .* h + ...
                                                obj.dMobdh(Index, ph) .* rho                   .* h + ...
-                                               obj.Mob(Index, ph)    .* rho                   .* 1 );
+                                               obj.Mob(Index, ph)    .* rho                   .* obj.dhpdh(Index, ph) ...
+                                              );
                 dMupy = obj.UpWind{ph,1+f}.y*( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) .* h + ...
                                                obj.dMobdh(Index, ph) .* rho                   .* h + ...
-                                               obj.Mob(Index, ph)    .* rho                   .* 1 );
+                                               obj.Mob(Index, ph)    .* rho                   .* obj.dhpdh(Index, ph) ...
+                                              );
                 dMupz = obj.UpWind{ph,1+f}.z*( obj.Mob(Index, ph)    .* obj.drhodh(Index, ph) .* h + ...
                                                obj.dMobdh(Index, ph) .* rho                   .* h + ...
-                                               obj.Mob(Index, ph)    .* rho                   .* 1 );
+                                               obj.Mob(Index, ph)    .* rho                   .* obj.dhpdh(Index, ph) ...
+                                              );
 
                 % Because of multiplication with velocity obj.U, we are multiplying it with grad(P^nu).
                 vecX1 = min(reshape(obj.U{ph,1+f}.x(1:Nx,:,:), N, 1), 0)   .* dMupx;
@@ -623,7 +645,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
 %             Derivative_Conductive_Transmissibility = Derivative_Conductive_Transmissibility ;%+ obj.Tk{1,1+f} .* obj.d2Td2h .* hTfluid;
 
             % construction of J_EB_P 
-            J_EB_H = J_EB_H + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
+            J_EB_H = J_EB_H + Derivative_Accumulation_Rock + Derivative_Accumulation_Fluid + Convective_Transmissibility + ...
                               Derivative_Convective_Transmissibility + Conductive_Transmissibility;
                                         
             % Add Source Term to all Jacobian blocks
@@ -1176,8 +1198,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
             %Producers
             for i=1:length(Prod)
                 b = Prod(i).Cells;
-                dQhdp = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dMobdp, obj.NofPhases);
-                dQhdh = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(State, K, obj.Mob, obj.drhodh, obj.dMobdh, obj.NofPhases);
+                dQhdp = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dhpdp, obj.dMobdp, obj.NofPhases);
+                dQhdh = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(State, K, obj.Mob, obj.drhodh, obj.dhpdh, obj.dMobdh, obj.NofPhases);
                 for ph=1:obj.NofPhases
                     for j=1:length(b)
                         % add derivative of prod well to J_EB_P & J_EB_H
