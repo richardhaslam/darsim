@@ -71,9 +71,9 @@ classdef bf_updater_ms < bf_updater
             
             % Correcting for pEDFM connectivities
             Reduction = 1/obj.pEDFM_MaxContrast;
-            Tx_Alpha = FineGrid.Tx_Alpha(2:Nx,:,:);
-            Ty_Alpha = FineGrid.Ty_Alpha(:,2:Ny,:);
-            Tz_Alpha = FineGrid.Tz_Alpha(:,:,2:Nz);
+            Tx_Alpha = FineGrid.pEDFM_alpha_Tx(2:Nx,:,:);
+            Ty_Alpha = FineGrid.pEDFM_alpha_Ty(:,2:Ny,:);
+            Tz_Alpha = FineGrid.pEDFM_alpha_Tz(:,:,2:Nz);
             Tx_Alpha( Tx_Alpha>(1-Reduction) ) = Tx_Alpha( Tx_Alpha>(1-Reduction)) .* (1-Reduction);
             Ty_Alpha( Ty_Alpha>(1-Reduction) ) = Ty_Alpha( Ty_Alpha>(1-Reduction)) .* (1-Reduction);
             Tz_Alpha( Tz_Alpha>(1-Reduction) ) = Tz_Alpha( Tz_Alpha>(1-Reduction)) .* (1-Reduction);

@@ -60,9 +60,6 @@ classdef cartesian_grid < grid_darsim
             obj.Volume = obj.dx * obj.dy * obj.dz;
             obj.AssignNeighbours();
             obj.ComputeRockTransmissibilities(Reservoir.K);
-            if ~isempty(Reservoir.K_Cond_eff)
-                obj.ComputeRockHeatConductivities(Reservoir.K_Cond_eff);
-            end
             obj.CoarseFactor = [1, 1, 1];
             obj.DualCoarseType = zeros(obj.N, 1);
             obj.Children = cell(obj.N, 1);

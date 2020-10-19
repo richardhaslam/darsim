@@ -741,7 +741,7 @@ classdef reader_darsim2 < reader
                 
                 % Reading the contraint of well
                 Well.Constraint.Name = char(WellInputMatrix(constraint+1));
-                Well.Constraint.value = str2double(WellInputMatrix(constraint+2));
+                Well.Constraint.Value = str2double(WellInputMatrix(constraint+2));
                 
                 % Reading the formula type of well
                 Well.Formula.Type = char(WellInputMatrix(formula+1));
@@ -864,11 +864,11 @@ classdef reader_darsim2 < reader
                 % ADM settings for reservoir
                 temp = strfind(obj.SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
-                SimulatorSettings.ADMSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.ADMSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NumOfFrac, 1);
                 SimulatorSettings.ADMSettings.maxLevel(1) = str2double(obj.SettingsMatrix(x+1));
-                SimulatorSettings.ADMSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.ADMSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NumOfFrac, 1);
                 SimulatorSettings.ADMSettings.CoarseningSwitch(1) = 1;
-                SimulatorSettings.ADMSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NrOfFrac, 3, SimulatorSettings.ADMSettings.maxLevel(1) );
+                SimulatorSettings.ADMSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NumOfFrac, 3, SimulatorSettings.ADMSettings.maxLevel(1) );
                 temp = strfind(obj.SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
                 cx = str2double(obj.SettingsMatrix(x+1));
@@ -945,11 +945,11 @@ classdef reader_darsim2 < reader
                 end
                 
                 % ADM settings in the fractures
-                if SimulationInput.FracturesProperties.Fractured
-                    NrOfFrac = SimulationInput.FracturesProperties.NrOfFrac;
+                if SimulationInput.FracturesProperties.isFractured
+                    NumOfFrac = SimulationInput.FracturesProperties.NumOfFrac;
                     temp = strfind(obj.FractureMatrix, 'PROPERTIES');
                     frac_index = find(~cellfun('isempty', temp));
-                    for f = 1 : NrOfFrac
+                    for f = 1 : NumOfFrac
                         frac_info_split = strsplit(obj.FractureMatrix{frac_index(f)},' ');
                         ADM_temp = regexprep(frac_info_split{9},' ' ,'');
                         ADM_temp = strsplit(ADM_temp, { '[' , ',' , ']' });
@@ -974,11 +974,11 @@ classdef reader_darsim2 < reader
                 SimulatorSettings.DiscretizationModel = 'MMs';
                 temp = strfind(obj.SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
-                SimulatorSettings.MMsSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.MMsSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NumOfFrac, 1);
                 SimulatorSettings.MMsSettings.maxLevel(1) = str2double(obj.SettingsMatrix(x+1));
-                SimulatorSettings.MMsSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NrOfFrac, 1);
+                SimulatorSettings.MMsSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NumOfFrac, 1);
                 SimulatorSettings.MMsSettings.CoarseningSwitch(1) = 1;
-                SimulatorSettings.MMsSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NrOfFrac, 3, SimulatorSettings.MMsSettings.maxLevel(1) );
+                SimulatorSettings.MMsSettings.Coarsening = zeros( 1+SimulationInput.FracturesProperties.NumOfFrac, 3, SimulatorSettings.MMsSettings.maxLevel(1) );
                 temp = strfind(obj.SettingsMatrix, 'COARSENING_RATIOS');
                 x = find(~cellfun('isempty', temp));
                 cx = str2double(obj.SettingsMatrix(x+1));
@@ -1044,11 +1044,11 @@ classdef reader_darsim2 < reader
                 end
                 
                 % MMs settings in fractures
-                if SimulationInput.FracturesProperties.Fractured
-                    NrOfFrac = SimulationInput.FracturesProperties.NrOfFrac;
+                if SimulationInput.FracturesProperties.isFractured
+                    NumOfFrac = SimulationInput.FracturesProperties.NumOfFrac;
                     temp = strfind(obj.FractureMatrix, 'PROPERTIES');
                     frac_index = find(~cellfun('isempty', temp));
-                    for f = 1 : NrOfFrac
+                    for f = 1 : NumOfFrac
                         frac_info_split = strsplit(obj.FractureMatrix{frac_index(f)},' ');
                         MMs_temp = regexprep(frac_info_split{9},' ' ,'');
                         MMs_temp = strsplit(MMs_temp, { '[' , ',' , ']' });

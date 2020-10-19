@@ -14,6 +14,7 @@ classdef convergence_checker < handle
         OldResidual
         FirstResidualNorm
         ResidualNorm
+        RHSNorm
         FirstRHS
         FirstRHSNorm
     end

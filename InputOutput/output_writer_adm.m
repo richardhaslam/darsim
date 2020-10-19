@@ -13,7 +13,7 @@ classdef output_writer_adm < output_writer
     methods
         function obj = output_writer_adm(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_previous_reports, n_comp)
             obj@output_writer(dir, problem, n_inj, n_prod, n_timers,  n_stats, n_previous_reports, n_comp);
-            obj.basisfunctions = false;
+            obj.PlotBasisFunctions = false;
             obj.dynamicBF = false;
         end
         function PlotSolution(obj, ProductionSystem, DiscretizationModel)

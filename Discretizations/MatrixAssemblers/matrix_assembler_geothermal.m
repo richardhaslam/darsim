@@ -5,15 +5,7 @@
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef matrix_assembler_geothermal < matrix_assembler
-<<<<<<< HEAD
-=======
-    % This is a subclass of the matrix_assembler class, therefore you only
-    % have to define the HeatTransmissibilityMatrix() function as the
-    % regular one is in the super-class
-    
->>>>>>> 12-geothermal-multiphase
     properties
-        
     end
     methods
 <<<<<<< HEAD

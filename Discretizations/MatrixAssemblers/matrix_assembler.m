@@ -6,10 +6,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef matrix_assembler < handle
     properties
-        
     end
     methods
-<<<<<<< HEAD
         function [Tph, Gph] = TransmissibilityMatrix(obj, Grid, Upwind, Mob, rho, RhoInt)
             switch class(Grid)
                 case('corner_point_grid')
@@ -24,7 +22,7 @@ classdef matrix_assembler < handle
                     
                     % Gravity Matrix
                     Gph = Grid.ConnectivityMatrix * spdiags(Grid.Trans.*RhoInt        ,0,N_Faces,N_Faces) * Grid.ConnectivityMatrix';
-
+                    
                 case('cartesian_grid')
                     Nx = Grid.Nx;
                     Ny = Grid.Ny;
@@ -56,65 +54,18 @@ classdef matrix_assembler < handle
                     Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt.z(:,:,2:Grid.Nz);
                     Gph = obj.ReshapeCartesianTransmisibility(Nx, Ny, Nz, N, Tx, Ty, Tz);
             end
-=======
-        function [Tph, Gph] = TransmissibilityMatrix(obj, Grid, UpWind, Mob, rho, RhoInt)
-            Nx = Grid.Nx;
-            Ny = Grid.Ny;
-            Nz = Grid.Nz;
-            
-            % Transmissibility matrix construction
-            Tx = zeros(Nx+1, Ny, Nz);
-            Ty = zeros(Nx, Ny+1, Nz);
-            Tz = zeros(Nx, Ny, Nz+1);
-            
-            % Apply upwind operator
-            Mupx = UpWind.x*(Mob .* rho);
-            Mupy = UpWind.y*(Mob .* rho);
-            Mupz = UpWind.z*(Mob .* rho);
-            Mupx = reshape(Mupx, Nx, Ny, Nz);
-            Mupy = reshape(Mupy, Nx, Ny, Nz);
-            Mupz = reshape(Mupz, Nx, Ny, Nz);
-            
-            % Transmisibility Matrix
-            Tx(2:Nx,:,:)= Grid.Tx(2:Nx,:,:).*Mupx(1:Nx-1,:,:);
-            Ty(:,2:Ny,:)= Grid.Ty(:,2:Ny,:).*Mupy(:,1:Ny-1,:);
-            Tz(:,:,2:Nz)= Grid.Tz(:,:,2:Nz).*Mupz(:,:,1:Nz-1);
-            Tph = obj.ReshapeTransmissibility(Grid, Tx, Ty, Tz);
-            
-            % Gravity Matrix
-            Tx(2:Grid.Nx,:,:)= Tx(2:Grid.Nx,:,:) .* RhoInt.x(2:Grid.Nx,:,:);
-            Ty(:,2:Grid.Ny,:)= Ty(:,2:Grid.Ny,:) .* RhoInt.y(:,2:Grid.Ny,:);
-            Tz(:,:,2:Grid.Nz)= Tz(:,:,2:Grid.Nz) .* RhoInt.z(:,:,2:Grid.Nz);
-            Gph = obj.ReshapeTransmissibility(Grid, Tx, Ty, Tz);
-        end
-        function T = ReshapeTransmissibility(obj, Grid, Tx, Ty, Tz) 
-            Nx = Grid.Nx;
-            Ny = Grid.Ny;
-            Nz = Grid.Nz;
-            N = Grid.N;
-            
-            x1 = reshape(Tx(1:Nx,:,:), N, 1);
-            x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
-            y1 = reshape(Ty(:,1:Ny,:), N, 1);
-            y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
-            z1 = reshape(Tz(:,:,1:Nz), N, 1);
-            z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
-            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
-            DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-            T = spdiags(DiagVecs,DiagIndx,N,N);
->>>>>>> 12-geothermal-multiphase
         end
         function T_Matrix = ReshapeCartesianTransmisibility(obj, Nx, Ny, Nz, N, Tx, Ty, Tz) % remove function - end
-                x1 = reshape( Tx(1:Nx  ,:     ,:     ) , N , 1 );
-                x2 = reshape( Tx(2:Nx+1,:     ,:     ) , N , 1 );
-                y1 = reshape( Ty(:     ,1:Ny  ,:     ) , N , 1 );
-                y2 = reshape( Ty(:     ,2:Ny+1,:     ) , N , 1 );
-                z1 = reshape( Tz(:     ,:     ,1:Nz  ) , N , 1 );
-                z2 = reshape( Tz(:     ,:     ,2:Nz+1) , N , 1 );
-                DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
-                DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
-                T_Matrix = spdiags(DiagVecs,DiagIndx,N,N);
-            end
+            x1 = reshape( Tx(1:Nx  ,:     ,:     ) , N , 1 );
+            x2 = reshape( Tx(2:Nx+1,:     ,:     ) , N , 1 );
+            y1 = reshape( Ty(:     ,1:Ny  ,:     ) , N , 1 );
+            y2 = reshape( Ty(:     ,2:Ny+1,:     ) , N , 1 );
+            z1 = reshape( Tz(:     ,:     ,1:Nz  ) , N , 1 );
+            z2 = reshape( Tz(:     ,:     ,2:Nz+1) , N , 1 );
+            DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
+            DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
+            T_Matrix = spdiags(DiagVecs,DiagIndx,N,N);
+        end
         function Vr = ViscousMatrix(obj, Grid, Qwells, Utot)
             %Builds Upwind Flux matrix
             Nx = Grid.Nx;
@@ -148,7 +99,7 @@ classdef matrix_assembler < handle
             Vr = spdiags(DiagVecs, DiagIndx, N, N);
         end
         function [Ths, UPc, Ghs] = TransmissibilityforS(obj, Grid, UpWind, vect, rho, Pc, RhoIntC)
-            RhoInt.x = (RhoIntC{1,1}.x - RhoIntC{2,1}.x); 
+            RhoInt.x = (RhoIntC{1,1}.x - RhoIntC{2,1}.x);
             RhoInt.y = (RhoIntC{1,1}.y - RhoIntC{2,1}.y);
             RhoInt.z = (RhoIntC{1,1}.z - RhoIntC{2,1}.z);
             
@@ -160,12 +111,11 @@ classdef matrix_assembler < handle
             Pc = reshape(Pc, Nx, Ny, Nz);
             depth = reshape(Grid.Depth, Nx, Ny, Nz);
             
-            %
             Ugx = zeros(Nx+1, Ny, Nz);
             Ugy = zeros(Nx, Ny+1, Nz);
             Ugz = zeros(Nx, Ny, Nz+1);
-            Ugx(2:Nx,:,:) = (depth(1:Nx-1,:,:) - depth(2:Nx,:,:)) .* RhoInt.x(2:Nx,:,:); 
-            Ugy(:,2:Ny,:) = (depth(:,1:Ny-1,:) - depth(:,2:Ny,:)) .* RhoInt.y(:,2:Ny,:);      
+            Ugx(2:Nx,:,:) = (depth(1:Nx-1,:,:) - depth(2:Nx,:,:)) .* RhoInt.x(2:Nx,:,:);
+            Ugy(:,2:Ny,:) = (depth(:,1:Ny-1,:) - depth(:,2:Ny,:)) .* RhoInt.y(:,2:Ny,:);
             Ugz(:,:,2:Nz) = (depth(:,:,1:Nz-1) - depth(:,:,2:Nz)) .* RhoInt.z(:,:,2:Nz);
             
             %% Compute  fluxes ([m^3/s])
@@ -176,13 +126,13 @@ classdef matrix_assembler < handle
             UPc.y(:,2:Ny,:) = -(Pc(:,1:Ny-1,:)-Pc(:,2:Ny,:)) .* Grid.Ty(:,2:Ny,:) - Grid.Ty(:,2:Ny,:) .* Ugy(:,2:Ny,:);
             UPc.z(:,:,2:Nz) = -(Pc(:,:,1:Nz-1)-Pc(:,:,2:Nz)) .* Grid.Tz(:,:,2:Nz) - Grid.Tz(:,:,2:Nz) .* Ugz(:,:,2:Nz);
             
-
+            
             % Transmissibility matrix construction
             Tx = zeros(Nx+1, Ny, Nz);
             Ty = zeros(Nx, Ny+1, Nz);
             Tz = zeros(Nx, Ny, Nz+1);
             
-    
+            
             Mupx = UpWind.x*(vect .* rho);
             Mupy = UpWind.y*(vect .* rho);
             Mupz = UpWind.z*(vect .* rho);
@@ -205,10 +155,10 @@ classdef matrix_assembler < handle
             DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
             DiagIndx = [-Nx*Ny,-Nx,-1,0,1,Nx,Nx*Ny];
             Ths = spdiags(DiagVecs,DiagIndx,N,N);
- 
-             % Gravity Matrix
+            
+            % Gravity Matrix
             %% Use velocity to build upwind operator
-       
+            
             L = reshape((Ugx(2:Nx+1,:,:) >= 0), N, 1);
             R = reshape((Ugx(1:Nx,:,:) < 0), N, 1);
             B = reshape((Ugy(:,2:Ny+1,:) >= 0), N, 1);
@@ -225,7 +175,7 @@ classdef matrix_assembler < handle
             DiagVecs = [Down, Up];
             DiagIndx = [0, Nx*Ny];
             A.z = spdiags(DiagVecs, DiagIndx, N, N);
-                      % Transmissibility matrix construction
+            % Transmissibility matrix construction
             Tx = zeros(Nx+1, Ny, Nz);
             Ty = zeros(Nx, Ny+1, Nz);
             Tz = zeros(Nx, Ny, Nz+1);
@@ -251,7 +201,7 @@ classdef matrix_assembler < handle
             x1 = reshape(Tx(1:Nx,:,:), N, 1);
             x2 = reshape(Tx(2:Nx+1,:,:), N, 1);
             y1 = reshape(Ty(:,1:Ny,:), N, 1);
-            y2 = reshape(Ty(:,2:Ny+1,:), N, 1);           
+            y2 = reshape(Ty(:,2:Ny+1,:), N, 1);
             z1 = reshape(Tz(:,:,1:Nz), N, 1);
             z2 = reshape(Tz(:,:,2:Nz+1), N, 1);
             DiagVecs = [-z2,-y2,-x2,z2+y2+x2+y1+x1+z1,-x1,-y1,-z1];
@@ -260,4 +210,3 @@ classdef matrix_assembler < handle
         end
     end
 end
-

@@ -4,7 +4,7 @@
 %Author: Matteo Cusini
 %TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Multiscale_Discretization_model < Discretization_model
+classdef Multiscale_Discretization_model < Cartesian_Discretization_model
     properties
         Nf
         Nc

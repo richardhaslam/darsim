@@ -60,7 +60,7 @@ classdef producer_pressure < producer
             for i = 1:NofPhases
                 p   = State.Properties(['P_'  , num2str(i)]).Value;
                 rho = State.Properties(['rho_', num2str(i)]).Value;
-                dQdS(:, i) = rho(obj.Cells) .* dMob(obj.Cells, i) * obj.PI .* K(obj.Cells).* (obj.p - p(obj.Cells));
+                dQdS(:, i) = rho(obj.Cells) .* dMob(obj.Cells, i) .* obj.PI .* K(obj.Cells).* (obj.p - p(obj.Cells));
             end
         end
         function dQdT = ComputeWellMassFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, dMobdT, drhodT, NofPhases) % need perforated cell properties

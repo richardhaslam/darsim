@@ -122,7 +122,7 @@ classdef simulation_builder < handle
                             prolongationbuilder = prolongation_builder_constant(ADMSettings.maxLevel(1));
                         otherwise
                             prolongationbuilder = prolongation_builder_MSPressure(ADMSettings.maxLevel(1), ADMSettings.Coarsening(:,:,1));
-                            if ~obj.SimulationInput.FracturesProperties.Fractured
+                            if ~obj.SimulationInput.FracturesProperties.isFractured
                                 switch obj.SimulatorSettings.Formulation
                                     case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                                         prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
@@ -199,7 +199,7 @@ classdef simulation_builder < handle
                     % Create the operatorshandler
                     operatorshandler = operators_handler_MMs(MMsSettings.Coarsening(1,:,:));
                     prolongationbuilder = prolongation_builder_MSPressure(MMsSettings.maxLevel(1), MMsSettings.Coarsening(:,:,1) );
-                    if ~obj.SimulationInput.FracturesProperties.Fractured
+                    if ~obj.SimulationInput.FracturesProperties.isFractured
                         switch obj.SimulatorSettings.Formulation
                             case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
                                 prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
@@ -250,7 +250,7 @@ classdef simulation_builder < handle
             %% 3. Add Grids to the Discretization Model
             Discretization.AddReservoirGrid(ReservoirGrid);
             Discretization.N = Discretization.ReservoirGrid.N;
-            if obj.SimulationInput.FracturesProperties.Fractured
+            if obj.SimulationInput.FracturesProperties.isFractured
                 Discretization.AddFracturesGrid(FracturesGrid);
                 Discretization.AddCrossConnections(CrossConnections);
                 Discretization.N = Discretization.N + sum(Discretization.FracturesGrid.N);
@@ -457,17 +457,21 @@ classdef simulation_builder < handle
                     otherwise
                         Temperature = Tres;
                 end
+                Coordinate = obj.SimulationInput.WellsInfo.Inj(i).Coordinate;
                 switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.Name)
                     case('PRESSURE')
                         pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.Value;
-                        Injector = injector_pressure(PI, coord, pressure, Temperature, n_phases);
-                        Injector.h = Enthalpy;
-                        Injector.BC_Formulation = BC_Formulation;
+                        Injector = injector_pressure(PI, Coordinate, pressure, Temperature, n_phases);
+                        switch (obj.SimulationInput.FluidProperties.FluidModel)
+                            case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                                Injector.h = Enthalpy;
+                                Injector.BC_Formulation = BC_Formulation;
+                        end
                     case('rate')
                         rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.Value;
                         p_init = obj.SimulationInput.InitialConditions.Pressure;
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
-                        Injector = injector_rate(PI, coord, rate, p_init, Temperature, n_phases);
+                        Injector = injector_rate(PI, Coordinate, rate, p_init, Temperature, n_phases);
                 end
                 Wells.AddInjector(Injector);
             end
@@ -1093,11 +1097,11 @@ classdef simulation_builder < handle
             end
             
             switch(obj.SimulatorSettings.DiscretizationModel)
-                case ('ADM')
+                case('ADM')
                     Writer = output_writer_adm(InputDirectory, obj.SimulationInput.ProblemName,...
                         simulation.ProductionSystem.Wells.NofInj,   simulation.ProductionSystem.Wells.NofProd, ...
                         simulation.Summary.CouplingStats.NTimers,   simulation.Summary.CouplingStats.NStats,...
-                        obj.SimulatorSettings.NumOfPreviousReports, simulation.FluidModel.NofComp);
+                        obj.SimulatorSettings.NumOfPreviousReports, simulation.FluidModel.NofComponents);
                     if obj.SimulatorSettings.PlotBasisFunctions
                         Writer.PlotBasisFunctions = true;
                     else
