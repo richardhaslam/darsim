@@ -21,13 +21,19 @@ classdef Production_System < handle
             obj.FracturesNetwork = fractures;
         end
         function AssignInitialState(obj, VarNames, VarValues)
-            obj.Reservoir.State.AssignInitialValues(VarNames, VarValues);
-            obj.Reservoir.State_old.AssignInitialValues(VarNames, VarValues);
+            Nm = length(obj.Reservoir.State.Properties('P_1').Value);
+            Index.Start = 1;
+            Index.End = Nm;
+            obj.Reservoir.State.AssignInitialValues( VarNames , VarValues(Index.Start:Index.End,:) );
+            obj.Reservoir.State_old.AssignInitialValues( VarNames , VarValues(Index.Start:Index.End,:) );
             if obj.FracturesNetwork.Active
                 for f = 1:obj.FracturesNetwork.NumOfFrac
                     %% MODIFY INITIAL VALUES FOR FRAC
-                    
-                    obj.FracturesNetwork.Fractures(f).State.AssignInitialValues(VarNames, VarValues(1,:));
+                    Nf = length(obj.FracturesNetwork.Fractures(f).State.Properties('P_1').Value);
+                    Index.Start = Index.End + 1;
+                    Index.End = Index.Start + Nf - 1;
+                    obj.FracturesNetwork.Fractures(f).State.AssignInitialValues( VarNames , VarValues(Index.Start:Index.End,:) );
+                    obj.FracturesNetwork.Fractures(f).State_old.AssignInitialValues( VarNames , VarValues(Index.Start:Index.End,:) );
                 end
             end
         end
@@ -40,13 +46,13 @@ classdef Production_System < handle
             FluidModel.InitializeInjectors(obj.Wells.Inj);
             % Adjust pressures
             for i=1:obj.Wells.NofInj
-                h = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Inj(i).Cells);
-                obj.Wells.Inj(i).AdjustConstraint(GravityModel, h); 
+                depth = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Inj(i).Cells);
+                obj.Wells.Inj(i).AdjustConstraint(GravityModel, depth); 
             end
             % Create a gradient also inside the producers
             for i=1:length(obj.Wells.Prod)
-                h = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Prod(i).Cells);
-                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.Properties('rhoT').Value, h);
+                depth = DiscretizationModel.ReservoirGrid.Depth(obj.Wells.Prod(i).Cells);
+                obj.Wells.Prod(i).AdjustConstraint(GravityModel, obj.Reservoir.State.Properties('rhoT').Value, depth);
             end
             
             % 3. Injection fluid properties are defined

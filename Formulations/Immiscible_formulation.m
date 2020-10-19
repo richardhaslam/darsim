@@ -65,12 +65,12 @@ classdef Immiscible_formulation < formulation
             end
         end
         function ComputePropertiesAndDerivatives(obj, ProductionSystem, FluidModel)
-            %% 1. Reservoir Properteis and Derivatives
+            %% 1. Reservoir Properties and Derivatives
             obj.drhodp = FluidModel.ComputeDrhoDp(ProductionSystem.Reservoir.State);
             obj.Mob = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.dMob = FluidModel.ComputeDMobDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
             obj.dPc = FluidModel.ComputeDPcDS(ProductionSystem.Reservoir.State.Properties('S_1').Value);
-            %% 2. Fractures Properteis and Derivatives
+            %% 2. Fractures Properties and Derivatives
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 obj.drhodp = [obj.drhodp; FluidModel.ComputeDrhoDp(ProductionSystem.FracturesNetwork.Fractures(f).State) ];
                 obj.Mob = [obj.Mob; FluidModel.ComputePhaseMobilities(ProductionSystem.FracturesNetwork.Fractures(f).State.Properties('S_1').Value)];
@@ -435,7 +435,7 @@ classdef Immiscible_formulation < formulation
             %Injectors
             for i=1:length(Inj)
                 a = Inj(i).Cells;
-                [dQdp, ~] = Inj(i).dQPhasesdPdS(K, obj.NofPhases);
+                dQdp = Inj(i).ComputeWellMassFluxDerivativeWithRespectToPressure(K, obj.NofPhases);
                 for j=1:length(a)
                     Jp(a(j),a(j)) = Jp(a(j),a(j)) - dQdp(j, ph);
                 end
@@ -443,7 +443,8 @@ classdef Immiscible_formulation < formulation
             %Producers
             for i=1:length(Prod)
                 b = Prod(i).Cells;
-                [dQdp, dQdS] = Prod(i).dQPhasesdPdS(State, K, obj.Mob, obj.dMob, obj.drhodp, obj.NofPhases);
+                dQdp = Prod(i).ComputeWellMassFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, zeros(size(K,1),2), obj.NofPhases);
+                dQdS = Prod(i).ComputeWellMassFluxDerivativeWithRespectToSaturation(State, K, obj.dMob, obj.NofPhases);
                 for j=1:length(b)
                     Jp(b(j),b(j)) = Jp(b(j),b(j)) - dQdp(j, ph);                    
                     JS(b(j),b(j)) = JS(b(j),b(j)) - dQdS(j, ph);

@@ -6,7 +6,7 @@
 %Created: 13 July 2016
 %Last modified: 2 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef convergence_checker_ADM_geothermal_singlephase < convergence_checker_finescale_geothermal_singlephase
+classdef convergence_checker_ADM_geothermal_multiphase < convergence_checker_finescale_geothermal_multiphase
     properties
         OperatorsAssembler
     end
@@ -35,14 +35,14 @@ classdef convergence_checker_ADM_geothermal_singlephase < convergence_checker_fi
 
             % Compute Norms            
             [obj.ResidualNorm(iter,:)] = obj.NormCalculator.CalculateResidualNorm(Residual_ADM, Nt_ADM, Formulation);
-            [dp, dT] = obj.NormCalculator.CalculateSolutionNorm(delta, Nt, State);
+            [dp, dh] = obj.NormCalculator.CalculateSolutionNorm(delta, Nt, State);
             
             obj.ResidualNorm( imag(obj.ResidualNorm) ~= 0 ) = NaN;
             %obj.RHSNorm     ( imag(obj.RHSNorm     ) ~= 0 ) = NaN;
             dp              ( imag(dp              ) ~= 0 ) = NaN;
-            dT              ( imag(dT              ) ~= 0 ) = NaN;
+            dh              ( imag(dh              ) ~= 0 ) = NaN;
             
-            converged = obj.CheckConvergenceCondition(iter,dp,dT);
+            converged = obj.CheckConvergenceCondition(iter,dp,dh);
         end
     end
 end

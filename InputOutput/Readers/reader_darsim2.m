@@ -61,15 +61,15 @@ classdef reader_darsim2 < reader
             [Builder.SimulationInput, Builder.SimulatorSettings] = ReadInformation(obj);
         end
         function [SimulationInput, SimulatorSettings] = ReadInformation(obj)
-            %% INPUT FILE
-            % 0. Passinbg the main input directory to simulation_builder
+            %% 1. INPUT FILE
+            % 1.0. Passinbg the main input directory to simulation_builder
             SimulationInput.Directory = obj.Directory;
             
-            % 1. Name of the Problem 
+            % 1.1. Name of the Problem 
             temp = strfind(obj.InputMatrix, 'TITLE'); % Search a specific string and find all rows containing matches
             SimulationInput.ProblemName = char(obj.InputMatrix(find(~cellfun('isempty', temp)) + 1));
 			
-            % 2. Total time
+            % 1.2. Total time
             temp = strfind(obj.InputMatrix, 'TOTALTIME');
             xv = find(~cellfun('isempty', temp));
             if isempty(xv)
@@ -87,36 +87,19 @@ classdef reader_darsim2 < reader
             end
             SimulationInput.TotalTime = Days*24*3600 + Hours*3600 + Minutes*60 + Seconds;
 			
-            % 3. Read reservoir properties
+            % 1.3. Read reservoir properties
             SimulationInput.ReservoirProperties = obj.ReadReservoirProperties();
             
-            % 4. Read fluid properties
+            % 1.4. Read fluid properties
             SimulationInput.FluidProperties = obj.ReadFluidProperties();
-                                  
-            % 5. Initial conditions
-            temp = strfind(obj.InputMatrix, 'INIT');
-            index = find(~cellfun('isempty', temp));
-            if isempty(index)
-                error('The keyword "INIT" is missing. Please check the input file!\n');
-            end
-            if contains(obj.InputMatrix(index + 1), 'INCLUDE')
-                SimulationInput.InitInclude = 1;
-                SimulationInput.InitFile = strcat(obj.Directory, '\', char(obj.InputMatrix(index+2)));
-                fprintf('\n---> Reading "Initial State" file ...');
-                SimulationInput.InitData = load(SimulationInput.InitFile);
-                SimulationInput.InitData(:,1) = [];  % We do not need the first column as it is just the index of the cells
-                SimulationInput.InitData(:,1) = SimulationInput.InitData(:,1) * 1e5;  % The stored data for pressure is in [Bar], we covert it to [Pa]
-                
-                fprintf(' ---> Completed.\n');
-            else
-                SimulationInput.InitInclude = 0;
-                SimulationInput.InitData = str2double(strsplit(char(obj.InputMatrix(index + 1))));
-            end
+
+            % 1.5. Read initial conditions
+            SimulationInput.InitialConditions = obj.ReadInitialConditions();
             
-            % 6. Read wells info
+            % 1.6. Read wells info
             SimulationInput.WellsInfo = obj.ReadWellsInfo(SimulationInput);
             
-            % 7. Read Fractures' Properties (if any)
+            % 1.7. Read Fractures' Properties (if any)
             temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -132,7 +115,7 @@ classdef reader_darsim2 < reader
                 end
             end
             
-            %% SIMULATOR'S SETTINGS
+            %% 2. SIMULATOR'S SETTINGS
             SimulatorSettings = obj.ReadSimulatorSettings(SimulationInput);
         end
         function ReservoirProperties = ReadReservoirProperties(obj)
@@ -600,7 +583,6 @@ classdef reader_darsim2 < reader
                     end
             end
             
-
             % 9. Capillarity
             temp = strfind(obj.InputMatrix, 'CAPILLARITY');
             index = find(~cellfun('isempty', temp));
@@ -624,18 +606,78 @@ classdef reader_darsim2 < reader
             else
                 FluidProperties.Gravity = char(obj.InputMatrix(index + 1));
             end
-            
+        end
+        function InitialConditions = ReadInitialConditions(obj)
+            temp = strfind(obj.InputMatrix, 'ICLUDE_INITIAL_STATE');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                
+                InitialConditions.Include = 1;
+                InitialConditions.File    = strcat(obj.Directory, '\', char(obj.InputMatrix(index+2)));
+                fprintf('\n---> Reading "Initial State" file ...');
+                InitialConditions.LoadedData      = load(InitialConditions.File);
+                InitialConditions.LoadedData(:,1) = [];  % We do not need the first column as it is just the index of the cells
+                InitialConditions.LoadedData(:,1) = InitialConditions.LoadedData(:,1) * 1e5;  % The stored data for pressure is in [Bar], we covert it to [Pa]
+                fprintf(' ---> Completed.\n');
+                
+            else
+                
+                InitialConditions.Include = 0;
+                InitialConditions.LoadedData = 0;
+                
+                temp = strfind(obj.InputMatrix, 'INITIAL_PRESSURE');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    InitialConditions.Pressure = str2double(char(obj.InputMatrix(index + 1)));
+                else
+                    InitialConditions.Pressure = Nan;
+                end
+                
+                temp = strfind(obj.InputMatrix, 'INITIAL_TEMPERATURE');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    InitialConditions.Temperature = str2double(char(obj.InputMatrix(index + 1)));
+                else
+                    InitialConditions.Temperature = Nan;
+                end
+                
+                temp = strfind(obj.InputMatrix, 'INITIAL_ENTHALPY');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    InitialConditions.Enthalpy = str2double(char(obj.InputMatrix(index + 1)));
+                else
+                    InitialConditions.Enthalpy = Nan;
+                end
+                
+                temp = strfind(obj.InputMatrix, 'INITIAL_SATURATION_1');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    InitialConditions.Saturation_1 = str2double(char(obj.InputMatrix(index + 1)));
+                else
+                    InitialConditions.Saturation_1 = Nan;
+                end
+                
+                temp = strfind(obj.InputMatrix, 'INITIAL_SATURATION_2');
+                index = find(~cellfun('isempty', temp));
+                if ~isempty(index)
+                    InitialConditions.Saturation_2 = str2double(char(obj.InputMatrix(index + 1)));
+                else
+                    InitialConditions.Saturation_2 = Nan;
+                end
+                
+            end
         end
         function WellsInfo = ReadWellsInfo(obj, SimulationInput)
-            %%%%%%%%%%%%%WELLS%%%%%%%%%%%%%%%%
             temp = regexp(obj.InputMatrix, 'WELL_START', 'match');
             well_start = find(~cellfun('isempty', temp));
             temp = regexp(obj.InputMatrix, 'WELL_END', 'match');
             well_end = find(~cellfun('isempty', temp));
             WellsInfo.NofWell = length(well_start);
+            
             temp  = regexp(obj.InputMatrix, 'INJ', 'match'); 
             inj = find(~cellfun('isempty', temp));
             WellsInfo.NofInj = length(inj);
+            
             temp = regexp(obj.InputMatrix, 'PROD', 'match');
             prod = find(~cellfun('isempty', temp));
             WellsInfo.NofProd = length(prod);
@@ -651,8 +693,8 @@ classdef reader_darsim2 < reader
                 constraint = find(~cellfun('isempty', temp));
                 temp = regexp(WellInputMatrix, 'FORMULA', 'match');
                 formula = find(~cellfun('isempty', temp));
-                temp = regexp(WellInputMatrix, 'TEMPERATURE', 'match');
-                temperature = find(~cellfun('isempty', temp));
+                temp = regexp(WellInputMatrix, 'BOUNDARY_CONDITION', 'match');
+                boundary_condition = find(~cellfun('isempty', temp));
                 
                 % Reading the coordinates of well trajectory
                 Well.Coordinate.Type = WellInputMatrix{coordinate+1};
@@ -698,17 +740,18 @@ classdef reader_darsim2 < reader
                 end
                 
                 % Reading the contraint of well
-                Well.Constraint.name = char(WellInputMatrix(constraint+1));
+                Well.Constraint.Name = char(WellInputMatrix(constraint+1));
                 Well.Constraint.value = str2double(WellInputMatrix(constraint+2));
                 
                 % Reading the formula type of well
-                Well.Formula.type = char(WellInputMatrix(formula+1));
-                Well.Formula.value = str2double(WellInputMatrix(formula+2));
+                Well.Formula.Type = char(WellInputMatrix(formula+1));
+                Well.Formula.Value = str2double(WellInputMatrix(formula+2));
                 
-                % Reading the temperature of well (only for injection)
+                % Reading the boundary condition of the well (only for injection)
                 switch SimulationInput.FluidProperties.FluidModel
                     case{'Geothermal_SinglePhase','Geothermal_MultiPhase'}
-                        Well.Temperature = str2double(WellInputMatrix(temperature+1));
+                        Well.BoundaryCondition.Name  = char(       WellInputMatrix(boundary_condition+1) );
+                        Well.BoundaryCondition.Value = str2double( WellInputMatrix(boundary_condition+2) );
                 end
                 if strcmp(WellInputMatrix(type+1),'INJ')
                     inj = inj+1;

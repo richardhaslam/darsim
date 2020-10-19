@@ -27,22 +27,14 @@ classdef fracture < handle
             obj.State_old = status();
         end
         function ComputePorosity(obj, P)
-            obj.Por;
+            obj.Por = obj.Por0.*exp(obj.Cr.*(P-obj.P0));
         end
         function ComputeDerPorosity(obj, P)
-            obj.DPor = 0 * obj.Por;
+            obj.DPor = obj.Cr.*obj.Por0.*exp(obj.Cr.*(P-obj.P0));
         end
         function AddPermeabilityPorosity(obj, k, por)
             obj.K = k;
             obj.Por = por;
-        end
-        function AddConductivity(obj, k_cond_rock, k_cond_fluid)
-            obj.K_Cond_rock = k_cond_rock;
-            obj.K_Cond_eff  = k_cond_fluid * obj.Por + k_cond_rock * (1-obj.Por) * ones(size(obj.K));
-        end
-        function ModifyFracturesBasedOnStress(obj)
-            % @ Daan:
-            % Add the same function you added to the builder_fracgen.
         end
     end
 end

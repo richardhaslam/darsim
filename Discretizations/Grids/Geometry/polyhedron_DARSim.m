@@ -34,6 +34,7 @@ classdef polyhedron_DARSim < handle
             
             tE = 0; % for the maximum entering segment parameter
             tL = 1; % for the minimum leaving segment parameter
+            
             for i = 1 : obj.NumOfFace
                 % Checking if the normal vector is pointing outward, and if not, fixing it:
                 if dot( obj.Centroid - obj.Face(i).Centroid , obj.Face(i).nVec) > 0

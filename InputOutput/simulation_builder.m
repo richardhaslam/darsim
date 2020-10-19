@@ -35,33 +35,64 @@ classdef simulation_builder < handle
             obj.DefineProperties(simulation.ProductionSystem, simulation.FluidModel, simulation.DiscretizationModel);
             
             %% Define Initialization procedure
-            N = simulation.DiscretizationModel.ReservoirGrid.N;
-            VarValues = ones(N, size(obj.SimulationInput.InitData,2));
-            for i=1:size(obj.SimulationInput.InitData,2)
-                VarValues(:, i) = VarValues(:, i) .* obj.SimulationInput.InitData(:,i);
-            end        
-            
+            % Get total number of grid cells
+            N = simulation.DiscretizationModel.N;
+            % Select FluidModel based on FluidModel keyword
             switch(simulation.FluidModel.name)
                 case('SinglePhase')
                     VarNames = {'P_1', 'S_1'};
-                    VarValues(:, 2) = 1;
+                    if obj.SimulationInput.InitialConditions.Include
+                        VarValues = ones(N,2) .* obj.SimulationInput.InitialConditions.LoadedData;
+                    else
+                        VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
+                                      ones(N,1).*1                                                ];
+                    end
                     simulation.Initializer = initializer_singlephase(VarNames, VarValues);
                 case('Immiscible')
                     VarNames = {'P_2', 'S_1', 'S_2'};
-                    VarValues(:, 3) = 1 - VarValues(:, 2);  % 3rd column is S2 which is 1-S1
+                    if obj.SimulationInput.InitialConditions.Include
+                        VarValues = ones(N,3) .* obj.SimulationInput.InitialConditions.LoadedData;
+                    else
+                        VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure     , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Saturation_1 , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Saturation_2   ];
+                    end
                     simulation.Initializer = initializer(VarNames, VarValues);
                 case('Geothermal_SinglePhase')
-                    VarNames = {'P_1', 'T', 'S_1'};
-                    VarValues(:, 3) = 1;
-                    VarValues(:, 2) = obj.SimulationInput.ReservoirProperties.Temperature;
-                    simulation.Initializer = initializer_singlephase(VarNames, VarValues);
+                    VarNames = {'P_1', 'hTfluid', 'T', 'S_1'};
+                    if obj.SimulationInput.InitialConditions.Include
+                        VarValues = ones(N,4) .* obj.SimulationInput.InitialConditions.LoadedData;
+                    else
+                        VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure    , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Enthalpy    , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Temperature , ...
+                                      ones(N,1).*1                                                   ];
+                    end
+                    simulation.Initializer = Geothermal_SinglePhase_initializer(VarNames, VarValues);
                 case('Geothermal_MultiPhase')
-                    error('Geothermal_MultiPhase is not yet implemented');
-                otherwise
+                    VarNames = {'P_2', 'hTfluid', 'T'};
+                    if obj.SimulationInput.InitialConditions.Include
+                        VarValues = ones(N,3) .* obj.SimulationInput.InitialConditions.LoadedData;
+                    else
+                        VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Enthalpy , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Temperature];
+                    end
+                    simulation.Initializer = Geothermal_MultiPhase_initializer(VarNames, VarValues);
+                case('Compositional')
                     VarNames = {'P_2', 'z_1', 'z_2'};
+                    if obj.SimulationInput.InitialConditions.Include
+                        VarValues = ones(N,3) .* obj.SimulationInput.InitialConditions.LoadedData;
+                    else
+                        VarValues = [ ones(N,1).*obj.SimulationInput.InitialConditions.Pressure , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Composition_1 , ...
+                                      ones(N,1).*obj.SimulationInput.InitialConditions.Composition_2];
+                    end
                     simulation.Initializer = initializer_hydrostatic(VarNames, VarValues);
+                otherwise
+                    error('The fluid model keyword given in the input file is not valid. Please choose from the following options: SinglePhase,Immiscible,Geothermal_SinglePhase,Geothermal_MultiPhase,Compositional');
             end
-        end
+        end 
         function Discretization = BuildDiscretization(obj, FractureMatrix)
             %% 1. Create fine-scale grids
             % 1. Reservoir Grid
@@ -140,7 +171,7 @@ classdef simulation_builder < handle
                         i = length(operatorshandler.ProlongationBuilders);
                         operatorshandler.AddProlongationBuilder(prolongationbuilder, i+1);
                     end
-                    
+
                     % b. Grid selection criterion (time\space based)
                     switch (ADMSettings.GridSelCriterion)
                         case('dfdx')
@@ -169,9 +200,19 @@ classdef simulation_builder < handle
                     operatorshandler = operators_handler_MMs(MMsSettings.Coarsening(1,:,:));
                     prolongationbuilder = prolongation_builder_MSPressure(MMsSettings.maxLevel(1), MMsSettings.Coarsening(:,:,1) );
                     if ~obj.SimulationInput.FracturesProperties.Fractured
-                        prolongationbuilder.BFUpdater = bf_updater_ms();
+                        switch obj.SimulatorSettings.Formulation
+                            case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                                prolongationbuilder.BFUpdater = bf_updater_ms_geothermal();
+                            otherwise
+                                prolongationbuilder.BFUpdater = bf_updater_ms();
+                        end
                     else
-                        prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                        switch obj.SimulatorSettings.Formulation
+                            case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                                prolongationbuilder.BFUpdater = bf_updater_FAMS_geothermal();
+                            otherwise
+                                prolongationbuilder.BFUpdater = bf_updater_FAMS();
+                        end
                         prolongationbuilder.BFUpdater.BFtype = MMsSettings.BFtype;
                     end
                     % Reduce contrast for BF computation to remove peaks
@@ -208,9 +249,11 @@ classdef simulation_builder < handle
             
             %% 3. Add Grids to the Discretization Model
             Discretization.AddReservoirGrid(ReservoirGrid);
-            if obj.SimulationInput.FracturesProperties.isFractured
+            Discretization.N = Discretization.ReservoirGrid.N;
+            if obj.SimulationInput.FracturesProperties.Fractured
                 Discretization.AddFracturesGrid(FracturesGrid);
                 Discretization.AddCrossConnections(CrossConnections);
+                Discretization.N = Discretization.N + sum(Discretization.FracturesGrid.N);
             end
         end
         function ProductionSystem = BuildProductionSystem (obj, FractureMatrix, DiscretizationModel)
@@ -327,16 +370,21 @@ classdef simulation_builder < handle
             %%%% Adding permeability and Porosity info to the reservoir
             Reservoir.AddPermeabilityPorosity(K, phi);
 
-            % Adding heat conductivity info to the reservoir
-            if contains(obj.SimulatorSettings.Formulation,'Geothermal')
-                Reservoir.AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
+            % Adding thermal conductivity to the reservoir (maybe find other place for this)
+            switch obj.SimulatorSettings.Formulation
+                case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                    Reservoir.K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
             end
             
             Reservoir.Cr = cr;
             Reservoir.Cpr = Cpr;
             Reservoir.Rho = RockDensity;
-            Reservoir.P0 = obj.SimulationInput.InitData(:,1); % Initial Pressure of the Reservoir
-            
+            if obj.SimulationInput.InitialConditions.Include
+                Reservoir.P0 = obj.SimulationInput.InitialConditions.LoadedData(:,1);
+            else
+                Reservoir.P0 = obj.SimulationInput.InitialConditions.Pressure;
+            end
+
             switch obj.SimulatorSettings.DiscretizationModel
                 case('ADM')
                     % This is for DLGR type ADM: it reads coarse permeabilities
@@ -367,7 +415,7 @@ classdef simulation_builder < handle
             Wells.NofProd = obj.SimulationInput.WellsInfo.NofProd;
             n_phases = obj.SimulationInput.FluidProperties.NofPhases;
             
-            % Useful to compute PI
+            % Useful information to compute PI
             dx = Lx/nx;
             dy = Ly/ny;
             dz = h /nz;
@@ -379,60 +427,71 @@ classdef simulation_builder < handle
                 otherwise
             end
             
-            %Injectors
+            % Injectors
             for i=1:Wells.NofInj
-                switch(obj.SimulationInput.WellsInfo.Inj(i).Formula.type)
-                    case ('DIRICHLET')
+                switch(obj.SimulationInput.WellsInfo.Inj(i).Formula.Type)
+                    case('DIRICHLET')
                         PI = dy*dz/(dx/2) .* ones(N_ActiveCells,1);
-                    case ('PI')
-                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value .* ones(N_ActiveCells,1);
+                    case('PI')
+                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.Value .* ones(N_ActiveCells,1);
                     case('WI')
-                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.value .* GridVolume;
-                    case ('RADIUS')
-                        radius = obj.SimulationInput.WellsInfo.Inj(i).Formula.value;
+                        PI = obj.SimulationInput.WellsInfo.Inj(i).Formula.Value .* GridVolume;
+                    case('RADIUS')
+                        radius = obj.SimulationInput.WellsInfo.Inj(i).Formula.Value;
                         error('DARSim Error: Radius calculation of PI is not implemented for now.')
                 end
-                Coordinate = obj.SimulationInput.WellsInfo.Inj(i).Coordinate;
+                Temperature = NaN;
+                Enthalpy = NaN;
                 switch (obj.SimulationInput.FluidProperties.FluidModel)
                     case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
-                        temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
+                        switch obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.Name
+                            case('TEMPERATURE')
+                                Temperature = obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.Value;
+                                BC_Formulation = 'Temperature';
+                                Enthalpy = NaN;
+                            case('ENTHALPY')
+                                Temperature = NaN;
+                                BC_Formulation = 'Enthalpy';
+                                Enthalpy = obj.SimulationInput.WellsInfo.Inj(i).BoundaryCondition.Value;
+                        end
                     otherwise
-                        temperature = Tres;
+                        Temperature = Tres;
                 end
-                switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.name)
+                switch (obj.SimulationInput.WellsInfo.Inj(i).Constraint.Name)
                     case('PRESSURE')
-                        pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
-                        % temperature = obj.SimulationInput.WellsInfo.Inj(i).Temperature;
-                        Injector = injector_pressure(PI, Coordinate, pressure, temperature, n_phases);
-                    case('RATE')
-                        rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.value;
-                        p_init = obj.SimulationInput.InitData(:,1);
+                        pressure = obj.SimulationInput.WellsInfo.Inj(i).Constraint.Value;
+                        Injector = injector_pressure(PI, coord, pressure, Temperature, n_phases);
+                        Injector.h = Enthalpy;
+                        Injector.BC_Formulation = BC_Formulation;
+                    case('rate')
+                        rate = obj.SimulationInput.WellsInfo.Inj(i).Constraint.Value;
+                        p_init = obj.SimulationInput.InitialConditions.Pressure;
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
-                        Injector = injector_rate(PI, Coordinate, rate, p_init, temperature, n_phases);
+                        Injector = injector_rate(PI, coord, rate, p_init, Temperature, n_phases);
                 end
                 Wells.AddInjector(Injector);
             end
             
-            %Producers
+            % Producers
             for i=1:Wells.NofProd
-                switch(obj.SimulationInput.WellsInfo.Prod(i).Formula.type)
+                switch(obj.SimulationInput.WellsInfo.Prod(i).Formula.Type)
                     case ('DIRICHLET')
                         PI = dy*dz/(dx/2) .* ones(N_ActiveCells,1);
                     case ('PI')
-                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value .* ones(N_ActiveCells,1);
+                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.Value .* ones(N_ActiveCells,1);
                     case('WI')
-                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.value .* GridVolume;
+                        PI = obj.SimulationInput.WellsInfo.Prod(i).Formula.Value .* GridVolume;
                     case ('RADIUS')
-                        radius = obj.SimulationInput.WellsInfo.Prod(i).Formula.value;
+                        radius = obj.SimulationInput.WellsInfo.Prod(i).Formula.Value;
                         error('DARSim2 Error: Radius calculation of PI is not implemented for now.')
                 end
                 Coordinate = obj.SimulationInput.WellsInfo.Prod(i).Coordinate;
-                switch (obj.SimulationInput.WellsInfo.Prod(i).Constraint.name)
+                switch (obj.SimulationInput.WellsInfo.Prod(i).Constraint.Name)
                     case('PRESSURE')
-                        pressure = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
+                        pressure = obj.SimulationInput.WellsInfo.Prod(i).Constraint.Value;
                         Producer = producer_pressure(PI, Coordinate, pressure);
                     case('RATE')
-                        rate = obj.SimulationInput.WellsInfo.Prod(i).Constraint.value;
+                        rate = obj.SimulationInput.WellsInfo.Prod(i).Constraint.Value;
                         rate = rate * Reservoir.TotalPV / (3600 * 24); % convert pv/day to m^3/s
                         Producer = producer_rate(PI, Coordinate, rate);
                 end
@@ -470,8 +529,9 @@ classdef simulation_builder < handle
                     Kz = Kx;
                     K = [Kx, Ky, Kz];
                     FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture
-                    if contains(obj.SimulatorSettings.Formulation,'Geothermal')
-                        FracturesNetwork.Fractures(f).AddConductivity(obj.SimulationInput.ReservoirProperties.RockConductivity,obj.SimulationInput.FluidProperties.FluidConductivity);
+                    switch obj.SimulatorSettings.Formulation
+                        case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                            FracturesNetwork.Fractures(f).K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
                     end
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);
@@ -565,15 +625,10 @@ classdef simulation_builder < handle
                         FlashCalculator.KvaluesCalculator = Constant_Kvalues_calculator();
                     end
                     FluidModel.FlashCalculator = FlashCalculator;
-                case{'Geothermal_SinglePhase','Geothermal_MultiPhase'}
-                    % build the geothermal fluid model
-                    switch (obj.SimulationInput.FluidProperties.FluidModel)
-                        case{'Geothermal_SinglePhase'}
-                            FluidModel = geothermal_singlephase_fluid_model();
-                        case{'Geothermal_MultiPhase'}
-                            FluidModel = geothermal_multiphase_fluid_model();
-                    end
-                    Phase = geothermal_singlephase_phase();
+                case{'Geothermal_SinglePhase'}
+                    % build the geothermal singlephase fluid model
+                    FluidModel = Geothermal_SinglePhase_fluid_model();
+                    Phase = Geothermal_Singlephase_phase();
                     FluidModel.AddPhase(Phase, 1);
                     obj.SimulatorSettings.CouplingType = 'FIM';
                     %Gets all densities [kg/m^3]
@@ -585,16 +640,29 @@ classdef simulation_builder < handle
                     % Conductivity
                     Phase.Kf = obj.SimulationInput.FluidProperties.FluidConductivity;
                     % Specific Heat
-                    Phase.Cp = obj.SimulationInput.FluidProperties.SpecificHeat;
+                    Phase.Cp_std = obj.SimulationInput.FluidProperties.SpecificHeat;
                     FluidModel.AddPhase(Phase, 1);
                     if Phase.cf0 == 0
                         obj.incompressible = 1;
                     end
+                case{'Geothermal_MultiPhase'}
+                    % build the geothermal multiphase fluid model
+                    FluidModel = Geothermal_Multiphase_fluid_model(n_phases);
+                    % Add phases
+                    for i = 1:FluidModel.NofPhases
+                        Phase = Geothermal_Multiphase_phase();
+                        % we are only using cp_std in the injection wells
+                        Phase.Cp_std = obj.SimulationInput.FluidProperties.SpecificHeat(i); % Specific Heat
+                        Phase.Kf = obj.SimulationInput.FluidProperties.FluidConductivity(i);   % Conductivity
+                        FluidModel.AddPhase(Phase, i);
+                    end
+                    obj.SimulatorSettings.CouplingType = 'FIM';
+                    
                 otherwise
                     error('FluidModel is not defined!');
             end
             
-            %%  RelPerm model
+            %% RelPerm model
             switch(obj.SimulationInput.FluidProperties.RelPerm.name)
                 case('Linear')
                     FluidModel.RelPermModel = relperm_model_linear();
@@ -610,10 +678,11 @@ classdef simulation_builder < handle
                     obj.SimulationInput.FluidProperties.RelPerm.s_irr = FluidModel.RelPermModel.S_irr;
             end
             
-            % Irriducible sat
+            %% Irriducible sat
             for i=1:FluidModel.NofPhases
                 FluidModel.Phases(i).sr = obj.SimulationInput.FluidProperties.RelPerm.s_irr(i);
             end
+            
             %% Capillary pressure model
             switch (obj.SimulationInput.FluidProperties.Capillarity.name)
                 case('JLeverett')
@@ -651,11 +720,12 @@ classdef simulation_builder < handle
                     Formulation = OBL_formualtion();
                     Formulation.CreateTables();
                 case('Geothermal_SinglePhase')
-                    Formulation = geothermal_singlephase_formulation();
+                    Formulation = Geothermal_SinglePhase_formulation();
                     Formulation.MatrixAssembler = matrix_assembler_geothermal();
                     obj.NofEq = 2;
                 case('Geothermal_MultiPhase')
-                    Formulation = geothermal_multiphase_formulation();
+                    Formulation = Geothermal_MultiPhase_formulation(obj.SimulationInput.FluidProperties.NofPhases);
+                    Formulation.MatrixAssembler = matrix_assembler_geothermal();
                     obj.NofEq = 2;
             end
             Formulation.NofPhases = obj.SimulationInput.FluidProperties.NofPhases;
@@ -684,8 +754,10 @@ classdef simulation_builder < handle
                         case ('ADM')
                             % Build a different convergence cheker and a proper LS for ADM
                             switch obj.SimulatorSettings.Formulation
-                                case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
-                                    ConvergenceChecker = convergence_checker_ADM_Geothermal();
+                                case {'Geothermal_SinglePhase'}
+                                    ConvergenceChecker = convergence_checker_ADM_geothermal_singlephase();
+                                case {'Geothermal_MultiPhase'}
+                                    ConvergenceChecker = convergence_checker_ADM_geothermal_multiphase();
                                 otherwise
                                     ConvergenceChecker = convergence_checker_ADM();
                             end
@@ -693,6 +765,7 @@ classdef simulation_builder < handle
                             ConvergenceChecker.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
                             NLSolver.LinearSolver = linear_solver_ADM(obj.SimulatorSettings.LinearSolver, 1e-6, 500);
                             NLSolver.LinearSolver.OperatorsAssembler = operators_assembler_fim(obj.NofEq);
+
                             if obj.SimulatorSettings.ADMSettings.DLGR
                                 % it will change perm during ADM
                                 % simulaiton to use upscaled ones
@@ -1014,7 +1087,6 @@ classdef simulation_builder < handle
                             warning('WARNING: NO valid output file format ("BINARY" or "ASCII") for Plotting was selected. Binary format is set by default.\n');
                             plotter.isBinary = 1;
                     end
-
                 otherwise
                     warning('WARNING: NO valid Plotter was selected. Results will not be plotted.');
                     plotter = no_Plotter();

@@ -6,30 +6,10 @@
 %Created: 24 January 2018
 %Last modified: 24 January 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef convergence_checker_finescale_geothermal_singlephase < convergence_checker
+classdef convergence_checker_FS_geothermal_singlephase < convergence_checker
     properties
     end
-    methods
-        function PrintTitles(obj)
-            disp(['Initial Mass   Balance Residual Norm: ', num2str(obj.FirstResidualNorm(1), '%5.5e')]);
-            disp(['Initial Energy Balance Residual Norm: ', num2str(obj.FirstResidualNorm(2), '%5.5e')]);
-            disp('');
-            disp('           ||Residual MB||   ||Residual EB||     ||delta P||    ||delta T||');
-        end
-        function converged = Check(obj, iter, residual, RHS, delta, Formulation, DiscretizationModel, State, LinearSolver)
-            Nt = DiscretizationModel.N;
-
-            % Compute Norms
-            [ obj.ResidualNorm(iter,:), obj.RHSNorm(iter,:) ] = obj.NormCalculator.CalculateResidualNorm(residual, RHS, Nt, Formulation);
-            [dp, dT] = obj.NormCalculator.CalculateSolutionNorm(delta, DiscretizationModel.N, State);
-
-            obj.ResidualNorm( imag(obj.ResidualNorm) ~= 0 ) = NaN;
-            obj.RHSNorm     ( imag(obj.RHSNorm     ) ~= 0 ) = NaN;
-            dp              ( imag(dp              ) ~= 0 ) = NaN;
-            dT              ( imag(dT              ) ~= 0 ) = NaN;
-            
-            converged = obj.CheckConvergenceCondition(iter,dp,dT);
-        end
+    methods    
         function converged = CheckConvergenceCondition(obj,iter,dp,dT)
             disp(['Iter ', num2str(iter, '%02d') '-->   ', num2str(obj.ResidualNorm(iter,1), '%5.5e'), '      ' ...
                                                          , num2str(obj.ResidualNorm(iter,2), '%5.5e'), '      ' ...
@@ -40,9 +20,9 @@ classdef convergence_checker_finescale_geothermal_singlephase < convergence_chec
             % check if it is stagnating
             stagnating = obj.Stagnating(obj.ResidualNorm(iter,:)./obj.FirstResidualNorm);
             
-            % Check convergence
-            if ( (obj.ResidualNorm(iter,1) < obj.ResidualTol(1)) || (obj.ResidualNorm(iter,1)/obj.FirstResidualNorm(1) < obj.ResidualTol(1)) || (obj.ResidualNorm(iter,1)/obj.RHSNorm(iter,1) < obj.ResidualTol(1)) ) && ...
-               ( (obj.ResidualNorm(iter,2) < obj.ResidualTol(2)) || (obj.ResidualNorm(iter,2)/obj.FirstResidualNorm(2) < obj.ResidualTol(2)) || (obj.ResidualNorm(iter,2)/obj.RHSNorm(iter,2) < obj.ResidualTol(2)) ) && ...
+            %Check convergence
+            if ( (obj.ResidualNorm(iter,1) < obj.ResidualTol(1)) || (obj.ResidualNorm(iter,1)/obj.FirstResidualNorm(1) < obj.ResidualTol(1)) ) && ...
+               ( (obj.ResidualNorm(iter,2) < obj.ResidualTol(2)) || (obj.ResidualNorm(iter,2)/obj.FirstResidualNorm(2) < obj.ResidualTol(2)) ) && ...
                ( dp < obj.SolutionTol(1) && dT < obj.SolutionTol(2) )
                 converged = 1;
             elseif iter>5 && dp < obj.SolutionTol(1) && dT < obj.SolutionTol(2) && ...

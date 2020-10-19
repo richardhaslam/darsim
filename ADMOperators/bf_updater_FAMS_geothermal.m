@@ -14,34 +14,31 @@ classdef bf_updater_FAMS_geothermal < bf_updater_FAMS
             % Builds fine-scale incompressible pressure system.
             % In this function, mobility (Mob) is obtained based on
             % viscosity as no saturation is involved.
-            
             % Reservoir
             Km = ProductionSystem.Reservoir.K;
-            mu = ProductionSystem.CreateGlobalVariables(FineGrid, FluidModel.NofPhases, 'mu_');
-            Mob = FluidModel.ComputePhaseMobilities(mu);
-            Start = 1;
-            End = FineGrid(1).N;
-            obj.Amedia{1} = obj.MediumPressureSystem(FineGrid(1), Km, Mob(Start:End,:));
+            ReservoirMobility = FluidModel.ComputePhaseMobilities(ProductionSystem.Reservoir.State);
+            obj.Amedia{1} = obj.MediumPressureSystem(FineGrid(1), Km, ReservoirMobility);
             obj.A = obj.Amedia{1};
-            obj.AddWellsToPressureMatrix(ProductionSystem.Wells, Km, Mob(Start:End,:), FineGrid(1).N);
+            obj.AddWellsToPressureMatrix(ProductionSystem.Wells, Km, ReservoirMobility, FineGrid(1).N);
+            GlobalMobility = ReservoirMobility;
             % Fractures
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
-                Start = End + 1;
-                End = Start + FineGrid(1+f).N - 1;
                 Kf = ProductionSystem.FracturesNetwork.Fractures(f).K;
-                obj.Amedia{1+f} = obj.MediumPressureSystem(FineGrid(1+f), Kf, Mob(Start:End,:));
+                FractureMobility = FluidModel.ComputePhaseMobilities(ProductionSystem.FracturesNetwork.Fractures(f).State);
+                obj.Amedia{1+f} = obj.MediumPressureSystem(FineGrid(1+f), Kf, FractureMobility);
                 obj.A = blkdiag(obj.A, obj.Amedia{1+f});
+                GlobalMobility = [GlobalMobility; FractureMobility];
             end
             % Non-Neighboring Connections
-            Mobt = sum(Mob,2);
+            TotalMobility = sum(GlobalMobility,2);
             for c = 1:length(CrossConnections)
                 T_Geo = CrossConnections(c).T_Geo;
                 i = c + FineGrid(1).N;
                 j = CrossConnections(c).Cells;
-                obj.A(i,j) = obj.A(i,j) - T_Geo' .* Mobt(j)';
-                obj.A(i,i) = obj.A(i,i) + sum(T_Geo.* Mobt(j));
-                obj.A(j,i) = obj.A(j,i) - T_Geo.* Mobt(i);
-                obj.A(sub2ind(size(obj.A), j, j)) = obj.A(sub2ind(size(obj.A), j, j)) + T_Geo.* Mobt(i);
+                obj.A(i,j) = obj.A(i,j) - T_Geo' .* TotalMobility(j)';
+                obj.A(i,i) = obj.A(i,i) + sum(T_Geo.* TotalMobility(j));
+                obj.A(j,i) = obj.A(j,i) - T_Geo.* TotalMobility(i);
+                obj.A(sub2ind(size(obj.A), j, j)) = obj.A(sub2ind(size(obj.A), j, j)) + T_Geo.* TotalMobility(i);
             end 
         end
     end

@@ -9,13 +9,13 @@ classdef producer < handle
         Coordinate
         Cells
         p
+        h
         qv % total volumetric rate
         QPhases
         QComponents
         Qh % enthalpy flux
         PI
         BHPDepth
-        h
     end
     methods
         function obj = producer(PI, coord)

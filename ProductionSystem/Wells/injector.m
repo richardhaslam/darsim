@@ -11,6 +11,8 @@ classdef injector < handle
         p % injection pressure
         qv % total volumetric rate
         T % injection temperature
+        h % enthalphy of injection
+        BC_Formulation
         QPhases
         QComponents
         Qh % enthalpy flux
@@ -23,7 +25,6 @@ classdef injector < handle
         x2
         rho
         Mob
-        h % enthalphy of injection
     end
     methods
         function obj = injector(PI, coord, n_phases)

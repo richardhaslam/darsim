@@ -6,8 +6,13 @@
 %Created: 13 October 2016
 %Last modified: 13 October 2016
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+<<<<<<< HEAD:Solvers/NonLinearSolvers/NormCalculator/norm_calculator_geothermal_singlephase.m
 classdef norm_calculator_geothermal_singlephase < norm_calculator
+=======
+classdef norm_calculator_geothermal < norm_calculator
+>>>>>>> 12-geothermal-multiphase:Solvers/NonLinearSolvers/ConvergenceCheckers/norm_calculator_geothermal.m
     properties
+        
     end
     methods
         function [ResidualNorm, RHSNorm] = CalculateResidualNorm(obj, residual, RHS, N, Formulation)

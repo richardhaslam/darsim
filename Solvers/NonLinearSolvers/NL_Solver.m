@@ -87,6 +87,8 @@ methods
             end
             obj.itCount = obj.itCount + 1;
         end
+%         Hm = ProductionSystem.Reservoir.State.Properties('hTfluid');
+%         Hm.Value(1) = 0.3e6;
     end
     function BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
         [obj.Residual, obj.RHS] = obj.SystemBuilder.BuildResidual(ProductionSystem, DiscretizationModel, Formulation, dt);

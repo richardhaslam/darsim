@@ -35,7 +35,7 @@ classdef fluid_model < handle
             Mob = zeros(length(s), obj.NofPhases);
             kr = obj.RelPermModel.ComputeRelPerm(obj.Phases, s);
             for i=1:obj.NofPhases
-                Mob(:,i) = kr(:,i)/obj.Phases(i).mu;
+                Mob(:,i) = kr(:,i)./obj.Phases(i).mu;
             end
         end
         function ComputeTotalDensity(obj, State)

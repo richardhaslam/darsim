@@ -99,6 +99,7 @@ classdef VTK_Plotter < Plotter
             else
             	fprintf(fileID, '%d ', 0:Grid.dz:Grid.dz * Grid.Nz);
             end
+            
             fprintf(fileID, '\n');
             fprintf(fileID, '\n');
             %
@@ -112,7 +113,7 @@ classdef VTK_Plotter < Plotter
                 obj.PrintScalar2VTK(fileID, FracturedFlag, ' isFractured');
                 fprintf(fileID, '\n');
             end
-            
+
             % Add ADM ACTIVEFine (coarse grids)
             obj.PrintScalar2VTK(fileID, Grid.Active, ' ACTIVEFine');
             fprintf(fileID, '\n');
@@ -136,7 +137,7 @@ classdef VTK_Plotter < Plotter
             % Adding the fine cell type based on dual coarse grid construction
             obj.PrintScalar2VTK(fileID, Grid.DualCoarseType, ' DualCoarseType');
             fprintf(fileID, '\n');
-            
+
             fclose(fileID);
         end
         function PlotFractureSolution(obj, Fracture, Grid, f)
