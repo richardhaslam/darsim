@@ -11,12 +11,12 @@ classdef convergence_checker_finescale_geothermal_multiphase < convergence_check
     end
     methods
         function PrintTitles(obj)
-            disp(['Initial Mass Balance   Residual Norm: ', num2str(obj.FirstResidualNorm(1), '%5.5e')]);
+            disp(['Initial Mass   Balance Residual Norm: ', num2str(obj.FirstResidualNorm(1), '%5.5e')]);
             disp(['Initial Energy Balance Residual Norm: ', num2str(obj.FirstResidualNorm(2), '%5.5e')]);
             disp('');
             disp('           ||Residual MB||   ||Residual EB||     ||delta P||    ||delta H||');
         end
-        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State, LinearSolver)
+        function converged = Check(obj, iter, residual, RHS, delta, Formulation, DiscretizationModel, State, LinearSolver)
             Nt = DiscretizationModel.N;
 
             % Compute Norms

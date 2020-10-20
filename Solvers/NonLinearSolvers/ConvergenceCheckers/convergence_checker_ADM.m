@@ -3,55 +3,54 @@
 %DARSim 2 Reservoir Simulator
 %Author: Matteo Cusini
 %TU Delft
+%Created: 13 July 2016
+%Last modified: 2 August 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef convergence_checker_ADM < convergence_checker_finescale
     properties
         OperatorsAssembler
     end
     methods
-        function ComputeFirstResidualNorm(obj, Residual, DiscretizationModel, LinearSolver)
+        function ComputeFirstResidualNorm(obj, Residual, RHS, DiscretizationModel, LinearSolver)
             Nt_ADM = DiscretizationModel.ADMGrid.Ntot;
             % Get ADM Operators
             ADMRest = LinearSolver.R;
-            % Restrict first residual
-            Residual_ADM = ADMRest * Residual ./ sum(ADMRest, 2);
-            obj.FirstResidual = Residual_ADM;
+            % Restrict first residual and first RHS
+            obj.FirstResidual = ADMRest * Residual ./ sum(ADMRest, 2);
+            obj.FirstRHS      = ADMRest * RHS      ./ sum(ADMRest, 2);
+            
             % Compute Norms
             obj.FirstResidualNorm = zeros(obj.NumberOfEq,1);
-            for eq = 1 : obj.NumberOfEq-1
+            for eq = 1 : obj.NumberOfEq
                 obj.FirstResidualNorm(eq) = norm(obj.FirstResidual((eq-1)*Nt_ADM+1:eq*Nt_ADM), 2);
+                obj.FirstRHSNorm(eq)      = norm(obj.FirstRHS(     (eq-1)*Nt_ADM+1:eq*Nt_ADM), 2);
             end
-            obj.FirstResidualNorm(end) = norm(obj.FirstResidual(eq*Nt_ADM+1:end), 2);
             obj.NormCalculator.FirstResidualNorm = obj.FirstResidualNorm;
+            obj.NormCalculator.FirstRHSNorm      = obj.FirstRHSNorm;
+            
+            % Initializing the "ResidualNorm" as empty, to make it clean for the coming iteration loop.
+            obj.ResidualNorm = [];
+            obj.RHSNorm = [];
         end
-        function converged = Check(obj, iter, residual, delta, Formulation, DiscretizationModel, State, LinearSolver)
-            % Initialize
-            converged = 0;
+        function converged = Check(obj, iter, residual, RHS, delta, Formulation, DiscretizationModel, State, LinearSolver)
             Nt = DiscretizationModel.N;
             Nt_ADM = DiscretizationModel.ADMGrid.Ntot;
             
-            ADMRest = LinearSolver.R;  % Get ADM Operators
+            % Get ADM Operators
+            ADMRest = LinearSolver.R;
             Residual_ADM = ADMRest * residual ./ sum(ADMRest, 2); % Restrict each residual and divide by number of cells in each coarse node
+            RHS_ADM      = ADMRest * RHS      ./ sum(ADMRest, 2); % Restrict each residual and divide by number of cells in each coarse node
             
             % Compute Norms
-            [ResidualNorm] =  obj.NormCalculator.CalculateResidualNorm(Residual_ADM, Nt_ADM, Formulation);
+            [ obj.ResidualNorm(iter,:), obj.RHSNorm(iter,:) ] =  obj.NormCalculator.CalculateResidualNorm(Residual_ADM, RHS_ADM, Nt_ADM, Formulation);
             [dp, dS] = obj.NormCalculator.CalculateSolutionNorm(delta, Nt, State);
             
-            disp(['Iter ', num2str(iter, '%02d') '-->   ', num2str(ResidualNorm(1), '%5.5e'), '        ' ...
-                                                         , num2str(ResidualNorm(2), '%5.5e'), '        ' ...
-                                                         , num2str(dp, '%5.5e'), '    ', num2str(dS, '%5.5e')]);
+            obj.ResidualNorm( imag(obj.ResidualNorm) ~= 0 ) = NaN;
+            obj.RHSNorm     ( imag(obj.RHSNorm     ) ~= 0 ) = NaN;
+            dp              ( imag(dp              ) ~= 0 ) = NaN;
+            dS              ( imag(dS              ) ~= 0 ) = NaN;
             
-            % check if is stagnating
-            stagnating = obj.Stagnating(ResidualNorm./obj.FirstResidualNorm);
-            
-            %Check convergence
-            if ( (ResidualNorm(1) < obj.ResidualTol(1)) || (ResidualNorm(1)/obj.FirstResidualNorm(1) < obj.ResidualTol(1)) ) && ...
-               ( (ResidualNorm(2) < obj.ResidualTol(2)) || (ResidualNorm(2)/obj.FirstResidualNorm(2) < obj.ResidualTol(2)) ) && ...
-               ( dp < obj.SolutionTol(1) && dS < obj.SolutionTol(2) )
-                converged = 1;
-            elseif (isnan(ResidualNorm(1)) || isnan(ResidualNorm(2)) || stagnating || isnan(dp) || isnan(dS))
-                converged = -1;
-            end
+            converged = obj.CheckConvergenceCondition(iter,dp,dS);
         end
     end
 end

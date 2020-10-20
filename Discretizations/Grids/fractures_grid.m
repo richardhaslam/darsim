@@ -19,8 +19,8 @@ methods
         obj.Grids = cartesian_grid.empty;
     end
     function AddGrid(obj, Grid, i)
-        obj.Grids(i) = Grid;
-        obj.N(i) = Grid.N;
+        obj.Grids(i,1) = Grid;
+        obj.N(i,1) = Grid.N;
     end
 end
 end

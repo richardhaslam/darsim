@@ -26,6 +26,7 @@ classdef convergence_checker < handle
             Nt = DiscretizationModel.N; 
             obj.FirstResidual = Residual;
             obj.FirstRHS      = RHS;
+            
             % Compute Norms
             obj.FirstResidualNorm = zeros(obj.NumberOfEq,1);
             obj.FirstRHSNorm = zeros(obj.NumberOfEq,1);

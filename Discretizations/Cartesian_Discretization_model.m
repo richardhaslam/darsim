@@ -139,7 +139,7 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
                 if ~isempty(indices_m)
                     obj.CrossConnections(If1Local).T_Geo_Cond(1:length(indices_m)) = ...
                         CI(1:length(indices_m)) .* ( (Dxm+Dym+Dzm)/3 + Fractures(f1).Thickness ) ./...
-                        ( ( (Dxm+Dym+Dzm)/3 ./ Reservoir.K_Cond_eff(indices_m,1) ) + ( Fractures(f1).Thickness ./ Fractures(f1).K_Cond_eff(g1,1) ) );
+                        ( ( (Dxm+Dym+Dzm)/3 ./ Reservoir.K_Cond_rock(indices_m,1) ) + ( Fractures(f1).Thickness ./ Fractures(f1).K_Cond_rock(g1,1) ) );
                 end
    
                 indices_f = Cells( Cells > Nm );
@@ -152,7 +152,7 @@ classdef Cartesian_Discretization_model < FS_Discretization_model
                         g2 = Ind_frac2_Local.g;
                         obj.CrossConnections(If1Local).T_Geo_Cond(length(indices_m)+n) = ...
                             CI(length(indices_m)+n) * ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 + Fractures(f2).Thickness ) ./...
-                              ( ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 ./ Fractures(f1).K_Cond_eff(g1,1) ) + ( Fractures(f2).Thickness ./ Fractures(f2).K_Cond_eff(g2,1) ) );
+                              ( ( (obj.FracturesGrid.Grids(f1).dx + obj.FracturesGrid.Grids(f1).dy)/2 ./ Fractures(f1).K_Cond_rock(g1,1) ) + ( Fractures(f2).Thickness ./ Fractures(f2).K_Cond_rock(g2,1) ) );
                     end
                 end
             end
