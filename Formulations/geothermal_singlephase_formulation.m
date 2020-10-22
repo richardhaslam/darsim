@@ -175,12 +175,12 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 - FracturesHeatConvectionFlux( Index.Start:Index.End , 1 )...
                 - FracturesHeatConductionFlux( Index.Start:Index.End , 1 );
         end
-        function [Residual_Full , RHS_Full] = BuildFullResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
+        function [Residual_Full , RHS_Full] = BuildFullResidual(obj, ProductionSystem, DiscretizationModel, dt, State_old)
             % Computing source terms and the flux transfer functions between reservoir and fractures (if any)
             [WellMassFlux, WellHeatConvectionFlux] = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
-            FracturesMassFlux = zeros(DiscretizationModel.N, 1); % Mass flux between each two media (reservoir-frac or frac1-frac2)
-            FracturesHeatConvectionFlux = zeros(DiscretizationModel.N, 1); % Heat Convection flux betweem each two media
-            FracturesHeatConductionFlux = zeros(DiscretizationModel.N, 1);                           % Heat Conduction flux betweem each two media
+            FracturesMassFlux           = zeros(DiscretizationModel.N, 1);     % Mass flux between each two media (reservoir-frac or frac1-frac2)
+            FracturesHeatConvectionFlux = zeros(DiscretizationModel.N, 1);     % Heat Convection flux betweem each two media
+            FracturesHeatConductionFlux = zeros(DiscretizationModel.N, 1);     % Heat Conduction flux betweem each two media
             if ProductionSystem.FracturesNetwork.Active
                 [FracturesMassFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux] = obj.ComputeSourceTerms_frac_mat(ProductionSystem, DiscretizationModel);
             end
@@ -246,14 +246,14 @@ classdef Geothermal_SinglePhase_formulation < formulation
             % Reservoir
             Index.Start = 1;
             Index.End = Nm;
-            [Residual_MB_Reservoir, RHS_MB_Reservoir] = BuildMediumMassBalanceResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, WellMassFlux, FracturesMassFlux, 0);
+            [Residual_MB_Reservoir, RHS_MB_Reservoir] = BuildMediumMassBalanceResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State_old, Index, WellMassFlux, FracturesMassFlux, 0);
             Residual_Full( Index.Start : Index.End ) = Residual_MB_Reservoir;
             RHS_Full(      Index.Start : Index.End ) = RHS_MB_Reservoir;
             % Fractures
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Index.Start = Index.End+1;
                 Index.End = Index.Start + Nf(f) - 1;
-                [Residual_MB_Fractures, RHS_MB_Fractures] = BuildMediumMassBalanceResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index, WellMassFlux, FracturesMassFlux, f);
+                [Residual_MB_Fractures, RHS_MB_Fractures] = BuildMediumMassBalanceResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State_old, Index, WellMassFlux, FracturesMassFlux, f);
                 Residual_Full( Index.Start : Index.End ) = Residual_MB_Fractures;
                 RHS_Full(      Index.Start : Index.End ) = RHS_MB_Fractures;
             end
@@ -264,7 +264,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             Index.End = Index.Start + Nm - 1;
             Index_temp.Start = 1;
             Index_temp.End = Nm;
-            [Residual_EB_Reservoir, RHS_EB_Reservoir] = BuildMediumEnergyBalanceResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index_temp, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, 0);
+            [Residual_EB_Reservoir, RHS_EB_Reservoir] = BuildMediumEnergyBalanceResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State_old, Index_temp, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, 0);
             Residual_Full( Index.Start : Index.End ) = Residual_EB_Reservoir;
             RHS_Full(      Index.Start : Index.End ) = RHS_EB_Reservoir;
             % Fractures
@@ -273,7 +273,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 Index.End = Index.Start + Nf(f) - 1;
                 Index_temp.Start = Index_temp.End + 1;
                 Index_temp.End = Index_temp.Start + Nf(f) - 1;
-                [Residual_EB_Fractures, RHS_EB_Fractures] = BuildMediumEnergyBalanceResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index_temp, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, f);
+                [Residual_EB_Fractures, RHS_EB_Fractures] = BuildMediumEnergyBalanceResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State_old, Index_temp, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, f);
                 Residual_Full(Index.Start:Index.End) = Residual_EB_Fractures;
                 RHS_Full(     Index.Start:Index.End) = RHS_EB_Fractures;
             end
