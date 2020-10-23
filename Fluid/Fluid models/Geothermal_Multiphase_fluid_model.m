@@ -56,14 +56,14 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;            
-            % compute saturation pressure
-            psat = obj.Phases(1).ComputeSaturationPressure(Status, PhaseIndex);
-            % correct p,h for saturation p,h in case of two-phase
-            p(PhaseIndex == 2) = psat;            
+%             % compute saturation pressure
+%             psat = obj.Phases(1).ComputeSaturationPressure(Status, PhaseIndex);
+%             % correct p,h for saturation p,h in case of two-phase
+%             p(PhaseIndex == 2) = psat;            
             % compute density for both phases
             for i=1:obj.NofPhases
                 % coorect h for saturation enthalpy in case of two-phase
-                h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
+%                 h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
                 % compute density 
                 rho = Status.Properties(['rho_', num2str(i)]);
                 rho.Value = obj.Phases(i).ComputeDensity(i, PhaseIndex, p, h);
@@ -130,19 +130,39 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             Mob(isnan(Mob))=0;
         end
         %% Derivatives for Jacobian MB and EB
+        function dhpdp = ComputeDhpDp(obj, Status)
+            PhaseIndex = Status.Properties('PhaseStatus').Value;
+            p = Status.Properties('P_2').Value;
+            h = Status.Properties('hTfluid').Value;
+            
+            dhpdp = zeros(length(p),obj.NofPhases);
+            for i=1:obj.NofPhases
+                dhpdp(:,i) = obj.Phases(i).ComputeDhpDp(i, PhaseIndex, p, h);
+            end
+        end
+        function dhpdh = ComputeDhpDh(obj, Status)
+            PhaseIndex = Status.Properties('PhaseStatus').Value;
+            p = Status.Properties('P_2').Value;
+            h = Status.Properties('hTfluid').Value;
+            
+            dhpdh = zeros(length(p),obj.NofPhases);
+            for i=1:obj.NofPhases
+                dhpdh(:,i) = obj.Phases(i).ComputeDhpDh(i, PhaseIndex, p, h);
+            end
+        end
         function drhodp = ComputeDrhoDp(obj, Status)
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;
-            % compute saturation pressure
-            psat = obj.Phases(1).ComputeSaturationPressure(Status, PhaseIndex);
-            % correct p,h for saturation p,h in case of two-phase
-            p(PhaseIndex == 2) = psat; 
+%             % compute saturation pressure
+%             psat = obj.Phases(1).ComputeSaturationPressure(Status, PhaseIndex);
+%             % correct p,h for saturation p,h in case of two-phase
+%             p(PhaseIndex == 2) = psat; 
             % compute derivative
             drhodp = zeros(length(p),obj.NofPhases); % change this to length(p) and length(h)
             for i=1:obj.NofPhases
                 % correct h for saturation enthalpy in case of two-phase
-                h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
+%                 h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
                 drhodp(:,i) = obj.Phases(i).ComputeDrhoDp(i, PhaseIndex, p, h);
             end
         end                     % MB
@@ -150,15 +170,15 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             PhaseIndex = Status.Properties('PhaseStatus').Value;
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;
-            % compute saturation pressure
-            psat = obj.Phases(1).ComputeSaturationPressure(Status, PhaseIndex);
-            % correct p,h for saturation p,h in case of two-phase
-            p(PhaseIndex == 2) = psat; 
+%             % compute saturation pressure
+%             psat = obj.Phases(1).ComputeSaturationPressure(Status, PhaseIndex);
+%             % correct p,h for saturation p,h in case of two-phase
+%             p(PhaseIndex == 2) = psat; 
             % compute derivative
             drhodh = zeros(length(h),obj.NofPhases);
             for i=1:obj.NofPhases
                 % correct h for saturation enthalpy in case of two-phase
-                h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
+%                 h(PhaseIndex == 2) = Status.Properties(['h_',num2str(i)]).Value(PhaseIndex == 2);
                 drhodh(:,i) = obj.Phases(i).ComputeDrhoDh(i, PhaseIndex, p, h);
             end
         end                     % MB, EB  
@@ -177,34 +197,87 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             dTdh = obj.Phases(1).ComputeDTDh(PhaseIndex, p, h);
         end
         function dSdh = ComputeDSDh(obj, Status)
+            PhaseIndex = Status.Properties('PhaseStatus').Value;
+            p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;
             h_w = Status.Properties('h_1').Value;
             h_s = Status.Properties('h_2').Value;
             rho_w = Status.Properties('rho_1').Value;
             rho_s = Status.Properties('rho_2').Value;
+            drhowdh = obj.Phases(1).ComputeDrhoDh(1, PhaseIndex, p, h);
+            drhosdh = obj.Phases(1).ComputeDrhoDh(2, PhaseIndex, p, h);
+            
             % initialize
             dSdh = zeros(length(h),obj.NofPhases);
-            % compute derivative
-            dSdh(:,1) = ( rho_w .* rho_s .* ( h_w - h_s ) ) ./ ...
-                        ( h .* ( rho_w - rho_s ) - ( h_w .* rho_w - h_s .* rho_s ) ).^2;
+            
+            % compute derivative of water saturation
+            dSdh(PhaseIndex == 1,1) = 0; % water region
+            % two-phase region
+            dSdh(PhaseIndex == 2,1) = ( ...
+                ( drhosdh(PhaseIndex == 2) .* h_s(PhaseIndex == 2) - drhosdh(PhaseIndex == 2) .* ... 
+                  h(PhaseIndex == 2) - rho_s(PhaseIndex == 2) ) .* ...
+                ( h(PhaseIndex == 2) .* ( rho_w(PhaseIndex == 2) - rho_s(PhaseIndex == 2) ) - ...
+                ( h_w(PhaseIndex == 2) .* rho_w(PhaseIndex == 2) - h_s(PhaseIndex == 2) .* rho_s(PhaseIndex == 2) ) ) - ...
+                ( rho_s(PhaseIndex == 2) .* ( h_s(PhaseIndex == 2) - h(PhaseIndex == 2) ) ) .* ( ...
+                ( rho_w(PhaseIndex == 2) + h(PhaseIndex == 2) .* drhowdh(PhaseIndex == 2) - rho_s(PhaseIndex == 2) - ...
+                  h(PhaseIndex == 2) .* drhosdh(PhaseIndex == 2) - h_w(PhaseIndex == 2) .* drhowdh(PhaseIndex == 2) + ...
+                  h_s(PhaseIndex == 2) .* drhosdh(PhaseIndex == 2) )                                  ) ...
+                                     ) ./ ...
+                ( h(PhaseIndex == 2) .* ( rho_w(PhaseIndex == 2) - rho_s(PhaseIndex == 2) ) - ...
+                ( h_w(PhaseIndex == 2) .* rho_w(PhaseIndex == 2) - h_s(PhaseIndex == 2) .* rho_s(PhaseIndex == 2) ) ) .^2;
+            % steam region
+            dSdh(PhaseIndex == 3,1) = 0;
+            
+            % compute derivative of steam saturation
             dSdh(:,2) = -1 .* dSdh(:,1);
-        end
+        end 
         function dSdp = ComputeDSDp(obj, Status)
-            %
-        end
+            PhaseIndex = Status.Properties('PhaseStatus').Value;
+            p = Status.Properties('P_2').Value;
+            h = Status.Properties('hTfluid').Value;
+            h_w = Status.Properties('h_1').Value;
+            h_s = Status.Properties('h_2').Value;
+            rho_w = Status.Properties('rho_1').Value;
+            rho_s = Status.Properties('rho_2').Value;
+            dhwdp   = obj.Phases(1).ComputeDhpDp(1, PhaseIndex, p, h);
+            dhsdp   = obj.Phases(1).ComputeDhpDp(2, PhaseIndex, p, h);
+            drhowdp = obj.Phases(1).ComputeDrhoDp(1, PhaseIndex, p, h);
+            drhosdp = obj.Phases(1).ComputeDrhoDp(2, PhaseIndex, p, h);
+            
+            % initialize
+            dSdp = zeros(length(h),obj.NofPhases);
+            
+            % compute derivative of water saturation
+            dSdp(PhaseIndex == 1,1) = 0; % water region
+            % two-phase region
+            dSdp(PhaseIndex == 2,1) = ( ( drhosdp(PhaseIndex == 2) .* h_s(PhaseIndex == 2) + ...
+                       rho_s(PhaseIndex == 2) .* dhsdp(PhaseIndex == 2) - drhosdp(PhaseIndex == 2) .* h(PhaseIndex == 2) ...
+                      ) .* ...
+                     ( h(PhaseIndex == 2) .* ( rho_w(PhaseIndex == 2) - rho_s(PhaseIndex == 2) ) - ...
+                       ( h_w(PhaseIndex == 2) .* rho_w(PhaseIndex == 2) - h_s(PhaseIndex == 2) .* rho_s(PhaseIndex == 2) ) ...
+                      ) - ...
+                     ( rho_s(PhaseIndex == 2) .* ( h_s(PhaseIndex == 2) - h(PhaseIndex == 2) ) ) .* ...
+                     ( ( h(PhaseIndex == 2) .* drhowdp(PhaseIndex == 2) - h(PhaseIndex == 2) .* drhosdp(PhaseIndex == 2) - ...
+                         dhwdp(PhaseIndex == 2) .* rho_w(PhaseIndex == 2) - h_w(PhaseIndex == 2) .* drhowdp(PhaseIndex == 2) + ...
+                         dhsdp(PhaseIndex == 2) .* rho_s(PhaseIndex == 2) + h_s(PhaseIndex == 2) .* drhosdp(PhaseIndex == 2) ...
+                        ) ...
+                      )               ) ./ ...
+                   ( h(PhaseIndex == 2) .* ( rho_w(PhaseIndex == 2) - rho_s(PhaseIndex == 2) ) - ...
+                     ( h_w(PhaseIndex == 2) .* rho_w(PhaseIndex == 2) - h_s(PhaseIndex == 2) .* rho_s(PhaseIndex == 2) ) ) .^2;
+            % steam region
+            dSdp(PhaseIndex == 3,1) = 0;
+            
+            % compute derivative of steam saturation
+            dSdp(:,2) = -1 .* dSdp(:,1);
+        end  
         function dMobdp = ComputeDMobDp(obj,Status)
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;
             dMobdp = zeros(length(p),obj.NofPhases);
-%             dSdp = zeros(length(p),obj.NofPhases);
-            
-            S1 = Status.Properties('S_1').Value; 
-            kr = obj.RelPermModel.ComputeRelPerm(obj.Phases, S1);
+            dSdp = obj.ComputeDSDp(Status);
             for i=1:obj.NofPhases
-%                 dSdp(:,i) = obj.Phases(i).ComputeDSDp(obj.Pgrid, obj.Hgrid, STable, h, p);
-                
-                dMobdp(:,i) = 0;     
-%                 dMobdp(:,i) = ( dSdp(:,i) .* mu.Value - dmudp(:,i) .* kr(:,i) ) ./ mu.Value.^2;     
+                mu = Status.Properties(['mu_',num2str(i)]).Value;
+                dMobdp(:,i) = dSdp(:,i) ./ mu;     
             end
             dMobdp(isnan(dMobdp))=0;
         end
@@ -212,16 +285,10 @@ classdef Geothermal_Multiphase_fluid_model < fluid_model
             p = Status.Properties('P_2').Value;
             h = Status.Properties('hTfluid').Value;
             dMobdh = zeros(length(h),obj.NofPhases);
-            obj.dSdh = ComputeDSDh(obj, Status);
-            
-            S1 = Status.Properties('S_1').Value; 
-            kr = obj.RelPermModel.ComputeRelPerm(obj.Phases, S1);
+            dSdh = obj.ComputeDSDh(Status);
             for i=1:obj.NofPhases
                 mu = Status.Properties(['mu_',num2str(i)]).Value;
-%                 dSdh(:,i) = obj.Phases(i).ComputeDSDh(obj.Pgrid, obj.Hgrid, STable, h, p);
-
-                dMobdh(:,i) = 0;
-%                 dMobdh(:,i) = ( obj.dSdh(:,i) .* mu ) ./ mu.^2;     
+                dMobdh(:,i) = dSdh(:,i) ./ mu;
             end  
             dMobdh(isnan(dMobdh))=0;
         end

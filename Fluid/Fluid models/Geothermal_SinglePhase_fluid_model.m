@@ -30,6 +30,8 @@ classdef Geothermal_SinglePhase_fluid_model < fluid_model
             % Here you decide how to compute enthalpy as function of P&T
             h = Status.Properties('h_1'); 
             h.Value = obj.Phases(1).ComputeEnthalpy(Status.Properties('P_1').Value, Status.Properties('T').Value);
+            hTfluid = Status.Properties('hTfluid');
+            hTfluid.Value = h.Value;
         end
         function ComputePhaseViscosities(obj, Status)
             mu = Status.Properties('mu_1'); 
