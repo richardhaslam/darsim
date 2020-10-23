@@ -93,9 +93,9 @@ classdef cartesian_grid < grid_darsim
             obj.Tx(2:obj.Nx,:,:) = obj.Tx(2:obj.Nx,:,:) .* ( 1 - obj.pEDFM_alpha_Tx(2:obj.Nx,:,:) );
             obj.Ty(:,2:obj.Ny,:) = obj.Ty(:,2:obj.Ny,:) .* ( 1 - obj.pEDFM_alpha_Ty(:,2:obj.Ny,:) );
             obj.Tz(:,:,2:obj.Nz) = obj.Tz(:,:,2:obj.Nz) .* ( 1 - obj.pEDFM_alpha_Tz(:,:,2:obj.Nz) );
-%             obj.condTrans_x(2:obj.Nx,:,:) = obj.condTrans_x(2:obj.Nx,:,:) .* ( 1 - obj.Tx_Alpha(2:obj.Nx,:,:) );
-%             obj.condTrans_y(:,2:obj.Ny,:) = obj.condTrans_y(:,2:obj.Ny,:) .* ( 1 - obj.Ty_Alpha(:,2:obj.Ny,:) );
-%             obj.condTrans_z(:,:,2:obj.Nz) = obj.condTrans_z(:,:,2:obj.Nz) .* ( 1 - obj.Tz_Alpha(:,:,2:obj.Nz) );
+%             obj.condTrans_x(2:obj.Nx,:,:) = obj.condTrans_x(2:obj.Nx,:,:) .* ( 1 - obj.pEDFM_alpha_Tx(2:obj.Nx,:,:) );
+%             obj.condTrans_y(:,2:obj.Ny,:) = obj.condTrans_y(:,2:obj.Ny,:) .* ( 1 - obj.pEDFM_alpha_Ty(:,2:obj.Ny,:) );
+%             obj.condTrans_z(:,:,2:obj.Nz) = obj.condTrans_z(:,:,2:obj.Nz) .* ( 1 - obj.pEDFM_alpha_Tz(:,:,2:obj.Nz) );
         end
         function ComputeHeatConductivitiyTransmissibilities(obj, CondEff)
             % Harmonic average of effective heat conductivity.
