@@ -8,7 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Geothermal_MultiPhase_formulation < formulation
     properties
-        MatrixAssembler
         dMobdp
         dSdp
         dTdp
@@ -20,6 +19,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
         %d2Mobdh2
         dTdh
         %d2Td2h
+        dhpdp
+        dhpdh
         %Kf % fluid thermal conductivity
         Tk % transmisibility of rock conductivity
         Th % transmisibility of rho .* h
@@ -132,7 +133,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             end
 
         end
-        function [Residual_MB   , RHS_MB  ] = BuildMediumMassBalanceResidual(obj, Medium, Grid, dt, Stateold, Index, WellMassFlux, FracturesMassFlux, f)
+        function [Residual_MB   , RHS_MB  ] = BuildMediumMassBalanceResidual(obj, Medium, Grid, dt, State_old, Index, WellMassFlux, FracturesMassFlux, f)
             % Create local variables from time step n
             P_old    = State_old.Properties('P_2').Value(Index.Start:Index.End);
             
@@ -152,8 +153,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
             SourceTerm_Flux = zeros(Grid.N,1);   % Initialize source term flux
 
             for ph=1:obj.NofPhases % Loop over the phases
-                rho_old = Stateold.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
-                S_old = Stateold.Properties(['S_', num2str(ph)]).Value(Index.Start:Index.End);
+                rho_old = State_old.Properties(['rho_', num2str(ph)]).Value(Index.Start:Index.End);
+                S_old = State_old.Properties(['S_', num2str(ph)]).Value(Index.Start:Index.End);
 
                 P_new = Medium.State.Properties(['P_', num2str(ph)]).Value;   % Phase pressure from iteration step nu
                 rho_new = Medium.State.Properties(['rho_', num2str(ph)]).Value;
@@ -234,11 +235,11 @@ classdef Geothermal_MultiPhase_formulation < formulation
         
             % end of function
         end
-        function [Residual_Full , RHS_Full] = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State_old)
+        function [Residual_Full , RHS_Full] = BuildFullResidual(obj, ProductionSystem, DiscretizationModel, dt, State_old)
             % Compute source terms
             [WellMassFlux, WellHeatConvectionFlux] = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             FracturesMassFlux           = zeros(DiscretizationModel.N, obj.NofPhases);     % Mass flux between each two media (reservoir-frac or frac1-frac2)
-            FracturesHeatConvectionFlux = zeros(DiscretizationModel.N, 1);                 % Heat Convection flux betweem each two media
+            FracturesHeatConvectionFlux = zeros(DiscretizationModel.N, obj.NofPhases);     % Heat Convection flux betweem each two media
             FracturesHeatConductionFlux = zeros(DiscretizationModel.N, 1);                 % Heat Conduction flux betweem each two media
             if ProductionSystem.FracturesNetwork.Active
                 [FracturesMassFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux] = obj.ComputeSourceTerms_frac_mat(ProductionSystem, DiscretizationModel);
@@ -653,7 +654,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             
             % end of function
         end
-        function JacobianFull = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
+        function JacobianFull = BuildFullJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             %% Jacobian's assembly for MultiPhase geothermal reservoir
             % | JPP  JPT | dP |    | RP |
             % | JTP  JTT | dT | = -| RT |
@@ -679,8 +680,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
             %% Jacobian of the fractures
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Nf = DiscretizationModel.FracturesGrid.N;
-                Index.Start = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, 1);
-                Index.End = DiscretizationModel.Index_Local_to_Global(Nx, Ny, Nz, f, Nf(f));
+                Index.Start = DiscretizationModel.Index_Local_to_Global( Nm , f , 1     );
+                Index.End   = DiscretizationModel.Index_Local_to_Global( Nm , f , Nf(f) );
                 % Mass Balance Jacobian blocks
                 [J_MB_P_Fractures, J_MB_H_Fractures] = BuildMediumFlowJacobian(obj, Fractures(f), Wells, DiscretizationModel.FracturesGrid.Grids(f), dt, Index, f);
                 J_MB_P  = blkdiag(J_MB_P, J_MB_P_Fractures);
@@ -699,7 +700,7 @@ classdef Geothermal_MultiPhase_formulation < formulation
             %% ADD frac-matrix and frac-frac connections in Jacobian blocks
             % Global variables
             if ProductionSystem.FracturesNetwork.Active
-                FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+                FineGrid = [DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids];
             else
                 FineGrid = DiscretizationModel.ReservoirGrid;
             end
@@ -1115,10 +1116,10 @@ classdef Geothermal_MultiPhase_formulation < formulation
             Nm = DiscretizationModel.ReservoirGrid.N;
 
             % Global variables
-            P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
-            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
-            h = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'h_'); % useful for cross connections assembly
-            T = ProductionSystem.CreateGlobalSinglePhaseVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], 'T'); % useful for cross connections assembly
+            P = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
+            h = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'h_'); % useful for cross connections assembly
+            T = ProductionSystem.CreateGlobalSinglePhaseVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], 'T'); % useful for cross connections assembly
             for c=1:length(DiscretizationModel.CrossConnections)
                 j = DiscretizationModel.CrossConnections(c).Cells;
                 i = c + Nm;
@@ -1182,8 +1183,8 @@ classdef Geothermal_MultiPhase_formulation < formulation
             %Injectors
             for i=1:length(Inj)
                 a = Inj(i).Cells;
-                dQhdp = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.NofPhases);
-                dQhdh = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(State, K, obj.NofPhases);
+                dQhdp = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(K, obj.NofPhases);
+                dQhdh = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(obj.NofPhases);
                 for ph=1:obj.NofPhases
                     for j=1:length(a)
                         % add derivative of inj well to J_EB_P

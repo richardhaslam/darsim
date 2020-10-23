@@ -6,6 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef formulation < handle
     properties
+        MatrixAssembler
         NofPhases
         UpWind
         U
@@ -17,11 +18,10 @@ classdef formulation < handle
         drhodp
         GravityModel
         SinglePhase
-        MatrixAssembler
     end
     methods (Abstract)
-        obj = BuildResidual(obj)
-        obj = BuildJacobian(obj)
+        %obj = BuildResidual(obj)
+        %obj = BuildJacobian(obj)
         obj = UpdateState(obj)
     end
     methods

@@ -23,7 +23,7 @@ classdef producer_pressure < producer
                 rho = State.Properties(['rho_', num2str(i)]);
                 obj.QPhases(:,i) = rho.Value(obj.Cells) .* Mob(obj.Cells, i) .* obj.PI .* K(obj.Cells) .* (obj.p - p.Value(obj.Cells));
             end
-            obj.QComponents = zeros(length(obj.Cells), FluidModel.NofComp);
+            obj.QComponents = zeros(length(obj.Cells), FluidModel.NofComponents);
             switch(FluidModel.name)
                 case('SinglePhase')
                 case('Immiscible')
@@ -43,7 +43,6 @@ classdef producer_pressure < producer
                     error('This fluid model is not implemented for producers');
             end
         end
-        
         %%
         % Mass Flux Derivatives
         function dQdp = ComputeWellMassFluxDerivativeWithRespectToPressure(obj, State, K, Mob, drhodp, dMobdp, NofPhases) % need perforated cell properties
@@ -65,7 +64,7 @@ classdef producer_pressure < producer
                 dQdS(:, i) = rho(obj.Cells) .* dMob(obj.Cells, i) .* obj.PI .* K(obj.Cells) .* (obj.p - p(obj.Cells));
             end
         end
-        function dQdT = ComputeWellMassFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, dMobdT, drhodT, NofPhases) % need perforated cell properties
+        function dQdT = ComputeWellMassFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, drhodT, dMobdT, NofPhases) % need perforated cell properties
             dQdT = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
                 p = State.Properties(['P_',num2str(NofPhases)]).Value;
@@ -98,7 +97,7 @@ classdef producer_pressure < producer
                               rho(obj.Cells)      .* h(obj.Cells)       .* obj.PI .* K(obj.Cells) .* dMobdp(obj.Cells,i) .* (obj.p - p(obj.Cells))        ;
             end
         end
-        function dQhdT = ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, dMobdT, drhodT, dhdT, NofPhases) % need perforated cell properties
+        function dQhdT = ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj, State, K, Mob, drhodT, dhdT, dMobdT, NofPhases) % need perforated cell properties
             p = State.Properties(['P_',num2str(NofPhases)]).Value;
             dQhdT = zeros(length(obj.Cells), NofPhases);
             for i = 1:NofPhases
@@ -110,7 +109,6 @@ classdef producer_pressure < producer
                     rho(obj.Cells) .*  Mob(obj.Cells,i) .* dhdT(obj.Cells,i));
             end
         end
-        
         function dQhdh = ComputeWellHeatFluxDerivativeWithRespectToEnthalpy(obj, State, K, Mob, drhodh, dhpdh, dMobdh, NofPhases)
             % Qh = rho * h * PI * K * Mob * (pWell - pCell);
             dQhdh = zeros(length(obj.Cells), NofPhases);
@@ -123,7 +121,6 @@ classdef producer_pressure < producer
                               rho(obj.Cells)      .* dhpdh(obj.Cells,i) .* obj.PI .* K(obj.Cells) .* Mob(obj.Cells,i)    .* (obj.p - p(obj.Cells)) ;         
             end
         end
-
         function q = TotalFlux(obj, q, p, K, Mob)
             q(obj.Cells) = q(obj.Cells) + obj.PI .* K(obj.Cells) .* Mob(obj.Cells,1) .* (obj.p - p(obj.Cells));
         end

@@ -8,7 +8,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef Geothermal_SinglePhase_formulation < formulation
     properties
-        MatrixAssembler
         Thph % Transmisibility matrix for mas convcection flux
         Ghph % Gravity         matrix for mas convcection flux
         Tk   % Transmisibility matrix for heat conduction flux
@@ -168,9 +167,9 @@ classdef Geothermal_SinglePhase_formulation < formulation
             % Energy Balance Residual Calculation (LHS - RHS)
             RHS_EB = WellHeatConvectionFlux( Index.Start:Index.End, 1 );
             Residual_EB  = HeatAccumulation ...
-                + obj.Thph{ph, 1+f} * P_new ...
-                - obj.Gph{ph, 1+f} * Grid.Depth ...
-                + obj.Tk{ph, 1+f} * T_new ...
+                + obj.Thph{1, 1+f} * P_new ...
+                - obj.Gph{1, 1+f} * Grid.Depth ...
+                + obj.Tk{1, 1+f} * T_new ...
                 - WellHeatConvectionFlux     ( Index.Start:Index.End , 1 )...
                 - FracturesHeatConvectionFlux( Index.Start:Index.End , 1 )...
                 - FracturesHeatConductionFlux( Index.Start:Index.End , 1 );
@@ -178,9 +177,9 @@ classdef Geothermal_SinglePhase_formulation < formulation
         function [Residual_Full , RHS_Full] = BuildFullResidual(obj, ProductionSystem, DiscretizationModel, dt, State_old)
             % Computing source terms and the flux transfer functions between reservoir and fractures (if any)
             [WellMassFlux, WellHeatConvectionFlux] = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
-            FracturesMassFlux           = zeros(DiscretizationModel.N, 1);     % Mass flux between each two media (reservoir-frac or frac1-frac2)
-            FracturesHeatConvectionFlux = zeros(DiscretizationModel.N, 1);     % Heat Convection flux betweem each two media
-            FracturesHeatConductionFlux = zeros(DiscretizationModel.N, 1);     % Heat Conduction flux betweem each two media
+            FracturesMassFlux           = zeros(DiscretizationModel.N, obj.NofPhases);     % Mass flux between each two media (reservoir-frac or frac1-frac2)
+            FracturesHeatConvectionFlux = zeros(DiscretizationModel.N, obj.NofPhases);     % Heat Convection flux betweem each two media
+            FracturesHeatConductionFlux = zeros(DiscretizationModel.N, 1);                 % Heat Conduction flux betweem each two media
             if ProductionSystem.FracturesNetwork.Active
                 [FracturesMassFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux] = obj.ComputeSourceTerms_frac_mat(ProductionSystem, DiscretizationModel);
             end
@@ -355,7 +354,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             
             % Add Wells
             if f == 0 % only for reservoir
-                [J_MB_P, J_MB_T, ~, ~] = obj.AddWellsToJacobian(J_MB_P, J_MB_T, Medium.State, Wells, Medium.K(:,1));
+                [J_MB_P, J_MB_T] = obj.AddWellsToMassBalanceJacobian(J_MB_P, J_MB_T, Medium.State, Wells, Medium.K(:,1));
             end
         end
         function [J_EB_P , J_EB_T] = BuildMediumEnergyBalanceJacobian(obj, Medium, Wells, Grid, dt, Index, f)
@@ -388,7 +387,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     Mob_drhodp_dhdp = obj.Mob(Index.Start:Index.End, 1) .* ( obj.drhodp(Index.Start:Index.End) .* h + obj.dhdp(Index.Start:Index.End) .* rho );
                     dMobUpwind = obj.UpWind{1,1+f} * Mob_drhodp_dhdp;
                     FluxDerivative = dMobUpwind .* abs(obj.U{1,1+f});
-                    acc = (Grid.Volume/dt) .* ( obj.Cp.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
+                    acc = (Grid.Volume/dt) .* ( obj.Cp_std.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
                     J_EB_P = J_EB_P + spdiags(acc,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
                     
                     % 2. J_EB_T
@@ -397,7 +396,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     dMobdT_drhodT_dhdt = obj.dMobdT(Index.Start:Index.End) .* rho .* h + obj.drhodT(Index.Start:Index.End) .* Mob .* h  + obj.dhdT(Index.Start:Index.End) .* rho .* Mob;
                     dMobUpwind = obj.UpWind{1,1+f} * dMobdT_drhodT_dhdt;
                     FluxDerivative = dMobUpwind .* abs(obj.U{1,1+f});
-                    acc = (Grid.Volume/dt) .* ( obj.Cp .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
+                    acc = (Grid.Volume/dt) .* ( obj.Cp_std .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
                     J_EB_T = J_EB_T + spdiags(acc,0,N,N) + (UpwindPermutation1 * spdiags(FluxDerivative,0,N_Face,N_Face) * UpwindPermutation2')';
                     
                 case('cartesian_grid')
@@ -415,7 +414,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     vecY2 = max(reshape(obj.U{1,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
                     vecZ1 = min(reshape(obj.U{1,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
                     vecZ2 = max(reshape(obj.U{1,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-                    acc = (Grid.Volume/dt) .* ( obj.Cp.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
+                    acc = (Grid.Volume/dt) .* ( obj.Cp_std.*(por.*obj.drhodp(Index.Start:Index.End)+rho.*dpor) + Medium.Cpr.*(-dpor).*Rho_rock ) .* T;
                     
                     DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
@@ -435,7 +434,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     vecY2 = max(reshape(obj.U{1,1+f}.y(:     ,2:Ny+1,:     ), N, 1), 0) .* dMupy;
                     vecZ1 = min(reshape(obj.U{1,1+f}.z(:     ,:     ,1:Nz  ), N, 1), 0) .* dMupz;
                     vecZ2 = max(reshape(obj.U{1,1+f}.z(:     ,:     ,2:Nz+1), N, 1), 0) .* dMupz;
-                    acc = (Grid.Volume/dt) .* ( obj.Cp .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
+                    acc = (Grid.Volume/dt) .* ( obj.Cp_std .* por .*( obj.drhodT(Index.Start:Index.End) .* T + rho ) + Medium.Cpr.* (1-por) .* Rho_rock );
                     
                     DiagVecs = [-vecZ2, -vecY2, -vecX2, vecZ2+vecY2+vecX2-vecZ1-vecY1-vecX1+acc, vecX1, vecY1, vecZ1];
                     DiagIndx = [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny];
@@ -444,7 +443,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             
             % Add Wells
             if f == 0 % only for reservoir
-                [~, ~, J_EB_P, J_EB_T] = obj.AddWellsToJacobian(J_EB_P, J_EB_T, Medium.State, Wells, Medium.K(:,1));
+                [J_EB_P, J_EB_T] = obj.AddWellsToEnergyBalanceJacobian(J_EB_P, J_EB_T, Medium.State, Wells, Medium.K(:,1));
             end
         end
         function JacobianFull = BuildFullJacobian(obj, ProductionSystem, DiscretizationModel, dt)
@@ -492,7 +491,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 %% ADD frac-matrix and frac-frac connections in Jacobian blocks
                 % Global variables
                 if ProductionSystem.FracturesNetwork.Active
-                    FineGrid = [DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids];
+                    FineGrid = [DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids];
                 else
                     FineGrid = DiscretizationModel.ReservoirGrid;
                 end
@@ -575,7 +574,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             % Build & Stack Jacobian
             JacobianFull = [J_MB_P, J_MB_T ; J_EB_P, J_EB_T];
         end
-        function ConstrainedPressureResidual(obj, FluidModel, ProductionSystem, DiscretizationModel, dt, State0)
+        function ConstrainedPressureResidual(obj, FluidModel, ProductionSystem, DiscretizationModel, dt, State_old)
             % Compute source terms
             [WellMassFlux, ~] = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             FracturesMassFlux = zeros(DiscretizationModel.N, obj.NofPhases);
@@ -622,13 +621,13 @@ classdef Geothermal_SinglePhase_formulation < formulation
             % Reservoir
             Index.Start = 1;
             Index.End = Nm;
-            Residual_MB_Reservoir = BuildMediumMassBalanceResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, WellMassFlux, FracturesMassFlux, 0);
+            Residual_MB_Reservoir = BuildMediumMassBalanceResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State_old, Index, WellMassFlux, FracturesMassFlux, 0);
             Residual_MB((ph-1)*Nt + Index.Start: (ph-1)*Nt + Index.End) = Residual_MB_Reservoir;
             % Fractures
             for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                 Index.Start = Index.End+1;
                 Index.End = Index.Start + Nf(f) - 1;
-                Residual_MB_Fractures = BuildMediumMassBalanceResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index, WellMassFlux, FracturesMassFlux, f);
+                Residual_MB_Fractures = BuildMediumMassBalanceResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State_old, Index, WellMassFlux, FracturesMassFlux, f);
                 Residual_MB(Index.Start:Index.End) = Residual_MB_Fractures;
             end
             
@@ -714,7 +713,7 @@ classdef Geothermal_SinglePhase_formulation < formulation
             obj.ComputeProperties(ProductionSystem, FluidModel);
             ProductionSystem.Wells.UpdateState(ProductionSystem.Reservoir, FluidModel);
         end
-        function ConstrainedTemperatureResidual(obj, FluidModel, ProductionSystem, DiscretizationModel, dt, State0)
+        function ConstrainedTemperatureResidual(obj, FluidModel, ProductionSystem, DiscretizationModel, dt, State_old)
             % Compute source terms
             [~, WellHeatConvectionFlux] = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             FracturesHeatConvectionFlux = zeros(DiscretizationModel.N, obj.NofPhases); % Heat Convection flux betweem each two media
@@ -722,7 +721,6 @@ classdef Geothermal_SinglePhase_formulation < formulation
             if ProductionSystem.FracturesNetwork.Active
                 [~, FracturesHeatConvectionFlux, FracturesHeatConductionFlux] = obj.ComputeSourceTerms_frac_mat(ProductionSystem, DiscretizationModel);
             end
-            FracturesHeatConductionFlux = zeros(DiscretizationModel.N, 1);
             
             % Initialise residual vector (Nph * N, 1)
             Nm = DiscretizationModel.ReservoirGrid.N;
@@ -771,13 +769,13 @@ classdef Geothermal_SinglePhase_formulation < formulation
                 % Reservoir
                 Index.Start = 1;
                 Index.End = Nm;
-                Residual_EB_Reservoir = BuildMediumHeatResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State0, Index, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, 0, ph);
+                Residual_EB_Reservoir = BuildMediumHeatResidual(obj, ProductionSystem.Reservoir, DiscretizationModel.ReservoirGrid, dt, State_old, Index, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, 0, ph);
                 Residual_EB(Index.Start: Index.End) = Residual_EB_Reservoir;
                 % Fractures
                 for f = 1 : ProductionSystem.FracturesNetwork.NumOfFrac
                     Index.Start = Index.End + 1;
                     Index.End = Index.Start + Nf(f) - 1;
-                    Residual_EB_Fractures = BuildMediumHeatResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State0, Index, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, f, ph);
+                    Residual_EB_Fractures = BuildMediumHeatResidual(obj, ProductionSystem.FracturesNetwork.Fractures(f), DiscretizationModel.FracturesGrid.Grids(f), dt, State_old, Index, WellHeatConvectionFlux, FracturesHeatConvectionFlux, FracturesHeatConductionFlux, f, ph);
                     Residual_EB(Index.Start:Index.End) = Residual_EB_Fractures; 
                 end
             end
@@ -935,10 +933,10 @@ classdef Geothermal_SinglePhase_formulation < formulation
             Nm = DiscretizationModel.ReservoirGrid.N;
 
             % Global variables
-            P   = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
-            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
-            h   = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'h_'); % useful for cross connections assembly
-            T   = ProductionSystem.CreateGlobalSinglePhaseVariables([DiscretizationModel.ReservoirGrid, DiscretizationModel.FracturesGrid.Grids], 'T'); % useful for cross connections assembly
+            P   = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'P_'); % useful for cross connections assembly
+            rho = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'rho_'); % useful for cross connections assembly
+            h   = ProductionSystem.CreateGlobalVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], obj.NofPhases, 'h_'); % useful for cross connections assembly
+            T   = ProductionSystem.CreateGlobalSinglePhaseVariables([DiscretizationModel.ReservoirGrid; DiscretizationModel.FracturesGrid.Grids], 'T'); % useful for cross connections assembly
             for c = 1:length(DiscretizationModel.CrossConnections)
                 j = DiscretizationModel.CrossConnections(c).Cells;
                 i = c + Nm;
@@ -967,9 +965,9 @@ classdef Geothermal_SinglePhase_formulation < formulation
             end
         end
         function [J_MB_P, J_MB_T] = AddWellsToMassBalanceJacobian(obj, J_MB_P, J_MB_T, State, Wells, K)
-            %Injectors
-            for i=1:length(Inj)
-                a = Wells.Inj(i).Cells;
+            % Injectors
+            for i=1:length(Wells.Inj)
+                a     = Wells.Inj(i).Cells;
                 dQdp  = Wells.Inj(i).ComputeWellMassFluxDerivativeWithRespectToPressure(K, obj.NofPhases);
                 dQdT  = Wells.Inj(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(obj.NofPhases);
                 for ph=1:obj.NofPhases
@@ -981,68 +979,48 @@ classdef Geothermal_SinglePhase_formulation < formulation
                     end
                 end
             end
-            %Producers
-            for i=1:length(Prod)
-                b = Wells.Prod(i).Cells;
-                dQdp = Wells.Prod(i).ComputeWellMassFluxDerivativeWithRespectToPressure   (State, K, obj.Mob, obj.dMobdp, obj.drhodp, obj.NofPhases);
-                dQdT = Wells.Prod(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.dMobdT, obj.drhodT, obj.NofPhases);
+            % Producers
+            for i=1:length(Wells.Prod)
+                b    = Wells.Prod(i).Cells;
+                dQdp = Wells.Prod(i).ComputeWellMassFluxDerivativeWithRespectToPressure   (State, K, obj.Mob, obj.drhodp, obj.dMobdp, obj.NofPhases);
+                dQdT = Wells.Prod(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.drhodT, obj.dMobdT,  obj.NofPhases);
                 for ph=1:obj.NofPhases
                     for j=1:length(b)
                         % add derivative of production well mass flux with respect to pressure to J_MB_P
                         J_MB_P(b(j),b(j)) = J_MB_P(b(j),b(j)) - dQdp(j, ph);
-                        % Add derivative of production well mass flux with respect to temperature, to J_MB_T
+                        % Add derivative of production well mass flux with respect to temperature to J_MB_T
                         J_MB_T(b(j),b(j)) = J_MB_T(b(j),b(j)) - dQdT(j, ph);
                     end
                 end
             end
         end
-        function [J_EB_P, J_EB_H] = AddWellsToEnergyBalanceJacobian(obj, J_EB_P, J_EB_H, State, Wells, K)
-            %Injectors
-            for i=1:length(Inj)
-                a = Wells.Inj(i).Cells;
+        function [J_EB_P, J_EB_T] = AddWellsToEnergyBalanceJacobian(obj, J_EB_P, J_EB_T, State, Wells, K)
+            % Injectors
+            for i=1:length(Wells.Inj)
+                a     = Wells.Inj(i).Cells;
                 dQhdp = Wells.Inj(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(K, obj.NofPhases);
                 dQhdT = Wells.Inj(i).ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj.NofPhases);
-                for j=1:length(a)
-                    % add derivative of inj well to Jpp
-                    J_EB_P(a(j),a(j)) = J_MB_P(a(j),a(j)) - dQhdp(j, ph);
-                    % add derivative of inj well to JTp
-                    J_EB_P(a(j),a(j)) = AP2(a(j),a(j)) - dQhdp(j, ph);
+                for ph=1:obj.NofPhases
+                    for j=1:length(a)
+                        % add derivative of injection well heat flux with respect to pressure to J_EB_P
+                        J_EB_P(a(j),a(j)) = J_EB_P(a(j),a(j)) - dQhdp(j, ph);
+                        % Add derivative of injection well heat flux with respect to temperature to J_EB_T
+                        J_EB_T(a(j),a(j)) = J_EB_T(a(j),a(j)) - dQhdT(j, ph);
+                    end
                 end
             end
-        end
-        function [J_MB_P, AT1, AP2, AT2] = AddWellsToJacobian(obj, AP, AT, State, Wells, K, ph)
-            J_MB_P = AP; % add wells to pressure-pressure jacobian (mass balance)
-            AT1 = AT; % add wells to pressure-heat jacobian (mass balance)
-            AP2 = AP; % add wells to heat-pressure jacobian (energy balance)
-            AT2 = AT; % add wells to heat-heat jacobian (energy balance)
-            %Injectors
-            for i=1:length(Inj)
-                a = Inj(i).Cells;
-                dQdp = Inj(i).ComputeWellMassFluxDerivativeWithRespectToPressure(K, obj.NofPhases);
-                dQhdp = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.NofPhases);
-                dQdT = Inj(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(obj.NofPhases);
-                dQhdT = Inj(i).ComputeWellHeatFluxDerivativeWithRespectToTemperature(obj.NofPhases);
-                for j=1:length(a)
-                    % add derivative of inj well to Jpp
-                    J_MB_P(a(j),a(j)) = J_MB_P(a(j),a(j)) - dQdp(j, ph);
-                    % add derivative of inj well to JTp
-                    AP2(a(j),a(j)) = AP2(a(j),a(j)) - dQhdp(j, ph);
-                end
-            end
-            %Producers
-            for i=1:length(Prod)
-                b = Prod(i).Cells;                
-                dQdp = Prod(i).ComputeWellMassFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dMobdp, obj.NofPhases); 
-                dQdT = Prod(i).ComputeWellMassFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.dMobdT, obj.drhodT, obj.NofPhases);
-                dQhdp = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, obj.dMobdp, obj.NofPhases); 
-                dQhdT = Prod(i).ComputeWellHeatFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.dMobdT, obj.drhodT, obj.dhdT, obj.NofPhases);
-                for j=1:length(b)
-                    % add derivative of prod well to Jpp & JpT
-                    J_MB_P(b(j),b(j)) = J_MB_P(b(j),b(j)) - dQdp(j, ph);                    
-                    AT1(b(j),b(j)) = AT1(b(j),b(j)) - dQdT(j, ph);
-                    % add derivative of prod well to JTp & JTT
-                    AP2(b(j),b(j)) = AP2(b(j),b(j)) - dQhdp(j, ph);
-                    AT2(b(j),b(j)) = AT2(b(j),b(j)) - dQhdT(j, ph);
+            % Producers
+            for i=1:length(Wells.Prod)
+                b     = Wells.Prod(i).Cells;                
+                dQhdp = Wells.Prod(i).ComputeWellHeatFluxDerivativeWithRespectToPressure(State, K, obj.Mob, obj.drhodp, zeros(size(obj.drhodp)), obj.dMobdp, obj.NofPhases); 
+                dQhdT = Wells.Prod(i).ComputeWellHeatFluxDerivativeWithRespectToTemperature(State, K, obj.Mob, obj.drhodT, obj.dhdT, obj.dMobdT, obj.NofPhases);
+                for ph=1:obj.NofPhases
+                    for j=1:length(b)
+                        % add derivative of production well heat flux with respect to pressure to J_EB_P
+                        J_EB_P(b(j),b(j)) = J_EB_P(b(j),b(j)) - dQhdp(j, ph);
+                        % Add derivative of production well heat flux with respect to temperature to J_EB_T
+                        J_EB_T(b(j),b(j)) = J_EB_T(b(j),b(j)) - dQhdT(j, ph);
+                    end
                 end
             end
         end

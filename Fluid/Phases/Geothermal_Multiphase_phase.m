@@ -27,6 +27,7 @@ classdef Geothermal_Multiphase_phase < phase
             end
         end
         function T = ComputeTemperature(obj, PhaseIndex, p, h)
+            T = zeros(length(p),1);
             % Compressed water region [K]
             T(PhaseIndex == 1) = 273.15 - 2.41231 + 2.56222e-8.*(h(PhaseIndex == 1).*1e4) - 9.31415e-17.*(p(PhaseIndex == 1).*1e1).^2 - 2.2568e-19.*(h(PhaseIndex == 1).*1e4).^2;
             % Twophase region
@@ -36,9 +37,10 @@ classdef Geothermal_Multiphase_phase < phase
                 7.39386e-19.*(h(PhaseIndex == 3).*1e4).^2 - 3.3372e34.*(p(PhaseIndex == 3).*1e1).^-2.*(h(PhaseIndex == 3).*1e4).^-2 + ...
                 3.57154e19.*(p(PhaseIndex == 3).*1e1).^-3 - 1.1725e-37.*(p(PhaseIndex == 3).*1e1).*(h(PhaseIndex == 3).*1e4).^3 + ...
                 -2.26861e43.*(h(PhaseIndex == 3).*1e4).^-4;
-            T = T';
-        end        
+%             T = T';
+        end
         function mu = ComputeViscosity(obj, i, PhaseIndex, T)
+            mu = zeros(length(T),1);
             for k = 1:3
                 if i == 1
                     mu(PhaseIndex == k) = (241.4 .* 10.^(247.8./((T(PhaseIndex == k)-273.15) + 133.15)) ) .* 1e-4 .* 1e-3;
@@ -46,7 +48,7 @@ classdef Geothermal_Multiphase_phase < phase
                     mu(PhaseIndex == k) = (0.407.*(T(PhaseIndex == k)-273.15) + 80.4) .* 1e-4 .* 1e-3;
                 end
             end
-            mu = mu'; 
+%             mu = mu'; 
         end
         function psat = ComputeSaturationPressure(obj, Status, PhaseIndex)
             T = Status.Properties('T').Value;
@@ -61,6 +63,7 @@ classdef Geothermal_Multiphase_phase < phase
             psat(psat == 0) = [];
         end
         function rho = ComputeDensity(obj, i, PhaseIndex, p, h)
+            rho = zeros(length(p),1);
             % The index "i" is "1" for water and "2" for steam.
             for k = 1:3
                 if i == 1                    
@@ -80,26 +83,61 @@ classdef Geothermal_Multiphase_phase < phase
                         5.17644e-41.*(p(PhaseIndex == k).*1e1).*(h(PhaseIndex == k).*1e4).^3 ...
                         ).*1e3;
                 end
-                rho = rho';
+%                 rho = rho';
             end
         end
         %% Derivatives (directly from tables)
+        function dhpdp = ComputeDhpDp(obj, i, PhaseIndex, p, h)
+            dhpdp = zeros(length(p),1);
+            if i == 1   % water phase
+                dhpdp(PhaseIndex == 1) = 0;
+                dhpdp(PhaseIndex == 2) = ( ...
+                                           1.29239e2.*1e1 - ...
+                                           1.00333e-6.*2.*1e2.*p(PhaseIndex == 2) + ...
+                                           3.9881e-15.*3.*1e3.*p(PhaseIndex == 2).^2 + ...
+                                           9.90697e15./1e1.*p(PhaseIndex == 2).^-2 - 1.29267e22./2e2.*p(PhaseIndex == 2).^-3 + ...
+                                           6.28359e27./3e3.*p(PhaseIndex == 2).^-4 ...
+                                          ).*1e-7 .*1e3; 
+                dhpdp(PhaseIndex == 3) = 0;
+            elseif i == 2   % steam phase
+                dhpdp(PhaseIndex == 1) = 0;
+                dhpdp(PhaseIndex == 2) = ( ...
+                                           3.91952e5./1e1.*p(PhaseIndex == 2).^-2 - ...
+                                           2.54342e21./2e2.*p(PhaseIndex == 2).^-3 - ...
+                                           9.38879e-8.*2.*1e2.*p(PhaseIndex == 2) ...
+                                          ).*1e-7 .*1e3;
+                dhpdp(PhaseIndex == 3) = 0;
+            end
+        end
+        function dhpdh = ComputeDhpDh(obj, i, PhaseIndex, p, h)
+            dhpdh = zeros(length(p),1);
+            if i == 1   % water phase
+                dhpdh(PhaseIndex == 1) = 1;
+                dhpdh(PhaseIndex == 2) = 0; 
+                dhpdh(PhaseIndex == 3) = 0;
+            elseif i == 2   % steam phase
+                dhpdh(PhaseIndex == 1) = 0;
+                dhpdh(PhaseIndex == 2) = 0;
+                dhpdh(PhaseIndex == 3) = 1;
+            end
+        end
         function drhodp = ComputeDrhoDp(obj, i, PhaseIndex, p, h)
             % Note that the derivative for two-phase region is implemented identical to single -phase regions; 
             % when Psat has no derivative, the equation changes and this function should change as well !
+            drhodp = zeros(length(p),1);
             for k = 1:3
                 if i == 1                    
                     drhodp(PhaseIndex == k) = ( ...
-                        4.42607e-11 + ...
-                        5.02875e-21.*(h(PhaseIndex == k).*1e4) ...
+                        4.42607e-11.*1e1 + ...
+                        5.02875e-21.*1e1.*(h(PhaseIndex == k).*1e4) ...
                         ).*1e3;
                 elseif i == 2                    
                     drhodp(PhaseIndex == k) = ( ...
-                        4.38441e-9 + ...
-                        - 1.79088e-19.*(h(PhaseIndex == k).*1e4) + ...
-                        3.69276e-36.*4.*(p(PhaseIndex == k).*1e1).^3 + ...
-                        5.17644e-41.*(h(PhaseIndex == k).*1e4).^3 ...
-                        ).*1e3;
+                        4.38441e-9.*1e1 - ...
+                        1.79088e-19.*1e1.*(h(PhaseIndex == k).*1e4) + ...
+                        3.69276e-36.*4e4.*p(PhaseIndex == k).^3 + ...
+                        5.17644e-41.*1e1.*(h(PhaseIndex == k).*1e4).^3 ...
+                        ).* 1e3;
                 end
                 %drhodp = drhodp';
             end
@@ -107,44 +145,47 @@ classdef Geothermal_Multiphase_phase < phase
         function drhodh = ComputeDrhoDh(obj, i, PhaseIndex, p, h)
             % Note that the derivative for two-phase region is implemented identical to single -phase regions; 
             % when Psat has no derivative, the equation changes and this function should change as well !
+            drhodh = zeros(length(p),1);
             for k = 1:3
                 if i == 1                    
                     drhodh(PhaseIndex == k) = ( ...
-                        -5.47456e-12 + ...
-                        5.02875e-21.*(p(PhaseIndex == k).*1e1) + ...
-                        - 1.24791e-21.*2.*(h(PhaseIndex == k).*1e4) ...
+                        -5.47456e-12.*1e4 + ...
+                        5.02875e-21.*1e4.*(p(PhaseIndex == k).*1e1) - ...
+                        1.24791e-21.*2.*1e8.*h(PhaseIndex == k) ...
                         ).*1e3;
                 elseif i == 2                    
                     drhodh(PhaseIndex == k) = ( ...
-                        -1.79088e-19.*(p(PhaseIndex == k).*1e1) + ...
-                        5.17644e-41.*(p(PhaseIndex == k).*1e1).*3.*(h(PhaseIndex == k).*1e4).^2 ...
+                        -1.79088e-19.*1e4.*(p(PhaseIndex == k).*1e1) + ...
+                        5.17644e-41.*3e12.*(p(PhaseIndex == k).*1e1).*h(PhaseIndex == k).^2 ...
                         ).*1e3;
                 end
                 %drhodh = drhodh';
             end
         end
         function dTdp = ComputeDTDp(obj, PhaseIndex, p, h) 
+            dTdp = zeros(length(p),1);
             % Compressed water region [K]
-            dTdp(PhaseIndex == 1) = -9.31415e-17.*2.*(p(PhaseIndex == 1).*1e1);
+            dTdp(PhaseIndex == 1) = -9.31415e-17.*2e2.*p(PhaseIndex == 1);
             % Twophase region
-            dTdp(PhaseIndex == 2) = -9.31415e-17.*2.*(p(PhaseIndex == 2).*1e1);
+            dTdp(PhaseIndex == 2) = -9.31415e-17.*2e2.*p(PhaseIndex == 2);
             % Superheated steam region
-            dTdp(PhaseIndex == 3) = 4.79921e-6 - 6.33606e-15.*2.*(p(PhaseIndex == 3).*1e1) + ...
-                                     3.3372e34.*(h(PhaseIndex == 3).*1e4).^-2.*(p(PhaseIndex == 3).*1e1).^-3 + ...
-                                     -3.57154e19.*3.*(p(PhaseIndex == 3).*1e1).^-4 - 1.1725e-37.*(h(PhaseIndex == 3).*1e4).^3;
-            dTdp = dTdp';
+            dTdp(PhaseIndex == 3) = 4.79921e-6.*1e1 - 6.33606e-15.*2e2.*p(PhaseIndex == 3) + ...
+                3.3372e34./2e2.*(h(PhaseIndex == 3).*1e4).^-2.*p(PhaseIndex == 3).^-3 + ...
+                -3.57154e19./3e3.*p(PhaseIndex == 3).^-4 - 1.1725e-37.*1e1.*(h(PhaseIndex == 3).*1e4).^3;
+%             dTdp = dTdp';
         end
         function dTdh = ComputeDTDh(obj, PhaseIndex, p, h)
+            dTdh = zeros(length(p),1);
             % Compressed water region [K]
-            dTdh(PhaseIndex == 1) = 2.56222e-8 - 2.2568e-19.*2.*(h(PhaseIndex == 1).*1e4);
+            dTdh(PhaseIndex == 1) = 2.56222e-8.*1e4 - 2.2568e-19.*2e8.*h(PhaseIndex == 1);
             % Twophase region
-            dTdh(PhaseIndex == 2) = 2.56222e-8 - 2.2568e-19.*2.*(h(PhaseIndex == 2).*1e4);
+            dTdh(PhaseIndex == 2) = 2.56222e-8.*1e4 - 2.2568e-19.*2e8.*h(PhaseIndex == 2);
             % Superheated steam region
-            dTdh(PhaseIndex == 3) = 7.39386e-19.*2.*(h(PhaseIndex == 3).*1e4) + ...
-                                     3.3372e34.*2.*(h(PhaseIndex == 3).*1e4).^-3.*(p(PhaseIndex == 3).*1e1).^-2 + ...
-                                     -1.1725e-37.*3.*(h(PhaseIndex == 3).*1e4).^2.*(p(PhaseIndex == 3).*1e1) + ...
-                                     2.26861e43.*4.*(h(PhaseIndex == 3).*1e4).^-5;
-            dTdh = dTdh';
+            dTdh(PhaseIndex == 3) = 7.39386e-19.*2e8.*h(PhaseIndex == 3) + ...
+                3.3372e34./2e8./1e2.*h(PhaseIndex == 3).^-3.*p(PhaseIndex == 3).^-2 + ...
+                -1.1725e-37.*3e12.*1e1.*h(PhaseIndex == 3).^2.*p(PhaseIndex == 3) + ...
+                2.26861e43./4e16.*h(PhaseIndex == 3).^-5;
+%             dTdh = dTdh';
         end
         % These depend on how we treat the conductive flux term
         function d2Td2p = ComputeD2TD2p(obj, Pgrid, Hgrid, TTable, h, p) 
@@ -169,10 +210,8 @@ classdef Geothermal_Multiphase_phase < phase
             h = ( - B + sqrt( B^2 - 4*D*(A+C*(p.*1e1).^2-(T-273.15)) ) ) / (2*D*1e4);
         end
         function T = ComputeWaterTemperature(obj, p, h)
-            i = 1; % the "i=1" is for water phase
             PhaseIndex = 1; % the phase index "1" refers to water phase
-            rho = obj.ComputeDensity(i, PhaseIndex, p, h);
-            T = ( (h - obj.uws - p./rho) / obj.Cp_std ) + obj.Tsat;
+            T = obj.ComputeTemperature(PhaseIndex, p, h);
         end
         function mu = ComputeWaterViscosity(obj, T)
             A = 2.414e-5;   B = 247.8;  C = T-140;   D = B./C;   E = 10.^D;            

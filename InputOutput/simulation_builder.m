@@ -524,7 +524,14 @@ classdef simulation_builder < handle
                     FracturesNetwork.Fractures(f).Thickness = str2double( frac_info_split{5} );         % Thickness of each fracture
                     FracturesNetwork.Fractures(f).Temp = Tres;                                          % Temperature of each fracture
                     FracturesNetwork.Fractures(f).Cpr = Cpr;
+                    FracturesNetwork.Fractures(f).Cr  = cr;
                     FracturesNetwork.Fractures(f).Rho = RockDensity;
+                    
+                    if obj.SimulationInput.InitialConditions.Include
+                        FracturesNetwork.Fractures(f).P0 = obj.SimulationInput.InitialConditions.LoadedData(:,1);
+                    else
+                        FracturesNetwork.Fractures(f).P0 = obj.SimulationInput.InitialConditions.Pressure;
+                    end
                     
                     Porosity = str2double( frac_info_split{6} );                                        % Porosity  of each fracture
                     Permeability = str2double( frac_info_split{7} );                                    % Permeability of each fracture
@@ -632,7 +639,7 @@ classdef simulation_builder < handle
                 case{'Geothermal_SinglePhase'}
                     % build the geothermal singlephase fluid model
                     FluidModel = Geothermal_SinglePhase_fluid_model();
-                    Phase = Geothermal_Singlephase_phase();
+                    Phase = Geothermal_SinglePhase_phase();
                     FluidModel.AddPhase(Phase, 1);
                     obj.SimulatorSettings.CouplingType = 'FIM';
                     %Gets all densities [kg/m^3]

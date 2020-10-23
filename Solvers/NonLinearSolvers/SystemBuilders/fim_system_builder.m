@@ -15,10 +15,10 @@ classdef fim_system_builder < system_builder
             Formulation.UpWindAndPhaseRockFluxes(DiscretizationModel, FluidModel.Phases, ProductionSystem);
         end
         function [Residual, RHS] = BuildResidual(obj, ProductionSystem, DiscretizationModel, Formulation, dt)
-           [Residual, RHS] = Formulation.BuildResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
+           [Residual, RHS] = Formulation.BuildFullResidual(ProductionSystem, DiscretizationModel, dt, obj.State);
         end
         function Jacobian = BuildJacobian(obj, ProductionSystem, Formulation, DiscretizationModel, dt)
-            Jacobian = Formulation.BuildJacobian(ProductionSystem, DiscretizationModel, dt);
+            Jacobian = Formulation.BuildFullJacobian(ProductionSystem, DiscretizationModel, dt);
         end
         function SetUpSolutionChopper(obj, SolutionChopper, Formulation, ProductionSystem, DiscretizationModel)
             x = Formulation.GetPrimaryUnknowns(ProductionSystem, DiscretizationModel);

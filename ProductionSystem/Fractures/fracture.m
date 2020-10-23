@@ -10,15 +10,19 @@ classdef fracture < handle
         Width
         Thickness
         Temp
-        Por
+        Por0 % initial porosity
+        Por % current porosity
         DPor
         Dp = 1e-3; % grain diameter
         K
+        P0
         State
         State_old
         K_Cond_rock % rock conductivity
         Cpr % rock specific heat
+        Cr % rock compressibility
         Rho % density of reservoir rock
+        TotalPV
     end
     methods
         function obj = fracture()
@@ -31,9 +35,11 @@ classdef fracture < handle
         function ComputeDerPorosity(obj, P)
             obj.DPor = obj.Cr.*obj.Por0.*exp(obj.Cr.*(P-obj.P0));
         end
-        function AddPermeabilityPorosity(obj, k, por)
+        function AddPermeabilityPorosity(obj, k, por0)
             obj.K = k;
-            obj.Por = por;
+            obj.Por0 = por0;
+            obj.Por = por0;
+            obj.TotalPV = obj.Length * obj.Width * obj.Thickness * obj.Por;
         end
     end
 end
