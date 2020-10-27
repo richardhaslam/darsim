@@ -1,9 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%DARSim 2 Reservoir Simulator
-%Author: Matteo Cusini
-%TU Delft
+% DARSim Reservoir Simulator
+% Author: Matteo Cusini & Mousa HosseiniMehr
+% TU Delft
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%DARSim2ResSim: Reservoir Simulator main file
+% DARSim2ResSim: Reservoir Simulator main file
 %
 % Requires Matlab 2016b or newer
 %
@@ -20,8 +20,8 @@ clc;
 
 % Make sure you are in the correct folder
 CurrentDir = pwd();
-if ~strcmp(CurrentDir(end-10:end), 'DARSim2/src') && ~strcmp(CurrentDir(end-10:end), 'DARSim2\src')
-    error('DARSim2 error: you have to be in the folder src to run the code!');
+if ~strcmp(CurrentDir(end-9:end), 'DARSim/src') && ~strcmp(CurrentDir(end-9:end), 'DARSim\src')
+    error('DARSim error: you have to be in the folder src (inside the parent folder "DARSim") to run the code!');
 end
 clear CurrentDir
 
@@ -43,7 +43,7 @@ diary(strcat(Directory, '/Output/RunDiary.txt'));
 
 %% Print title
 disp('******************************************************************');
-disp('********************DARSIM 2 RESERVOIR SIMULATOR******************');
+disp('******************** DARSim Reservoir Simulator ******************');
 disp('******************************************************************');
 disp(newline);
 disp(['Reading input file ', File, ' from ', Directory]);
@@ -70,7 +70,7 @@ ResSimulator.OutputResults();
 
 %% Display elapsed time
 disp(newline);
-disp(['The Total Simulation time is ' num2str(TotalTime) ' s']);
+disp(['The Total Simulation time is ' num2str(TotalTime) ' [s]']);
 
 %Tun off diary
 diary off
