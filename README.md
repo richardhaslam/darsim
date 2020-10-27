@@ -19,6 +19,7 @@ Current members of DARSim2 Project are:
 *  [[Hadi Hajibeygi](https://www.tudelft.nl/en/ceg/about-faculty/departments/geoscience-engineering/sections/reservoir-engineering/staff/academic-staff/dr-h-hadi-hajibeygi/)] (h.hajibeygi@tudelft.nl), Principle Investigator
 *  [[Mousa HosseiniMehr](https://www.linkedin.com/in/mousa-hosseinimehr-414077b5/)] (S.Hosseinimehr@tudelft.nl), Main Developer, 2019-present
 *  [[Yuhang Wang](https://www.linkedin.com/in/yuhang-wang-b72b8093/)] (Y.Wang-25@tudelft.nl),  Developer, 2020-present
+* [[Kishan Ramesh Kumar](https://www.linkedin.com/in/kishan-ramesh-kumar-b27999a0/)] (K.RameshKumar-2@tudelft.nl),  Developer, 2020-present
 
 Past development team members:
 *  [[Matteo Cusini](https://www.linkedin.com/in/matteo-cusini-7654b7129/)] (cusini1@llnl.gov), First and Main ex-Developer, 2015-2019
