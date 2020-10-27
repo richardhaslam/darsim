@@ -211,70 +211,16 @@ classdef ADM_Discretization_model < Multiscale_Discretization_model
         function ModifyPerm(obj, ProductionSystem)         % or should I select the ADMgrid?
             ProductionSystem.Reservoir.K = ProductionSystem.Reservoir.K_coarse{1};
             for level = 1:length(obj.CoarseGrid)
-                for c =1: obj.CoarseGrid(1, level).N
+                for c = 1: obj.CoarseGrid(1,level).N
                     if obj.CoarseGrid(1, level).Active(c) == 1
-                        FineCells = cell2mat(obj.CoarseGrid(1, level).GrandChildren(c, :));
-                        ProductionSystem.Reservoir.K(FineCells, 1) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 1);
-                        ProductionSystem.Reservoir.K(FineCells, 2) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 2);
-                        ProductionSystem.Reservoir.K(FineCells, 3) = ProductionSystem.Reservoir.K_coarse{1 + level}(c, 3);
+                        FineCells = obj.CoarseGrid(1,level).Children{c,1};
+                        ProductionSystem.Reservoir.K(FineCells,1) = ProductionSystem.Reservoir.K_coarse{1+level}(c, 1);
+                        ProductionSystem.Reservoir.K(FineCells,2) = ProductionSystem.Reservoir.K_coarse{1+level}(c, 2);
+                        ProductionSystem.Reservoir.K(FineCells,3) = ProductionSystem.Reservoir.K_coarse{1+level}(c, 3);
                     end
                 end
             end
             obj.ReservoirGrid.ComputeRockTransmissibilities(ProductionSystem.Reservoir.K);
-        end
-        function [Km_Original, Kf_Original] = ModifyPermeabilityContrasts(obj, ProductionSystem)
-            % Modifying permeabilities to limit contrast for computation of 
-            % coupled basis functions
-            
-            % Modifying matrix permeability (for now it is only isotropic)
-            Km_Original = ProductionSystem.Reservoir.K;
-            KmAvg = mean(Km_Original(:));
-            if ~isequal( min(Km_Original(:)) , max(Km_Original(:)) )
-                K_Log10 = log10(Km_Original(:,1));
-                Ratio = (max(K_Log10) - min(K_Log10))/2;
-                K_Log10 = ( (K_Log10 - log10(KmAvg)) / Ratio ) + log10(KmAvg);
-                ProductionSystem.Reservoir.K(:, 1) = 10.^(K_Log10);
-                ProductionSystem.Reservoir.K(:, 2) = 10.^(K_Log10);
-                ProductionSystem.Reservoir.K(:, 3) = 10.^(K_Log10);
-            end
-            KmAvg = mean(ProductionSystem.Reservoir.K(:));
-            
-            % Modifying fractures permeability
-            if ProductionSystem.FracturesNetwork.Active
-                dm = mean([obj.ReservoirGrid.dx, obj.ReservoirGrid.dy, obj.ReservoirGrid.dz]);
-                Kf_Original = cell(ProductionSystem.FracturesNetwork.NumOfFrac, 1);
-                for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    Kf_Original{f} = ProductionSystem.FracturesNetwork.Fractures(f).K;
-                    KfAvg = mean(Kf_Original{f}(:));
-                    if ~isequal( min(Kf_Original{f}(:)) , max(Kf_Original{f}(:)) )
-                        ProductionSystem.FracturesNetwork.Fractures(f).K( Kf_Original{f} > KfAvg*10 ) = KfAvg*10;
-                        ProductionSystem.FracturesNetwork.Fractures(f).K( Kf_Original{f} < KfAvg/10 ) = KfAvg/10;
-                    end
-                    KfAvg = mean(ProductionSystem.FracturesNetwork.Fractures(f).K(:));
-                    df = obj.FracturesGrid.Grids(f).dz  ;
-                    
-                    % Reducing the contrast between matrix and fractures
-                    Contrast = (KmAvg/dm) ./ (KfAvg/df);
-                    Ratio = 1e2;
-                    if Contrast > 1
-                        multiplier = Contrast / Ratio;
-                    else
-                        multiplier = Contrast * Ratio;
-                    end
-                    ProductionSystem.FracturesNetwork.Fractures(f).K = ProductionSystem.FracturesNetwork.Fractures(f).K * multiplier;
-                end
-            end
-        end
-        function ResetPermeabilityContrasts(obj, ProductionSystem, Km_Original, Kf_Original)
-            % Resetting the permeabilities of matrix and fractures
-            ProductionSystem.Reservoir.K = Km_Original;
-            if ProductionSystem.FracturesNetwork.Active
-                for f=1:ProductionSystem.FracturesNetwork.NumOfFrac
-                    ProductionSystem.FracturesNetwork.Fractures(f).K = Kf_Original{f};
-                end
-                % Adding the harmonic permeabilities to CrossConnections
-                obj.AddHarmonicPermeabilities(ProductionSystem.Reservoir, ProductionSystem.FracturesNetwork.Fractures);
-            end
         end
     end
 end

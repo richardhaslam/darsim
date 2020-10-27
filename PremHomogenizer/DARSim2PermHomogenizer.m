@@ -1,65 +1,38 @@
-% Permeability Homogenizer Function
+% Permeability Homogenizer Function for DARSim Reservoir Simulator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%DARSim 2 Reservoir Simulator
-%Author:
-%Created:
-%Last modified:
+% Author: Manuela Bastidas & Mousa HosseiniMehr
+% Created: 
+% Last modified: 27 October 2020
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function DARSim2PermHomogenizer(Directory, InputFile, PermDir)
-close all; clc;
-
-% Remove some warnings
-warning('off', 'MATLAB:singularMatrix');
-warning('off', 'MATLAB:nearlySingularMatrix');
-
-%% Print title
-disp('********************************************************************************');
-disp('*************** Permeability Homogenizer for DARSim2 Simulator *****************');
-disp('********************************************************************************');
-disp(char(5));
-disp(['Reading input file ', InputFile, ' from ', Directory]);
-disp(char(5));
-
-[Grid_N,maxLevel,Coarsening,K_original] = reader_Homogenizer(Directory, InputFile, PermDir);
-
+function Perm_CoarseScale_Homogenized = DARSim2PermHomogenizer(N_FineScale, MaxCoarseningLevel, CoarseningRatio, Perm_FineScale)
 %% Run homogenization
 TotalStart = tic;
 
-% Adding the homogenized permeability for each coarsening level
-% only for matrix
+% Adding the homogenized permeability for each coarsening level only for matrix
 disp(newline)
 disp('------------------------')
-disp('Homogenization: Calculating effective permeability');
+disp('Homogenization of permeability for DLGR:');
+
 % By now it only works in 2D
-for c = 1:maxLevel
+Perm_CoarseScale_Homogenized = cell(MaxCoarseningLevel,1);
+for CL = 1:MaxCoarseningLevel
     % HOMOGENIZATION
-    gridX = linspace(0,Grid_N(1),Grid_N(1)/(Coarsening(1)^c)+1);
-    gridY = linspace(0,Grid_N(2),Grid_N(2)/(Coarsening(2)^c)+1);
-    K_temp = reshape(K_original(:,1),Grid_N(1),Grid_N(2));
-    [K_temp2] = FunctionOnefull(K_temp',gridX,gridY);
-    K_temp2 = K_temp2';
-    Homogenized_Perm{c} = K_temp2(:);
-    fprintf('Effective permeability - coarsening level %i\n',c)
+    fprintf('Calculating effective permeability - coarsening level %i ... ',CL);
+%     N_CoarseScale = N_FineScale ./ (CoarseningRatio.^CL);
+%     if any(mod(N_CoarseScale,1))
+%         N_CoarseScale = (N_FineScale - 1) ./ (CoarseningRatio.^CL) + 1;
+%     end
+    
+    gridX = linspace( 0 , N_FineScale(1) , N_FineScale(1)/(CoarseningRatio(1)^CL)+1 );
+    gridY = linspace( 0 , N_FineScale(2) , N_FineScale(2)/(CoarseningRatio(2)^CL)+1 );
+    K_temp = reshape( Perm_FineScale(:,1) , N_FineScale(1) , N_FineScale(2) ) .* 1e15;
+    K_temp = FunctionOnefull( K_temp' , gridX , gridY );
+    K_temp = K_temp';
+    Perm_CoarseScale_Homogenized{CL} = K_temp(:) .* 1e-15;
+    fprintf('Done\n');
 end
 
 TotalTime = toc(TotalStart);
-
-%% Display elapsed time
+disp(['The total time spent for permeability homogenization is ' num2str(TotalTime) ' [s].']);
 disp('------------------------')
-disp(['The total time for Homogenization is ' num2str(TotalTime) ' s']); fprintf('\n');
-
-%% Output Results
-
-for c = 1:maxLevel
-    name =sprintf('Perm_Coarse_L%i.txt',c);
-    File = strcat(PermDir,'/',name);
-    delete(File);
-    fid = fopen(File,'a+');
-    fprintf(fid, '%1.6e\n',Grid_N(1)/Coarsening(1)^c);
-    fprintf(fid, '%1.6e\n',Grid_N(2)/Coarsening(2)^c);
-    fprintf(fid, '%1.6e\n',Grid_N(3)/Coarsening(3)^c);
-    fprintf(fid, '%1.6e\n',Homogenized_Perm{c});
-    fclose('all');
-end
 end

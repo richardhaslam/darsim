@@ -70,10 +70,10 @@ classdef reader_darsim2 < reader
             SimulationInput.ProblemName = char(obj.InputMatrix(find(~cellfun('isempty', temp)) + 1));
 			
             % 1.2. Total time
-            temp = strfind(obj.InputMatrix, 'TOTALTIME');
+            temp = strfind(obj.InputMatrix, 'TOTAL_TIME');
             xv = find(~cellfun('isempty', temp));
             if isempty(xv)
-                error('The keyword "TOTALTIME" is missing. Please check the input file!\n');
+                error('The keyword "TOTAL_TIME" is missing. Please check the input file!\n');
             end
             Time = strsplit( obj.InputMatrix{xv + 1} , ' ');
             Hours = 0; Minutes = 0; Seconds = 0;
@@ -87,19 +87,23 @@ classdef reader_darsim2 < reader
             end
             SimulationInput.TotalTime = Days*24*3600 + Hours*3600 + Minutes*60 + Seconds;
 			
-            % 1.3. Read reservoir properties
+            % 1.3. Reservoir properties
             SimulationInput.ReservoirProperties = obj.ReadReservoirProperties();
             
-            % 1.4. Read fluid properties
+            % 1.4. Fluid properties
             SimulationInput.FluidProperties = obj.ReadFluidProperties();
-
-            % 1.5. Read initial conditions
-            SimulationInput.InitialConditions = obj.ReadInitialConditions();
             
-            % 1.6. Read wells info
+            % 1.5. Rock properties
+            SimulationInput.RockProperties = obj.ReadRockProperties();
+
+            % 1.6. Initial conditions
+            SimulationInput.InitialConditions = obj.ReadInitialConditions();
+            SimulationInput.ReservoirProperties.Temperature = SimulationInput.InitialConditions.Temperature;
+            
+            % 1.7. Wells info
             SimulationInput.WellsInfo = obj.ReadWellsInfo(SimulationInput);
             
-            % 1.7. Read Fractures' Properties (if any)
+            % 1.8. Fractures' properties (if any)
             temp = strfind(obj.InputMatrix, 'FRACTURED'); % Check the main input file and look for FRACTURED
             index = find(~cellfun('isempty', temp));
             if isempty(index)
@@ -119,7 +123,7 @@ classdef reader_darsim2 < reader
             SimulatorSettings = obj.ReadSimulatorSettings(SimulationInput);
         end
         function ReservoirProperties = ReadReservoirProperties(obj)
-            %%%%%%%%%%%%%PROPERTIES OF THE RESERVOIR%%%%%%%%%%%%%%%%
+            %% 1. Discretization Approach
             temp = strfind(obj.InputMatrix, 'GRID_DISCRETIZATION');
             index = find(~cellfun('isempty', temp));
             if ~isempty(index)
@@ -201,10 +205,10 @@ classdef reader_darsim2 < reader
                 case('CartesianGrid')
                     % Assume it is Cartesian
                     % 1. size of the reservoir
-                    temp = strfind(obj.InputMatrix, 'DIMENS'); % Search a specific string and find all rows containing matches
+                    temp = strfind(obj.InputMatrix, 'DIMENSION'); % Search a specific string and find all rows containing matches
                     index = find(~cellfun('isempty', temp));
                     if isempty(index)
-                        error('The keyword "DIMENS" is missing. Please check the input file!\n');
+                        error('The keyword "DIMENSION" is missing. Please check the input file!\n');
                     end
                     ReservoirProperties.size = [str2double(obj.InputMatrix{index+1});...
                                                 str2double(obj.InputMatrix{index+2});
@@ -224,7 +228,7 @@ classdef reader_darsim2 < reader
             end
             
             
-            % 3. Permeability
+            %% 2. Permeability
             temp = strfind(obj.InputMatrix, 'PERMEABILITY_UNIT');
             index = find(~cellfun('isempty', temp));
             if ~isempty(index)
@@ -283,20 +287,20 @@ classdef reader_darsim2 < reader
                 % The permeability is read from the main input file.
                 ReservoirProperties.Perm = [];
                 perm = zeros(3, 1);
-                temp = strfind(obj.InputMatrix, 'PERMX');
+                temp = strfind(obj.InputMatrix, 'PERMEABILITY_X');
                 perm(1) = find(~cellfun('isempty', temp));
                 if isempty(perm(1))
-                    error('The keyword "PERMX" is missing. Please check the input file!\n');
+                    error('The keyword "PERMEABILITY_X" is missing. Please check the input file!\n');
                 end
-                temp = strfind(obj.InputMatrix, 'PERMY');
+                temp = strfind(obj.InputMatrix, 'PERMEABILITY_Y');
                 perm(2) = find(~cellfun('isempty', temp));
                 if isempty(perm(2))
-                    error('The keyword "PERMY" is missing. Please check the input file!\n');
+                    error('The keyword "PERMEABILITY_Y" is missing. Please check the input file!\n');
                 end
-                temp = strfind(obj.InputMatrix, 'PERMZ');
+                temp = strfind(obj.InputMatrix, 'PERMEABILITY_Z');
                 perm(3) = find(~cellfun('isempty', temp));
                 if isempty(perm(3))
-                    error('The keyword "PERMX" is missing. Please check the input file!\n');
+                    error('The keyword "PERMEABILITY_Z" is missing. Please check the input file!\n');
                 end
                 DimChar = {'x' , 'y' , 'z'};
                 for i=1:3
@@ -354,13 +358,13 @@ classdef reader_darsim2 < reader
                 end
             end
             
-            % 4. Porosity
+            %% 3. Porosity
             if strcmp(ReservoirProperties.Discretization,'CornerPointGrid') && sum(strcmp(fieldnames(ReservoirProperties.CornerPointGridData), 'Porosity'))
                 % Do nothing, beacuse the porosity data already exist in CornerPointGridData.
                 ReservoirProperties.phi = ReservoirProperties.CornerPointGridData.Porosity;
                 ReservoirProperties.PorosityInclude = 0;
             else
-                temp = strfind(obj.InputMatrix, 'POR');
+                temp = strfind(obj.InputMatrix, 'POROSITY');
                 index = find(~cellfun('isempty', temp));
                 if isempty(index)
                     error('The keyword "Por" for porosity is missing. Please check the input file!\n');
@@ -371,56 +375,6 @@ classdef reader_darsim2 < reader
                 else
                     ReservoirProperties.PorosityInclude = 0;
                     ReservoirProperties.phi = str2double(obj.InputMatrix(index + 1));
-                end
-            end
-            
-            % 5. Temperature
-            temp = strfind(obj.InputMatrix, 'TEMPERATURE (K)');
-            index = find(~cellfun('isempty', temp));
-            ReservoirProperties.Temperature = str2double(obj.InputMatrix(index(1) + 1));
-            
-            % Reading the number of phases
-            temp = strfind(obj.InputMatrix, 'FLUID MODEL');
-            index = find(~cellfun('isempty', temp));
-            NofPhases = str2double(obj.InputMatrix{index+3});
-            
-            % 6. Rock Compressibility
-            temp = strfind(obj.InputMatrix, 'COMPRESSIBILITY');
-            index_comp = find(~cellfun('isempty', temp));
-            ReservoirProperties.Compressibility = str2double(obj.InputMatrix{index_comp+((NofPhases+1)*2)});
-             if isnan(ReservoirProperties.Compressibility)
-                 ReservoirProperties.Compressibility = 0; % Default value if not defined [1/Pa]
-             end
-            
-            % 7. Rock Density
-            temp = strfind(obj.InputMatrix, 'DENSITY');
-            index_density = find(~cellfun('isempty', temp));
-            ReservoirProperties.RockDensity = str2double(obj.InputMatrix{index_density+((NofPhases+1)*2)});
-            if isnan(ReservoirProperties.RockDensity)
-                ReservoirProperties.RockDensity = 2750; % Default value if not defined [kg/m3]
-            end
-            
-            % 8. Rock Conductivity
-            temp = strfind(obj.InputMatrix, 'HEAT_CONDUCTIVITY');
-            index_conduc = find(~cellfun('isempty', temp));
-            if isempty(index_conduc)
-                ReservoirProperties.RockConductivity = 4; % Default value if not defined [W/m/K]
-            else
-                ReservoirProperties.RockHeatConductivity = str2double(obj.InputMatrix{index_conduc+((NofPhases+1)*2)});
-                if isnan(ReservoirProperties.RockHeatConductivity)
-                    error('The rock heat conductivity is not being read properly. Please checkthe input file!\n');
-                end
-            end
-            
-            % 9. Rock Specific Heat
-            temp = strfind(obj.InputMatrix, 'SPECIFIC_HEAT');
-            index_spec_heat = find(~cellfun('isempty', temp));
-            if isempty(index_spec_heat)
-                ReservoirProperties.SpecificHeat = 790; % Default value if not defined [J/Kg/K]
-            else
-                ReservoirProperties.SpecificHeat = str2double(obj.InputMatrix{index_spec_heat+((NofPhases+1)*2)});
-                if isnan(ReservoirProperties.SpecificHeat)
-                    error('The rock specific heat is not being read properly. Please checkthe input file!\n');
                 end
             end
         end
@@ -511,38 +465,37 @@ classdef reader_darsim2 < reader
             FracturesProperties.NumOfAllFracGrids = str2double( temp{2} );
         end
         function FluidProperties = ReadFluidProperties(obj)
-            %%%%%%%%%%%%%FLUID PROPERTIES%%%%%%%%%%%%%%%%
             % 1. Fluid model
-            temp = strfind(obj.InputMatrix, 'FLUID MODEL');
+            temp = strfind(obj.InputMatrix, 'FLUID_MODEL');
             index = find(~cellfun('isempty', temp));
             FluidProperties.FluidModel = char(obj.InputMatrix{index+1});
             FluidProperties.NofPhases = str2double(obj.InputMatrix{index+3});
             FluidProperties.NofComponents = str2double(obj.InputMatrix{index+5});
-            % 2. Density
-            temp = strfind(obj.InputMatrix, 'DENSITY');
+            % 2. Density of the fluid
+            temp = strfind(obj.InputMatrix, 'FLUID_DENSITY');
             index_density = find(~cellfun('isempty', temp));
-            % 3. Viscosity
-            temp = strfind(obj.InputMatrix, 'VISCOSITY');
+            % 3. Viscosity of the fluid
+            temp = strfind(obj.InputMatrix, 'FLUID_VISCOSITY');
             index_viscosity = find(~cellfun('isempty', temp));
-            % 5. Liquid Compressibility
-            temp = strfind(obj.InputMatrix, 'COMPRESSIBILITY');
-            index_comp = find(~cellfun('isempty', temp));
-            % 6. Conductivity
-            temp = strfind(obj.InputMatrix, 'CONDUCTIVITY');
-            index_conduc = find(~cellfun('isempty', temp));
-            % 7. Specific Heat
-            temp = strfind(obj.InputMatrix, 'SPECIFIC HEAT');
-            index_spec_heat = find(~cellfun('isempty', temp));
+            % 4. Liquid Compressibility
+            temp = strfind(obj.InputMatrix, 'FLUID_COMPRESSIBILITY');
+            index_compressibility = find(~cellfun('isempty', temp));
+            % 5. Conductivity
+            temp = strfind(obj.InputMatrix, 'FLUID_HEAT_CONDUCTIVITY');
+            index_heat_conductivity = find(~cellfun('isempty', temp));
+            % 6. Specific Heat
+            temp = strfind(obj.InputMatrix, 'FLUID_SPECIFIC_HEAT');
+            index_specific_heat = find(~cellfun('isempty', temp));
             
             for i=1:FluidProperties.NofPhases
-                FluidProperties.Density(i) = str2double(char(obj.InputMatrix{index_density+(i*2)}));
-                FluidProperties.mu(i) = str2double(char(obj.InputMatrix{index_viscosity+(i*2)}));
-                FluidProperties.Comp(i) = str2double(char(obj.InputMatrix{index_comp+(i*2)}));
-                FluidProperties.FluidConductivity(i) = str2double(char(obj.InputMatrix(index_conduc+(i*2))));
-                FluidProperties.SpecificHeat(i) = str2double(char(obj.InputMatrix(index_spec_heat+(i*2))));
+                FluidProperties.Density(i)           = str2double(char(obj.InputMatrix{index_density           + i}));
+                FluidProperties.mu(i)                = str2double(char(obj.InputMatrix{index_viscosity         + i}));
+                FluidProperties.Comp(i)              = str2double(char(obj.InputMatrix{index_compressibility   + i}));
+                FluidProperties.FluidConductivity(i) = str2double(char(obj.InputMatrix(index_heat_conductivity + i)));
+                FluidProperties.SpecificHeat(i)      = str2double(char(obj.InputMatrix(index_specific_heat     + i)));
             end
          
-            % 8. Relative permeability
+            % 7. Relative permeability
             temp = strfind(obj.InputMatrix, 'RELPERM');
             index = find(~cellfun('isempty', temp));
             FluidProperties.RelPerm.name = char(obj.InputMatrix(index + 1));
@@ -550,13 +503,13 @@ classdef reader_darsim2 < reader
                 case{'Linear','Quadratic','Corey','Foam'}
                     FluidProperties.RelPerm.s_irr(1) = str2double(obj.InputMatrix(index + 3));
                     FluidProperties.RelPerm.s_irr(2) = str2double(obj.InputMatrix(index + 5));
-                    FluidProperties.RelPerm.Kre(1) = str2double(obj.InputMatrix(index + 7));
-                    FluidProperties.RelPerm.Kre(2) = str2double(obj.InputMatrix(index + 9));
-                    FluidProperties.RelPerm.n(1) = str2double(obj.InputMatrix(index + 11));
-                    FluidProperties.RelPerm.n(2) = str2double(obj.InputMatrix(index + 13));
+                    FluidProperties.RelPerm.Kre(1)   = str2double(obj.InputMatrix(index + 7));
+                    FluidProperties.RelPerm.Kre(2)   = str2double(obj.InputMatrix(index + 9));
+                    FluidProperties.RelPerm.n(1)     = str2double(obj.InputMatrix(index + 11));
+                    FluidProperties.RelPerm.n(2)     = str2double(obj.InputMatrix(index + 13));
                 case('Table')
                     FluidProperties.RelPerm.FileFormat = char(obj.InputMatrix(index + 3));
-                    FluidProperties.RelPerm.TableType = char(obj.InputMatrix(index + 5));
+                    FluidProperties.RelPerm.TableType  = char(obj.InputMatrix(index + 5));
                     
                     switch FluidProperties.RelPerm.TableType
                         case{'Drainage','Imbibition'}
@@ -583,7 +536,7 @@ classdef reader_darsim2 < reader
                     end
             end
             
-            % 9. Capillarity
+            % 8. Capillarity
             temp = strfind(obj.InputMatrix, 'CAPILLARITY');
             index = find(~cellfun('isempty', temp));
             FluidProperties.Capillarity.name = char(obj.InputMatrix(index + 1));
@@ -591,20 +544,69 @@ classdef reader_darsim2 < reader
                 FluidProperties.Capillarity.wetting = str2double(obj.InputMatrix(index + 2));
             end
            
-            % 10. Component properties
-            temp = strfind(obj.InputMatrix, 'COMPONENT PROPERTIES');
+            % 9. Component properties
+            temp = strfind(obj.InputMatrix, 'COMPONENT_PROPERTIES');
             index = find(~cellfun('isempty', temp));
             for i = 1:FluidProperties.NofComponents
                 FluidProperties.ComponentProperties(i,:) = str2double(strsplit(char(obj.InputMatrix(index + i * 2))));
             end
             
-            % 11. Gravity
+            % 10. Gravity
             temp = strfind(obj.InputMatrix, 'GRAVITY');
             index = find(~cellfun('isempty', temp));
             if isempty(index)
                 FluidProperties.Gravity = 'OFF';
             else
                 FluidProperties.Gravity = char(obj.InputMatrix(index + 1));
+            end
+        end
+        function RockProperties = ReadRockProperties(obj)
+            % 1. Density of the rock
+            temp = strfind(obj.InputMatrix, 'ROCK_DENSITY');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                RockProperties.Density = str2double(char(obj.InputMatrix{index+1}));
+            else
+                RockProperties.Density = 2750;
+            end
+            if isnan(RockProperties.Density)
+                error('The rock density is not being read properly. Please check the input file!');
+            end
+            
+            % 2. Compressiblity of the rock
+            temp = strfind(obj.InputMatrix, 'ROCK_COMPRESSIBILITY');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                RockProperties.Compressibility = str2double(char(obj.InputMatrix{index+1}));
+            else
+                RockProperties.Compressibility = 0;
+            end
+            if isnan(RockProperties.Compressibility)
+                error('The rock compressibility is not being read properly. Please check the input file!');
+            end
+            
+            % 3. Heat conductivity of the rock
+            temp = strfind(obj.InputMatrix, 'ROCK_HEAT_CONDUCTIVITY');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                RockProperties.HeatConductivity = str2double(char(obj.InputMatrix{index+1}));
+            else
+                RockProperties.HeatConductivity = 4;
+            end
+            if isnan(RockProperties.HeatConductivity)
+                error('The rock heat conductivity is not being read properly. Please check the input file!');
+            end
+            
+            % 4. Specific heat of the rock
+            temp = strfind(obj.InputMatrix, 'ROCK_SPECIFIC_HEAT');
+            index = find(~cellfun('isempty', temp));
+            if ~isempty(index)
+                RockProperties.SpecificHeat = str2double(char(obj.InputMatrix{index+1}));
+            else
+                RockProperties.SpecificHeat = 790;
+            end
+            if isnan(RockProperties.SpecificHeat)
+                error('The rock specific heat is not being read properly. Please check the input file!');
             end
         end
         function InitialConditions = ReadInitialConditions(obj)
@@ -864,7 +866,7 @@ classdef reader_darsim2 < reader
                 % ADM settings for reservoir
                 temp = strfind(obj.SettingsMatrix, 'LEVELS');
                 x = find(~cellfun('isempty', temp));
-                SimulatorSettings.ADMSettings.maxlevel = zeros(1+SimulationInput.FracturesProperties.NumOfFrac, 1);
+                SimulatorSettings.ADMSettings.maxLevel = zeros(1+SimulationInput.FracturesProperties.NumOfFrac, 1);
                 SimulatorSettings.ADMSettings.maxLevel(1) = str2double(obj.SettingsMatrix(x+1));
                 SimulatorSettings.ADMSettings.CoarseningSwitch = zeros(1+SimulationInput.FracturesProperties.NumOfFrac, 1);
                 SimulatorSettings.ADMSettings.CoarseningSwitch(1) = 1;

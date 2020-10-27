@@ -28,11 +28,11 @@ classdef reservoir < handle
         Dp = 1e-3;% grain diameter
     end
     methods
-        function obj = reservoir(length, width, thickness, temp)
+        function obj = reservoir(length, width, thickness, temperature)
             obj.Length = length;
             obj.Width = width;
             obj.Thickness = thickness;
-            obj.Temp = temp;
+            obj.Temp = temperature;
             obj.State = status();
             obj.State_old = status();
         end

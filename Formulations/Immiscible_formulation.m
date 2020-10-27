@@ -107,7 +107,7 @@ classdef Immiscible_formulation < formulation
                 - qw(Index.Start:Index.End, ph)... % wells
                 - qf(Index.Start:Index.End, ph); % frac-matrix
         end
-        function [Residual, RHS] = BuildResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
+        function [Residual, RHS] = BuildFullResidual(obj, ProductionSystem, DiscretizationModel, dt, State0)
             % Compute vector of qs
             qw = obj.ComputeSourceTerms(DiscretizationModel.N, ProductionSystem.Wells);
             qf = zeros(DiscretizationModel.N, obj.NofPhases);
@@ -236,7 +236,7 @@ classdef Immiscible_formulation < formulation
                 [Jp, JS] = obj.AddWellsToJacobian(Jp, JS, Medium.State, Wells, Medium.K(:,1), ph);
             end
         end
-        function Jacobian = BuildJacobian(obj, ProductionSystem, DiscretizationModel, dt)
+        function Jacobian = BuildFullJacobian(obj, ProductionSystem, DiscretizationModel, dt)
             %% Jacobian's assembly
             %      pm     pf   |   sm      sf
             % m| J1m_pm J1m_pf | J1m_sm J1m_sm | | dpm | = | R1m |

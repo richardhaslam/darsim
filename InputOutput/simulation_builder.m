@@ -261,16 +261,16 @@ classdef simulation_builder < handle
             %% RESERVOIR
             Lx = obj.SimulationInput.ReservoirProperties.size(1);       %Dimension in x-direction [m]
             Ly = obj.SimulationInput.ReservoirProperties.size(2);       %Dimension in y-direction [m]
-            h  = obj.SimulationInput.ReservoirProperties.size(3);       %Reservoir thickness (z-direction) [m]
+            Lz  = obj.SimulationInput.ReservoirProperties.size(3);       %Reservoir thickness (z-direction) [m]
             Tres = obj.SimulationInput.ReservoirProperties.Temperature; %Res temperature [K]
-            Reservoir = reservoir(Lx, Ly, h, Tres);
-            cr = obj.SimulationInput.ReservoirProperties.Compressibility;
+            Reservoir = reservoir(Lx, Ly, Lz, Tres);
+            RockCompressibility = obj.SimulationInput.RockProperties.Compressibility;
             nx = obj.SimulationInput.ReservoirProperties.Grid.N(1);
             ny = obj.SimulationInput.ReservoirProperties.Grid.N(2);
             nz = obj.SimulationInput.ReservoirProperties.Grid.N(3);
             N_ActiveCells = obj.SimulationInput.ReservoirProperties.Grid.N_ActiveCells;
-            Cpr = obj.SimulationInput.ReservoirProperties.SpecificHeat;
-            RockDensity = obj.SimulationInput.ReservoirProperties.RockDensity;
+            RockSpecificHeat = obj.SimulationInput.RockProperties.SpecificHeat;
+            RockDensity = obj.SimulationInput.RockProperties.Density;
             % Permeability Data
             K = ones(N_ActiveCells, 3);
             switch obj.SimulationInput.ReservoirProperties.PermUnit
@@ -369,15 +369,30 @@ classdef simulation_builder < handle
             
             %%%% Adding permeability and Porosity info to the reservoir
             Reservoir.AddPermeabilityPorosity(K, phi);
-
-            % Adding thermal conductivity to the reservoir (maybe find other place for this)
-            switch obj.SimulatorSettings.Formulation
-                case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
-                    Reservoir.K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
-            end
             
-            Reservoir.Cr = cr;
-            Reservoir.Cpr = Cpr;
+            switch obj.SimulatorSettings.DiscretizationModel
+                case('ADM')
+                    % This is for DLGR type ADM: it reads coarse permeabilities obtained by homogenization
+                    if obj.SimulatorSettings.ADMSettings.DLGR
+                        N_Finescale = obj.SimulationInput.ReservoirProperties.Grid.N;
+                        MaxCoarseningLevel = obj.SimulatorSettings.ADMSettings.maxLevel(1);
+                        CoarseningRatio = obj.SimulatorSettings.ADMSettings.Coarsening(1,:,1);
+                        Perm_CoarseScale_Homogenized = DARSim2PermHomogenizer(N_Finescale, MaxCoarseningLevel, CoarseningRatio, K);
+                        
+                        K_Coarse = cell(obj.SimulatorSettings.ADMSettings.maxLevel(1) + 1, 1);
+                        K_Coarse{1} = K;
+                        for L = 2 : obj.SimulatorSettings.ADMSettings.maxLevel(1) + 1
+                            K_Coarse{L} = repmat(Perm_CoarseScale_Homogenized{L-1},1,3);
+                        end
+                        % Save them in ProductionSystem.
+                        Reservoir.AddCoarsePermeability(K_Coarse); % this function you have to create it
+                    end
+                otherwise
+            end
+
+            % Adding rock properties to the reservoir
+            Reservoir.Cr = RockCompressibility;
+            Reservoir.Cpr = RockSpecificHeat;
             Reservoir.Rho = RockDensity;
             if obj.SimulationInput.InitialConditions.Include
                 Reservoir.P0 = obj.SimulationInput.InitialConditions.LoadedData(:,1);
@@ -385,28 +400,13 @@ classdef simulation_builder < handle
                 Reservoir.P0 = obj.SimulationInput.InitialConditions.Pressure;
             end
 
-            switch obj.SimulatorSettings.DiscretizationModel
-                case('ADM')
-                    % This is for DLGR type ADM: it reads coarse permeabilities
-                    if obj.SimulatorSettings.ADMSettings.DLGR
-                        K_coarse = cell(obj.SimulatorSettings.ADMSettings.maxLevel + 1, 1);
-                        K_coarse{1} = K;
-                        for L= 2:obj.SimulatorSettings.ADMSettings.maxLevel + 1
-                            for d=1:2
-                                % load the file in a vector
-                                field = load(obj.SimulationInput.ReservoirProperties.CoarsePermFile{L-1,d});
-                                % reshape it to specified size
-                                k = field(4:end)*1e-15; % for now the cparse permeabilities are in [mD] unit
-                                K_coarse{L}(:, d) = k;
-                            end
-                            K_coarse{L}(:, 3) = k;
-                        end
-                        % Save them in ProductionSystem.
-                        Reservoir.AddCoarsePermeability(K_coarse); % this function you have to create it
-                    end
-                otherwise
+            % Adding thermal conductivity to the reservoir (maybe find other place for this)
+            switch obj.SimulatorSettings.Formulation
+                case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
+                    Reservoir.K_Cond_rock = obj.SimulationInput.RockProperties.HeatConductivity;
             end
-            % Add reservoir to production system
+            
+            % Add Reservoir to the ProductionSystem
             ProductionSystem.AddReservoir(Reservoir);
             
             %% WELLS
@@ -418,7 +418,7 @@ classdef simulation_builder < handle
             % Useful information to compute PI
             dx = Lx/nx;
             dy = Ly/ny;
-            dz = h /nz;
+            dz = Lz /nz;
             switch obj.SimulationInput.ReservoirProperties.Discretization
                 case('CartesianGrid')
                     GridVolume = dx*dy*dz * ones(N_ActiveCells,1);
@@ -523,8 +523,8 @@ classdef simulation_builder < handle
                     FracturesNetwork.Fractures(f).Width = str2double( frac_info_split{4} );             % Width of each fracture
                     FracturesNetwork.Fractures(f).Thickness = str2double( frac_info_split{5} );         % Thickness of each fracture
                     FracturesNetwork.Fractures(f).Temp = Tres;                                          % Temperature of each fracture
-                    FracturesNetwork.Fractures(f).Cpr = Cpr;
-                    FracturesNetwork.Fractures(f).Cr  = cr;
+                    FracturesNetwork.Fractures(f).Cpr = RockSpecificHeat;
+                    FracturesNetwork.Fractures(f).Cr  = RockCompressibility;
                     FracturesNetwork.Fractures(f).Rho = RockDensity;
                     
                     if obj.SimulationInput.InitialConditions.Include
@@ -542,7 +542,7 @@ classdef simulation_builder < handle
                     FracturesNetwork.Fractures(f).AddPermeabilityPorosity(K, Porosity);                 % Adding porosity and permeability to the fracture
                     switch obj.SimulatorSettings.Formulation
                         case {'Geothermal_SinglePhase','Geothermal_MultiPhase'}
-                            FracturesNetwork.Fractures(f).K_Cond_rock = obj.SimulationInput.ReservoirProperties.RockConductivity;
+                            FracturesNetwork.Fractures(f).K_Cond_rock = obj.SimulationInput.RockProperties.HeatConductivity;
                     end
                 end
                 ProductionSystem.AddFractures(FracturesNetwork);

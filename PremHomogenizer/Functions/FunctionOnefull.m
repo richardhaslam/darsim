@@ -1,3 +1,9 @@
+% Permeability Homogenizer Function for DARSim Reservoir Simulator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Author: Manuela Bastidas
+% Created: 
+% Last modified:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculation of the effective permeability associated to the problem
 %                    - div(K\grad p) = f
 %
@@ -18,9 +24,8 @@
 % 
 % Auxiliar functions:  edge, PreProcess_Identification,
 % Position_indicators, MicroSolver_FEM, EfectivePermTensor
-
 %-------------------------------------------------------
-function [PermEffective] = FunctionOnefull(K_perm,gridX,gridY)
+function PermEffective = FunctionOnefull(K_perm,gridX,gridY)
 
 longX = diff(gridX)';
 longY = diff(gridY)';
@@ -30,7 +35,6 @@ PermEffectiveFull = zeros(size(K_perm,1),size(K_perm,2),1);
 
 for ii = 1:length(gridX)-1
     for jj = 1:length(gridY)-1
-        
         %% MICRO GRID
         % Inside onf the loop to allow non-uniform meshes 
         micro_gridX = sum(longX(1:ii))-longX(ii)+1:sum(longX(1:ii));
@@ -69,5 +73,3 @@ for ii = 1:length(gridX)-1
 %         PermEffectiveFull(micro_gridY,micro_gridX,2) = kron(PermEffective(jj,ii,2),ones(longX(ii),longY(jj)));
     end
 end
-
-
