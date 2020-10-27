@@ -1,6 +1,6 @@
-# Welcome to the DARSim2 Matlab simulator
+# Welcome to the DARSim Matlab simulator
 
-## What is DARSim2?
+## What is DARSim?
 DARSim2 is a Matlab-based 3D reservoir simulator which is aimed at delivering a research and prototype platform for testing new ideas, as well as field-relevant simulation of multiphase flow in natural subsurface formations. 
 The key elements that make DARSim2 unique are the following:
 1.  It is a comprehensive easy-to-work open-source simulator
