@@ -102,13 +102,13 @@ classdef CornerPointGrid_Discretization_model < FS_Discretization_model
                     I = indList(Count);
                     Count = Count+1;
                     NW_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,1) , : );
-                    SW_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,2) , : );
-                    SE_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,3) , : );
-                    NE_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,4) , : );
+                    NE_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,2) , : );
+                    SW_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,3) , : );
+                    SE_Top = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,4) , : );
                     NW_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,5) , : );
-                    SW_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,6) , : );
-                    SE_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,7) , : );
-                    NE_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,8) , : );
+                    NE_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,6) , : );
+                    SW_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,7) , : );
+                    SE_Bot = obj.CornerPointGridData.Nodes( obj.CornerPointGridData.Cells.Vertices(I,8) , : );
                     
                     if isempty(obj.CornerPointGridData.Cells.Faces{I})
                         ReservoirCell = hexahedron_DARSim(NW_Top,SW_Top,SE_Top,NE_Top,NW_Bot,SW_Bot,SE_Bot,NE_Bot);

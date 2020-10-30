@@ -71,7 +71,6 @@ classdef tetragon_DARSim < polygon_DARSim
         end
         %%
         function isInside = Is_Point_Inside_Tetragon(obj, point , Epsilon)
-            isInside  = NaN;
             if dot( obj.nVec , (point-obj.Centroid) ) > Epsilon
                 % The Point is not on the plane
                 isInside = 0;

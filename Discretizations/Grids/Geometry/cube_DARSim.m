@@ -50,9 +50,8 @@ classdef cube_DARSim < hexahedron_DARSim
             % if the refinement number is 7, the cube is devided into 7^3 = 343 smaller
             % cubes to calculate the average distance.
             
-            Refinement = round(max(Refinement, 2));
-            
             AvgDistance = 0;
+            Refinement = round(max(Refinement, 2));
             
             XimCube = linspace( obj.PointA(1), obj.PointB(1), Refinement+1 );
             YimCube = linspace( obj.PointA(2), obj.PointB(2), Refinement+1 );

@@ -51,9 +51,17 @@ classdef polygon_DARSim < planeInfinite_DARSim
         end
         %%
         function isInside = Is_Point_Inside_Polygon(obj, point , Epsilon)
+            if dot( obj.nVec , (point-obj.Centroid) ) > Epsilon
+                % The Point is not on the plane
+                isInside = 0;
+                return;
+            end
+            
             Line1 = lineSegment_DARSim(obj.Centroid , point);
+            ind1 = [1 : obj.NumOfVertex    ];
+            ind2 = [2 : obj.NumOfVertex , 1];
             for n = 1 : obj.NumOfVertex
-                Line2 = lineSegment_DARSim( obj.Vertex(n,:) , obj.Vertex(mod((end+n)-1,end)+1,:) );
+                Line2 = lineSegment_DARSim( obj.Vertex(ind1(n),:) , obj.Vertex(ind2(n), : ) );
                 [Geostatus, IntersectPoint] = Line1.Obtain_LineSegment_LineSegment_Intersection( Line2, Epsilon );
                 if     ( Geostatus.haveIntersect == 0 )                                         ,  isInside = 1;
                 elseif ~isempty(IntersectPoint) && ( norm (IntersectPoint - point ) < Epsilon ) ,  isInside = 1;
